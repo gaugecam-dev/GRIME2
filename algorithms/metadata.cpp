@@ -17,15 +17,15 @@
 #include "log.h"
 #include "metadata.h"
 #include <stdio.h>
-#include <iostream>
+#include <cstdio>
 #include <cstdlib>
+#include <iostream>
 #include <boost/bind/bind.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/exception/exception.hpp>
 #include <boost/exception/diagnostic_information.hpp>
 #include <boost/foreach.hpp>
-#include <libexif/exif-ifd.h>
 
 using namespace cv;
 using namespace std;
@@ -33,41 +33,42 @@ using namespace boost;
 namespace fs = filesystem;
 namespace pt = property_tree;
 
-static ExifByteOrder FILE_BYTE_ORDER = EXIF_BYTE_ORDER_INTEL;
-
 namespace gc
 {
 
-static void trim_spaces( char *buf );
-static void show_tag( ExifData *d, ExifIfd ifd, ExifTag tag ); // Show the tag name and contents if the tag exists
-static void show_mnote_tag( ExifData *d, unsigned tag ); // Show the given MakerNote tag if it exists
-static ExifEntry *create_tag( ExifData *exif, ExifIfd ifd, ExifTag tag, size_t len );
-static ExifEntry *init_tag( ExifData *exif, ExifIfd ifd, ExifTag tag );
-
-GC_STATUS MetaData::GetImageDescriptionExifData( const std::string imgFilepath, std::string &data )
+GC_STATUS MetaData::GetExifData( const std::string filepath, const std::string tag, std::string &data )
 {
     GC_STATUS retVal = GC_OK;
 
     try
     {
-        ExifData *ed = exif_data_new_from_file( imgFilepath.c_str() );
-        if ( nullptr == ed )
+        string cmdStr = "exiftool -q -" + tag + " \"" + filepath + "\"";
+        FILE *cmd = popen( cmdStr.c_str(), "r" );
+        if ( nullptr == cmd )
         {
-            FILE_LOG( logERROR ) << "[MetaData::GetImageDescriptionExifData]  File not readable or no EXIF data in file " << imgFilepath;
+            FILE_LOG( logERROR ) << "[MetaData::GetExifData] Could not open file to retrieve metadata: " << filepath;
             retVal = GC_ERR;
         }
         else
         {
-            retVal = GetExifTagString( ed, EXIF_TAG_IMAGE_DESCRIPTION, data );
-#ifdef DEBUG_PNG_METADATA
-            FILE_LOG( logINFO ) << "Key=EXIF_TAG_IMAGE_DESCRIPTION";
-            FILE_LOG( logINFO ) << " Value=" << endl << data;
-#endif
+            char buffer[ 256 ];
+            while( nullptr != fgets( buffer, sizeof( buffer ), cmd ) )
+            {
+                data += buffer;
+            }
+            pclose( cmd );
         }
+
+        cout << endl << data << endl;
+
+#ifdef DEBUG_PNG_METADATA
+        FILE_LOG( logINFO ) << "Key=EXIF_TAG_IMAGE_DESCRIPTION";
+        FILE_LOG( logINFO ) << " Value=" << endl << data;
+#endif
     }
     catch( std::exception &e )
     {
-        FILE_LOG( logERROR ) << "[MetaData::GetMetadata] " << e.what();
+        FILE_LOG( logERROR ) << "[MetaData::GetExifData] " << e.what();
         retVal = GC_EXCEPT;
     }
 
@@ -75,7 +76,7 @@ GC_STATUS MetaData::GetImageDescriptionExifData( const std::string imgFilepath, 
 }
 GC_STATUS MetaData::GetMetadata( const std::string imgFilepath, std::string &jsonString )
 {
-    GC_STATUS retVal = GetImageDescriptionExifData( imgFilepath, jsonString );
+    GC_STATUS retVal = GetExifData( imgFilepath, "ImageDescription", jsonString );
     return retVal;
 }
 GC_STATUS MetaData::ReadLineFindResult( const std::string imgFilepath, FindData &data )
@@ -85,7 +86,7 @@ GC_STATUS MetaData::ReadLineFindResult( const std::string imgFilepath, FindData 
     try
     {
         string exifData;
-        GC_STATUS retVal = GetImageDescriptionExifData( imgFilepath, exifData );
+        GC_STATUS retVal = GetExifData( imgFilepath, "ImageDescription", exifData );
         retVal = ParseFindData( exifData, data );
     }
     catch( std::exception &e )
@@ -106,8 +107,8 @@ GC_STATUS MetaData::WriteLineFindResult( const std::string imgFilepath, const Fi
         retVal = FindResultToJsonString( data, jsonString );
         if ( GC_OK == retVal )
         {
-            string cmdBuffer = "exiftool -ImageDescription=\"" + jsonString + "\" \"" + imgFilepath + "\"";
-            cout << endl << cmdBuffer << endl;
+            string cmdBuffer = "exiftool -overwrite_original -ImageDescription=\"" + jsonString + "\" \"" + imgFilepath + "\"";
+            // cout << endl << cmdBuffer << endl;
             std::system( cmdBuffer.c_str() );
         }
     }
@@ -426,30 +427,7 @@ std::string MetaData::ConvertToLocalTimestamp( const std::string exifTimestamp )
     }
     return isoTimestamp;
 }
-GC_STATUS MetaData::GetExifTagString( const ExifData *exifData, const ExifTag tag, string &dataString )
-{
-    GC_STATUS retVal = GC_OK;
-    ExifEntry *entry = exif_content_get_entry( exifData->ifd[ EXIF_IFD_0 ], tag );
-    if ( nullptr == entry )
-    {
-        FILE_LOG( logERROR ) << "[MetaData::GetImageDescriptionExifData]  Could not retrieve data for tag=" << tag;
-        retVal = GC_ERR;
-    }
-    else
-    {
-        char buf[32768];
-
-        /* Get the contents of the tag in human-readable form */
-        exif_entry_get_value( entry, buf, sizeof( buf ) );
-
-        /* Don't bother printing it if it's entirely blank */
-        trim_spaces( buf );
-
-        dataString = string( buf );
-    }
-    return retVal;
-}
-GC_STATUS MetaData::Retrieve( const std::string filepath, std::string &data, ExifFeatures &exifFeat )
+GC_STATUS MetaData::Retrieve( const std::string filepath, ExifFeatures &exifFeat )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -461,44 +439,35 @@ GC_STATUS MetaData::Retrieve( const std::string filepath, std::string &data, Exi
         }
         else
         {
-            ExifData *ed = exif_data_new_from_file( filepath.c_str() );
-            if ( nullptr == ed )
+            string data;
+            retVal = GetExifData( filepath, "ImageWidth", data );
+            if ( GC_OK == retVal )
             {
-                FILE_LOG( logERROR ) << "[]  File not readable or no EXIF data in file " << filepath;
-                retVal = GC_ERR;
-            }
-            else
-            {
-                string dataString;
-                retVal = GetExifTagString( ed, EXIF_TAG_IMAGE_WIDTH, dataString );
+                exifFeat.imageDims.width = stoi( data );
+                retVal = GetExifData( filepath, "ImageHeight", data );
                 if ( GC_OK == retVal )
                 {
-                    exifFeat.imageDims.width = stoi( dataString );
-                    retVal = GetExifTagString( ed, EXIF_TAG_IMAGE_LENGTH, dataString );
+                    exifFeat.imageDims.height = stoi( data );
+                    retVal = GetExifData( filepath, "Date/Time Original", data );
                     if ( GC_OK == retVal )
                     {
-                        exifFeat.imageDims.height = stoi( dataString );
-                        retVal = GetExifTagString( ed, EXIF_TAG_DATE_TIME_ORIGINAL, dataString );
+                        exifFeat.captureTime = ConvertToLocalTimestamp( data );
+                        retVal = GetExifData( filepath, "FNumber", data );
                         if ( GC_OK == retVal )
                         {
-                            exifFeat.captureTime = ConvertToLocalTimestamp( dataString );
-                            retVal = GetExifTagString( ed, EXIF_TAG_FNUMBER, dataString );
+                            exifFeat.fNumber = stod( data );
+                            retVal = GetExifData( filepath, "ExposureTime", data );
                             if ( GC_OK == retVal )
                             {
-                                exifFeat.fNumber = stod( dataString );
-                                retVal = GetExifTagString( ed, EXIF_TAG_EXPOSURE_TIME, dataString );
+                                exifFeat.exposureTime = stod( data );
+                                retVal = GetExifData( filepath, "ShutterSpeed", data );
                                 if ( GC_OK == retVal )
                                 {
-                                    exifFeat.exposureTime = stod( dataString );
-                                    retVal = GetExifTagString( ed, EXIF_TAG_SHUTTER_SPEED_VALUE, dataString );
+                                    exifFeat.shutterSpeed = stod( data );
+                                    retVal = GetExifData( filepath, "ISO", data );
                                     if ( GC_OK == retVal )
                                     {
-                                        exifFeat.shutterSpeed = stod( dataString );
-                                        retVal = GetExifTagString( ed, EXIF_TAG_ISO_SPEED_RATINGS, dataString );
-                                        if ( GC_OK == retVal )
-                                        {
-                                            exifFeat.isoSpeedRating = stoi( dataString );
-                                        }
+                                        exifFeat.isoSpeedRating = stoi( data );
                                     }
                                 }
                             }
@@ -516,131 +485,5 @@ GC_STATUS MetaData::Retrieve( const std::string filepath, std::string &data, Exi
 
     return retVal;
 }
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-// libexif calls
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-void trim_spaces(char *buf)
-{
-    char *s = buf-1;
-    for (; *buf; ++buf) {
-        if (*buf != ' ')
-            s = buf;
-    }
-    *++s = 0; /* nul terminate the string on the first of the final spaces */
-}
-
-/* Show the tag name and contents if the tag exists */
-void show_tag(ExifData *d, ExifIfd ifd, ExifTag tag)
-{
-    /* See if this tag exists */
-    ExifEntry *entry = exif_content_get_entry(d->ifd[ifd],tag);
-    if (entry) {
-        char buf[32768];
-
-        /* Get the contents of the tag in human-readable form */
-        exif_entry_get_value(entry, buf, sizeof(buf));
-
-        /* Don't bother printing it if it's entirely blank */
-        trim_spaces(buf);
-        if (*buf) {
-            cout << exif_tag_get_name_in_ifd(tag,ifd) << "[Size=" << sizeof(buf) << "]" << endl;
-            cout << buf << endl;
-        }
-    }
-}
-
-/* Show the given MakerNote tag if it exists */
-void show_mnote_tag(ExifData *d, unsigned tag)
-{
-    ExifMnoteData *mn = exif_data_get_mnote_data(d);
-    if (mn) {
-        int num = exif_mnote_data_count(mn);
-        int i;
-
-        /* Loop through all MakerNote tags, searching for the desired one */
-        for (i=0; i < num; ++i) {
-            char buf[1024];
-            if (exif_mnote_data_get_id(mn, i) == tag) {
-                if (exif_mnote_data_get_value(mn, i, buf, sizeof(buf))) {
-                    /* Don't bother printing it if it's entirely blank */
-                    trim_spaces(buf);
-                    if (*buf) {
-                        printf("%s: %s\n", exif_mnote_data_get_title(mn, i),
-                            buf);
-                    }
-                }
-            }
-        }
-    }
-}
-/* Get an existing tag, or create one if it doesn't exist */
-ExifEntry *init_tag(ExifData *exif, ExifIfd ifd, ExifTag tag)
-{
-    ExifEntry *entry;
-    /* Return an existing tag if one exists */
-    if (!((entry = exif_content_get_entry (exif->ifd[ifd], tag)))) {
-        /* Allocate a new entry */
-        entry = exif_entry_new ();
-        assert(entry != NULL); /* catch an out of memory condition */
-        entry->tag = tag; /* tag must be set before calling
-                 exif_content_add_entry */
-
-        /* Attach the ExifEntry to an IFD */
-        exif_content_add_entry (exif->ifd[ifd], entry);
-
-        /* Allocate memory for the entry and fill with default data */
-        exif_entry_initialize (entry, tag);
-
-        /* Ownership of the ExifEntry has now been passed to the IFD.
-         * One must be very careful in accessing a structure after
-         * unref'ing it; in this case, we know "entry" won't be freed
-         * because the reference count was bumped when it was added to
-         * the IFD.
-         */
-        exif_entry_unref(entry);
-    }
-    return entry;
-}
-
-/* Create a brand-new tag with a data field of the given length, in the
- * given IFD. This is needed when exif_entry_initialize() isn't able to create
- * this type of tag itself, or the default data length it creates isn't the
- * correct length.
- */
-ExifEntry *create_tag(ExifData *exif, ExifIfd ifd, ExifTag tag, size_t len)
-{
-    void *buf;
-    ExifEntry *entry;
-
-    /* Create a memory allocator to manage this ExifEntry */
-    ExifMem *mem = exif_mem_new_default();
-    assert(mem != NULL); /* catch an out of memory condition */
-
-    /* Create a new ExifEntry using our allocator */
-    entry = exif_entry_new_mem (mem);
-    assert(entry != NULL);
-
-    /* Allocate memory to use for holding the tag data */
-    buf = exif_mem_alloc( mem, len );
-    assert(buf != NULL);
-
-    /* Fill in the entry */
-    entry->data = reinterpret_cast< unsigned char * >( buf );
-    entry->size = len;
-    entry->tag = tag;
-    entry->components = len;
-    entry->format = EXIF_FORMAT_UNDEFINED;
-
-    /* Attach the ExifEntry to an IFD */
-    exif_content_add_entry (exif->ifd[ifd], entry);
-
-    /* The ExifMem and ExifEntry are now owned elsewhere */
-    exif_mem_unref(mem);
-    exif_entry_unref(entry);
-
-    return entry;
-}
-
 
 } // namespace gc

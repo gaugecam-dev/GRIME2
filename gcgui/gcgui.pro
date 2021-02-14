@@ -102,8 +102,7 @@ unix:!macx {
             -lboost_date_time \
             -lboost_system \
             -lboost_filesystem \
-            -lboost_chrono \
-            -lexif
+            -lboost_chrono
 }
 else {
     INCLUDEPATH += $$BOOST_INCLUDES \
@@ -129,7 +128,6 @@ else {
                 -llibboost_date_time-vc142-mt-gd-x64-1_74 \
                 -llibboost_system-vc142-mt-gd-x64-1_74 \
                 -llibboost_chrono-vc142-mt-gd-x64-1_74 \
-                -lexif \
                 -ladvapi32
     } else {
         LIBS += -lopencv_core451 \
@@ -142,7 +140,6 @@ else {
                 -llibboost_date_time-vc142-mt-x64-1_74 \
                 -llibboost_system-vc142-mt-x64-1_74 \
                 -llibboost_chrono-vc142-mt-x64-1_74 \
-                -lexif \
                 -ladvapi32
     }
 }

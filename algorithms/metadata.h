@@ -29,7 +29,6 @@
 #include "gc_types.h"
 #include <boost/property_tree/ptree.hpp>
 #include "featuredata.h"
-#include <libexif/exif-data.h>
 
 namespace gc
 {
@@ -102,16 +101,15 @@ public:
     GC_STATUS GetMetadata( const std::string imgFilepath, std::string &jsonString );
 
     // TODO Write doxygen comments
-    GC_STATUS Retrieve( const std::string filepath, std::string &data, ExifFeatures &exifFeat );
+    GC_STATUS Retrieve( const std::string filepath, ExifFeatures &exifFeat );
 private:
     static const std::string Version() { return "0.0.0.1"; }
+    GC_STATUS GetExifData( const std::string filepath, const std::string tag, std::string &data );
     GC_STATUS ParseFindData( const std::string &metadata, FindData &data );
     GC_STATUS ParseFindPointSetString( const boost::property_tree::ptree &child, const std::string key, FindPointSet &ptSet );
     GC_STATUS FindResultToJsonString( const FindData data, std::string &jsonString );
     GC_STATUS CreateFindPointSetString( const FindPointSet set, const std::string key, std::string &jsonString );
     std::string ConvertToLocalTimestamp( const std::string exifTimestamp );
-    GC_STATUS GetImageDescriptionExifData( const std::string imgFilepath, std::string &data );
-    GC_STATUS GetExifTagString( const ExifData *exifData, const ExifTag tag, std::string &dataString );
 };
 
 } // namespace gc

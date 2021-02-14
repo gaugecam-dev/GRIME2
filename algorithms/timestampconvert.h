@@ -82,7 +82,7 @@ public:
         }
         catch( std::exception &e )
         {
-            FILE_LOG( logERROR ) << "[VisApp::GetTimestampFromFilename] " << e.what();
+            FILE_LOG( logERROR ) << "[VisApp::GetGcTimestampFromString] " << e.what();
             retVal = GC_EXCEPT;
         }
 
@@ -183,7 +183,7 @@ public:
         }
         catch( boost::exception &e )
         {
-            FILE_LOG( logERROR ) << "[VisApp::GetTimestampFromFilename] " << boost::diagnostic_information( e );
+            FILE_LOG( logERROR ) << "[VisApp::DaysFromNumber] " << boost::diagnostic_information( e );
         }
 
         return returnVal;
@@ -203,7 +203,7 @@ public:
         }
         catch( boost::exception &e )
         {
-            FILE_LOG( logERROR ) << "[VisApp::GetTimestampFromFilename] " << boost::diagnostic_information( e );
+            FILE_LOG( logERROR ) << "[VisApp::DateFromDayNumber] " << boost::diagnostic_information( e );
         }
         return retDateStr;
     }

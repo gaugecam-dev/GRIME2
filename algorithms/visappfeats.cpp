@@ -92,9 +92,8 @@ GC_STATUS VisAppFeats::Calculate( const FeatCalcItem &item, FeatureSet &feats )
         {
             feats.clear();
 
-            string data;
             MetaData meta;
-            retVal = meta.Retrieve( item.imagePath, data, feats.exif );
+            retVal = meta.Retrieve( item.imagePath, feats.exif );
             if ( GC_OK == retVal )
             {
                 GcTimestamp gcStamp;
