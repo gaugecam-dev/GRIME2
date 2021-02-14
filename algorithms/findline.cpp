@@ -1,0 +1,690 @@
+/* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   Copyright 2021 Kenneth W. Chapman
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+
+#include "log.h"
+#include "findline.h"
+#include <chrono>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/imgcodecs.hpp>
+
+#ifdef DEBUG_FIND_LINE
+#undef DEBUG_FIND_LINE
+#include <iostream>
+#include <boost/filesystem.hpp>
+#ifdef WIN32
+static const std::string DEBUG_RESULT_FOLDER = "c:/water/";
+#else
+static const std::string DEBUG_RESULT_FOLDER = "/var/tmp/water/";
+#endif
+#endif
+
+using namespace cv;
+using namespace std;
+#ifdef DEBUG_FIND_LINE
+using namespace boost;
+namespace fs = boost::filesystem;
+#endif
+
+static const int MEDIAN_FILTER_KERN_SIZE = 9;
+
+namespace gc
+{
+
+FindLine::FindLine() :
+    m_minLineFindAngle( DEFAULT_MIN_LINE_ANGLE ),
+    m_maxLineFindAngle( DEFAULT_MAX_LINE_ANGLE )
+{
+#ifdef DEBUG_FIND_LINE
+    if ( !fs::exists( DEBUG_RESULT_FOLDER ) )
+    {
+        bool isOK = fs::create_directories( DEBUG_RESULT_FOLDER );
+        if ( !isOK )
+        {
+            FILE_LOG( logERROR ) << "Could not create debug result folder: " << DEBUG_RESULT_FOLDER;
+        }
+    }
+#endif
+}
+
+GC_STATUS FindLine::SetLineFindAngleBounds( const double minAngle, const double maxAngle )
+{
+    GC_STATUS retVal = GC_OK;
+    if ( minAngle > maxAngle )
+    {
+        FILE_LOG( logERROR ) << "[FindLine::SetLineFindAngleBounds] Min angle must be less than max angle: min="
+                             << minAngle << " max=" << maxAngle;
+        retVal = GC_ERR;
+    }
+    else
+    {
+        m_minLineFindAngle = minAngle;
+        m_maxLineFindAngle = maxAngle;
+    }
+    return retVal;
+}
+GC_STATUS FindLine::InitBowtieSearch( const int bowTieTemplateDim, const cv::Size imageSize )
+{
+    GC_STATUS retVal = m_findGrid.InitBowtieTemplate( bowTieTemplateDim, imageSize );
+    if ( GC_OK != retVal )
+    {
+        FILE_LOG( logERROR ) << "[FindLine::InitBowtieSearch] Could not initialize bowtie templates for move search";
+    }
+    return retVal;
+}
+GC_STATUS FindLine::FindMoveTargets( const Mat &img, FindPointSet &ptsFound )
+{
+    // TODO: This method currently only handles translation and not rotation
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        retVal = m_findGrid.FindMoveTargets( img, ptsFound.lftPixel, ptsFound.rgtPixel );
+        if ( GC_OK == retVal )
+        {
+            ptsFound.ctrPixel.x = ( ptsFound.lftPixel.x + ptsFound.rgtPixel.x ) / 2.0;
+            ptsFound.ctrPixel.y = ( ptsFound.lftPixel.y + ptsFound.rgtPixel.y ) / 2.0;
+        }
+    }
+    catch( cv::Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[FindLine::FindMoveTargets] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+    return retVal;
+}
+GC_STATUS FindLine::Find( const Mat &img, const vector< LineEnds > &lines, FindLineResult &result )
+{
+    result.findSuccess = false;
+    GC_STATUS retVal = lines.empty() || img.empty() ? GC_ERR : GC_OK;
+    if ( GC_OK != retVal )
+    {
+        FILE_LOG( logERROR ) << "[FindLine::Find] Cannot find lines with no search lines defined or in a NULL image";
+    }
+    else
+    {
+        try
+        {
+            // clean-up a little
+            Mat scratch;
+            Mat kern = getStructuringElement( MORPH_RECT, Size( 1, 9 ) );
+            dilate( img, scratch, kern, Point( -1, -1 ), 3 );
+            erode( scratch, scratch, kern, Point( -1, -1 ), 3 );
+
+            size_t start;
+            Point2d linePt;
+            vector< uint > rowSums;
+            result.foundPoints.clear();
+            size_t linesPerSwath = lines.size() / 10;
+            for ( size_t i = 0; i < 10; ++i )
+            {
+                start = i * linesPerSwath;
+                retVal = EvaluateSwath( scratch, lines, start, start + linesPerSwath, linePt );
+                if ( GC_OK == retVal )
+                    result.foundPoints.push_back( linePt );
+            }
+#if 1
+            FindPointSet findPtSet;
+            double xCenter = ( lines[ 0 ].bot.x + lines[ lines.size() - 1 ].bot.x ) / 2.0;
+            retVal = FitLineRANSAC( result.foundPoints, result.calcLinePts, xCenter, scratch );
+            if ( GC_OK == retVal )
+            {
+                result.findSuccess = true;
+            }
+#else
+            Vec4d lineVec;
+            double xCenter = ( lines[ 0 ].bot.x + lines[ lines.size() - 1 ].bot.x ) / 2.0;
+            fitLine( result.foundPoints, lineVec, DIST_L12, 0.0, 0.01, 0.01 );
+            result.calcLinePts.lftPixel.x = lineVec[ 2 ] + ( lineVec[ 0 ] * -lineVec[ 2 ] );
+            result.calcLinePts.lftPixel.y = lineVec[ 3 ] + ( lineVec[ 1 ] * -lineVec[ 2 ] );
+            result.calcLinePts.rgtPixel.x = lineVec[ 2 ] + ( lineVec[ 0 ] * ( img.cols - lineVec[ 2 ] - 1 ) );
+            result.calcLinePts.rgtPixel.y = lineVec[ 3 ] + ( lineVec[ 1 ] * ( img.cols - lineVec[ 2 ] - 1 ) );
+            result.calcLinePts.ctrPixel.x = lineVec[ 2 ] + ( lineVec[ 0 ] * ( xCenter - lineVec[ 2 ] ) );
+            result.calcLinePts.ctrPixel.y = lineVec[ 3 ] + ( lineVec[ 1 ] * ( xCenter - lineVec[ 2 ] ) );
+            result.findSuccess = true;
+#endif
+        }
+        catch( cv::Exception &e )
+        {
+            result.findSuccess = false;
+            FILE_LOG( logERROR ) << "[FindLine::Find] " << e.what();
+            retVal = GC_EXCEPT;
+        }
+    }
+
+    return retVal;
+}
+GC_STATUS FindLine::FitLineRANSAC( const std::vector< Point2d > &pts, FindPointSet &findPtSet,
+                                   const double xCenter, const cv::Mat &img )
+{
+    GC_STATUS retVal = 5 > pts.size() ? GC_ERR : GC_OK;
+    if ( GC_OK != retVal )
+    {
+        FILE_LOG( logERROR ) << "[FindLine::FitLineRANSAC] At least five points are needed to fit a line";
+    }
+    else
+    {
+        try
+        {
+#ifdef DEBUG_FIND_LINE
+            Mat scratch;
+            if ( CV_8UC1 == img.type() )
+                cvtColor( img, scratch, COLOR_GRAY2BGR );
+            else
+                scratch = img.clone();
+#endif
+            Vec4d lineVec;
+            vector< int > indices;
+            vector< Point2d > ptSet;
+            vector< FindPointSet > validLines;
+            for ( int i = 0; i < FIT_LINE_RANSAC_TRIES_TOTAL; ++i )
+            {
+                retVal = GetRandomNumbers( 0, static_cast< int >( pts.size() ) - 1, FIT_LINE_RANSAC_POINT_COUNT, indices, 0 == i );
+                if ( GC_OK == retVal )
+                {
+                    ptSet.clear();
+                    for ( size_t i = 0; i < indices.size(); ++i )
+                    {
+#ifdef DEBUG_FIND_LINE
+                        circle( scratch, pts[ indices[ i ] ], 5, Scalar( 0, 255, 255 ), 3 );
+#endif
+                        ptSet.push_back( pts[ indices[ i ] ] );
+                    }
+
+                    fitLine( ptSet, lineVec, DIST_L2, 0.0, 0.01, 0.01 );
+                    findPtSet.lftPixel.x = lineVec[ 2 ] + ( lineVec[ 0 ] * -lineVec[ 2 ] );
+                    findPtSet.lftPixel.y = lineVec[ 3 ] + ( lineVec[ 1 ] * -lineVec[ 2 ] );
+                    findPtSet.rgtPixel.x = lineVec[ 2 ] + ( lineVec[ 0 ] * ( img.cols - lineVec[ 2 ] - 1 ) );
+                    findPtSet.rgtPixel.y = lineVec[ 3 ] + ( lineVec[ 1 ] * ( img.cols - lineVec[ 2 ] - 1 ) );
+                    findPtSet.ctrPixel.x = lineVec[ 2 ] + ( lineVec[ 0 ] * ( xCenter - lineVec[ 2 ] ) );
+                    findPtSet.ctrPixel.y = lineVec[ 3 ] + ( lineVec[ 1 ] * ( xCenter - lineVec[ 2 ] ) );
+                    findPtSet.anglePixel = atan( ( findPtSet.rgtPixel.y - findPtSet.lftPixel.y ) /
+                                                 ( findPtSet.rgtPixel.x - findPtSet.lftPixel.x ) ) * 180 / 3.14159265;
+#ifdef DEBUG_FIND_LINE
+                    line( scratch, findPtSet.lftPixel, findPtSet.rgtPixel, Scalar( 0, 0, 255 ), 1 );
+#endif
+                    if ( m_minLineFindAngle <= findPtSet.anglePixel && m_maxLineFindAngle >= findPtSet.anglePixel )
+                    {
+                        validLines.push_back( findPtSet );
+                    }
+                    if ( validLines.size() >= FIT_LINE_RANSAC_TRIES_EARLY_OUT )
+                        break;
+                }
+            }
+#ifdef DEBUG_FIND_LINE
+            imwrite( DEBUG_RESULT_FOLDER + "ransac.png", scratch );
+#endif
+            if ( 9 > validLines.size() )
+            {
+                FILE_LOG( logERROR ) << "[FindLine::FitLineRANSAC] No valid lines found";
+                retVal = GC_ERR;
+            }
+            else
+            {
+                sort( validLines.begin(), validLines.end(), []( FindPointSet a, FindPointSet b ) {
+                    return a.ctrPixel.y > b.ctrPixel.y; } );
+
+                double totalY = 0.0;
+                double totalTheta = 0.0;
+                size_t start = validLines.size() >> 2;
+                size_t end = validLines.size() - start;
+                for ( size_t i = start; i < end; ++i )
+                {
+                    totalY += validLines[ i ].ctrPixel.y;
+                    totalTheta += validLines[ i ].anglePixel;
+                }
+                findPtSet.ctrPixel.x = xCenter;
+                findPtSet.ctrPixel.y = totalY / static_cast< double >( end - start );
+                findPtSet.anglePixel = totalTheta / static_cast< double >( end - start );
+
+                double rads = findPtSet.anglePixel * CV_PI / 180.0;
+                Point2d pt = Point2d( findPtSet.ctrPixel.x + cos( rads ) * 100.0, findPtSet.ctrPixel.y + sin( rads ) * 100 );
+
+                double slope, intercept;
+                retVal = GetSlopeIntercept( findPtSet.ctrPixel, pt, slope, intercept );
+                if ( GC_OK == retVal )
+                {
+                    findPtSet.lftPixel.x = 0.0;
+                    findPtSet.lftPixel.y = intercept;
+                    findPtSet.rgtPixel.x = static_cast< double >( img.cols ) - 1.0;
+                    findPtSet.rgtPixel.y = slope * findPtSet.rgtPixel.x + intercept;
+                }
+            }
+        }
+        catch( cv::Exception &e )
+        {
+            FILE_LOG( logERROR ) << "[FindLine::FitLineRANSAC] " << e.what();
+            retVal = GC_EXCEPT;
+        }
+    }
+#ifdef DEBUG_FIND_LINE
+    cout << "FindLine::Find() retVal=" << retVal << endl;
+#endif
+    return retVal;
+}
+GC_STATUS FindLine::GetSlopeIntercept( const Point2d one, const Point2d two, double &slope, double &intercept )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        slope = ( two.y - one.y ) / ( 0.0 == ( two.x - one.x ) ? std::numeric_limits< double >::epsilon() : ( two.x - one.x ) );
+        intercept = one.y - slope * one.x;
+    }
+    catch( std::exception &e )
+    {
+        FILE_LOG( logERROR ) << "[FindLine::GetSlopeIntercept] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+    return retVal;
+}
+GC_STATUS FindLine::GetRandomNumbers( const int low_bound, const int high_bound, const int cnt_to_generate,
+                                      vector< int > &numbers, const bool isFirst )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        if ( high_bound - low_bound + 1 < static_cast< int >( numbers.size() ) / 2 )
+        {
+            FILE_LOG( logERROR ) << "[FindLine::GetRandomNumbers] Not enough points to find good numbers";
+            retVal = GC_ERR;
+        }
+        else
+        {
+            if ( isFirst )
+            {
+                auto seed = std::chrono::system_clock::now().time_since_epoch().count(); //seed
+                m_randomEngine.seed( static_cast< unsigned int >( seed ) );
+            }
+
+            std::uniform_int_distribution< int > di( low_bound, high_bound ); //distribution
+
+            vector< int > tempVec;
+            for ( int i = 0; i < cnt_to_generate; ++i )
+                tempVec.push_back( 0 );
+
+            bool foundIt;
+            int tries = 10;
+            numbers.clear();
+            while ( tries > 0 && static_cast< int >( numbers.size() ) < cnt_to_generate )
+            {
+                std::generate( tempVec.begin(), tempVec.end(), [ & ]{ return di( m_randomEngine ); } );
+                for ( size_t i = 0; i < tempVec.size(); ++i )
+                {
+                    foundIt = false;
+                    for ( size_t j = 0; j < numbers.size(); ++j )
+                    {
+                        if ( tempVec[ i ] == numbers[ j ] )
+                        {
+                            foundIt = true;
+                            break;
+                        }
+                    }
+                    if ( !foundIt )
+                    {
+                        numbers.push_back( tempVec[ i ] );
+                        if ( static_cast< int >( numbers.size() ) >= cnt_to_generate )
+                            break;
+                    }
+                }
+                --tries;
+            }
+            if ( static_cast< int >( numbers.size() ) < cnt_to_generate )
+            {
+                FILE_LOG( logERROR ) << "[FindLine::GetRandomNumbers] Not enough unique numbers found";
+                retVal = GC_ERR;
+            }
+
+#ifdef DEBUG_FIND_LINE
+            for ( size_t i = 0; i < static_cast< size_t >( cnt_to_generate ); ++i )
+                std::cout << numbers[ i ] << ", ";
+            std::cout << endl;
+#endif
+        }
+    }
+    catch( std::exception &e )
+    {
+        FILE_LOG( logERROR ) << "[FindLine::GetRandomNumbers] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+    return retVal;
+}
+GC_STATUS FindLine::SetMoveTargetROI( const cv::Mat &img, const cv::Rect rect, const bool isLeft )
+{
+    return m_findGrid.SetMoveTargetROI( img, rect, isLeft );
+}
+GC_STATUS FindLine::DrawResult( const Mat &img, Mat &imgOut, const FindLineResult &result )
+{
+    GC_STATUS retVal = img.empty() ? GC_ERR : GC_OK;
+    if ( GC_OK != retVal )
+    {
+        FILE_LOG( logERROR ) << "[FindLine::DrawResult] Cannot draw find line results on a NULL image";
+    }
+    else
+    {
+        try
+        {
+            if ( &img != &imgOut )
+            {
+                if ( CV_8UC1 == img.type() )
+                {
+                    cvtColor( img, imgOut, COLOR_GRAY2BGR );
+                }
+                else if ( CV_8UC3 == img.type() )
+                {
+                    imgOut = img.clone();
+                }
+                else
+                {
+                    FILE_LOG( logERROR ) << "[FindLine::DrawResult] Invalid image type for drawing row sum must be 8-bit gray or 8-bit bgr";
+                    retVal = GC_ERR;
+                }
+            }
+            if ( GC_OK == retVal )
+            {
+                if ( !result.findSuccess )
+                {
+                    line( imgOut, Point2d( 0.0, 0.0 ), Point2d( img.cols - 1, img.rows - 1 ), Scalar( 0, 0, 255 ), 3 );
+                    line( imgOut, Point2d( 0.0, img.rows - 1 ), Point2d( img.cols - 1, 0.0 ), Scalar( 0, 0, 255 ), 3 );
+                    putText( imgOut( Rect ( 10, 200, 300, 30 ) ), "BAD FIND", Point( 5, 21 ), FONT_HERSHEY_PLAIN, 1.2, Scalar( 0, 255, 255 ), 2 );
+                }
+                else
+                {
+                    line( imgOut, result.calcLinePts.lftPixel, result.calcLinePts.rgtPixel, Scalar( 255, 0, 0 ) );
+                    circle( imgOut, result.calcLinePts.ctrPixel, 5, Scalar( 0, 0, 255 ) );
+                    line( imgOut, Point2d( result.calcLinePts.ctrPixel.x - 5.0, result.calcLinePts.ctrPixel.y - 5.0 ),
+                                  Point2d( result.calcLinePts.ctrPixel.x + 5.0, result.calcLinePts.ctrPixel.y + 5.0 ), Scalar( 0, 0, 255 ) );
+                    line( imgOut, Point2d( result.calcLinePts.ctrPixel.x + 5.0, result.calcLinePts.ctrPixel.y - 5.0 ),
+                                  Point2d( result.calcLinePts.ctrPixel.x - 5.0, result.calcLinePts.ctrPixel.y + 5.0 ), Scalar( 0, 0, 255 ) );
+                    line( imgOut, result.refMovePts.lftPixel, result.refMovePts.rgtPixel, Scalar( 0, 0, 255 ), 5 );
+                    line( imgOut, result.foundMovePts.lftPixel, result.foundMovePts.rgtPixel, Scalar( 0, 255, 0 ), 1 );
+                    if ( 3 < result.foundPoints.size() && GC_OK == retVal )
+                    {
+                        circle( imgOut, result.foundPoints[ 0 ], 3, Scalar( 0, 255, 255 ) );
+                        for ( size_t i = 1; i < result.foundPoints.size(); ++i )
+                        {
+                            circle( imgOut, result.foundPoints[ i ], 3, Scalar( 0, 255, 255 ) );
+                        }
+                    }
+                    if ( -900.0 < result.kalmanEstimateWorld )
+                    {
+                        Point center = result.calcLinePts.ctrPixel;
+                        center.y = cvRound( result.kalmanEstimatePixel );
+                        circle( imgOut, center, 7, Scalar( 0, 255, 255 ) );
+                        line( imgOut, Point( center.x, center.y - 3 ), Point( center.x, center.y + 3 ), Scalar( 0, 255, 255 ), 1 );
+                        line( imgOut, Point( center.x - 3, center.y ), Point( center.x + 3, center.y ), Scalar( 0, 255, 255 ), 1 );
+                    }
+                }
+                for ( size_t i = 0; i < result.msgs.size(); ++i )
+                {
+                    putText( imgOut, result.msgs[ i ], Point( 3, ( static_cast< int >( i ) + 1 ) * 12 ), FONT_HERSHEY_PLAIN, 1.0, Scalar( 0, 255, 255 ), 1 );
+                }
+            }
+        }
+        catch( cv::Exception &e )
+        {
+            FILE_LOG( logERROR ) << "[FindLine::DrawResult] " << e.what();
+            retVal = GC_EXCEPT;
+        }
+    }
+    return retVal;
+}
+GC_STATUS FindLine::EvaluateSwath( const Mat &img, const vector< LineEnds > &lines,
+                                   const size_t startIndex, const size_t endIndex, Point2d &resultPt )
+{
+    GC_STATUS retVal = ( lines.empty() || img.empty() || startIndex > endIndex ||
+                         lines.size() - 1 < endIndex ) ? GC_ERR : GC_OK;
+    if ( GC_OK != retVal )
+    {
+        FILE_LOG( logERROR ) << "[FindLine::EvaluateSwath] Cannot evalate swath with invalid indices or an empty line vector or image";
+    }
+    else
+    {
+        try
+        {
+            vector< LineEnds > swath;
+            for ( size_t i = startIndex; i <= endIndex; ++i )
+                swath.push_back( lines[ i ] );
+
+            vector< uint > rowSums;
+            retVal = CalcRowSums( img, swath, rowSums );
+            if ( GC_OK == retVal )
+            {
+                retVal = CalcSwathPoint( swath, rowSums, resultPt );
+            }
+        }
+        catch( cv::Exception &e )
+        {
+            FILE_LOG( logERROR ) << "[FindLine::EvaluateSwath] " << e.what();
+            retVal = GC_EXCEPT;
+        }
+    }
+
+    return retVal;
+}
+GC_STATUS FindLine::CalcSwathPoint( const vector< LineEnds > &swath, const vector< uint > &rowSums, Point2d &resultPt )
+{
+    GC_STATUS retVal = ( swath.empty() || rowSums.empty() ) ? GC_ERR : GC_OK;
+    if ( GC_OK != retVal )
+    {
+        FILE_LOG( logERROR ) << "[FindLine::CalcSwathPoint] Cannot calculate swath point with empty line or rowsums vector(s)";
+    }
+    else
+    {
+        try
+        {
+            int diff ;
+            int index = -1;
+            int diffMax = numeric_limits< int >::min();
+            for ( size_t i = 1; i < rowSums.size() - 1; ++i )
+            {
+                diff = abs( static_cast< int >( rowSums[ i ] ) - static_cast< int >( rowSums[ i - 1 ] ) );
+                if ( diff > diffMax )
+                {
+                    index = static_cast< int >( i );
+                    diffMax = diff;
+                }
+            }
+            if ( -1 == index )
+            {
+                FILE_LOG( logERROR ) << "[" << __func__ << "] No swath edge found";
+                retVal = GC_WARN;
+            }
+            else
+            {
+                resultPt.x = static_cast< double >( swath[ 0 ].top.x + swath[ swath.size() - 1 ].top.x ) / 2.0;
+                double total = static_cast< double >( rowSums[ static_cast< size_t >( index - 1 ) ] * static_cast< uint >( ( index - 1 ) ) +
+                                                      rowSums[ static_cast< size_t >( index ) ] * static_cast< uint >( index ) +
+                                                      rowSums[ static_cast< size_t >( index + 1 ) ] * static_cast< uint >( index + 1 ) );
+                double denom = ( rowSums[ static_cast< size_t >( index - 1 ) ] + rowSums[ static_cast< size_t >( index ) ] + rowSums[ static_cast< size_t >( index + 1 ) ] );
+                resultPt.y = ( total / denom ) + static_cast< double >( swath[ 0 ].top.y + swath[ swath.size() - 1 ].top.y ) / 2.0;
+
+            }
+        }
+        catch( cv::Exception &e )
+        {
+            FILE_LOG( logERROR ) << "[FindLine::CalcSwathPoint] " << e.what();
+            retVal = GC_EXCEPT;
+        }
+    }
+    return retVal;
+}
+GC_STATUS FindLine::CalcRowSums( const Mat &img, const vector< LineEnds > &lines, vector< uint > &rowSums )
+{
+    GC_STATUS retVal = lines.empty() || img.empty() ? GC_ERR : GC_OK;
+    if ( GC_OK != retVal )
+    {
+        FILE_LOG( logERROR ) << "[FindLine::CalcRowSums] Cannot calculate row sums with no search lines defined or in a NULL image";
+    }
+    else
+    {
+        try
+        {
+            rowSums.clear();
+            vector< uint > rowSumsTemp;
+            int height = lines[ 0 ].bot.y - lines[ 0 ].top.y;
+            for ( int i = 0; i < height; ++i )
+                rowSumsTemp.push_back( 0 );
+
+            for ( size_t i = 0; i < lines.size(); ++i )
+            {
+                LineIterator iter( img, lines[ i ].top, lines[ i ].bot );
+                for ( int j = 0; j < std::min( height, iter.count ); ++j, ++iter )
+                {
+                    // temp = static_cast< uint >( **iter );
+                    rowSumsTemp[ static_cast< size_t >( j ) ] += static_cast< uint >( **iter );
+                }
+            }
+#ifdef DEBUG_FIND_LINE
+            Mat imgOut;
+            retVal = DrawRowSums( img, rowSumsTemp, lines, imgOut );
+            if ( GC_OK == retVal )
+            {
+                bool isOK = imwrite( DEBUG_RESULT_FOLDER + "rowsums_raw.png", imgOut );
+                if ( !isOK )
+                {
+                    FILE_LOG( logERROR ) << "[" << __func__ << "] Could not write debug image " << DEBUG_RESULT_FOLDER << "rowsums_raw.png";
+                }
+            }
+#endif
+            retVal = MedianFilter( MEDIAN_FILTER_KERN_SIZE, rowSumsTemp, rowSums );
+#ifdef DEBUG_FIND_LINE
+            if ( GC_OK == retVal )
+            {
+                retVal = DrawRowSums( img, rowSums, lines, imgOut );
+                if ( GC_OK == retVal )
+                {
+                    bool isOK = imwrite( DEBUG_RESULT_FOLDER + "rowsums_smooth.png", imgOut );
+                    if ( !isOK )
+                    {
+                        FILE_LOG( logERROR ) << "[" << __func__ << "] Could not write debug image " << DEBUG_RESULT_FOLDER << "rowsums_smooth.png";
+                    }
+                }
+            }
+#endif
+        }
+        catch( cv::Exception &e )
+        {
+            FILE_LOG( logERROR ) << "[FindLine::CalcRowSums] " << e.what();
+            retVal = GC_EXCEPT;
+        }
+    }
+
+    return retVal;
+}
+GC_STATUS FindLine::DrawRowSums( const Mat &img, const vector< uint > rowSums, const vector< LineEnds > lines, Mat &imgOut )
+{
+    GC_STATUS retVal = lines.empty() || img.empty() || rowSums.empty() ? GC_ERR : GC_OK;
+    if ( GC_OK != retVal )
+    {
+        FILE_LOG( logERROR ) << "[FindLine::DrawRowSums] Cannot draw row sums with empty search lines, image, or row sum array";
+    }
+    else
+    {
+        try
+        {
+            if ( CV_8UC1 == img.type() )
+                cvtColor( img, imgOut, COLOR_GRAY2BGR );
+            else if ( CV_8UC3 == img.type() )
+                imgOut = img.clone();
+            else
+            {
+                FILE_LOG( logERROR ) << "[" << __func__ << "] Invalid image type for drawing row sum must be 8-bit gray or 8-bit bgr";
+                retVal = GC_ERR;
+            }
+            if ( GC_OK == retVal )
+            {
+                uint maxVal = 0;
+                for ( size_t i = 0; i < rowSums.size(); ++i )
+                {
+                    if ( maxVal < rowSums[ i ] )
+                        maxVal = rowSums[ i ];
+                }
+
+                int right;
+                int y = lines[ 0 ].top.y;
+                double dMaxVal = static_cast< double >( maxVal );
+                for ( size_t i = 0; i < rowSums.size(); ++i )
+                {
+                    right = cvRound( 180.0 * ( static_cast< double >( rowSums[ i ]  ) / dMaxVal ) );
+                    line( imgOut, Point( 0, y ), Point( right, y ), Scalar( 0, 0, 255 ) );
+                    ++y;
+                }
+            }
+        }
+        catch( cv::Exception &e )
+        {
+            FILE_LOG( logERROR ) << "[FindLine::DrawRowSums] " << e.what();
+            retVal = GC_EXCEPT;
+        }
+    }
+
+    return retVal;
+}
+GC_STATUS FindLine::MedianFilter( const size_t kernSize, const vector< uint > values, vector< uint > &valuesOut )
+{
+    GC_STATUS retVal = values.empty() || 3 > kernSize || kernSize * 2 > values.size() ? GC_ERR : GC_OK;
+    if ( GC_OK != retVal )
+    {
+        FILE_LOG( logERROR ) << "[FindLine::MedianFilter] Median filter not possible with empty vector or bad kern size=" << kernSize;
+    }
+    else
+    {
+        try
+        {
+            valuesOut.clear();
+            vector< uint > sortVec;
+            size_t halfVec, kernHalf = kernSize >> 1;
+            for ( size_t i = 0; i < kernHalf; ++i )
+            {
+                sortVec.clear();
+                for ( size_t j = 0; j < kernHalf + i; j++ )
+                    sortVec.push_back( values[ j ] );
+                halfVec = sortVec.size() / 2;
+                nth_element( sortVec.begin(), sortVec.begin() + static_cast< int >( halfVec ), sortVec.end() );
+                if ( 0 == sortVec.size() % 2 )
+                    valuesOut.push_back( ( sortVec[ halfVec ] + sortVec[ halfVec + 1 ] ) / 2 );
+                else
+                    valuesOut.push_back( sortVec[ halfVec ] );
+            }
+            for ( int i = static_cast< int >( kernHalf ); i < static_cast< int >( values.size() - kernHalf ); ++i )
+            {
+                sortVec.clear();
+                for ( int j = -static_cast< int >( kernHalf ); j < static_cast< int >( kernHalf ); j++ )
+                    sortVec.push_back( values[ static_cast< size_t >( i + j ) ] );
+                nth_element( sortVec.begin(), sortVec.begin() + static_cast< int >( kernHalf ), sortVec.end() );
+                valuesOut.push_back( sortVec[ kernHalf ] );
+            }
+            for ( size_t i = values.size() - kernHalf; i < values.size(); ++i )
+            {
+                sortVec.clear();
+                for ( size_t j = i - kernHalf; j < values.size(); j++ )
+                    sortVec.push_back( values[ j ] );
+                halfVec = sortVec.size() / 2;
+                nth_element( sortVec.begin(), sortVec.begin() + static_cast< int >( halfVec ), sortVec.end() );
+                if ( 0 == sortVec.size() % 2 )
+                    valuesOut.push_back( ( sortVec[ halfVec ] + sortVec[ halfVec + 1 ] ) / 2 );
+                else
+                    valuesOut.push_back( sortVec[ halfVec ] );
+            }
+        }
+        catch( cv::Exception &e )
+        {
+            FILE_LOG( logERROR ) << "[FindLine::MedianFilter] " << e.what();
+            retVal = GC_EXCEPT;
+        }
+    }
+
+    return retVal;
+}
+} // namespace gc

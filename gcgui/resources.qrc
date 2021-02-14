@@ -1,0 +1,26 @@
+<RCC>
+    <qresource prefix="/icons">
+        <file>icons/icon_rect.png</file>
+        <file>icons/open_file.png</file>
+        <file>icons/save_file.png</file>
+        <file>icons/icon_run_once.png</file>
+        <file>icons/settings.png</file>
+        <file>icons/zoom-original.png</file>
+        <file>icons/zoom_to_fit.png</file>
+        <file>icons/sweep_clear.png</file>
+        <file>icons/ruler.png</file>
+        <file>icons/save_video.png</file>
+        <file>icons/coffee_logo.png</file>
+        <file>icons/table_icon.png</file>
+        <file>icons/graph_icon.png</file>
+        <file>icons/item_up.png</file>
+        <file>icons/item_right.png</file>
+        <file>icons/item_left.png</file>
+        <file>icons/item_down.png</file>
+        <file>icons/exit_door.png</file>
+        <file>icons/item_delete.png</file>
+    </qresource>
+    <qresource prefix="/">
+        <file>docs/release_notes.html</file>
+    </qresource>
+</RCC>
