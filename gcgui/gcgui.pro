@@ -36,8 +36,8 @@ win32 {
     DEFINES += NOMINMAX
     DEFINES += WIN32_LEAN_AND_MEAN
     DEFINES += _WIN32_WINNT=0x0501
-    OPENCV_INCLUDES = c:/opencv/opencv_440/include
-    OPENCV_LIBS = C:/opencv/opencv_440/x64/lib/vc19
+    OPENCV_INCLUDES = c:/opencv/opencv_451/include
+    OPENCV_LIBS = C:/opencv/opencv_451/x64/lib/vc19
     BOOST_INCLUDES = C:/local/boost_1_74_0
     BOOST_LIBS = C:/local/boost_1_74_0/stage/lib
 }
@@ -119,12 +119,12 @@ else {
             -L$$OPENCV_LIBS
 
     CONFIG(debug, debug|release) {
-        LIBS += -lopencv_core440d \
-                -lopencv_imgproc440d \
-                -lopencv_imgcodecs440d \
-                -lopencv_videoio440d \
-                -lopencv_video440d \
-                -lopencv_calib3d440d \
+        LIBS += -lopencv_core451d \
+                -lopencv_imgproc451d \
+                -lopencv_imgcodecs451d \
+                -lopencv_videoio451d \
+                -lopencv_video451d \
+                -lopencv_calib3d451d \
                 -llibboost_filesystem-vc142-mt-gd-x64-1_74 \
                 -llibboost_date_time-vc142-mt-gd-x64-1_74 \
                 -llibboost_system-vc142-mt-gd-x64-1_74 \
@@ -132,12 +132,12 @@ else {
                 -lexif \
                 -ladvapi32
     } else {
-        LIBS += -lopencv_core440 \
-                -lopencv_imgproc440 \
-                -lopencv_imgcodecs440 \
-                -lopencv_videoio440 \
-                -lopencv_video440 \
-                -lopencv_calib3d440 \
+        LIBS += -lopencv_core451 \
+                -lopencv_imgproc451 \
+                -lopencv_imgcodecs451 \
+                -lopencv_videoio451 \
+                -lopencv_video451 \
+                -lopencv_calib3d451 \
                 -llibboost_filesystem-vc142-mt-x64-1_74 \
                 -llibboost_date_time-vc142-mt-x64-1_74 \
                 -llibboost_system-vc142-mt-x64-1_74 \
@@ -184,7 +184,7 @@ DISTFILES += \
     docs/boost_license.txt \
     docs/lgpl_license.txt \
     docs/perl_artistic_license.txt \
-    gcguiInstaller.nsi \
     docs/release_notes.html \
     docs/license.txt \
-    docs/Background_installation_guideline.pdf
+    docs/Background_installation_guideline.pdf \
+    grime2installer.nsi
