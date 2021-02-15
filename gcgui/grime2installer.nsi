@@ -1,33 +1,21 @@
-; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-;   Copyright 2021 Kenneth W. Chapman
-;
-;   Licensed under the Apache License, Version 2.0 (the "License");
-;   you may not use this file except in compliance with the License.
-;   You may obtain a copy of the License at
-;
-;     http://www.apache.org/licenses/LICENSE-2.0
-;
-;   Unless required by applicable law or agreed to in writing, software
-;   distributed under the License is distributed on an "AS IS" BASIS,
-;   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-;   See the License for the specific language governing permissions and
-;   limitations under the License.
-; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+;NSIS Modern User Interface
+;Basic Example Script
+;Written by Joost Verburg
 
 !ifndef INSTALLFILEPATH_QT
 !define INSTALLFILEPATH_QT "..\thirdparty\qt\qt_5_15_1\x64\bin"
 !endif
 
 !ifndef INSTALLFILEPATH_OPENCV
-!define INSTALLFILEPATH_OPENCV "..\thirdparty\opencv\opencv_440\bin\vc19"
+!define INSTALLFILEPATH_OPENCV "..\thirdparty\opencv\opencv_451\bin\vc19"
 !endif
 
 !ifndef INSTALLFILEPATH_BOOST
 !define INSTALLFILEPATH_BOOST "..\thirdparty\boost\boost_1_74_0\vc141\bin"
 !endif
 
-!ifndef INSTALLFILEPATH_EXIV2
-!define INSTALLFILEPATH_EXIV2 "..\thirdparty\exiv2\exiv2_0_27_3\vc19\bin"
+!ifndef INSTALLFILEPATH_EXIFTOOL
+!define INSTALLFILEPATH_EXIFTOOL "..\thirdparty\exiftool\exiftool_12_18"
 !endif
 
 !ifndef INSTALLFILEPATH_MSVC_REDIST
@@ -80,7 +68,7 @@ Unicode True
 ;--------------------------------
 ;Pages
 
-  !insertmacro MUI_PAGE_LICENSE "${INSTALLFILEPATH_DOCS}\license.txt"
+  !insertmacro MUI_PAGE_LICENSE ".\LICENSE"
   !insertmacro MUI_PAGE_COMPONENTS
   !insertmacro MUI_PAGE_DIRECTORY
   !insertmacro MUI_PAGE_INSTFILES
@@ -99,9 +87,11 @@ Unicode True
 Section "GaugeCam Files" grime2
 
   SetOutPath "$INSTDIR\docs"
-  File "${INSTALLFILEPATH_DOCS}\license.txt"
-  File "${INSTALLFILEPATH_DOCS}\release_notes.html"
+  File "${INSTALLFILEPATH_DOCS}\perl_artistic_license.txt"
   File "${INSTALLFILEPATH_DOCS}\Background_installation_guideline.pdf"
+  File "${INSTALLFILEPATH_DOCS}\boost_license.txt"
+  File "${INSTALLFILEPATH_DOCS}\lgpl_license.txt"
+  File "${INSTALLFILEPATH_DOCS}\release_notes.html"
 
   SetOutPath "${WIN_CONFIG_PATH}"
   File "${INSTALLFILEPATH_CONFIG}\calib_result.png"
@@ -127,19 +117,20 @@ Section "GaugeCam Files" grime2
   File "${INSTALLFILEPATH_QT}\Qt5Core.dll"
   File "${INSTALLFILEPATH_QT}\Qt5Gui.dll"
   File "${INSTALLFILEPATH_QT}\Qt5Widgets.dll"
-  File "${INSTALLFILEPATH_OPENCV}\opencv_core440.dll"
-  File "${INSTALLFILEPATH_OPENCV}\opencv_imgproc440.dll"
-  File "${INSTALLFILEPATH_OPENCV}\opencv_imgcodecs440.dll"
-  File "${INSTALLFILEPATH_OPENCV}\opencv_videoio440.dll"
-  File "${INSTALLFILEPATH_OPENCV}\opencv_video440.dll"
-  File "${INSTALLFILEPATH_OPENCV}\opencv_calib3d440.dll"
-  File "${INSTALLFILEPATH_OPENCV}\opencv_flann440.dll"
-  File "${INSTALLFILEPATH_OPENCV}\opencv_features2d440.dll"
+  File "${INSTALLFILEPATH_OPENCV}\opencv_core451.dll"
+  File "${INSTALLFILEPATH_OPENCV}\opencv_dnn451.dll"
+  File "${INSTALLFILEPATH_OPENCV}\opencv_imgproc451.dll"
+  File "${INSTALLFILEPATH_OPENCV}\opencv_imgcodecs451.dll"
+  File "${INSTALLFILEPATH_OPENCV}\opencv_videoio451.dll"
+  File "${INSTALLFILEPATH_OPENCV}\opencv_video451.dll"
+  File "${INSTALLFILEPATH_OPENCV}\opencv_calib3d451.dll"
+  File "${INSTALLFILEPATH_OPENCV}\opencv_flann451.dll"
+  File "${INSTALLFILEPATH_OPENCV}\opencv_features2d451.dll"
   File "${INSTALLFILEPATH_BOOST}\boost_system-vc141-mt-x64-1_74.dll"
   File "${INSTALLFILEPATH_BOOST}\boost_chrono-vc141-mt-x64-1_74.dll"
   File "${INSTALLFILEPATH_BOOST}\boost_date_time-vc141-mt-x64-1_74.dll"
   File "${INSTALLFILEPATH_BOOST}\boost_filesystem-vc141-mt-x64-1_74.dll"
-  File "${INSTALLFILEPATH_EXIV2}\exiv2.dll"
+  File "${INSTALLFILEPATH_EXIFTOOL}\ExifTool_install_12.18_64.exe"
 
   ; add shortcuts
   CreateDirectory "$SMPROGRAMS\GaugeCam"
@@ -155,7 +146,7 @@ Section "GaugeCam Files" grime2
 SectionEnd
 
 ;--------------------------------
-; Uninstaller section
+; Redistributable section
 ;--------------------------------
 Section "CheckVCRedist"
   ReadRegStr $0 HKLM "SOFTWARE\WOW6432Node\Microsoft\VisualStudio\14.0\VC\Runtimes\X64" "Version"
@@ -170,6 +161,19 @@ Section "CheckVCRedist"
   ${EndIf}
   Delete "$INSTDIR\msvc_redist\*.*"
   RMDIR "$INSTDIR\temp"
+SectionEnd
+
+;--------------------------------
+; Additional Prerequisites
+;--------------------------------
+Section -Prerequisites
+  IfFileExists "C:\Program Files\ExifTool\ExifTool.exe" endExifTool beginExifTool
+    Goto endExifTool
+    beginExifTool:
+    MessageBox MB_OK "Your system does not appear to have ExifTool installed.$\n$\nPress OK to install it."
+    File "${INSTALLFILEPATH_EXIFTOOL}\ExifTool_install_12.18_64.exe"
+    ExecWait "${INSTALLFILEPATH_EXIFTOOL}\ExifTool_install_12.18_64.exe"
+  endExifTool:
 SectionEnd
 
 ;--------------------------------

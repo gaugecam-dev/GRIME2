@@ -30,7 +30,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 # defines
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 DEFINES += BOOST_ALL_NO_LIB BOOST_BIND_GLOBAL_PLACEHOLDERS
-CONFIG += c++17
+CONFIG += c++11
 
 win32 {
     DEFINES += NOMINMAX
@@ -182,6 +182,11 @@ DISTFILES += \
     docs/lgpl_license.txt \
     docs/perl_artistic_license.txt \
     docs/release_notes.html \
-    docs/license.txt \
+    docs/perl_artistic_license.txt \
     docs/Background_installation_guideline.pdf \
+    docs/boost_license.txt \
+    docs/lgpl_license.txt \
+    docs/Background_installation_guideline.pdf \
+    LICENSE \
+    NOTICE \
     grime2installer.nsi

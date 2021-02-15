@@ -43,7 +43,11 @@ GC_STATUS MetaData::GetExifData( const std::string filepath, const std::string t
     try
     {
         string cmdStr = "exiftool -q -" + tag + " \"" + filepath + "\"";
+#ifdef _WIN32
+        FILE *cmd = _popen( cmdStr.c_str(), "r" );
+#else
         FILE *cmd = popen( cmdStr.c_str(), "r" );
+#endif
         if ( nullptr == cmd )
         {
             FILE_LOG( logERROR ) << "[MetaData::GetExifData] Could not open file to retrieve metadata: " << filepath;
@@ -56,10 +60,14 @@ GC_STATUS MetaData::GetExifData( const std::string filepath, const std::string t
             {
                 data += buffer;
             }
+#ifdef _WIN32
+            _pclose( cmd );
+#else
             pclose( cmd );
+#endif
         }
 
-        cout << endl << data << endl;
+        // cout << endl << data << endl;
 
 #ifdef DEBUG_PNG_METADATA
         FILE_LOG( logINFO ) << "Key=EXIF_TAG_IMAGE_DESCRIPTION";
