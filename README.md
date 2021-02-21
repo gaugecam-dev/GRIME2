@@ -27,10 +27,10 @@ and mature enough for use is the measurement of water level in images when a
 calibration target has been placed in the scene. That being said, software to
 calculate image features suitable for use in common machine learing tasks, 
 perform data fusion of the features with ground truth data from sources like the
-USGS, and the actual creation of machine learning models exists, results based
-on the software has been is currently in scholarly review for 
-[publication](https://hess.copernicus.org/preprints/hess-2020-575/), and will be
-integrated into the tool in due course.
+USGS, and the actual creation of machine learning models exists. Results from a
+study using these new, in development aspects of the software are in scholarly
+review for [publication](https://hess.copernicus.org/preprints/hess-2020-575/)
+in the HESS Journal and will be integrated into the tool in due course.
 
 **Further into the future**
 For now, the tool is most usable as a Windows 10 desktop application. The tool is
