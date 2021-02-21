@@ -12,6 +12,41 @@ http://gaugecam.org
 
 <a name="intro"></a>
 ## 1. Introduction
+The purpose of this project is to provide a hydrology and natural resource
+science software tool that reduces the complexity of the analysis of data
+and images in a way that is usable by commercial, academic, and other interested
+parties. The goal is that at least some aspects of the tool will be useful
+to everyone from middle school through doctoral level researches in field,
+laboratory, and classroom settings.
+
+**What is available. What is planned.**
+While some aspects of the software are currently usable and have been used in
+active field measurement and to perform scholarly academic work, the software is
+very much a work in progress. For now, the main functionality that is operational
+and mature enough for use is the measurement of water level in images when a
+calibration target has been placed in the scene. That being said, software to
+calculate image features suitable for use in common machine learing tasks, 
+perform data fusion of the features with ground truth data from sources like the
+USGS, and the actual creation of machine learning models exists, results based
+on the software has been is currently in scholarly review for 
+[publication](https://hess.copernicus.org/preprints/hess-2020-575/), and will be
+integrated into the tool in due course.
+
+**Further into the future**
+For now, the tool is most usable as a Windows 10 desktop application. The tool is
+written so that it will be straightforward to create other application interfaces
+including the following:
+
+* Windows 10
+* Debian installer
+* Command line interface for Windows/Linux
+* Web interface
+
+Finally, while the tool is set up to consume hydrology and natural resources 
+science data and images from wherever they are available, we hope to do a reference
+application to capture images with an embedded computer that manages 24/7 capture
+of images, transmission of images and data to a remote server, and onboard data 
+analysis.
 
 <a name="usage"></a>
 ## 2. Usage
