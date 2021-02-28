@@ -168,6 +168,7 @@ RESOURCES += \
     resources.qrc
 
 DISTFILES += \
+    ../algorithms/Doxyfile \
     LICENSE \
     NOTICE \
     config/VGG_annotate.json \
