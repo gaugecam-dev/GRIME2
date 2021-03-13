@@ -88,13 +88,13 @@ GC_STATUS Calib::Calibrate( const vector< Point2d > pixelPts, const vector< Poin
             {
                 m_model.moveSearchRegionLft = Rect( std::max( 0, cvRound( m_model.pixelPoints[ 0 ].x ) - GC_BOWTIE_TEMPLATE_DIM ),
                                            std::max( 0, cvRound( m_model.pixelPoints[ 0 ].y )- GC_BOWTIE_TEMPLATE_DIM ),
-                                           std::min( GC_IMAGE_SIZE_WIDTH - cvRound( m_model.pixelPoints[ 0 ].x ), GC_BOWTIE_TEMPLATE_DIM * 2 ),
-                                           std::min( GC_IMAGE_SIZE_HEIGHT - cvRound( m_model.pixelPoints[ 0 ].y ), GC_BOWTIE_TEMPLATE_DIM * 2 ) );
+                                           std::min( imgSize.width - cvRound( m_model.pixelPoints[ 0 ].x ), GC_BOWTIE_TEMPLATE_DIM * 2 ),
+                                           std::min( imgSize.height - cvRound( m_model.pixelPoints[ 0 ].y ), GC_BOWTIE_TEMPLATE_DIM * 2 ) );
                 size_t idx = static_cast< size_t >( m_model.gridSize.width - 1 );
                 m_model.moveSearchRegionRgt = Rect( std::max( 0, cvRound( m_model.pixelPoints[ idx ].x ) - GC_BOWTIE_TEMPLATE_DIM ),
                                            std::max( 0, cvRound( m_model.pixelPoints[ idx ].y )- GC_BOWTIE_TEMPLATE_DIM ),
-                                           std::min( GC_IMAGE_SIZE_WIDTH - cvRound( m_model.pixelPoints[ idx ].x ), GC_BOWTIE_TEMPLATE_DIM * 2 ),
-                                           std::min( GC_IMAGE_SIZE_HEIGHT - cvRound( m_model.pixelPoints[ idx ].y ), GC_BOWTIE_TEMPLATE_DIM * 2 ) );
+                                           std::min( imgSize.width - cvRound( m_model.pixelPoints[ idx ].x ), GC_BOWTIE_TEMPLATE_DIM * 2 ),
+                                           std::min( imgSize.height - cvRound( m_model.pixelPoints[ idx ].y ), GC_BOWTIE_TEMPLATE_DIM * 2 ) );
             }
 
             if ( createOverlay && !img.empty() )

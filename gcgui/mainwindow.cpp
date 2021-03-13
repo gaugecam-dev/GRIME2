@@ -312,8 +312,6 @@ int MainWindow::ReadSettings( const QString filepath )
 
         bool createCSV = pSettings->value( "createCSVCheckbox", true ).toBool();
         ui->checkBox_createFindLine_csvResultsFile->setChecked( createCSV );
-        bool useROI = pSettings->value( "useROICheckbox", true ).toBool();
-        ui->checkBox_useROI->setChecked( useROI );
 
         ui->lineEdit_findLine_annotatedResultFolder->setText( pSettings->value( "findLineAnnotatedOutFolder", __CONFIGURATION_FOLDER ).toString() );
         ui->checkBox_createFindLine_annotatedResults->setChecked( pSettings->value( "createAnnotationCheckbox", false ).toBool() );
@@ -381,7 +379,6 @@ int MainWindow::WriteSettings( const QString filepath )
     pSettings->setValue( "findLineCSVOutPath", ui->lineEdit_findLine_resultCSVFile->text() );
     pSettings->setValue( "folderOfImages", ui->radioButton_folderOfImages->isChecked() );
     pSettings->setValue( "createCSVCheckbox", ui->checkBox_createFindLine_csvResultsFile->isChecked() );
-    pSettings->setValue( "useROICheckbox", ui->checkBox_useROI->isChecked() );
     pSettings->setValue( "findLineAnnotatedOutFolder", ui->lineEdit_findLine_annotatedResultFolder->text() );
     pSettings->setValue( "createAnnotationCheckbox", ui->checkBox_createFindLine_annotatedResults->isChecked() );
     pSettings->setValue( "timestampStringStartPos", ui->spinBox_timeStringPosZero->value() );
@@ -1108,6 +1105,7 @@ void MainWindow::on_pushButton_findLineCurrentImage_clicked()
         {
             ui->checkBox_showFindLine->setChecked( true );
             m_pComboBoxImageToView->setCurrentText( "Overlay" );
+            UpdatePixmapTarget();
             ui->statusBar->showMessage( "Find line: SUCCESS" );
         }
         else
