@@ -45,43 +45,26 @@ win32 {
 # win32:RC_ICONS += ./icons/coffee_logo.png
 
 SOURCES += \
-        ../algorithms/areafeatures.cpp \
         ../algorithms/calib.cpp \
-        ../algorithms/entropymap.cpp \
-        ../algorithms/featurerecipe.cpp \
-        ../algorithms/findanchor.cpp \
         ../algorithms/findcalibgrid.cpp \
         ../algorithms/findline.cpp \
-        ../algorithms/kalman.cpp \
         ../algorithms/metadata.cpp \
-        ../algorithms/ransacstreamflow.cpp \
-        ../algorithms/variancemap.cpp \
         ../algorithms/visapp.cpp \
-        ../algorithms/visappfeats.cpp \
         guivisapp.cpp \
         main.cpp \
         mainwindow.cpp
 
 HEADERS += \
-        ../algorithms/areafeatures.h \
         ../algorithms/bresenham.h \
         ../algorithms/calib.h \
         ../algorithms/csvreader.h \
-        ../algorithms/entropymap.h \
-        ../algorithms/featuredata.h \
-        ../algorithms/featurerecipe.h \
-        ../algorithms/findanchor.h \
         ../algorithms/findcalibgrid.h \
         ../algorithms/findline.h \
         ../algorithms/gc_types.h \
-        ../algorithms/kalman.h \
-        ../algorithms/labelroi.h \
         ../algorithms/log.h \
         ../algorithms/metadata.h \
         ../algorithms/timestampconvert.h \
-        ../algorithms/variancemap.h \
         ../algorithms/visapp.h \
-        ../algorithms/visappfeats.h \
         guivisapp.h \
         mainwindow.h
 

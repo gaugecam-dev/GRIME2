@@ -115,7 +115,12 @@ public:
      */
     GC_STATUS DrawCalibOverlay( const std::string imageFilepathIn, cv::Mat &imgMatOut );
 
-    // TODO: Needs doxygen -- KWC
+    /**
+     * @brief Draw the currently loaded calibration onto an overlay image
+     * @param imgMatOut OpenCV Mat of the input image onto which the calibration will be written
+     * @param imageMatOut OpenCV Mat of the output image that holds the input image with an overlay of the calibration
+     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
+     */
     GC_STATUS DrawCalibOverlay( const cv::Mat matIn, cv::Mat &imgMatOut );
 
     /**
@@ -134,17 +139,42 @@ public:
     // Findline methods
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     /**
-     * @brief Find the water level
+     * @brief Find the water level in an image specified in the FindLineParams
      * @param params Holds the filepaths and all other parameters need to perform a line find calculation
+     * @param timestamp Image capture time
      * @param result Holds the results of the line find calculation
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
     GC_STATUS CalcLine( const FindLineParams params, const string timestamp, FindLineResult &result );
 
-    // TODO: Add doxygen comments -- KWC
+    /**
+     * @brief Find the water level in an image specified in the FindLineParams
+     * @param params Holds the filepaths and all other parameters need to perform a line find calculation
+     *        class member object holds results of the line find calculation
+     * @param timestamp Image capture time
+     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
+     */
     GC_STATUS CalcLine( const FindLineParams params, const string timestamp );
-    GC_STATUS CalcLine( const cv::Mat img, const string timestamp );
-    GC_STATUS GetImageMetadata( const std::string imgFilepath, std::string &data );
+
+    /**
+     * @brief Find the water level in the specified image
+     * @param img OpenCV mat image to search for the waterline using already set parameters
+     * @param timestamp Image capture time
+     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
+     */
+    GC_STATUS CalcLine( const cv::Mat &img, const string timestamp );
+
+    /**
+     * @brief Retrieve metadata from the specified image
+     * @param filepath Filepath of the image from which to extract the metadata
+     * @param data Metadata extracted from the image file
+     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
+     */
+    GC_STATUS GetImageMetadata( const std::string filepath, std::string &data );
+
+    // TODO: Write doxygen comments
+    GC_STATUS GetExifImageData( const std::string filepath, ExifFeatures &exifFeat );
+    GC_STATUS GetExifTimestamp( const std::string filepath, std::string &timestamp );
 
     /**
      * @brief Outputs the metadata from a specified line find image to the log
@@ -170,11 +200,42 @@ public:
      */
     GC_STATUS DrawLineFindOverlay( const std::string imageFilepathIn, const std::string imageFilepathOut );
 
-    // TODO: Add doxygen comments -- KWC
+    /**
+     * @brief Convert world coordinates to pixel coordinates using the currently set calibration
+     * @param worldPt World coordinate xy position
+     * @param pixelPt Point to hold the converted pixel coordinate position
+     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
+     */
     GC_STATUS WorldToPixel( const cv::Point2d worldPt, cv::Point2d &pixelPt );
+
+    /**
+     * @brief Create an overlay image with the current found water line
+     * @param img Source OpenCV Mat image that was searched for a water line
+     * @param imgOut Destination OpenCV Mat image holding the source image with find line overlay
+     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
+     */
     GC_STATUS DrawLineFindOverlay( const cv::Mat &img, cv::Mat &imgOut );
+
+    /**
+     * @brief Create an overlay image with a user specified found water line
+     * @param img Source OpenCV Mat image that was searched for a water line
+     * @param imgOut Destination OpenCV Mat image holding the source image with find line overlay
+     * @param findLineResult User specified found line result object
+     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
+     */
     GC_STATUS DrawLineFindOverlay( const cv::Mat &img, cv::Mat &imgOut, const FindLineResult findLineResult );
+
+    /**
+     * @brief Set the internal found line position from a user specifed find line result
+     * @param findLineResult User specified found line result object
+     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
+     */
     void SetFindLineResult( const FindLineResult result );
+
+    /**
+     * @brief Get the current found line position
+     * @return Internal FindLineResult object
+     */
     FindLineResult GetFindLineResult();
 
     /**

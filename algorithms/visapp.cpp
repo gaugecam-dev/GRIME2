@@ -31,6 +31,8 @@ using namespace std;
 using namespace boost;
 namespace fs = boost::filesystem;
 
+static const double MIN_BOWTIE_FIND_SCORE = 0.55;
+
 #ifdef DEBUG_BOWTIE_FIND
 #undef DEBUG_BOWTIE_FIND
 #ifdef _WIN32
@@ -140,14 +142,18 @@ GC_STATUS VisApp::Calibrate( const string imgFilepath, const string worldCoordsC
             if ( GC_OK == retVal )
             {
 #ifdef DEBUG_BOWTIE_FIND
-                retVal = m_findCalibGrid.FindTargets( img, 0.65, DEBUG_FOLDER + "bowtie_find.png" );
+                retVal = m_findCalibGrid.FindTargets( img, MIN_BOWTIE_FIND_SCORE, DEBUG_FOLDER + "bowtie_find.png" );
 #else
-                retVal = m_findCalibGrid.FindTargets( img, 0.65 );
+                retVal = m_findCalibGrid.FindTargets( img, MIN_BOWTIE_FIND_SCORE );
 #endif
                 if ( GC_OK == retVal )
                 {
                     vector< vector< Point2d > > pixelCoords;
                     retVal = m_findCalibGrid.GetFoundPoints( pixelCoords );
+                    if ( GC_OK != retVal )
+                    {
+
+                    }
                     if ( GC_OK == retVal )
                     {
                         if ( pixelCoords.size() != worldCoords.size() )
@@ -193,17 +199,34 @@ GC_STATUS VisApp::Calibrate( const string imgFilepath, const string worldCoordsC
 
     return retVal;
 }
-GC_STATUS VisApp::GetImageMetadata( const std::string imgFilepath, std::string &data )
+GC_STATUS VisApp::GetExifTimestamp( const std::string filepath, std::string &timestamp )
 {
-    string jsonString;
-    GC_STATUS retVal = m_metaData.GetMetadata( imgFilepath, data );
+    GC_STATUS retVal = m_metaData.GetExifData( filepath, "DateTimeOriginal", timestamp );
+    if ( GC_OK != retVal )
+    {
+        FILE_LOG( logERROR ) << "[VisApp::ListMetadata] Could  not retrieve exif image data from " << filepath;
+    }
+    return retVal;
+}
+GC_STATUS VisApp::GetExifImageData( const std::string filepath, ExifFeatures &exifFeat )
+{
+    GC_STATUS retVal = m_metaData.GetExifImageData( filepath, exifFeat );
+    if ( GC_OK != retVal )
+    {
+        FILE_LOG( logERROR ) << "[VisApp::ListMetadata] Could  not retrieve exif image data from " << filepath;
+    }
+    return retVal;
+}
+GC_STATUS VisApp::GetImageMetadata( const std::string filepath, std::string &data )
+{
+    GC_STATUS retVal = m_metaData.GetMetadata( filepath, data );
     if ( GC_OK == retVal && !data.empty() )
     {
-        FILE_LOG( logINFO ) << endl << jsonString;
+        FILE_LOG( logINFO ) << endl << data;
     }
     else
     {
-        FILE_LOG( logERROR ) << "[VisApp::ListMetadata] Could  not retrieve metadata from image " << imgFilepath;
+        FILE_LOG( logERROR ) << "[VisApp::ListMetadata] Could  not retrieve metadata from image " << filepath;
     }
     return retVal;
 }
@@ -239,7 +262,7 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, const string timestamp 
     GC_STATUS retVal = CalcLine( params, timestamp, m_findLineResult );
     return retVal;
 }
-GC_STATUS VisApp::CalcLine( const Mat img, const string timestamp )
+GC_STATUS VisApp::CalcLine( const Mat &img, const string timestamp )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -376,8 +399,14 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, const string timestamp,
             }
             else if ( FROM_EXIF == params.timeStampType )
             {
-                FILE_LOG( logWARNING ) << "Get timestamp from exif not yet implemented";
-                retVal = GC_ERR;
+                string timestampTemp;
+                retVal = GetExifTimestamp( params.imagePath, timestampTemp );
+                if ( GC_OK == retVal )
+                {
+                    retVal = GcTimestampConvert::GetTimestampFromString( timestampTemp,
+                                                                         params.timeStampStartPos, params.timeStampLength,
+                                                                         params.timeStampFormat, result.timestamp );
+                }
             }
             else if ( FROM_EXTERNAL == params.timeStampType )
             {

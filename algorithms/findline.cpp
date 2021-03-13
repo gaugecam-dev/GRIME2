@@ -416,14 +416,6 @@ GC_STATUS FindLine::DrawResult( const Mat &img, Mat &imgOut, const FindLineResul
                             circle( imgOut, result.foundPoints[ i ], 3, Scalar( 0, 255, 255 ) );
                         }
                     }
-                    if ( -900.0 < result.kalmanEstimateWorld )
-                    {
-                        Point center = result.calcLinePts.ctrPixel;
-                        center.y = cvRound( result.kalmanEstimatePixel );
-                        circle( imgOut, center, 7, Scalar( 0, 255, 255 ) );
-                        line( imgOut, Point( center.x, center.y - 3 ), Point( center.x, center.y + 3 ), Scalar( 0, 255, 255 ), 1 );
-                        line( imgOut, Point( center.x - 3, center.y ), Point( center.x + 3, center.y ), Scalar( 0, 255, 255 ), 1 );
-                    }
                 }
                 for ( size_t i = 0; i < result.msgs.size(); ++i )
                 {

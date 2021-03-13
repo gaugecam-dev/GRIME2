@@ -147,7 +147,6 @@ MainWindow::MainWindow(QWidget *parent) :
     createActions();
     createConnections();
 
-    on_lineEdit_featureAnnotationFile_editingFinished();
     on_lineEdit_imageFolder_textEdited( ui->lineEdit_imageFolder->text() );
     on_actionZoom100_triggered();
     UpdateGUIEnables();
@@ -200,11 +199,8 @@ void MainWindow::createConnections()
     connect( m_pComboBoxImageToView,  &QComboBox::currentTextChanged, this, &MainWindow::UpdatePixmapTarget );
     connect( ui->checkBox_showCalib, &QCheckBox::stateChanged, this, &MainWindow::UpdatePixmapTarget );
     connect( ui->checkBox_showFindLine, &QCheckBox::stateChanged, this, &MainWindow::UpdatePixmapTarget );
-    connect( ui->checkBox_featureShowROIs, &QCheckBox::stateChanged, this, &MainWindow::UpdatePixmapTarget );
-    connect( ui->checkBox_featureShowMovement, &QCheckBox::stateChanged, this, &MainWindow::UpdatePixmapTarget );
     connect( ui->checkBox_createFindLine_csvResultsFile, &QCheckBox::stateChanged, this, &MainWindow::UpdateGUIEnables );
     connect( ui->checkBox_createFindLine_annotatedResults, &QCheckBox::stateChanged, this, &MainWindow::UpdateGUIEnables );
-    connect( ui->listWidget_featsAvailable, &QListWidget::currentRowChanged, this, &MainWindow::UpdatePixmapTarget );
 
     connect( this, SIGNAL( sig_visAppMessage( const QString ) ), this, SLOT( do_visAppMessage( const QString ) ) );
     connect( this, SIGNAL( sig_updateProgess( const int ) ),     this, SLOT( do_updateProgress( const int ) ) );
@@ -313,17 +309,19 @@ int MainWindow::ReadSettings( const QString filepath )
         bool isFolderOfImages = pSettings->value( "folderOfImages", true ).toBool();
         ui->radioButton_folderOfImages->setChecked( isFolderOfImages );
         ui->radioButton_folderOfFolders->setChecked( !isFolderOfImages );
-        ui->lineEdit_featureAnchorROI_image->setText( pSettings->value( "findLineAnchorRefImageFile", __CONFIGURATION_FOLDER ).toString() );
+
+        bool createCSV = pSettings->value( "createCSVCheckbox", true ).toBool();
+        ui->checkBox_createFindLine_csvResultsFile->setChecked( createCSV );
+        bool useROI = pSettings->value( "useROICheckbox", true ).toBool();
+        ui->checkBox_useROI->setChecked( useROI );
+
         ui->lineEdit_findLine_annotatedResultFolder->setText( pSettings->value( "findLineAnnotatedOutFolder", __CONFIGURATION_FOLDER ).toString() );
-        ui->lineEdit_featureAnnotationFile->setText( pSettings->value( "featureAnnotationFile", __CONFIGURATION_FOLDER + "VGG_annotate.json" ).toString() );
         ui->checkBox_createFindLine_annotatedResults->setChecked( pSettings->value( "createAnnotationCheckbox", false ).toBool() );
         ui->spinBox_timeStringPosZero->setValue( pSettings->value( "timestampStringStartPos", 5 ).toInt() );
         ui->spinBox_timeStringLength->setValue( pSettings->value( "timestampStringLength", 14 ).toInt() );
-        pSettings->endGroup();
-
-        // system settings
-        pSettings->beginGroup( "System" );
-        ui->lineEdit_gaugecamExecutablePath->setText( pSettings->value( "gaugeCamExecPath", __CONFIGURATION_FOLDER ).toString() );
+        ui->radioButton_dateTimeInFilename->setChecked( pSettings->value( "timestampFromFilename", true ).toBool() );
+        ui->radioButton_dateTimeInEXIF->setChecked( pSettings->value( "timestampFromEXIF", true ).toBool() );
+        ui->lineEdit_timestampFormat->setText( pSettings->value( "timestampFormat", "yyyy-mm-ddTHH-MM" ).toString() );
         pSettings->endGroup();
 
         delete pSettings;
@@ -383,25 +381,15 @@ int MainWindow::WriteSettings( const QString filepath )
     pSettings->setValue( "findLineCSVOutPath", ui->lineEdit_findLine_resultCSVFile->text() );
     pSettings->setValue( "folderOfImages", ui->radioButton_folderOfImages->isChecked() );
     pSettings->setValue( "createCSVCheckbox", ui->checkBox_createFindLine_csvResultsFile->isChecked() );
-    pSettings->setValue( "findLineAnchorRefImageFile", ui->lineEdit_featureAnchorROI_image->text() );
+    pSettings->setValue( "useROICheckbox", ui->checkBox_useROI->isChecked() );
     pSettings->setValue( "findLineAnnotatedOutFolder", ui->lineEdit_findLine_annotatedResultFolder->text() );
-    pSettings->setValue( "featureAnnotationFile", ui->lineEdit_featureAnnotationFile->text() );
     pSettings->setValue( "createAnnotationCheckbox", ui->checkBox_createFindLine_annotatedResults->isChecked() );
     pSettings->setValue( "timestampStringStartPos", ui->spinBox_timeStringPosZero->value() );
     pSettings->setValue( "timestampStringLength", ui->spinBox_timeStringLength->value() );
+    pSettings->setValue( "timestampFromFilename", ui->radioButton_dateTimeInFilename->isChecked() );
+    pSettings->setValue( "timestampFromEXIF", ui->radioButton_dateTimeInEXIF->isChecked() );
+    pSettings->setValue( "timestampFormat", ui->lineEdit_timestampFormat->text() );
     pSettings->endGroup();
-
-    // system settings
-    pSettings->beginGroup( "System" );
-    pSettings->setValue( "gaugeCamExecPath", ui->lineEdit_gaugecamExecutablePath->text() );
-    pSettings->endGroup();
-
-    // feature calc settings
-    GC_STATUS retVal = m_visApp.WriteCalcFeatures( __CONFIGURATION_FOLDER.toStdString() + "calc_feat_params.json" );
-    if ( GC_OK != retVal )
-    {
-        ui->statusBar->showMessage( "Could not write feature calculation parameters to " + __CONFIGURATION_FOLDER + "calc_feat_params.json" );
-    }
 
     delete pSettings;
     pSettings = nullptr;
@@ -557,13 +545,10 @@ void MainWindow::UpdatePixmap()
 
     IMG_DISPLAY_OVERLAYS overlays = static_cast< IMG_DISPLAY_OVERLAYS >(
                 ( ui->checkBox_showCalib->isChecked() ? CALIB : OVERLAYS_NONE ) +
-                ( ui->checkBox_showFindLine->isChecked() ? FINDLINE : OVERLAYS_NONE ) +
-                ( ui->checkBox_featureShowROIs->isChecked() ? FEATROIS : OVERLAYS_NONE ) +
-                ( ui->checkBox_featureShowMovement->isChecked() ? MOVEMENT : OVERLAYS_NONE ) );
-    int roiIndex = ui->checkBox_featureShowROIs->isChecked() ? ui->listWidget_featsAvailable->currentRow() : -1;
+                ( ui->checkBox_showFindLine->isChecked() ? FINDLINE : OVERLAYS_NONE ) );
     gc::GC_STATUS retVal = m_visApp.GetImage( cv::Size( m_pQImg->width(), m_pQImg->height() ),
                                               static_cast< size_t >( m_pQImg->bytesPerLine() ),
-                                              CV_8UC4, m_pQImg->scanLine( 0 ), nColorType, overlays, roiIndex );
+                                              CV_8UC4, m_pQImg->scanLine( 0 ), nColorType, overlays );
     if ( GC_OK != retVal )
     {
         ui->statusBar->showMessage( QString( "Paint event failed with color " ) + QString::fromStdString( to_string( nColorType ) ) );
@@ -623,10 +608,6 @@ void MainWindow::paintEvent( QPaintEvent * )
 #ifdef _WIN32
     UpdatePixmap();
 #endif
-}
-void MainWindow::on_actionToggleGraph_triggered()
-{
-    ui->statusBar->showMessage( ( GC_OK == ui->actionToggleGraph->isChecked() ? "Toggle graph OK" : "Toggle graph FAIL" ) );
 }
 void MainWindow::on_tableAddRow( const string row_string ) { AddRow( row_string ); }
 void MainWindow::on_updateProgress( const int value ) { emit sig_updateProgess( value ); }
@@ -984,27 +965,6 @@ void MainWindow::on_actionSaveVideo_triggered()
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // button handlers
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-void MainWindow::on_checkBox_featuresShowAnchorROI_toggled(bool checked)
-{
-    if ( checked )
-    {
-        ui->actionSetROI->setChecked( false );
-        Rect rect = m_visApp.GetAnchorROI();
-        if ( 0 > rect.x || 0 > rect.width )
-        {
-            ui->statusBar->showMessage( "Anchor model ROI is not set" );
-            int xDim = m_imgWidth / 4;
-            int yDim = m_imgHeight / 4;
-            m_rectROI.setRect( xDim, yDim, xDim * 2, yDim * 2 );
-        }
-        else
-        {
-            m_rectROI.setRect( rect.x, rect.y, rect.width, rect.height );
-        }
-        ui->actionSetROI->setChecked( true );
-    }
-}
-void MainWindow::on_checkBox_featureShowROIs_clicked() { if ( ui->checkBox_featureShowROIs->isChecked() ) m_pComboBoxImageToView->setCurrentText( "Overlay" ); }
 void MainWindow::on_toolButton_clearMsgs_clicked() { ui->textEdit_msgs->clear(); }
 void MainWindow::on_toolButton_imageFolder_browse_clicked()
 {
@@ -1021,67 +981,6 @@ void MainWindow::on_toolButton_imageFolder_browse_clicked()
     m_folderLoadImages = dirInfo.absolutePath();
     ui->lineEdit_imageFolder->setText( strFullPath );
     on_lineEdit_imageFolder_textEdited( strFullPath );
-}
-void MainWindow::on_toolButton_gaugecamExecutablePath_browse_clicked()
-{
-    QString strFullPath = QFileDialog::getOpenFileName( this, "Select gaugecam executable", m_folderLoadImages );
-    if ( strFullPath.isNull() )
-    {
-        ui->statusBar->showMessage( "No gaugecam executable file selected" );
-        return;
-    }
-
-    ui->lineEdit_gaugecamExecutablePath->setText( strFullPath );
-}
-void MainWindow::on_toolButton_featureAnchorROI_image_browse_clicked()
-{
-    QString strFullPath = QFileDialog::getOpenFileName( this, "Select reference anchor image file",
-                                                        ui->lineEdit_featureAnnotationFile->text(), ("Images (*.png *.jpg *.tif)" ) );
-    if ( strFullPath.isNull() )
-    {
-        ui->statusBar->showMessage( "No reference anchor image file set" );
-    }
-    else
-    {
-        ui->lineEdit_featureAnchorROI_image->setText( strFullPath );
-        ui->statusBar->showMessage( "Reference anchor image file set" );
-    }
-}
-void MainWindow::on_toolButton_featureAnnotationFile_browse_clicked()
-{
-    QString filter = "JSON Files (*.json)";
-    QString strFullPath = QFileDialog::getOpenFileName( this, "Select annotation json file", ui->lineEdit_featureAnnotationFile->text(), filter );
-    if ( strFullPath.isNull() )
-    {
-        ui->statusBar->showMessage( "No annotation file selected" );
-        return;
-    }
-    else
-    {
-        on_lineEdit_featureAnnotationFile_editingFinished();
-        ui->lineEdit_featureAnnotationFile->setText( strFullPath );
-    }
-}
-void MainWindow::on_lineEdit_featureAnnotationFile_editingFinished()
-{
-    vector< LabelROIItem > items;
-    GC_STATUS retVal = m_visApp.LoadROIFeatFromJson( ui->lineEdit_featureAnnotationFile->text().toStdString(), items );
-    ui->statusBar->showMessage( "Feature annotation file load: " + QString( GC_OK == retVal ? "SUCCESS" : "FAIL" ) );
-    if ( GC_OK == retVal )
-    {
-        QColor color;
-        QString itmStr;
-        ui->listWidget_featsAvailable->clear();
-        for ( size_t i = 0; i < items.size(); ++i )
-        {
-            itmStr = "[ROI] " + QString( items[ i ].name.c_str() );
-            ui->listWidget_featsAvailable->addItem( itmStr );
-            color = QColor( static_cast< int >( items[ i ].color.val[ 2 ] ),
-                            static_cast< int >( items[ i ].color.val[ 1 ] ),
-                            static_cast< int >( items[ i ].color.val[ 0 ] ) );
-            ui->listWidget_featsAvailable->item( ui->listWidget_featsAvailable->count() - 1 )->setForeground( color );
-        }
-    }
 }
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // vision calibration
@@ -1276,10 +1175,21 @@ void MainWindow::on_pushButton_findLine_stopFolderProcess_clicked()
 }
 void MainWindow::on_pushButton_showImageMetadata_clicked()
 {
-    QString strFullPath = QFileDialog::getOpenFileName( this, "Select image", ui->lineEdit_imageFolder->text(), "Image Files (*.png *.jpg)" );
+    QString strFullPath;
+    if ( -1 == ui->listWidget_imageFolder->currentRow() )
+    {
+        strFullPath = QFileDialog::getOpenFileName( this, "Select image", ui->lineEdit_imageFolder->text(), "Image Files (*.png *.jpg)" );
+    }
+    else
+    {
+        string folder = ui->lineEdit_imageFolder->text().toStdString();
+        if ( '/' != folder[ folder.size() - 1 ] )
+            folder += '/';
+        strFullPath = QString( folder.c_str() ) + ui->listWidget_imageFolder->currentItem()->text();
+    }
     if ( strFullPath.isNull() )
     {
-        ui->statusBar->showMessage( "Could not get annotated result image folder path" );
+        ui->statusBar->showMessage( "Could not get image to show metadata" );
     }
     else
     {
@@ -1362,20 +1272,6 @@ int MainWindow::AddRow( const string row_string )
     }
 
     return ret;
-}
-void MainWindow::on_pushButton_runKalman_clicked()
-{
-
-}
-void MainWindow::on_pushButton_visionSetAnchorRef_clicked()
-{
-    GC_STATUS retVal = m_visApp.SetAnchorRef( ui->lineEdit_featureAnchorROI_image->text().toStdString(),
-                                              Rect( m_rectROI.x(), m_rectROI.y(), m_rectROI.width(), m_rectROI.height() ) );
-    ui->statusBar->showMessage( "Set anchor reference: " + QString( GC_OK == retVal ? "SUCCESS" : "FAILURE" ) );
-}
-void MainWindow::on_pushButton_visionCalcFeats_clicked()
-{
-
 }
 #include "../algorithms/metadata.h"
 void MainWindow::on_pushButton_test_clicked()

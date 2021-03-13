@@ -33,10 +33,16 @@ using namespace boost;
 namespace fs = filesystem;
 namespace pt = property_tree;
 
+// forward declarations
+string &trim( string &str );
+string &ltrim( string &str );
+string &rtrim( string &str );
+string trim_copy( string const &str );
+
 namespace gc
 {
 
-GC_STATUS MetaData::GetExifData( const std::string filepath, const std::string tag, std::string &data )
+GC_STATUS MetaData::GetExifData( const string filepath, const string tag, string &data )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -55,16 +61,27 @@ GC_STATUS MetaData::GetExifData( const std::string filepath, const std::string t
         }
         else
         {
+            string strBuf;
             char buffer[ 256 ];
             while( nullptr != fgets( buffer, sizeof( buffer ), cmd ) )
             {
-                data += buffer;
+                strBuf += buffer;
             }
 #ifdef _WIN32
             _pclose( cmd );
 #else
             pclose( cmd );
 #endif
+            size_t pos = strBuf.find( ":" );
+            if ( string::npos == pos )
+            {
+                FILE_LOG( logERROR ) << "[MetaData::GetExifData] Invalid exif data (no \":\" found: " << strBuf;
+                retVal = GC_ERR;
+            }
+            else
+            {
+                data = trim_copy( strBuf.substr( pos + 1 ) );
+            }
         }
 
         // cout << endl << data << endl;
@@ -82,12 +99,12 @@ GC_STATUS MetaData::GetExifData( const std::string filepath, const std::string t
 
     return retVal;
 }
-GC_STATUS MetaData::GetMetadata( const std::string imgFilepath, std::string &jsonString )
+GC_STATUS MetaData::GetMetadata( const string imgFilepath, string &jsonString )
 {
     GC_STATUS retVal = GetExifData( imgFilepath, "ImageDescription", jsonString );
     return retVal;
 }
-GC_STATUS MetaData::ReadLineFindResult( const std::string imgFilepath, FindData &data )
+GC_STATUS MetaData::ReadLineFindResult( const string imgFilepath, FindData &data )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -95,7 +112,10 @@ GC_STATUS MetaData::ReadLineFindResult( const std::string imgFilepath, FindData 
     {
         string exifData;
         GC_STATUS retVal = GetExifData( imgFilepath, "ImageDescription", exifData );
-        retVal = ParseFindData( exifData, data );
+        if ( GC_OK == retVal )
+        {
+            retVal = ParseFindData( exifData, data );
+        }
     }
     catch( std::exception &e )
     {
@@ -105,7 +125,7 @@ GC_STATUS MetaData::ReadLineFindResult( const std::string imgFilepath, FindData 
 
     return retVal;
 }
-GC_STATUS MetaData::WriteLineFindResult( const std::string imgFilepath, const FindData data )
+GC_STATUS MetaData::WriteLineFindResult( const string imgFilepath, const FindData data )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -117,7 +137,12 @@ GC_STATUS MetaData::WriteLineFindResult( const std::string imgFilepath, const Fi
         {
             string cmdBuffer = "exiftool -overwrite_original -ImageDescription=\"" + jsonString + "\" \"" + imgFilepath + "\"";
             // cout << endl << cmdBuffer << endl;
-            std::system( cmdBuffer.c_str() );
+            int ret = std::system( cmdBuffer.c_str() );
+            if ( 0 != ret )
+            {
+                FILE_LOG( logERROR ) << "[MetaData::WriteLineFindResult] Command failed: " << cmdBuffer;
+                retVal = GC_ERR;
+            }
         }
     }
     catch( std::exception &e )
@@ -128,7 +153,7 @@ GC_STATUS MetaData::WriteLineFindResult( const std::string imgFilepath, const Fi
 
     return retVal;
 }
-GC_STATUS MetaData::ParseFindPointSetString( const pt::ptree &child, const std::string key, FindPointSet &ptSet )
+GC_STATUS MetaData::ParseFindPointSetString( const pt::ptree &child, const string key, FindPointSet &ptSet )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -160,7 +185,7 @@ GC_STATUS MetaData::ParseFindPointSetString( const pt::ptree &child, const std::
 
     return retVal;
 }
-GC_STATUS MetaData::ParseFindData( const std::string &metadata, FindData &data )
+GC_STATUS MetaData::ParseFindData( const string &metadata, FindData &data )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -173,11 +198,11 @@ GC_STATUS MetaData::ParseFindData( const std::string &metadata, FindData &data )
 
         pt::ptree top_level, child, subchild;
         pt::json_parser::read_json( ss, top_level );
-        data.findlineParams.imagePath = top_level.get< std::string >( "imagePath", "N/A" );
-        data.findlineParams.datetimeOriginal = top_level.get< std::string >( "datetimeOriginal", "1955-09-24T12:05:00" );
-        data.findlineParams.resultImagePath = top_level.get< std::string >( "resultImagePath", "N/A" );
-        data.findlineParams.datetimeProcessing = top_level.get< std::string >( "datetimeProcessing", "1955-09-24T12:05:00" );
-        data.findlineParams.calibFilepath = top_level.get< std::string >( "calibFilepath", "N/A" );
+        data.findlineParams.imagePath = top_level.get< string >( "imagePath", "N/A" );
+        data.findlineParams.datetimeOriginal = top_level.get< string >( "datetimeOriginal", "1955-09-24T12:05:00" );
+        data.findlineParams.resultImagePath = top_level.get< string >( "resultImagePath", "N/A" );
+        data.findlineParams.datetimeProcessing = top_level.get< string >( "datetimeProcessing", "1955-09-24T12:05:00" );
+        data.findlineParams.calibFilepath = top_level.get< string >( "calibFilepath", "N/A" );
         data.calibSettings.gridSize.width = top_level.get< int >( "calibSettings-gridSize-width", -1 );
         data.calibSettings.gridSize.height = top_level.get< int >( "calibSettings-gridSize-height", -1 );
         data.calibSettings.moveSearchRegionLft.x = top_level.get< int >( "calibSettings-moveSearchRegionLft-x", -1 );
@@ -247,11 +272,11 @@ GC_STATUS MetaData::ParseFindData( const std::string &metadata, FindData &data )
         data.findlineResult.calcLinePts.angleWorld = atan( ( data.findlineResult.calcLinePts.rgtWorld.y - data.findlineResult.calcLinePts.lftWorld.y ) /
                                                       ( data.findlineResult.calcLinePts.rgtWorld.x - data.findlineResult.calcLinePts.lftWorld.x ) ) * 180 / 3.14159265;
 
-        std::string buffer;
+        string buffer;
         subchild = child.get_child( "data-findlineResult-msgs" );
         BOOST_FOREACH( const pt::ptree::value_type &v, subchild )
         {
-            buffer = v.second.get_value< std::string >( "N/A" );
+            buffer = v.second.get_value< string >( "N/A" );
             data.findlineResult.msgs.push_back( buffer );
         }
     }
@@ -263,7 +288,7 @@ GC_STATUS MetaData::ParseFindData( const std::string &metadata, FindData &data )
 
     return retVal;
 }
-GC_STATUS MetaData::CreateFindPointSetString( const FindPointSet set, const std::string key, std::string &jsonString )
+GC_STATUS MetaData::CreateFindPointSetString( const FindPointSet set, const string key, string &jsonString )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -294,7 +319,7 @@ GC_STATUS MetaData::CreateFindPointSetString( const FindPointSet set, const std:
 
     return retVal;
 }
-GC_STATUS MetaData::FindResultToJsonString( const FindData data, std::string &jsonString )
+GC_STATUS MetaData::FindResultToJsonString( const FindData data, string &jsonString )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -347,9 +372,9 @@ GC_STATUS MetaData::FindResultToJsonString( const FindData data, std::string &js
         }
         ss << "   ],";
         ss << "   \\\"findlineResult\\\": {";
-        ss << "      \\\"data-findLineResult-findSuccess\\\": " << ( data.findlineResult.findSuccess ? std::string( "true" ) : std::string( "false" ) ) << ",";
+        ss << "      \\\"data-findLineResult-findSuccess\\\": " << ( data.findlineResult.findSuccess ? string( "true" ) : string( "false" ) ) << ",";
 
-        std::string buffer;
+        string buffer;
         retVal = CreateFindPointSetString( data.findlineResult.refMovePts, "data-findlineResult-refMovePts", buffer ); ss << buffer << ",";
         if ( GC_OK == retVal )
         {
@@ -401,9 +426,9 @@ GC_STATUS MetaData::FindResultToJsonString( const FindData data, std::string &js
 }
 // exifTimestamp example: 2012:09:30 15:38:49
 // isoTimeStamp example:  2019-09-15T20:08:12
-std::string MetaData::ConvertToLocalTimestamp( const std::string exifTimestamp )
+string MetaData::ConvertToLocalTimestamp( const string exifTimestamp )
 {
-    std::string isoTimestamp;
+    string isoTimestamp;
     try
     {
         if ( 19 != exifTimestamp.size() )
@@ -435,7 +460,7 @@ std::string MetaData::ConvertToLocalTimestamp( const std::string exifTimestamp )
     }
     return isoTimestamp;
 }
-GC_STATUS MetaData::Retrieve( const std::string filepath, ExifFeatures &exifFeat )
+GC_STATUS MetaData::GetExifImageData( const string filepath, ExifFeatures &exifFeat )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -456,7 +481,7 @@ GC_STATUS MetaData::Retrieve( const std::string filepath, ExifFeatures &exifFeat
                 if ( GC_OK == retVal )
                 {
                     exifFeat.imageDims.height = stoi( data );
-                    retVal = GetExifData( filepath, "Date/Time Original", data );
+                    retVal = GetExifData( filepath, "DateTimeOriginal", data );
                     if ( GC_OK == retVal )
                     {
                         exifFeat.captureTime = ConvertToLocalTimestamp( data );
@@ -487,7 +512,7 @@ GC_STATUS MetaData::Retrieve( const std::string filepath, ExifFeatures &exifFeat
     }
     catch( std::exception &e )
     {
-        FILE_LOG( logERROR ) << "[ExifMetadata::Retrieve] " << e.what();
+        FILE_LOG( logERROR ) << "[ExifMetadata::GetExifImageData] " << e.what();
         retVal = GC_EXCEPT;
     }
 
@@ -495,3 +520,28 @@ GC_STATUS MetaData::Retrieve( const std::string filepath, ExifFeatures &exifFeat
 }
 
 } // namespace gc
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// internal string trim methods
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+string &trim( string &str )
+{
+   return ltrim( rtrim( str ) );
+}
+string &ltrim( string &str )
+{
+  auto it2 =  find_if( str.begin() , str.end() , [](char ch){ return !isspace<char>(ch , locale::classic() ) ; } );
+  str.erase( str.begin() , it2);
+  return str;
+}
+string &rtrim( string & str )
+{
+  auto it1 =  find_if( str.rbegin() , str.rend() , [](char ch){ return !isspace<char>(ch , locale::classic() ) ; } );
+  str.erase( it1.base() , str.end() );
+  return str;
+}
+string trim_copy( string const &str )
+{
+   auto s = str;
+   return ltrim(rtrim(s));
+}

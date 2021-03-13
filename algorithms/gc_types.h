@@ -293,7 +293,8 @@ public:
     /**
      * @brief Constructor sets the object to an uninitialized state
      */
-    FindLineResult() : kalmanEstimateWorld( -999.0 ), kalmanEstimatePixel( -999.0 ) {}
+    FindLineResult()
+    {}
 
     /**
      * @brief Constructor to set the object to a valid state
@@ -309,8 +310,6 @@ public:
     FindLineResult( const bool findOk,
                     const std::string captureTime,
                     const cv::Point2d adjustedWaterLevel,
-                    const double kalmanEstimateLevelWorld,
-                    const double kalmanEstimateLevelPixel,
                     const FindPointSet lineEndPoints,
                     const FindPointSet moveRefPoints,
                     const FindPointSet moveFoundPoints,
@@ -320,8 +319,6 @@ public:
         findSuccess( findOk ),
         timestamp( captureTime ),
         waterLevelAdjusted( adjustedWaterLevel ),
-        kalmanEstimateWorld( kalmanEstimateLevelWorld ),
-        kalmanEstimatePixel( kalmanEstimateLevelPixel ),
         calcLinePts( lineEndPoints ),
         refMovePts( moveRefPoints ),
         foundMovePts( moveFoundPoints ),
@@ -339,8 +336,6 @@ public:
         findSuccess = false;
         timestamp = std::string( "1955-09-24T12:05:00" );
         waterLevelAdjusted = cv::Point2d( -9999999.9, -9999999.9 );
-        kalmanEstimateWorld = -999.0;
-        kalmanEstimatePixel = -999.0;
         calcLinePts.clear();
         refMovePts.clear();
         foundMovePts.clear();
@@ -352,8 +347,6 @@ public:
     bool findSuccess;                       ///< true=Successful find, false=Failed find
     std::string timestamp;                  ///< time of image capture
     cv::Point2d waterLevelAdjusted;         ///< World coordinate water level adjust for any detected motion of the calibration target
-    double kalmanEstimateWorld;             ///< Kalman estimate (world) if available, -999.0 if not
-    double kalmanEstimatePixel;             ///< Kalman estimate (pixel) if available, -999.0 if not
     FindPointSet calcLinePts;               ///< Found water level line
     FindPointSet refMovePts;                ///< Line between the move targets at the time of calibration
     FindPointSet foundMovePts;              ///< Line between the move targets at the time of the current line find

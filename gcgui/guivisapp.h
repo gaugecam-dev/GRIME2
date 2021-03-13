@@ -26,7 +26,6 @@
 #include <boost/signals2.hpp>
 #include "../algorithms/visapp.h"
 #include "../algorithms/visappfeats.h"
-#include "../algorithms/labelroi.h"
 
 static const cv::Size MAX_IMAGE_SIZE = cv::Size( 1280, 1280 );
 
@@ -72,7 +71,7 @@ public:
     GC_STATUS SetImage( const cv::Mat matImg, const bool bIsBGR = true );
     GC_STATUS SetImage( const cv::Size sizeImg, const size_t nStride, const int nType, uchar *pPix, const bool bIsBGR = true );
     GC_STATUS GetImage( const cv::Size sizeImg, const size_t nStride, const int nType, uchar *pPix,
-                        const IMG_BUFFERS nImgColor, const IMG_DISPLAY_OVERLAYS overlays, const int roiIndex = -1 );
+                        const IMG_BUFFERS nImgColor, const IMG_DISPLAY_OVERLAYS overlays );
     cv::Mat &GetImageFromType( IMG_BUFFERS type );
 
     GC_STATUS LoadImageToApp( const cv::Mat img );
@@ -91,19 +90,6 @@ public:
     GC_STATUS CalcLinesThreadFinish();
     bool isRunningFindLine();
 
-    // kalman app methods
-    GC_STATUS ApplyKalman( const std::string inputCSV, const std::string outputCSV, const std::string timestampFormat,
-                           const int inputTimestampCol, const int inputMeasureCol );
-
-    // recipe creation and feature calculation
-    void ClearROIFeatList();
-    GC_STATUS ReadCalcFeatures( const std::string filepath );
-    GC_STATUS WriteCalcFeatures( const std::string filepath );
-    cv::Rect GetAnchorROI();
-    GC_STATUS SetAnchorRef( const std::string imgFilepath, const cv::Rect roi );
-    GC_STATUS LoadROIFeatFromJson( const std::string filepath, std::vector< LabelROIItem > &items );
-    GC_STATUS CalcFeaturesInFolder( const std::string folder, const FeatCalcParams params, const bool isFolderOfImages );
-
     // signals
     VisAppMsgSig sigMessage;
     VisAppProgressSig sigProgress;
@@ -111,7 +97,6 @@ public:
 
 private:
     VisApp m_visApp;
-    VisAppFeats m_visAppFeats;
     cv::Mat m_matGray;
     cv::Mat m_matColor;
     cv::Mat m_matDisplay;
@@ -122,11 +107,9 @@ private:
     bool m_bShowRuler;
 
     std::vector< std::string > m_vecImgPaths;
-    std::vector< LabelROIItem > m_labeledROIitems;
 
     std::string m_strConfigFolder;
     std::string m_strCurrentImageFilepath;
-    std::string m_instanceCacheFolder;
 
     FILE *m_pFileLog;
 
@@ -135,7 +118,7 @@ private:
                        const int nType, uchar *pPix, const bool bToRGB );
     GC_STATUS GetImageGray( cv::Mat matImgSrc, const cv::Size sizeImg, const int nStride,
                       const int nType, uchar *pPix );
-    GC_STATUS GetImageOverlay( const IMG_BUFFERS nImgColor, const IMG_DISPLAY_OVERLAYS overlays = OVERLAYS_NONE, const int roiIndex = -1 );
+    GC_STATUS GetImageOverlay( const IMG_BUFFERS nImgColor, const IMG_DISPLAY_OVERLAYS overlays = OVERLAYS_NONE );
     GC_STATUS InitBuffers( const cv::Size sizeImg );
     GC_STATUS AdjustImageSize( const cv::Mat &matSrc, cv::Mat &matDst );
     GC_STATUS RemoveAllFilesInFolder( const std::string folderpath );

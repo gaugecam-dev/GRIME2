@@ -124,21 +124,6 @@ GC_STATUS GuiVisApp::InitBuffers( const Size sizeImg )
 GC_STATUS GuiVisApp::Destroy()
 {
     GC_STATUS retVal = GC_OK;
-    try
-    {
-        fs::path p( m_instanceCacheFolder );
-        bool ret = fs::remove_all( p );
-        if ( !ret )
-        {
-            FILE_LOG( logERROR ) << " Could not remove cache for grime2";
-            retVal = GC_ERR;
-        }
-    }
-    catch( const Exception &e )
-    {
-        FILE_LOG( logERROR ) << __func__ << "EXCEPTION: " << string( e.what() );
-        retVal = GC_EXCEPT;
-    }
     return retVal;
 }
 bool GuiVisApp::IsInitialized()
@@ -245,12 +230,12 @@ cv::Mat &GuiVisApp::GetImageFromType( IMG_BUFFERS type )
     return *pMatRet;
 }
 GC_STATUS GuiVisApp::GetImage(const Size sizeImg, const size_t nStride, const int nType,
-                               uchar *pPix, const IMG_BUFFERS nImgColor, const IMG_DISPLAY_OVERLAYS overlays, const int roiIndex )
+                               uchar *pPix, const IMG_BUFFERS nImgColor, const IMG_DISPLAY_OVERLAYS overlays )
 {
     GC_STATUS retVal = GC_OK;
     try
     {
-        retVal = GetImageOverlay( nImgColor, overlays, roiIndex );
+        retVal = GetImageOverlay( nImgColor, overlays );
         if ( 0 != retVal )
         {
             FILE_LOG( logWARNING ) << "Could not perform GetImageOverlay()";
@@ -268,7 +253,7 @@ GC_STATUS GuiVisApp::GetImage(const Size sizeImg, const size_t nStride, const in
     }
     return retVal;
 }
-GC_STATUS GuiVisApp::GetImageOverlay( const IMG_BUFFERS nImgColor, const IMG_DISPLAY_OVERLAYS overlays, const int roiIndex )
+GC_STATUS GuiVisApp::GetImageOverlay( const IMG_BUFFERS nImgColor, const IMG_DISPLAY_OVERLAYS overlays )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -292,45 +277,9 @@ GC_STATUS GuiVisApp::GetImageOverlay( const IMG_BUFFERS nImgColor, const IMG_DIS
             {
                 retVal = m_visApp.DrawLineFindOverlay( m_matDisplay, m_matDisplay );
             }
-            if ( overlays & FEATROIS )
-            {
-                if ( !m_labeledROIitems.empty() && 0 <= roiIndex && static_cast< int >( m_labeledROIitems.size() ) >= roiIndex )
-                {
-                    if ( "polygon" == m_labeledROIitems[ roiIndex ].roi_type || "rect" == m_labeledROIitems[ roiIndex].roi_type )
-                    {
-                        drawContours( m_matDisplay, vector< vector< Point > >( 1, m_labeledROIitems[ roiIndex ].contour ), -1, Scalar( 255, 255, 255 ), 7 );
-                        drawContours( m_matDisplay, vector< vector< Point > >( 1, m_labeledROIitems[ roiIndex ].contour ), -1, m_labeledROIitems[ roiIndex ].color, 3 );
-                    }
-                    else if ( "ellipse" == m_labeledROIitems[ roiIndex ].roi_type )
-                    {
-                        ellipse( m_matDisplay, m_labeledROIitems[ roiIndex ].rotRect, Scalar( 255, 255, 255 ), 7 );
-                        ellipse( m_matDisplay, m_labeledROIitems[ roiIndex ].rotRect, m_labeledROIitems[ roiIndex ].color, 3 );
-                    }
-                }
-            }
-            if ( overlays & MOVEMENT )
-            {
-                double angle;
-                Point ptOrig, ptMove;
-                GC_STATUS retTemp = m_visAppFeats.CalcMovement( m_matGray, ptOrig, ptMove, angle );
-                if ( GC_OK == retTemp )
-                {
-                    circle( m_matDisplay, ptOrig, 13, Scalar( 0, 255, 0 ), 5 );
-                    circle( m_matDisplay, ptMove, 7, Scalar( 0, 0, 255 ), FILLED );
-                    if ( ( ptOrig.x != ptMove.x ) || ( ptOrig.y != ptMove.y ) )
-                    {
-                        line( m_matDisplay, ptOrig, ptMove, Scalar( 0, 255, 255 ), 3 );
-                    }
-                    putText( m_matDisplay, "Angle=" + to_string( angle ), Point( 10, 70 ), FONT_HERSHEY_PLAIN, 5.0, Scalar( 0, 255, 255 ), 7 );
-                }
-                else
-                {
-                    putText( m_matDisplay, "No move model defined", Point( 120, 120 ), FONT_HERSHEY_PLAIN, 5.0, Scalar( 0, 0, 255 ), 7 );
-                }
-            }
         }
     }
-    catch( Exception &e )
+    catch( const Exception &e )
     {
         FILE_LOG( logERROR ) << __func__ << "EXCEPTION: " << string( e.what() );
         retVal = GC_EXCEPT;
@@ -670,8 +619,38 @@ GC_STATUS GuiVisApp::AdjustImageSize( const Mat &matSrc, Mat &matDst )
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 GC_STATUS GuiVisApp::GetMetadata( const std::string imgFilepath, std::string &data )
 {
-    GC_STATUS retVal = m_visApp.GetImageMetadata( imgFilepath, data );
-    sigMessage( string( "Load calibration: " ) + ( GC_OK == retVal ? "SUCCESS" : "FAILURE" ) );
+    std::string metadata;
+    GC_STATUS retVal = m_visApp.GetImageMetadata( imgFilepath, metadata );
+    if ( GC_OK != retVal )
+    {
+        metadata = "FAIL: Could not retrieve";
+    }
+    stringstream ss;
+    ss << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
+    ss << "exif image features" << endl;
+    ss << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
+    ExifFeatures exifFeats;
+    retVal = m_visApp.GetExifImageData( imgFilepath, exifFeats );
+    if ( GC_OK == retVal )
+    {
+        ss << "Capture time: " << exifFeats.captureTime << endl;
+        ss << "Exposure time: " << exifFeats.exposureTime << endl;
+        ss << "fNumber: " << exifFeats.fNumber << endl;
+        ss << "ISO speed rating: " << exifFeats.isoSpeedRating << endl;
+        ss << "Image width: " << exifFeats.imageDims.width << endl;
+        ss << "Image height: " << exifFeats.imageDims.height << endl;
+        ss << "Shutter speed: " << exifFeats.shutterSpeed << endl;
+    }
+    else
+    {
+        ss << "FAIL: Could not retrieve" << endl;
+    }
+    ss << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
+    ss << "image description" << endl;
+    ss << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
+
+    data = ss.str() + metadata;
+    sigMessage( string( "Metadata retrieval: " ) + ( GC_OK == retVal ? "SUCCESS" : "FAILURE" ) );
     return retVal;
 }
 GC_STATUS GuiVisApp::LoadCalib( const std::string calibJson )
@@ -706,13 +685,23 @@ GC_STATUS GuiVisApp::CalcLine( const FindLineParams params, FindLineResult &resu
     }
     else if ( FROM_EXIF == params.timeStampType )
     {
-        FILE_LOG( logWARNING ) << "Get timestamp from exif not yet implemented";
-        retVal = GC_ERR;
+        string timestampTemp;
+        retVal = m_visApp.GetExifTimestamp( params.imagePath, timestampTemp );
+        if ( GC_OK == retVal )
+        {
+            retVal = GcTimestampConvert::GetTimestampFromString( timestampTemp,
+                                                                 params.timeStampStartPos, params.timeStampLength,
+                                                                 params.timeStampFormat, timestamp );
+        }
     }
     else if ( FROM_EXTERNAL == params.timeStampType )
     {
         FILE_LOG( logERROR ) << "Timestamp passed into method not yet implemented";
         retVal = GC_ERR;
+    }
+    if ( GC_OK != retVal )
+    {
+        FILE_LOG( logWARNING ) << "Unable to read timestamp";
     }
     retVal = m_visApp.CalcLine( params, timestamp, result );
     if ( GC_OK == retVal )
@@ -894,19 +883,16 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                     resultFolderAdj += '/';
 
                 KalmanItem item;
-                GC_STATUS retTimeGet;
                 KalmanFilter kf( 4, 2, 0 );
                 kf.transitionMatrix = ( Mat_< float >( 4, 4 ) << 1,0,1,0,  0,1,0,1,  0,0,1,0,  0,0,0,1 );
                 Mat_< float > measurement( 2, 1 );
                 measurement.setTo( Scalar( 0 ) );
 
-                bool isFirstKalman = true;
-                bool gotKalmanEstimate;
-
                 FindData findData;
                 findData.calibSettings = m_visApp.GetCalibModel();
                 findData.findlineParams = params;
 
+                GC_STATUS retTimeGet;
                 string tmStr, timestamp, resultString, graphData;
                 for ( size_t i = 0; i < images.size(); ++i )
                 {
@@ -920,8 +906,6 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                     else
                     {
                         findData.findlineResult.clear();
-                        gotKalmanEstimate = false;
-                        item = KalmanItem();
                         string filename = fs::path( images[ i ] ).filename().string();
                         timestamp = "yyyy-mm-ddTHH:MM:SS";
                         if ( FROM_FILENAME == params.timeStampType )
@@ -930,6 +914,17 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                                                                                  params.timeStampStartPos, params.timeStampLength,
                                                                                  params.timeStampFormat, timestamp );
                         }
+                        else if ( FROM_EXIF == params.timeStampType )
+                        {
+                            string timestampTemp;
+                            retVal = m_visApp.GetExifTimestamp( params.imagePath, timestampTemp );
+                            if ( GC_OK == retVal )
+                            {
+                                retVal = GcTimestampConvert::GetTimestampFromString( timestampTemp,
+                                                                                     params.timeStampStartPos, params.timeStampLength,
+                                                                                     params.timeStampFormat, timestamp );
+                            }
+                        }
                         img = imread( images[ i ], IMREAD_GRAYSCALE );
                         if ( img.empty() )
                         {
@@ -937,12 +932,7 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                         }
                         else
                         {
-                            if ( FROM_EXIF == params.timeStampType )
-                            {
-                                FILE_LOG( logWARNING ) << "Get timestamp from exif not yet implemented";
-                                retVal = GC_ERR;
-                            }
-                            else if ( FROM_EXTERNAL == params.timeStampType )
+                            if ( FROM_EXTERNAL == params.timeStampType )
                             {
                                 FILE_LOG( logERROR ) << "Timestamp passed into method not yet implemented";
                                 retVal = GC_ERR;
@@ -969,43 +959,17 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                                 retTimeGet = GcTimestampConvert::ConvertDateToSeconds( fs::path( images[ i ] ).filename().string(),
                                                                                        params.timeStampStartPos, params.timeStampLength,
                                                                                        params.timeStampFormat, item.secsSinceEpoch );
-                                sprintf( buffer, "Timestamp=%s\nSecs from epoch=%lld",
-                                         findData.findlineResult.timestamp.c_str(), item.secsSinceEpoch );
-                                msg += string( buffer );
-                                item.measurement = findData.findlineResult.waterLevelAdjusted.y;
                                 if ( GC_OK == retTimeGet )
                                 {
-                                    if ( isFirstKalman && -1.0 < item.measurement )
-                                    {
-                                        item.prediction = item.measurement;
-                                        kf.statePre.at< float >( 0 ) = static_cast< float >( item.secsSinceEpoch );
-                                        kf.statePre.at< float >( 1 ) = static_cast< float >( item.measurement );
-                                        kf.statePre.at< float >( 2 ) = 0.0f;
-                                        kf.statePre.at< float >( 3 ) = 0.0f;
-
-                                        kf.statePost = kf.statePre;
-
-                                        setIdentity( kf.measurementMatrix );
-                                        setIdentity( kf.processNoiseCov, Scalar::all( 1e-6 ) );
-                                        setIdentity( kf.measurementNoiseCov, Scalar::all( 20 ) );
-                                        setIdentity( kf.errorCovPost, Scalar::all( 1 ) );
-                                        isFirstKalman = false;
-                                        gotKalmanEstimate = true;
-                                    }
-                                    else
-                                    {
-                                        if ( -1.0 < item.measurement )
-                                        {
-                                            Mat prediction = kf.predict();
-                                            measurement( 0 ) = static_cast< float >( item.secsSinceEpoch );
-                                            measurement( 1 ) = static_cast< float >( item.measurement );
-
-                                            Mat estimated = kf.correct( measurement );
-                                            item.prediction = estimated.at< float >( 1 );
-                                            gotKalmanEstimate = true;
-                                        }
-                                    }
+                                    sprintf( buffer, "Timestamp=%s\nSecs from epoch=%lld",
+                                             findData.findlineResult.timestamp.c_str(), item.secsSinceEpoch );
                                 }
+                                else
+                                {
+                                    sprintf( buffer, "Timestamp=FAILED CONVERSION\nSecs from epoch=FAILED CONVERSION" );
+                                }
+                                msg += string( buffer );
+                                item.measurement = findData.findlineResult.waterLevelAdjusted.y;
                             }
                             else
                             {
@@ -1022,10 +986,6 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                             if ( !params.resultImagePath.empty() )
                             {
                                 Mat color;
-                                Point2d tempPix, tempWorld = findData.findlineResult.waterLevelAdjusted;
-                                findData.findlineResult.kalmanEstimateWorld =tempWorld.y = item.prediction;
-                                retVal = m_visApp.WorldToPixel( tempWorld, tempPix );
-                                findData.findlineResult.kalmanEstimatePixel = GC_OK == retVal ? tempPix.y : -999.0;
                                 retVal = m_visApp.DrawLineFindOverlay( img, color, findData.findlineResult );
                                 if ( GC_OK == retVal )
                                 {
@@ -1068,42 +1028,6 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
 
     return retVal;
 }
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-// Application area -- Kalman filter
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-GC_STATUS GuiVisApp::ApplyKalman( const std::string inputCSV, const std::string outputCSV,
-                                  const std::string timestampFormat, const int inputTimestampCol, const int inputMeasureCol )
-{
-    GC_STATUS retVal = GC_OK;
-
-    return retVal;
-}
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-// Application area -- Recipe creation
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-GC_STATUS GuiVisApp::ReadCalcFeatures( const std::string filepath ) { return m_visAppFeats.ReadSettings( filepath ); }
-GC_STATUS GuiVisApp::WriteCalcFeatures( const std::string filepath ) { return m_visAppFeats.WriteSettings( filepath ); }
-cv::Rect GuiVisApp::GetAnchorROI() { return m_visAppFeats.GetAnchorROI(); }
-GC_STATUS GuiVisApp::SetAnchorRef( const std::string imgFilepath, const cv::Rect roi )
-{
-    GC_STATUS retVal = m_visAppFeats.SetAnchorRef( imgFilepath, roi );
-    return retVal;
-}
-void GuiVisApp::ClearROIFeatList() { m_labeledROIitems.clear(); }
-GC_STATUS GuiVisApp::LoadROIFeatFromJson( const std::string filepath, std::vector< LabelROIItem > &items )
-{
-    GC_STATUS retVal = LabelROI::Load( filepath, items );
-    if ( GC_OK == retVal )
-    {
-        ClearROIFeatList();
-        for ( size_t i = 0; i < items.size(); ++i )
-        {
-            m_labeledROIitems.push_back( items[ i ] );
-        }
-    }
-    return retVal;
-}
-
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // Utility methods
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -80,7 +80,6 @@ private slots:
     void on_pushButton_visionCalibrate_clicked();
     void on_toolButton_calibVisionTarget_csv_browse_clicked();
     void on_toolButton_calibVisionResult_json_browse_clicked();
-    void on_toolButton_gaugecamExecutablePath_browse_clicked();
     void on_toolButton_findLineTopFolder_browse_clicked();
     void on_toolButton_findLine_resultCSVFile_browse_clicked();
     void on_toolButton_findLine_annotatedResultFolder_browse_clicked();
@@ -88,15 +87,6 @@ private slots:
     void on_pushButton_findLine_processFolder_clicked();
     void on_pushButton_findLine_stopFolderProcess_clicked();
     void on_pushButton_showImageMetadata_clicked();
-    void on_actionToggleGraph_triggered();
-    void on_pushButton_runKalman_clicked();
-    void on_toolButton_featureAnnotationFile_browse_clicked();
-    void on_lineEdit_featureAnnotationFile_editingFinished();
-    void on_pushButton_visionCalcFeats_clicked();
-    void on_checkBox_featureShowROIs_clicked();
-    void on_pushButton_visionSetAnchorRef_clicked();
-    void on_toolButton_featureAnchorROI_image_browse_clicked();
-    void on_checkBox_featuresShowAnchorROI_toggled(bool checked);
 
     void on_pushButton_test_clicked();
 

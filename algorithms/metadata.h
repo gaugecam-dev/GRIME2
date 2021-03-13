@@ -101,10 +101,11 @@ public:
     GC_STATUS GetMetadata( const std::string imgFilepath, std::string &jsonString );
 
     // TODO Write doxygen comments
-    GC_STATUS Retrieve( const std::string filepath, ExifFeatures &exifFeat );
+    GC_STATUS GetExifImageData( const std::string filepath, ExifFeatures &exifFeat );
+    GC_STATUS GetExifData( const std::string filepath, const std::string tag, std::string &data );
+
 private:
     static const std::string Version() { return "0.0.0.1"; }
-    GC_STATUS GetExifData( const std::string filepath, const std::string tag, std::string &data );
     GC_STATUS ParseFindData( const std::string &metadata, FindData &data );
     GC_STATUS ParseFindPointSetString( const boost::property_tree::ptree &child, const std::string key, FindPointSet &ptSet );
     GC_STATUS FindResultToJsonString( const FindData data, std::string &jsonString );

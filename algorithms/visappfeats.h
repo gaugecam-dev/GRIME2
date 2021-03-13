@@ -124,17 +124,9 @@ public:
     GC_STATUS SetAnchorRef( const string imgRefFilepath, const cv::Rect rect );
     GC_STATUS SetFeatROIs( const std::vector< LabelROIItem > &items );
     void SetCalcParams( const FeatCalcParams &params ) { featCalcParams = params; }
-    GC_STATUS Calculate( const FeatCalcItem &item, FeatureSet &feats );
     GC_STATUS CreateCSVFileAndHeader( const std::string filepath, const FeatureSet &featSet );
     GC_STATUS WriteFeatSetToCSV( const std::string filepath, const FeatureSet &featSet );
     GC_STATUS ReadCSV( const std::string filepath, std::vector< FeatureSet > &featSets );
-    GC_STATUS MergeSensorData( const std::string featFilepath, const std::string sensorDataFilepath,
-                               const std::string mergeFilepath,  const bool isSensorData, const std::string noSensorDataFilepath = "" );
-    GC_STATUS SplitTestTrainSets( const std::string allCSV, const double percentTrain,
-                                     const std::string trainCSV, const std::string testCSV );
-    GC_STATUS SplitTestTrainSets( const std::string allCSV, const std::string setFolder, const int beforeCount,
-                                     const int afterCount, const size_t timeStampCol, const std::string testStartTimeStamp,
-                                     const std::string testEndTimeStamp );
 
 private:
     FindAnchor anchor;
