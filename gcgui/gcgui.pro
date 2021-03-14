@@ -65,9 +65,9 @@ HEADERS += \
         ../algorithms/metadata.h \
         ../algorithms/timestampconvert.h \
         ../algorithms/visapp.h \
+        ../algorithms/wincmd.h \
         guivisapp.h \
-        mainwindow.h \
-        wincmd.h
+        mainwindow.h
 
 FORMS += \
         mainwindow.ui

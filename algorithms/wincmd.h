@@ -2,9 +2,11 @@
 #define WINCMD_H
 
 #ifdef WIN32
+#include <string>
 #include "Windows.h"
+#include "processthreadsapi.h"
 
-int runCmd(const char* cmd, std::string& outOutput)
+int runCmd( const char *cmd, std::string& outOutput )
 {
 
     HANDLE g_hChildStd_OUT_Rd = NULL;
@@ -23,7 +25,7 @@ int runCmd(const char* cmd, std::string& outOutput)
     if (!SetHandleInformation(g_hChildStd_OUT_Rd, HANDLE_FLAG_INHERIT, 0)) { return 1; } // Ensure the read handle to the pipe for STDOUT is not inherited
 
     PROCESS_INFORMATION piProcInfo;
-    STARTUPINFO siStartInfo;
+    STARTUPINFOA siStartInfo;
     bool bSuccess = FALSE;
 
     // Set up members of the PROCESS_INFORMATION structure.
@@ -32,13 +34,15 @@ int runCmd(const char* cmd, std::string& outOutput)
     // Set up members of the STARTUPINFO structure.
     // This structure specifies the STDERR and STDOUT handles for redirection.
     ZeroMemory(&siStartInfo, sizeof(STARTUPINFO));
-    siStartInfo.cb = sizeof(STARTUPINFO);
+    siStartInfo.cb = sizeof(STARTUPINFOA);
     siStartInfo.hStdError  = g_hChildStd_ERR_Wr;
     siStartInfo.hStdOutput = g_hChildStd_OUT_Wr;
     siStartInfo.dwFlags |= STARTF_USESTDHANDLES;
 
+    // std::wstring wstr = charToWString( cmd );
+
     // Create the child process.
-    bSuccess = CreateProcess(
+    bSuccess = CreateProcessA(
         NULL,             // program name
         (char*)cmd,       // command line
         NULL,             // process security attributes
