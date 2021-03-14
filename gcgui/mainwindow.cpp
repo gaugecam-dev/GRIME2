@@ -1195,15 +1195,8 @@ void MainWindow::on_pushButton_showImageMetadata_clicked()
         {
             std::string data;
             GC_STATUS retVal = m_visApp.GetMetadata( strFullPath.toStdString(), data );
-            if ( GC_OK == retVal && !data.empty() )
-            {
-                ui->textEdit_msgs->setText( data.c_str() );
-            }
-            else
-            {
-                ui->textEdit_msgs->setText( "Could not retrieve meta data for" );
-                ui->textEdit_msgs->append( "   " + strFullPath );
-            }
+            ui->textEdit_msgs->setText( data.c_str() );
+            ui->textEdit_msgs->append( "All data retrieved: " + QString( GC_OK == retVal ? "SUCCESS" : "FAILURE" ) );
         }
     }
 }
@@ -1274,7 +1267,4 @@ int MainWindow::AddRow( const string row_string )
 #include "../algorithms/metadata.h"
 void MainWindow::on_pushButton_test_clicked()
 {
-    gc::MetaData meta;
-    string result;
-    meta.GetMetadata( "/home/kchapman/Projects/gaugecam/trunk/gcgui/config/2012_demo/06/NRmarshDN-12-06-30-09-45.jpg", result );
 }

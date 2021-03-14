@@ -77,22 +77,6 @@ public:
     ~MetaData() {}
 
     /**
-     * @brief Reads metadata from an image to a FindData object
-     * @param imgFilepath Filepath of the image from which to extract the metadata
-     * @param data Object to which to return the metadata
-     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
-     */
-    GC_STATUS ReadLineFindResult( const std::string imgFilepath, FindData &data );
-
-    /**
-     * @brief WriteLineFindResult Writes FindData values to an image as metadata in json format
-     * @param imgFilepath Filepath of the image to which the data is written
-     * @param data Object that holds the data to be written
-     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
-     */
-    GC_STATUS WriteLineFindResult( const std::string imgFilepath, const FindData data );
-
-    /**
      * @brief Retrieves the data to an std::string in the json format in which it was written
      * @param imgFilepath Filepath of the image from which to retrieve the metadata json string
      * @param jsonString std::string to which the metadata is retrieved
@@ -106,10 +90,6 @@ public:
 
 private:
     static const std::string Version() { return "0.0.0.1"; }
-    GC_STATUS ParseFindData( const std::string &metadata, FindData &data );
-    GC_STATUS ParseFindPointSetString( const boost::property_tree::ptree &child, const std::string key, FindPointSet &ptSet );
-    GC_STATUS FindResultToJsonString( const FindData data, std::string &jsonString );
-    GC_STATUS CreateFindPointSetString( const FindPointSet set, const std::string key, std::string &jsonString );
     std::string ConvertToLocalTimestamp( const std::string exifTimestamp );
 };
 

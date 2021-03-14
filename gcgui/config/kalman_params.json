@@ -1,8 +1,0 @@
-{
-    "datetime_format": "yyyy-mm-ddTHH:MM:SS",
-    "output_csv_filepath": "/var/tmp/gaugecam/kalman_output.csv",
-    "input_csv_filepath": "/media/kchapman/ThriveArchive/temp/2020_11_21_grime2_ncmarch_results/stage_results_raw.csv",
-    "first_data_row": 1,
-    "datetime_column": 1,
-    "measurement_column": 2
-}

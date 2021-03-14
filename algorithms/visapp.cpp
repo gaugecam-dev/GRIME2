@@ -217,38 +217,6 @@ GC_STATUS VisApp::GetExifImageData( const std::string filepath, ExifFeatures &ex
     }
     return retVal;
 }
-GC_STATUS VisApp::GetImageMetadata( const std::string filepath, std::string &data )
-{
-    GC_STATUS retVal = m_metaData.GetMetadata( filepath, data );
-    if ( GC_OK == retVal && !data.empty() )
-    {
-        FILE_LOG( logINFO ) << endl << data;
-    }
-    else
-    {
-        FILE_LOG( logERROR ) << "[VisApp::ListMetadata] Could  not retrieve metadata from image " << filepath;
-    }
-    return retVal;
-}
-GC_STATUS VisApp::ListImageMetadata( const string imgFilepath )
-{
-    string jsonString;
-    GC_STATUS retVal = m_metaData.GetMetadata( imgFilepath, jsonString );
-    if ( GC_OK == retVal )
-    {
-        FILE_LOG( logINFO ) << endl << jsonString;
-    }
-    else
-    {
-        FILE_LOG( logERROR ) << "[VisApp::ListMetadata] Could  not retrieve metadata from image " << imgFilepath;
-    }
-    return retVal;
-}
-GC_STATUS VisApp::AddMetadataToImage( const std::string imgFilepath, const FindData data )
-{
-    GC_STATUS retVal = m_metaData.WriteLineFindResult( imgFilepath, data );
-    return retVal;
-}
 FindLineResult VisApp::GetFindLineResult()
 {
     return m_findLineResult;
@@ -519,7 +487,6 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, const string timestamp,
                                                 result.waterLevelAdjusted.y = result.calcLinePts.ctrWorld.y - result.offsetMovePts.ctrWorld.y;
                                                 snprintf( buffer, 256, "Level (adj): %.3f", result.waterLevelAdjusted.y );
                                                 result.msgs.push_back( buffer );
-                                                retVal = m_metaData.WriteLineFindResult( params.imagePath, FindData( m_calib.GetModel(), params, result ) );
                                             }
                                         }
                                     }
@@ -602,96 +569,6 @@ GC_STATUS VisApp::ReadWorldCoordsFromCSV( const string csvFilepath, vector< vect
 
     return retVal;
 }
-GC_STATUS VisApp::DrawBothOverlays( const std::string imageFilepathIn, const std::string imageFilepathOut )
-{
-    GC_STATUS retVal = DrawCalibOverlay( imageFilepathIn, imageFilepathOut );
-    if ( GC_OK == retVal )
-    {
-        FindData findData;
-        GC_STATUS retVal = m_metaData.ReadLineFindResult( imageFilepathIn, findData );
-        if ( GC_OK == retVal )
-        {
-            try
-            {
-                Mat dst, src = imread( imageFilepathOut );
-                retVal = m_findLine.DrawResult( src, dst, findData.findlineResult );
-                if ( GC_OK == retVal )
-                {
-                    bool isOK = imwrite( imageFilepathOut, dst );
-                    if ( !isOK )
-                    {
-                        FILE_LOG( logERROR ) << "[VisApp::DrawBothOverlays] Could not write output image" << imageFilepathOut;
-                        retVal = GC_ERR;
-                    }
-                }
-            }
-            catch( Exception &e )
-            {
-                FILE_LOG( logERROR ) << "[VisApp::DrawBothOverlays] " << e.what();
-                FILE_LOG( logERROR ) << "Images in=" << imageFilepathIn << " out=" << imageFilepathOut;
-                retVal = GC_EXCEPT;
-            }
-        }
-    }
-
-    return retVal;
-}
-GC_STATUS VisApp::DrawCalibOverlay( const std::string imageFilepathIn, const std::string imageFilepathOut )
-{
-    GC_STATUS retVal = GC_OK;
-    try
-    {
-        Mat matOut;
-        retVal = DrawCalibOverlay( imageFilepathIn, matOut );
-        if ( GC_OK == retVal )
-        {
-            bool bRet = imwrite( imageFilepathOut, matOut );
-            if ( !bRet )
-            {
-                FILE_LOG( logERROR ) << "[VisApp::CreateCalibOverlayImage] Could not write calib overlay to " << imageFilepathOut;
-                retVal = GC_ERR;
-            }
-        }
-    }
-    catch( Exception &e )
-    {
-        FILE_LOG( logERROR ) << "[VisApp::CreateCalibOverlayImage] " << e.what();
-        retVal = GC_EXCEPT;
-    }
-
-    return retVal;
-}
-GC_STATUS VisApp::DrawCalibOverlay( const std::string imageFilepathIn, cv::Mat &imgMatOut )
-{
-    GC_STATUS retVal = GC_OK;
-    try
-    {
-        FindData findData;
-        GC_STATUS retVal = m_metaData.ReadLineFindResult( imageFilepathIn, findData );
-        if ( GC_OK == retVal )
-        {
-            try
-            {
-                Mat src = imread( imageFilepathIn );
-                retVal = m_calib.Calibrate( findData.calibSettings.pixelPoints, findData.calibSettings.worldPoints,
-                                            findData.calibSettings.gridSize, src.size(), src, imgMatOut, true );
-            }
-            catch( Exception &e )
-            {
-                FILE_LOG( logERROR ) << "[VisApp::DrawCalibOverlay] " << e.what();
-                FILE_LOG( logERROR ) << "Image in=" << imageFilepathIn;
-                retVal = GC_EXCEPT;
-            }
-        }
-    }
-    catch( Exception &e )
-    {
-        FILE_LOG( logERROR ) << "[VisApp::CreateCalibOverlayImage] " << e.what();
-        retVal = GC_EXCEPT;
-    }
-
-    return retVal;
-}
 GC_STATUS VisApp::DrawCalibOverlay( const cv::Mat matIn, cv::Mat &imgMatOut )
 {
     GC_STATUS retVal = GC_OK;
@@ -717,36 +594,6 @@ GC_STATUS VisApp::DrawLineFindOverlay( const cv::Mat &img, cv::Mat &imgOut )
 GC_STATUS VisApp::DrawLineFindOverlay( const cv::Mat &img, cv::Mat &imgOut, const FindLineResult findLineResult )
 {
     GC_STATUS retVal = m_findLine.DrawResult( img, imgOut, findLineResult );
-    return retVal;
-}
-GC_STATUS VisApp::DrawLineFindOverlay( const std::string imageFilepathIn, const std::string imageFilepathOut )
-{
-    FindData findData;
-    GC_STATUS retVal = m_metaData.ReadLineFindResult( imageFilepathIn, findData );
-    if ( GC_OK == retVal )
-    {
-        try
-        {
-            Mat dst, src = imread( imageFilepathIn );
-            retVal = m_findLine.DrawResult( src, dst, findData.findlineResult );
-            if ( GC_OK == retVal )
-            {
-                bool isOK = imwrite( imageFilepathOut, dst );
-                if ( !isOK )
-                {
-                    FILE_LOG( logERROR ) << "[VisApp::DrawLineResult] Could not write output image" << imageFilepathOut;
-                    retVal = GC_ERR;
-                }
-            }
-        }
-        catch( Exception &e )
-        {
-            FILE_LOG( logERROR ) << "[VisApp::DrawLineResult] " << e.what();
-            FILE_LOG( logERROR ) << "Images in=" << imageFilepathIn << " out=" << imageFilepathOut;
-            retVal = GC_EXCEPT;
-        }
-    }
-
     return retVal;
 }
 GC_STATUS VisApp::WriteFindlineResultToCSV( const std::string resultCSV, const string imgResultPath,

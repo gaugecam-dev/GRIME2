@@ -98,7 +98,6 @@ Section "GaugeCam Files" grime2
   File "${INSTALLFILEPATH_CONFIG}\calibration_target_world_coordinates.csv"
   File "${INSTALLFILEPATH_CONFIG}\calib.json"
   File "${INSTALLFILEPATH_CONFIG}\settingsWin.cfg"
-  File "${INSTALLFILEPATH_CONFIG}\VGG_annotate.json"
 
   SetOutPath "${WIN_CONFIG_PATH}\2012_demo\05"
   File "${INSTALLFILEPATH_CONFIG}\2012_demo\05\*.*"

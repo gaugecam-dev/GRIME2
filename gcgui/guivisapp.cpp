@@ -619,37 +619,21 @@ GC_STATUS GuiVisApp::AdjustImageSize( const Mat &matSrc, Mat &matDst )
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 GC_STATUS GuiVisApp::GetMetadata( const std::string imgFilepath, std::string &data )
 {
-    std::string metadata;
-    GC_STATUS retVal = m_visApp.GetImageMetadata( imgFilepath, metadata );
-    if ( GC_OK != retVal )
-    {
-        metadata = "FAIL: Could not retrieve";
-    }
     stringstream ss;
     ss << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
     ss << "exif image features" << endl;
     ss << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
     ExifFeatures exifFeats;
-    retVal = m_visApp.GetExifImageData( imgFilepath, exifFeats );
-    if ( GC_OK == retVal )
-    {
-        ss << "Capture time: " << exifFeats.captureTime << endl;
-        ss << "Exposure time: " << exifFeats.exposureTime << endl;
-        ss << "fNumber: " << exifFeats.fNumber << endl;
-        ss << "ISO speed rating: " << exifFeats.isoSpeedRating << endl;
-        ss << "Image width: " << exifFeats.imageDims.width << endl;
-        ss << "Image height: " << exifFeats.imageDims.height << endl;
-        ss << "Shutter speed: " << exifFeats.shutterSpeed << endl;
-    }
-    else
-    {
-        ss << "FAIL: Could not retrieve" << endl;
-    }
-    ss << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
-    ss << "image description" << endl;
-    ss << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
+    GC_STATUS retVal = m_visApp.GetExifImageData( imgFilepath, exifFeats );
+    ss << "Capture time: " << exifFeats.captureTime << endl;
+    ss << "Exposure time: " << exifFeats.exposureTime << endl;
+    ss << "fNumber: " << exifFeats.fNumber << endl;
+    ss << "ISO speed rating: " << exifFeats.isoSpeedRating << endl;
+    ss << "Image width: " << exifFeats.imageDims.width << endl;
+    ss << "Image height: " << exifFeats.imageDims.height << endl;
+    ss << "Shutter speed: " << exifFeats.shutterSpeed << endl;
 
-    data = ss.str() + metadata;
+    data = ss.str();
     sigMessage( string( "Metadata retrieval: " ) + ( GC_OK == retVal ? "SUCCESS" : "FAILURE" ) );
     return retVal;
 }
@@ -999,7 +983,6 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                             }
 
                             findData.findlineParams.imagePath = images[ i ];
-                            retVal = m_visApp.AddMetadataToImage( images[ i ], findData );
                             retVal = LoadImageToApp( img );
                             sigMessage( "update image only" );
                             sigMessage( msg );

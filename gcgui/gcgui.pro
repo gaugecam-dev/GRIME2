@@ -154,11 +154,9 @@ DISTFILES += \
     ../algorithms/Doxyfile \
     LICENSE \
     NOTICE \
-    config/VGG_annotate.json \
     config/calib.json \
     config/calib_result.png \
     config/calibration_target_world_coordinates.csv \
-    config/kalman_params.json \
     config/settings.cfg \
     config/settingsWin.cfg \
     docs/Background_installation_guideline.pdf \

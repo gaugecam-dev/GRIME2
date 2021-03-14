@@ -101,22 +101,6 @@ public:
 
     /**
      * @brief Draw the currently loaded calibration onto an overlay image
-     * @param imageFilepathIn Filepath of the input image onto which the calibration will be written
-     * @param imageFilepathOut Filepath of the output image that holds the input image with an overlay of the calibration
-     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
-     */
-    GC_STATUS DrawCalibOverlay( const std::string imageFilepathIn, const std::string imageFilepathOut );
-
-    /**
-     * @brief Draw the currently loaded calibration onto an overlay image
-     * @param imageFilepathIn Filepath of the input image onto which the calibration will be written
-     * @param imageMatOut OpenCV Mat of the output image that holds the input image with an overlay of the calibration
-     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
-     */
-    GC_STATUS DrawCalibOverlay( const std::string imageFilepathIn, cv::Mat &imgMatOut );
-
-    /**
-     * @brief Draw the currently loaded calibration onto an overlay image
      * @param imgMatOut OpenCV Mat of the input image onto which the calibration will be written
      * @param imageMatOut OpenCV Mat of the output image that holds the input image with an overlay of the calibration
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
@@ -175,30 +159,6 @@ public:
     // TODO: Write doxygen comments
     GC_STATUS GetExifImageData( const std::string filepath, ExifFeatures &exifFeat );
     GC_STATUS GetExifTimestamp( const std::string filepath, std::string &timestamp );
-
-    /**
-     * @brief Outputs the metadata from a specified line find image to the log
-     * @param imgFilepath Filepath of the input line find image that holds the metadata
-     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
-     */
-    GC_STATUS ListImageMetadata( const std::string imgFilepath );
-
-    /**
-     * @brief Adds FindData object data as a json string to a line find image
-     * @param imgFilepath Filepath of the image to which to add the data
-     * @param data Data to be converted to a json string and added to the image as metadata
-     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
-     */
-    GC_STATUS AddMetadataToImage( const std::string imgFilepath, const FindData data );
-
-    /**
-     * @brief Creates an overlay image from a line find image and the waterlevel and move
-     * detection data written to the image as metadata
-     * @param imageFilepathIn Input image filepath of a line find image that holds valid metadata
-     * @param imageFilepathOut Output image filepath of the overlay image that is created
-     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
-     */
-    GC_STATUS DrawLineFindOverlay( const std::string imageFilepathIn, const std::string imageFilepathOut );
 
     /**
      * @brief Convert world coordinates to pixel coordinates using the currently set calibration
