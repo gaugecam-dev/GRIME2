@@ -69,7 +69,7 @@ command line and web interfaces as time permits.
     * Etc.
 2. User interface code
     * Desktop applications for Windows and Linux based on Qt
-    * (Future) comman line interface
+    * (Future) command line interface
     * (Future) web-based GUI
     * (Future) Python wrapper
     
