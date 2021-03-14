@@ -66,7 +66,8 @@ HEADERS += \
         ../algorithms/timestampconvert.h \
         ../algorithms/visapp.h \
         guivisapp.h \
-        mainwindow.h
+        mainwindow.h \
+        wincmd.h
 
 FORMS += \
         mainwindow.ui
