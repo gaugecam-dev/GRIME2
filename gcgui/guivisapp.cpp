@@ -624,7 +624,7 @@ GC_STATUS GuiVisApp::GetMetadata( const std::string imgFilepath, std::string &da
     ss << "exif image features" << endl;
     ss << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
     ExifFeatures exifFeats;
-    GC_STATUS retVal = m_visApp.GetExifImageData( imgFilepath, exifFeats );
+    GC_STATUS retVal = m_visApp.GetImageData( imgFilepath, exifFeats );
     ss << "Capture time: " << exifFeats.captureTime << endl;
     ss << "Exposure time: " << exifFeats.exposureTime << endl;
     ss << "fNumber: " << exifFeats.fNumber << endl;
@@ -670,7 +670,7 @@ GC_STATUS GuiVisApp::CalcLine( const FindLineParams params, FindLineResult &resu
     else if ( FROM_EXIF == params.timeStampType )
     {
         string timestampTemp;
-        retVal = m_visApp.GetExifTimestamp( params.imagePath, timestampTemp );
+        retVal = m_visApp.GetImageTimestamp( params.imagePath, timestampTemp );
         if ( GC_OK == retVal )
         {
             retVal = GcTimestampConvert::GetTimestampFromString( timestampTemp,
@@ -901,7 +901,7 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                         else if ( FROM_EXIF == params.timeStampType )
                         {
                             string timestampTemp;
-                            retVal = m_visApp.GetExifTimestamp( params.imagePath, timestampTemp );
+                            retVal = m_visApp.GetImageTimestamp( params.imagePath, timestampTemp );
                             if ( GC_OK == retVal )
                             {
                                 retVal = GcTimestampConvert::GetTimestampFromString( timestampTemp,

@@ -41,6 +41,11 @@ string trim_copy( string const &str );
 
 namespace gc
 {
+void MetaData::GetExifToolVersion()
+{
+    string cmdStr = "exiftool -ver";
+    std::system( cmdStr.c_str() );
+}
 GC_STATUS MetaData::GetExifData( const string filepath, const string tag, string &data )
 {
     GC_STATUS retVal = GC_OK;
@@ -134,7 +139,27 @@ string MetaData::ConvertToLocalTimestamp( const string exifTimestamp )
     }
     return isoTimestamp;
 }
-GC_STATUS MetaData::GetExifImageData( const string filepath, ExifFeatures &exifFeat )
+GC_STATUS MetaData::GetImageData( const string filepath, string &data )
+{
+    ExifFeatures feats;
+    GC_STATUS retVal = GetImageData( filepath, feats );
+    if ( GC_OK == retVal )
+    {
+        stringstream ss;
+        ss << " Filename: " << fs::path( filepath ).filename().string() << endl;
+        ss << "Timestamp: " << feats.captureTime << endl;
+        ss << "    Width: " << feats.imageDims.width << endl;
+        ss << "   Height: " << feats.imageDims.height << endl;
+        ss << "  Shutter: " << feats.shutterSpeed << endl;
+        ss << " Exposure: " << feats.exposureTime << endl;
+        ss << "  fNumber: " << feats.fNumber << endl;
+        ss << "      ISO: " << feats.isoSpeedRating << endl;
+        data = ss.str();
+    }
+
+    return retVal;
+}
+GC_STATUS MetaData::GetImageData( const string filepath, ExifFeatures &exifFeat )
 {
     GC_STATUS retVal = GC_OK;
     try

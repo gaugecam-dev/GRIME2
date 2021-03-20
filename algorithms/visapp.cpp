@@ -150,10 +150,6 @@ GC_STATUS VisApp::Calibrate( const string imgFilepath, const string worldCoordsC
                 {
                     vector< vector< Point2d > > pixelCoords;
                     retVal = m_findCalibGrid.GetFoundPoints( pixelCoords );
-                    if ( GC_OK != retVal )
-                    {
-
-                    }
                     if ( GC_OK == retVal )
                     {
                         if ( pixelCoords.size() != worldCoords.size() )
@@ -199,7 +195,7 @@ GC_STATUS VisApp::Calibrate( const string imgFilepath, const string worldCoordsC
 
     return retVal;
 }
-GC_STATUS VisApp::GetExifTimestamp( const std::string filepath, std::string &timestamp )
+GC_STATUS VisApp::GetImageTimestamp( const std::string filepath, std::string &timestamp )
 {
     GC_STATUS retVal = m_metaData.GetExifData( filepath, "DateTimeOriginal", timestamp );
     if ( GC_OK != retVal )
@@ -208,9 +204,18 @@ GC_STATUS VisApp::GetExifTimestamp( const std::string filepath, std::string &tim
     }
     return retVal;
 }
-GC_STATUS VisApp::GetExifImageData( const std::string filepath, ExifFeatures &exifFeat )
+GC_STATUS VisApp::GetImageData( const std::string filepath, std::string &data )
 {
-    GC_STATUS retVal = m_metaData.GetExifImageData( filepath, exifFeat );
+    GC_STATUS retVal = m_metaData.GetImageData( filepath, data );
+    if ( GC_OK != retVal )
+    {
+        FILE_LOG( logERROR ) << "[VisApp::ListMetadata] Could  not retrieve exif image data from " << filepath;
+    }
+    return retVal;
+}
+GC_STATUS VisApp::GetImageData( const std::string filepath, ExifFeatures &exifFeat )
+{
+    GC_STATUS retVal = m_metaData.GetImageData( filepath, exifFeat );
     if ( GC_OK != retVal )
     {
         FILE_LOG( logERROR ) << "[VisApp::ListMetadata] Could  not retrieve exif image data from " << filepath;
@@ -368,7 +373,7 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, const string timestamp,
             else if ( FROM_EXIF == params.timeStampType )
             {
                 string timestampTemp;
-                retVal = GetExifTimestamp( params.imagePath, timestampTemp );
+                retVal = GetImageTimestamp( params.imagePath, timestampTemp );
                 if ( GC_OK == retVal )
                 {
                     retVal = GcTimestampConvert::GetTimestampFromString( timestampTemp,

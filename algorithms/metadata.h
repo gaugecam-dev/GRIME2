@@ -76,20 +76,14 @@ public:
      */
     ~MetaData() {}
 
-    /**
-     * @brief Retrieves the data to an std::string in the json format in which it was written
-     * @param imgFilepath Filepath of the image from which to retrieve the metadata json string
-     * @param jsonString std::string to which the metadata is retrieved
-     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
-     */
-    GC_STATUS GetMetadata( const std::string imgFilepath, std::string &jsonString );
-
     // TODO Write doxygen comments
-    GC_STATUS GetExifImageData( const std::string filepath, ExifFeatures &exifFeat );
+    static const std::string Version() { return "0.0.0.1"; }
+    static void GetExifToolVersion();
+    GC_STATUS GetImageData( const std::string filepath, std::string &data );
+    GC_STATUS GetImageData( const std::string filepath, ExifFeatures &exifFeat );
     GC_STATUS GetExifData( const std::string filepath, const std::string tag, std::string &data );
 
 private:
-    static const std::string Version() { return "0.0.0.1"; }
     std::string ConvertToLocalTimestamp( const std::string exifTimestamp );
 };
 

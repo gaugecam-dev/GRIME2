@@ -61,7 +61,9 @@ public:
      * @brief Retreive the current software version of VisApp (executive logic class)
      * @return String holding the version
      */
-    std::string Version() { return GAUGECAM_VISAPP_VERSION; }
+    static std::string Version() { return GAUGECAM_VISAPP_VERSION; }
+    static void GetExifToolVersion() { MetaData::GetExifToolVersion(); }
+
 
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // Calibration methods
@@ -148,17 +150,10 @@ public:
      */
     GC_STATUS CalcLine( const cv::Mat &img, const string timestamp );
 
-    /**
-     * @brief Retrieve metadata from the specified image
-     * @param filepath Filepath of the image from which to extract the metadata
-     * @param data Metadata extracted from the image file
-     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
-     */
-    GC_STATUS GetImageMetadata( const std::string filepath, std::string &data );
-
     // TODO: Write doxygen comments
-    GC_STATUS GetExifImageData( const std::string filepath, ExifFeatures &exifFeat );
-    GC_STATUS GetExifTimestamp( const std::string filepath, std::string &timestamp );
+    GC_STATUS GetImageData( const std::string filepath, string &data );
+    GC_STATUS GetImageData( const std::string filepath, ExifFeatures &exifFeat );
+    GC_STATUS GetImageTimestamp( const std::string filepath, std::string &timestamp );
 
     /**
      * @brief Convert world coordinates to pixel coordinates using the currently set calibration
