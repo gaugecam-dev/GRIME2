@@ -660,34 +660,7 @@ GC_STATUS GuiVisApp::CalcLine( const FindLineParams params, FindLineResult &resu
 {
     GC_STATUS retVal = GC_OK;
 
-    string timestamp = "YYYY-MM-DDThh:mm:ss";
-    if ( FROM_FILENAME == params.timeStampType )
-    {
-        retVal = GcTimestampConvert::GetTimestampFromString( fs::path( params.imagePath ).filename().string(),
-                                                             params.timeStampStartPos, params.timeStampLength,
-                                                             params.timeStampFormat, timestamp );
-    }
-    else if ( FROM_EXIF == params.timeStampType )
-    {
-        string timestampTemp;
-        retVal = m_visApp.GetImageTimestamp( params.imagePath, timestampTemp );
-        if ( GC_OK == retVal )
-        {
-            retVal = GcTimestampConvert::GetTimestampFromString( timestampTemp,
-                                                                 params.timeStampStartPos, params.timeStampLength,
-                                                                 params.timeStampFormat, timestamp );
-        }
-    }
-    else if ( FROM_EXTERNAL == params.timeStampType )
-    {
-        FILE_LOG( logERROR ) << "Timestamp passed into method not yet implemented";
-        retVal = GC_ERR;
-    }
-    if ( GC_OK != retVal )
-    {
-        FILE_LOG( logWARNING ) << "Unable to read timestamp";
-    }
-    retVal = m_visApp.CalcLine( params, timestamp, result );
+    retVal = m_visApp.CalcLine( params, result );
     if ( GC_OK == retVal )
     {
         GC_STATUS retVal1 = m_visApp.DrawLineFindOverlay( m_matColor, m_matDisplay );

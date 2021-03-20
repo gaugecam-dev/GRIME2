@@ -230,9 +230,9 @@ void VisApp::SetFindLineResult( const FindLineResult result )
 {
     m_findLineResult = result;
 }
-GC_STATUS VisApp::CalcLine( const FindLineParams params, const string timestamp )
+GC_STATUS VisApp::CalcLine( const FindLineParams params )
 {
-    GC_STATUS retVal = CalcLine( params, timestamp, m_findLineResult );
+    GC_STATUS retVal = CalcLine( params, m_findLineResult );
     return retVal;
 }
 GC_STATUS VisApp::CalcLine( const Mat &img, const string timestamp )
@@ -349,13 +349,140 @@ GC_STATUS VisApp::CalcLine( const Mat &img, const string timestamp )
 
     return retVal;
 }
-GC_STATUS VisApp::CalcLine( const FindLineParams params, const string timestamp, FindLineResult &result )
+GC_STATUS VisApp::FindPtSet2JsonString( const FindPointSet set, const string set_type, string &json )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        json.clear();
+        stringstream ss;
+        ss << "\"set_type\": \"" << set_type << "\",";
+        ss << "\"anglePixel\":" << set.anglePixel << ",";
+        ss << "\"angleWorld\":" << set.angleWorld << ",";
+        ss << "\"lftPixel_x\":" << set.lftPixel.x << ",";
+        ss << "\"lftPixel_y\":" << set.lftPixel.y << ",";
+        ss << "\"lftWorld_x\":" << set.lftWorld.x << ",";
+        ss << "\"lftWorld_y\":" << set.lftWorld.y << ",";
+        ss << "\"ctrPixel_x\":" << set.ctrPixel.x << ",";
+        ss << "\"ctrPixel_y\":" << set.ctrPixel.y << ",";
+        ss << "\"ctrWorld_x\":" << set.ctrWorld.x << ",";
+        ss << "\"ctrWorld_y\":" << set.ctrWorld.y << ",";
+        ss << "\"rgtPixel_x\":" << set.rgtPixel.x << ",";
+        ss << "\"rgtPixel_y\":" << set.rgtPixel.y << ",";
+        ss << "\"rgtWorld_x\":" << set.rgtWorld.x << ",";
+        ss << "\"rgtWorld_y\":" << set.rgtWorld.y;
+        json = ss.str();
+    }
+    catch( std::exception &e )
+    {
+        FILE_LOG( logERROR ) << "[VisApp::FindPtSet2JsonString] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+
+    return retVal;
+}
+GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result, string &resultJson )
+{
+    GC_STATUS retVal = CalcLine( params, result );
+    if ( GC_OK == retVal )
+    {
+        try
+        {
+            resultJson.clear();
+            stringstream ss;
+            ss << "{";
+            ss << "\"image_path\": \"" << params.imagePath << "\",";
+            ss << "\"calib_path\": \"" << params.calibFilepath << "\",";
+            ss << "\"result_path\": \"" << params.resultImagePath << "\",";
+            ss << "\"timestamp_type\": \"" << params.timeStampType << "\",";
+            ss << "\"timestamp_format\": \"" << params.timeStampFormat << "\",";
+            ss << "\"timestamp_start_pos\": " << params.timeStampStartPos << ",";
+            ss << "\"timestamp_length\": " << params.timeStampStartPos << ",";
+            ss << "\"status\":  \"" << ( result.findSuccess ? "SUCCESS" : "FAIL" ) << "\",";
+            ss << "\"timestamp\": \"" << result.timestamp << "\",";
+            ss << "\"waterLevelAdjusted_x\": " << result.waterLevelAdjusted.x << ",";
+            ss << "\"waterLevelAdjusted_y\": " << result.waterLevelAdjusted.x << ",";
+
+            string json;
+            retVal = FindPtSet2JsonString( result.calcLinePts, "calc_line_pts", json );
+            if ( GC_OK == retVal )
+            {
+                ss << json << ",";
+                retVal = FindPtSet2JsonString( result.refMovePts, "ref_move_pts", json );
+                if ( GC_OK == retVal )
+                {
+                    ss << json << ",";
+                    retVal = FindPtSet2JsonString( result.foundMovePts, "found_move_pts", json );
+                    if ( GC_OK == retVal )
+                    {
+                        ss << json << ",";
+                        retVal = FindPtSet2JsonString( result.offsetMovePts, "offset_move_pts", json );
+                        if ( GC_OK == retVal )
+                        {
+                            ss << json << ", \"found_pts\": [";
+                            for ( size_t i = 0; i < result.foundPoints.size(); ++i )
+                            {
+                                ss << "{\"x\": " << result.foundPoints[ i ].x << ",";
+                                ss <<  "\"y\": " << result.foundPoints[ i ].y << "}";
+                                if ( result.foundPoints.size() - 1 != i )
+                                    ss << ",";
+                            }
+                            ss << "],";
+                            ss << json << ", \"messages\": [";
+                            for ( size_t i = 0; i < result.msgs.size(); ++i )
+                            {
+                                ss << "\"" << result.msgs[ i ] << "\"";
+                                if ( result.msgs.size() - 1 != i )
+                                    ss << ",";
+                            }
+                            ss << "]";
+                            ss << "}";
+                            resultJson = ss.str();
+
+                            if ( !params.resultImagePath.empty() )
+                            {
+                                Mat img = imread( params.imagePath, IMREAD_GRAYSCALE );
+                                if ( img.empty() )
+                                {
+                                    FILE_LOG( logERROR ) << "[VisApp::CalcLine] Could not read image to create result overlay " << params.imagePath;
+                                    retVal = GC_ERR;
+                                }
+                                else
+                                {
+                                    Mat color;
+                                    retVal = DrawLineFindOverlay( img, color, result );
+                                    if ( GC_OK == retVal )
+                                    {
+                                        bool isOk = imwrite( params.resultImagePath, color );
+                                        if ( !isOk)
+                                        {
+                                            FILE_LOG( logERROR ) << "[VisApp::CalcLine] Could not write result image to " << params.resultImagePath;
+                                            retVal = GC_ERR;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        catch( std::exception &e )
+        {
+            FILE_LOG( logERROR ) << "[VisApp::CalcLine] " << e.what();
+            FILE_LOG( logERROR ) << "Image=" << params.imagePath << " calib=" << params.calibFilepath;
+            retVal = GC_EXCEPT;
+        }
+    }
+
+    return retVal;
+}
+GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result )
 {
     GC_STATUS retVal = GC_OK;
     try
     {
         result.clear();
-        result.timestamp = timestamp;
         cv::Mat img = imread( params.imagePath, IMREAD_GRAYSCALE );
         if ( img.empty() )
         {

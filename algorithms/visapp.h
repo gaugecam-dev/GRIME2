@@ -131,7 +131,7 @@ public:
      * @param result Holds the results of the line find calculation
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
-    GC_STATUS CalcLine( const FindLineParams params, const string timestamp, FindLineResult &result );
+    GC_STATUS CalcLine( const FindLineParams params, FindLineResult &result );
 
     /**
      * @brief Find the water level in an image specified in the FindLineParams
@@ -140,7 +140,7 @@ public:
      * @param timestamp Image capture time
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
-    GC_STATUS CalcLine( const FindLineParams params, const string timestamp );
+    GC_STATUS CalcLine( const FindLineParams params );
 
     /**
      * @brief Find the water level in the specified image
@@ -151,6 +151,7 @@ public:
     GC_STATUS CalcLine( const cv::Mat &img, const string timestamp );
 
     // TODO: Write doxygen comments
+    GC_STATUS CalcLine( const FindLineParams params, FindLineResult &result, string &resultJson );
     GC_STATUS GetImageData( const std::string filepath, string &data );
     GC_STATUS GetImageData( const std::string filepath, ExifFeatures &exifFeat );
     GC_STATUS GetImageTimestamp( const std::string filepath, std::string &timestamp );
@@ -227,6 +228,7 @@ private:
 
     GC_STATUS PixelToWorld( FindPointSet &ptSet );
     GC_STATUS ReadWorldCoordsFromCSV( const std::string csvFilepath, std::vector< std::vector< cv::Point2d > > &worldCoords );
+    GC_STATUS FindPtSet2JsonString( const FindPointSet set, const string set_type, string &json );
 };
 
 } // namespace gc

@@ -27,7 +27,9 @@ class Grime2CLIParams
 public:
     Grime2CLIParams() :
         verbose( false ),
-        opToPerform( SHOW_HELP )
+        opToPerform( SHOW_HELP ),
+        timestamp_startPos( -1 ),
+        timeStamp_length( -1 )
     {}
     void clear()
     {
@@ -37,6 +39,10 @@ public:
         calib_csvPath.clear();
         calib_jsonPath.clear();
         result_imagePath.clear();
+        timestamp_format.clear();
+        timestamp_type.clear();
+        timestamp_startPos = -1;
+        timeStamp_length = -1;
     }
     bool verbose;
     GRIME2_CLI_OP opToPerform;
@@ -44,6 +50,10 @@ public:
     string calib_csvPath;
     string calib_jsonPath;
     string result_imagePath;
+    string timestamp_format;
+    string timestamp_type;
+    int timestamp_startPos;
+    int timeStamp_length;
 };
 int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
 {
@@ -113,6 +123,53 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                 else if ( "help" == string( argv[ i ] ).substr( 2 ) )
                 {
                     params.opToPerform = SHOW_HELP;
+                }
+                else if ( "timestamp_from_exif" == string( argv[ i ] ).substr( 2 ) )
+                {
+                    params.timestamp_type = "from_exif";
+                }
+                else if ( "timestamp_from_filename" == string( argv[ i ] ).substr( 2 ) )
+                {
+                    params.timestamp_type = "from_filename";
+                }
+                else if ( "timestamp_start_pos" == string( argv[ i ] ).substr( 2 ) )
+                {
+                    if ( i + 1 < argc )
+                    {
+                        params.timestamp_startPos = stoi( argv[ ++i ] );
+                    }
+                    else
+                    {
+                        FILE_LOG( logERROR ) << "No value supplied on --timestamp_start_pos request";
+                        retVal = -1;
+                        break;
+                    }
+                }
+                else if ( "timestamp_length" == string( argv[ i ] ).substr( 2 ) )
+                {
+                    if ( i + 1 < argc )
+                    {
+                        params.timeStamp_length = stoi( argv[ ++i ] );
+                    }
+                    else
+                    {
+                        FILE_LOG( logERROR ) << "No value supplied on --timestamp_start_pos request";
+                        retVal = -1;
+                        break;
+                    }
+                }
+                else if ( "timestamp_format" == string( argv[ i ] ).substr( 2 ) )
+                {
+                    if ( i + 1 < argc )
+                    {
+                        params.timestamp_format = string( argv[ ++i ] );
+                    }
+                    else
+                    {
+                        FILE_LOG( logERROR ) << "No value supplied on --timestamp_start_pos request";
+                        retVal = -1;
+                        break;
+                    }
                 }
                 else if ( "calib_csv" == string( argv[ i ] ).substr( 2 ) )
                 {
