@@ -26,6 +26,7 @@
 #include <boost/exception/exception.hpp>
 #include <boost/exception/diagnostic_information.hpp>
 #include <boost/foreach.hpp>
+#include "wincmd.h"
 
 using namespace cv;
 using namespace std;
@@ -46,6 +47,51 @@ void MetaData::GetExifToolVersion()
     string cmdStr = "exiftool -ver";
     std::system( cmdStr.c_str() );
 }
+#ifdef WIN32
+GC_STATUS MetaData::GetExifData( const string filepath, const string tag, string &data )
+{
+    GC_STATUS retVal = GC_OK;
+
+    try
+    {
+        string strBuf;
+        string cmdStr = "exiftool -q -" + tag + " \"" + filepath + "\"";
+        int ret = runCmd( cmdStr.c_str(), strBuf );
+        if ( 0 != ret )
+        {
+            FILE_LOG( logERROR ) << "[MetaData::GetExifData] Could not run exiftool command: " << cmdStr;
+            retVal = GC_ERR;
+        }
+        else
+        {
+            size_t pos = strBuf.find( ":" );
+            if ( string::npos == pos )
+            {
+                FILE_LOG( logERROR ) << "[MetaData::GetExifData] Invalid exif data (no \":\" found: " << strBuf;
+                retVal = GC_ERR;
+            }
+            else
+            {
+                data = trim_copy( strBuf.substr( pos + 1 ) );
+            }
+        }
+
+        // cout << endl << data << endl;
+
+#ifdef DEBUG_PNG_METADATA
+        FILE_LOG( logINFO ) << "Key=EXIF_TAG_IMAGE_DESCRIPTION";
+        FILE_LOG( logINFO ) << " Value=" << endl << data;
+#endif
+    }
+    catch( std::exception &e )
+    {
+        FILE_LOG( logERROR ) << "[MetaData::GetExifData] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+
+    return retVal;
+}
+#else
 GC_STATUS MetaData::GetExifData( const string filepath, const string tag, string &data )
 {
     GC_STATUS retVal = GC_OK;
@@ -103,6 +149,7 @@ GC_STATUS MetaData::GetExifData( const string filepath, const string tag, string
 
     return retVal;
 }
+#endif
 // exifTimestamp example: 2012:09:30 15:38:49
 // isoTimeStamp example:  2019-09-15T20:08:12
 string MetaData::ConvertToLocalTimestamp( const string exifTimestamp )
