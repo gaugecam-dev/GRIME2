@@ -24,20 +24,22 @@ using namespace gc;
 // example command lines
 // --version
 // --show_help
-// --calibrate "/home/kchapman/repos/GRIME2/gcgui/config/2012_demo/06/NRmarshDN-12-06-45-10-30.jpg" --calib_csv "/home/kchapman/repos/GRIME2/gcgui/config/calibration_target_world_coordinates.csv" --result_image "/home/kchapman/Desktop/calib/calib_result.png"
+// --calibrate "/home/kchapman/repos/GRIME2/gcgui/config/2012_demo/06/NRmarshDN-12-06-45-10-30.jpg" --csv_file "/home/kchapman/repos/GRIME2/gcgui/config/calibration_target_world_coordinates.csv" --result_image "/home/kchapman/Desktop/calib/calib_result.png"
 // --show_metadata "/home/kchapman/data/idaho_power/bad_cal_bad_line_find/TREK0003.jpg"
-// --find_line --timestamp_from_filename --timestamp_start_pos 10 --timestamp_length 14 --timestamp_format "yy-mm-dd-HH-MM" "/home/kchapman/repos/GRIME2/gcgui/config/2012_demo/06/NRmarshDN-12-06-30-10-45.jpg"  --calib_json "/home/kchapman/Desktop/calib/calib.json" --result_image "/home/kchapman/Desktop/calib/find_line_result.png"
+// --find_line --timestamp_from_filename --timestamp_start_pos 10 --timestamp_length 14 --timestamp_format "yy-mm-dd-HH-MM" "/home/kchapman/repos/GRIME2/gcgui/config/2012_demo/06/NRmarshDN-12-06-30-10-45.jpg" --calib_json "/home/kchapman/Desktop/calib/calib.json" --result_image "/home/kchapman/Desktop/calib/find_line_result.png"
+// --run_folder --timestamp_from_filename --timestamp_start_pos 10 --timestamp_length 14 --timestamp_format "yy-mm-dd-HH-MM" "/home/kchapman/repos/GRIME2/gcgui/config/2012_demo/06/" --calib_json "/home/kchapman/Desktop/calib/calib.json" --csv_file "/home/kchapman/Desktop/calib/" --result_folder "/home/kchapman/Desktop/calib/"
 
 // forward declarations
 void ShowVersion();
 GC_STATUS FindWaterLevel( const Grime2CLIParams cliParams );
+GC_STATUS RunFolder( const Grime2CLIParams cliParams );
 
 /** \file main.cpp
  * @brief Holds the main() function for command line use of the h2o_cli libraries.
  *
  * \author Kenneth W. Chapman
  * \copyright Copyright (C) 2020, Kenneth W. Chapman <coffeesig@gmail.com>, all rights reserved.\n
- * This project is released under the 3-clause BSD License.
+ * This project is released under the Apache License, Version 2.0.
  * \bug No known bugs.
  */
 
@@ -61,7 +63,7 @@ int main( int argc, char *argv[] )
             VisApp vis;
             if ( CALIBRATE == params.opToPerform )
             {
-                retVal = vis.Calibrate( params.src_imagePath, params.calib_csvPath, params.calib_jsonPath, params.result_imagePath );
+                retVal = vis.Calibrate( params.src_imagePath, params.csvPath, params.calib_jsonPath, params.result_imagePath );
             }
             else if ( FIND_LINE == params.opToPerform )
             {
@@ -96,6 +98,12 @@ int main( int argc, char *argv[] )
         }
     }
     return ret;
+}
+GC_STATUS RunFolder( const Grime2CLIParams cliParams )
+{
+    GC_STATUS retVal = GC_OK;
+
+    return retVal;
 }
 GC_STATUS FindWaterLevel( const Grime2CLIParams cliParams )
 {

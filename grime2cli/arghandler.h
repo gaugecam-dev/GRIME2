@@ -17,6 +17,7 @@ typedef enum GRIME2_CLI_OPERATIONS
 {
     CALIBRATE,
     FIND_LINE,
+    RUN_FOLDER,
     SHOW_METADATA,
     SHOW_VERSION,
     SHOW_HELP
@@ -36,7 +37,7 @@ public:
         verbose = false;
         opToPerform = SHOW_HELP;
         src_imagePath.clear();
-        calib_csvPath.clear();
+        csvPath.clear();
         calib_jsonPath.clear();
         result_imagePath.clear();
         timestamp_format.clear();
@@ -47,7 +48,7 @@ public:
     bool verbose;
     GRIME2_CLI_OP opToPerform;
     string src_imagePath;
-    string calib_csvPath;
+    string csvPath;
     string calib_jsonPath;
     string result_imagePath;
     string timestamp_format;
@@ -112,6 +113,10 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                 {
                     params.opToPerform = FIND_LINE;
                 }
+                else if ( "run_folder" == string( argv[ i ] ).substr( 2 ) )
+                {
+                    params.opToPerform = RUN_FOLDER;
+                }
                 else if ( "show_metadata" == string( argv[ i ] ).substr( 2 ) )
                 {
                     params.opToPerform = SHOW_METADATA;
@@ -171,25 +176,25 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                         break;
                     }
                 }
-                else if ( "calib_csv" == string( argv[ i ] ).substr( 2 ) )
+                else if ( "csv_file" == string( argv[ i ] ).substr( 2 ) )
                 {
                     if ( i + 1 < argc )
                     {
-                        params.calib_csvPath = string( argv[ ++i ] );
-                        if ( string::npos == params.calib_csvPath.find( ".csv" ) )
+                        params.csvPath = string( argv[ ++i ] );
+                        if ( string::npos == params.csvPath.find( ".csv" ) )
                         {
-                            FILE_LOG( logERROR ) << "CSV file " << params.result_imagePath << " extension not recognized";
+                            FILE_LOG( logERROR ) << "CSV file " << params.csvPath << " extension not recognized";
                             retVal = -1;
                         }
-                        else if ( !fs::exists( params.calib_csvPath ) )
+                        else if ( !fs::exists( params.csvPath ) )
                         {
-                            FILE_LOG( logERROR ) << "CSV file does not exist: " << params.calib_csvPath;
+                            FILE_LOG( logERROR ) << "CSV file does not exist: " << params.csvPath;
                             retVal = -1;
                         }
                     }
                     else
                     {
-                        FILE_LOG( logERROR ) << "No value supplied on --calib_csv request";
+                        FILE_LOG( logERROR ) << "No value supplied on --csv_file request";
                         retVal = -1;
                         break;
                     }
@@ -224,12 +229,12 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                             FILE_LOG( logERROR ) << "Image file " << params.result_imagePath << " extension not recognized";
                             retVal = -1;
                         }
-                        else if ( !fs::exists( fs::path( params.result_imagePath ).parent_path() ) )
+                        else if ( !fs::exists( params.result_imagePath ) )
                         {
                             bool isOk = fs::create_directories( fs::path( params.result_imagePath ).parent_path() );
                             if ( !isOk )
                             {
-                                FILE_LOG( logERROR ) << "No value supplied on --result_image request";
+                                FILE_LOG( logERROR ) << "Could not create result image folder: " << params.result_imagePath;
                                 retVal = -1;
                             }
                         }
@@ -237,6 +242,33 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                     else
                     {
                         FILE_LOG( logERROR ) << "No value supplied on --result_image request";
+                        retVal = -1;
+                        break;
+                    }
+                }
+                else if ( "result_folder" == string( argv[ i ] ).substr( 2 ) )
+                {
+                    if ( i + 1 < argc )
+                    {
+                        params.result_imagePath = string( argv[ ++i ] );
+                        if ( !fs::is_directory( params.result_imagePath ) )
+                        {
+                            FILE_LOG( logERROR ) << "Result path " << params.result_imagePath << " is not a folder";
+                            retVal = -1;
+                        }
+                        else if ( !fs::exists( params.result_imagePath ) )
+                        {
+                            bool isOk = fs::create_directories( params.result_imagePath );
+                            if ( !isOk )
+                            {
+                                FILE_LOG( logERROR ) << "Could not create result folder: " << params.result_imagePath;
+                                retVal = -1;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        FILE_LOG( logERROR ) << "No value supplied on --result_folder request";
                         retVal = -1;
                         break;
                     }
@@ -257,6 +289,14 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                     bool isOk = IsExistingImagePath( params.src_imagePath );
                     if ( !isOk )
                     {
+                        retVal = -1;
+                    }
+                }
+                else if ( RUN_FOLDER == params.opToPerform )
+                {
+                    if ( !fs::is_directory( params.src_imagePath ) )
+                    {
+                        FILE_LOG( logERROR ) << "Source path is not a folder: " << params.src_imagePath;
                         retVal = -1;
                     }
                 }

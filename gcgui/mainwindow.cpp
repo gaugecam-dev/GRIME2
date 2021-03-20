@@ -88,6 +88,18 @@ MainWindow::MainWindow(QWidget *parent) :
         ui->textBrowser_releaseNotes->setText( "Could not open release notes" );
     }
 
+    file.setFileName( ":/LICENSE" );
+    file.open( QFile::ReadOnly | QFile::Text );
+    QTextStream licenseStream( &file );
+    if ( file.isOpen() )
+    {
+        ui->textBrowser_license->setText( licenseStream.readAll() );
+    }
+    else
+    {
+        ui->textBrowser_license->setText( "Could not open LICENSE file" );
+    }
+
     QWidget *spacerWidget = new QWidget( this );
     spacerWidget->setSizePolicy( QSizePolicy::Expanding, QSizePolicy::Preferred );
     spacerWidget->setVisible( true );

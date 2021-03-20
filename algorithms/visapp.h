@@ -22,7 +22,7 @@
  *
  * \author Kenneth W. Chapman
  * \copyright Copyright (C) 2010-2020, Kenneth W. Chapman <coffeesig@gmail.com>, all rights reserved.\n
- * This project is released under the 3-clause BSD License.
+ * This project is released under the Apache License, Version 2.0.
  * \bug No known bugs.
  */
 

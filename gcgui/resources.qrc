@@ -22,5 +22,6 @@
     </qresource>
     <qresource prefix="/">
         <file>docs/release_notes.html</file>
+        <file>LICENSE</file>
     </qresource>
 </RCC>
