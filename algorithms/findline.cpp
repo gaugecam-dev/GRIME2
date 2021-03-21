@@ -125,7 +125,7 @@ GC_STATUS FindLine::Find( const Mat &img, const vector< LineEnds > &lines, FindL
             size_t start;
             Point2d linePt;
             vector< uint > rowSums;
-            result.foundPoints.clear();
+            result.clear();
             size_t linesPerSwath = lines.size() / 10;
             for ( size_t i = 0; i < 10; ++i )
             {

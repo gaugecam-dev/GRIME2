@@ -325,7 +325,7 @@ GC_STATUS VisApp::CalcLine( const Mat &img, const string timestamp )
                                         result.offsetMovePts.rgtWorld.x = result.foundMovePts.rgtWorld.x - result.refMovePts.rgtWorld.x;
                                         result.offsetMovePts.rgtWorld.y = result.foundMovePts.rgtWorld.y - result.refMovePts.rgtWorld.y;
 
-                                        sprintf( buffer, "Adjust: %.3f", result.offsetMovePts.ctrWorld.y );
+                                        snprintf( buffer, 256, "Adjust: %.3f", result.offsetMovePts.ctrWorld.y );
                                         result.msgs.push_back( buffer );
                                         result.waterLevelAdjusted.x = result.calcLinePts.ctrWorld.x - result.offsetMovePts.ctrWorld.x;
                                         result.waterLevelAdjusted.y = result.calcLinePts.ctrWorld.y - result.offsetMovePts.ctrWorld.y;
@@ -438,30 +438,6 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result,
                             ss << "]";
                             ss << "}";
                             resultJson = ss.str();
-
-                            if ( !params.resultImagePath.empty() )
-                            {
-                                Mat img = imread( params.imagePath, IMREAD_GRAYSCALE );
-                                if ( img.empty() )
-                                {
-                                    FILE_LOG( logERROR ) << "[VisApp::CalcLine] Could not read image to create result overlay " << params.imagePath;
-                                    retVal = GC_ERR;
-                                }
-                                else
-                                {
-                                    Mat color;
-                                    retVal = DrawLineFindOverlay( img, color, result );
-                                    if ( GC_OK == retVal )
-                                    {
-                                        bool isOk = imwrite( params.resultImagePath, color );
-                                        if ( !isOk)
-                                        {
-                                            FILE_LOG( logERROR ) << "[VisApp::CalcLine] Could not write result image to " << params.resultImagePath;
-                                            retVal = GC_ERR;
-                                        }
-                                    }
-                                }
-                            }
                         }
                     }
                 }
@@ -627,6 +603,24 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result 
                         }
                     }
                     m_findLineResult = result;
+                    if ( !params.resultCSVPath.empty() )
+                    {
+                        retVal = WriteFindlineResultToCSV( params.resultCSVPath, params.imagePath, result );
+                    }
+                    if ( !params.resultImagePath.empty() )
+                    {
+                        Mat color;
+                        retVal = DrawLineFindOverlay( img, color, result );
+                        if ( GC_OK == retVal )
+                        {
+                            bool isOk = imwrite( params.resultImagePath, color );
+                            if ( !isOk)
+                            {
+                                FILE_LOG( logERROR ) << "[VisApp::CalcLine] Could not write result image to " << params.resultImagePath;
+                                retVal = GC_ERR;
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -728,7 +722,7 @@ GC_STATUS VisApp::DrawLineFindOverlay( const cv::Mat &img, cv::Mat &imgOut, cons
     GC_STATUS retVal = m_findLine.DrawResult( img, imgOut, findLineResult );
     return retVal;
 }
-GC_STATUS VisApp::WriteFindlineResultToCSV( const std::string resultCSV, const string imgResultPath,
+GC_STATUS VisApp::WriteFindlineResultToCSV( const std::string resultCSV, const string imgPath,
                                             const FindLineResult &result, const bool overwrite )
 {
     GC_STATUS retVal = GC_OK;
@@ -750,7 +744,7 @@ GC_STATUS VisApp::WriteFindlineResultToCSV( const std::string resultCSV, const s
         {
             if ( addHeader )
             {
-                csvFile << "imgResultPath,";
+                csvFile << "imgPath,";
                 csvFile << "findSuccess,";
 
                 csvFile << "waterLevel,";
@@ -796,7 +790,7 @@ GC_STATUS VisApp::WriteFindlineResultToCSV( const std::string resultCSV, const s
                 csvFile << "...";
                 csvFile << endl;
             }
-            csvFile << imgResultPath << ",";
+            csvFile << imgPath << ",";
             csvFile << ( result.findSuccess ? "true" : "false" ) << ",";
 
             csvFile << fixed << setprecision( 3 );

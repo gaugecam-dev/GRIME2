@@ -186,10 +186,15 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                             FILE_LOG( logERROR ) << "CSV file " << params.csvPath << " extension not recognized";
                             retVal = -1;
                         }
-                        else if ( !fs::exists( params.csvPath ) )
+                        else if ( !fs::exists( fs::path( params.csvPath ).parent_path() ) )
                         {
-                            FILE_LOG( logERROR ) << "CSV file does not exist: " << params.csvPath;
-                            retVal = -1;
+                            bool isOk = fs::create_directories( fs::path( params.result_imagePath ).parent_path() );
+                            if ( !isOk )
+                            {
+                                FILE_LOG( logERROR ) << "Could not create result image folder: " << fs::path( params.result_imagePath ).parent_path().string();
+                                retVal = -1;
+                                break;
+                            }
                         }
                     }
                     else
@@ -350,21 +355,44 @@ void PrintHelp()
     // the images for each scan time and tile positions from the specified stack
     // index into the created folder to which it pertains
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    cout << "FORMAT: StackCLI --align_image_series [Folder with images] " << endl <<
-            "                 [--start_index [start index] OPTIONAL default=0]" << endl <<
-            "        Loads all the image in the specified folder, sorts them by filename," << endl <<
-            "        aligns them to each other, creates a folder named \"aligned\" in the" << endl <<
-            "        specified folder, and stores the aligned images there with the filename" << endl <<
-            "        [previous filename]_to_[next filename].png" << endl;
-    cout << "FORMAT: StackCLI --align_images [Image path one] [Image path two] --result_image [result image path]" << endl <<
-            "        Aligns the second image to the first image and saves the image to the" << endl <<
-            "        specified result image path" << endl;
+    cout << "FORMAT: grime2cli --calibrate [Bowtie target image] " << endl <<
+            "                  --csv_file [CSV file with bow tie target xy positions]" << endl <<
+            "                  --calib_json [json filepath for created json file]" << endl <<
+            "                 [--result_image [Result overlay image] OPTIONAL]" << endl <<
+            "        Loads image with bow tie targets (all must be visible). Reads csv file" << endl <<
+            "        that holds world coordinate positions of the centers of the bow ties," << endl <<
+            "        calculates move target positions, creates calibration model, and creates" << endl <<
+            "        calibration model, then stores it to the specified json file. An optional" << endl <<
+            "        result image with the calibration result can be created." << endl;
+    cout << "FORMAT: find_line --timestamp_from_filename or --timestamp_from_exif " << endl <<
+            "                  --timestamp_length [length in chars of the timestamp within the source string]" << endl <<
+            "                  --timestamp_pos [position of the first timestamp char of source string]" << endl <<
+            "                  --timestamp_format [y-m-d H:M format string for timestamp, e.g., yyyy-mm-ddTMM:HH]" << endl <<
+            "                  [Image path to be analyzed] --calib_json [Calibration json file path]" << endl <<
+            "                  [--csv_file [Path of csv file to create or append with find line result] OPTIONAL]" << endl <<
+            "                  [--result_image [Path of result overlay image] OPTIONAL]" << endl <<
+            "        Loads the specified image and calibration file, extracts the image using the specified" << endl <<
+            "        timestamp parameters, calculates the line position, returns a json string with the find line" << endl <<
+            "        results to stdout, and creates the optional overlay result image if specified" << endl;
+    cout << "FORMAT: run_folder --timestamp_from_filename or --timestamp_from_exif " << endl <<
+            "                   --timestamp_length [length in chars of the timestamp within the source string]" << endl <<
+            "                   --timestamp_pos [position of the first timestamp char of source string]" << endl <<
+            "                   --timestamp_format [y-m-d H:M format string for timestamp, e.g., yyyy-mm-ddTMM:HH]" << endl <<
+            "                   [Folder path of images to be analyzed] --calib_json [Calibration json file path]" << endl <<
+            "                   [--csv_file [Path of csv file to create or append with find line results] OPTIONAL]" << endl <<
+            "                   [--result_folder [Path of folder to hold result overlay images] OPTIONAL]" << endl <<
+            "        Loads the specified images and calibration file, extracts the timestamps using the specified" << endl <<
+            "        timestamp parameters, calculates the line positions,  and creates the optional overlay result" << endl <<
+            "        image if specified" << endl;
+    cout << "--show_metadata [Image filepath]" << endl;
+    cout << "     Returns metadata extracted from the image to stdout" << endl;
     cout << "--verbose" << endl;
+    cout << "     Currently has no effect" << endl;
     cout << "--logFile [filepath]" << endl;
     cout << "     Logs message to specified file rather than stderr" << endl;
     cout << "--help" << endl;
     cout << "     Shows this help message" << endl;
     cout << "--version" << endl;
-    cout << "     Shows the ScanAlignCLI version" << endl;
+    cout << "     Shows the grime2cli version" << endl;
 }
 #endif // ARGHANDLER_H

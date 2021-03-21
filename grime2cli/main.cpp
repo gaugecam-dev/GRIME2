@@ -27,7 +27,7 @@ using namespace gc;
 // --calibrate "/home/kchapman/repos/GRIME2/gcgui/config/2012_demo/06/NRmarshDN-12-06-45-10-30.jpg" --csv_file "/home/kchapman/repos/GRIME2/gcgui/config/calibration_target_world_coordinates.csv" --result_image "/home/kchapman/Desktop/calib/calib_result.png"
 // --show_metadata "/home/kchapman/data/idaho_power/bad_cal_bad_line_find/TREK0003.jpg"
 // --find_line --timestamp_from_filename --timestamp_start_pos 10 --timestamp_length 14 --timestamp_format "yy-mm-dd-HH-MM" "/home/kchapman/repos/GRIME2/gcgui/config/2012_demo/06/NRmarshDN-12-06-30-10-45.jpg" --calib_json "/home/kchapman/Desktop/calib/calib.json" --result_image "/home/kchapman/Desktop/calib/find_line_result.png"
-// --run_folder --timestamp_from_filename --timestamp_start_pos 10 --timestamp_length 14 --timestamp_format "yy-mm-dd-HH-MM" "/home/kchapman/repos/GRIME2/gcgui/config/2012_demo/06/" --calib_json "/home/kchapman/Desktop/calib/calib.json" --csv_file "/home/kchapman/Desktop/calib/" --result_folder "/home/kchapman/Desktop/calib/"
+// --run_folder --timestamp_from_filename --timestamp_start_pos 10 --timestamp_length 14 --timestamp_format "yy-mm-dd-HH-MM" "/home/kchapman/repos/GRIME2/gcgui/config/2012_demo/06/" --calib_json "/home/kchapman/Desktop/calib/calib.json" --csv_file "/home/kchapman/Desktop/calib/" --result_folder "/home/kchapman/Desktop/calib/find_line_folder.csv"
 
 // forward declarations
 void ShowVersion();
@@ -60,17 +60,22 @@ int main( int argc, char *argv[] )
         ret = GetArgs( argc, argv, params );
         if ( 0 == ret )
         {
-            VisApp vis;
             if ( CALIBRATE == params.opToPerform )
             {
+                VisApp vis;
                 retVal = vis.Calibrate( params.src_imagePath, params.csvPath, params.calib_jsonPath, params.result_imagePath );
             }
             else if ( FIND_LINE == params.opToPerform )
             {
                 retVal = FindWaterLevel( params );
             }
+            else if ( RUN_FOLDER == params.opToPerform )
+            {
+                retVal = RunFolder( params );
+            }
             else if ( SHOW_METADATA == params.opToPerform )
             {
+                VisApp vis;
                 std::string data;
                 retVal = vis.GetImageData( params.src_imagePath, data );
                 if ( GC_OK == retVal )
@@ -89,7 +94,7 @@ int main( int argc, char *argv[] )
             {
                 if ( SHOW_HELP != params.opToPerform )
                 {
-                    FILE_LOG( logINFO ) << "Invalid operation specified: " << params.opToPerform << endl;
+                    FILE_LOG( logERROR ) << "Invalid operation specified: " << params.opToPerform << endl;
                     retVal = GC_ERR;
                 }
                 PrintHelp();
@@ -102,6 +107,71 @@ int main( int argc, char *argv[] )
 GC_STATUS RunFolder( const Grime2CLIParams cliParams )
 {
     GC_STATUS retVal = GC_OK;
+    try
+    {
+        if ( !fs::is_directory( cliParams.src_imagePath ) )
+        {
+            FILE_LOG( logERROR ) << "Path specified is not a folder: " << cliParams.src_imagePath << endl;
+            retVal = GC_ERR;
+        }
+        else
+        {
+            string ext;
+            vector< string > images;
+            for ( auto& p: fs::recursive_directory_iterator( cliParams.src_imagePath ) )
+            {
+                ext = p.path().extension().string();
+                if ( ext == ".png" || ext == ".jpg" )
+                {
+                    images.push_back( p.path().string() );
+                }
+            }
+
+            if ( images.empty() )
+            {
+                FILE_LOG( logERROR ) << "No images found in " << cliParams.src_imagePath << endl;
+                retVal = GC_ERR;
+            }
+            else
+            {
+                FindLineParams params;
+
+                params.calibFilepath = cliParams.calib_jsonPath;
+                params.resultCSVPath = cliParams.csvPath;
+                string result_folder = cliParams.result_imagePath;
+                if ( !result_folder.empty() )
+                {
+                    if ( '/' != result_folder[ result_folder.size() - 1 ] )
+                        result_folder += '/';
+                }
+                params.timeStampFormat = cliParams.timestamp_format;
+                params.timeStampType = cliParams.timestamp_type == "from_filename" ? FROM_FILENAME : FROM_EXIF;
+                params.timeStampStartPos = cliParams.timestamp_startPos;
+                params.timeStampLength = cliParams.timeStamp_length;
+
+                VisApp visApp;
+                string resultJson;
+                FindLineResult result;
+
+                params.resultImagePath.clear();
+                for ( size_t i = 0; i < images.size(); ++i )
+                {
+                    if ( !result_folder.empty() )
+                    {
+                        params.resultImagePath = result_folder +
+                                fs::path( images[ i ] ).stem().string() + "_result.png";
+                    }
+                    params.imagePath = images[ i ];
+                    retVal = visApp.CalcLine( params, result );
+                }
+            }
+        }
+    }
+    catch( const boost::exception &e )
+    {
+        FILE_LOG( logERROR ) << diagnostic_information( e );
+        retVal = GC_EXCEPT;
+    }
 
     return retVal;
 }
@@ -121,15 +191,7 @@ GC_STATUS FindWaterLevel( const Grime2CLIParams cliParams )
     string resultJson;
     FindLineResult result;
     GC_STATUS retVal = visApp.CalcLine( params, result, resultJson );
-    if ( GC_OK == retVal )
-    {
-        cout << resultJson << endl;
-    }
-    else
-    {
-        cout << "ERROR" << endl;
-    }
-
+    cout << ( GC_OK == retVal ? resultJson : "ERROR" ) << endl;
     return retVal;
 }
 

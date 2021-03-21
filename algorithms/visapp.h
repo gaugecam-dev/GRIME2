@@ -200,13 +200,13 @@ public:
      * A header is added to the csv file when it is created.
      *
      * @param resultCSV Output filepath of the csv file to be created or appended
-     * @param imgResultPath Filepath of the image to which the results apply
+     * @param imgPath Filepath of the image to which the results apply
      * @param result The results of the waterlevel calculation to be appended
      * @param overwrite true=overwrite the csv file destroying what was previously there
      * false=append the data to the file if exists and create a new one if it does not
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
-    GC_STATUS WriteFindlineResultToCSV( const std::string resultCSV, const std::string imgResultPath,
+    GC_STATUS WriteFindlineResultToCSV( const std::string resultCSV, const std::string imgPath,
                                         const FindLineResult &result, const bool overwrite = false );
 
     /**

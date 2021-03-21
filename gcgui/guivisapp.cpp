@@ -813,7 +813,7 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                 }
                 else
                 {
-                    csvOut << "filename, timestamp, seconds since epoch, water level, kalman estimate" << endl;
+                    csvOut << "filename, timestamp, seconds since epoch, water level" << endl;
                 }
             }
             if ( !params.resultImagePath.empty() )
@@ -839,24 +839,19 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                 if ( '/' != resultFolderAdj[ resultFolderAdj.size() - 1 ] )
                     resultFolderAdj += '/';
 
-                KalmanItem item;
-                KalmanFilter kf( 4, 2, 0 );
-                kf.transitionMatrix = ( Mat_< float >( 4, 4 ) << 1,0,1,0,  0,1,0,1,  0,0,1,0,  0,0,0,1 );
-                Mat_< float > measurement( 2, 1 );
-                measurement.setTo( Scalar( 0 ) );
 
                 FindData findData;
                 findData.calibSettings = m_visApp.GetCalibModel();
                 findData.findlineParams = params;
 
                 GC_STATUS retTimeGet;
+                long long secsSinceEpoch;
                 string tmStr, timestamp, resultString, graphData;
                 for ( size_t i = 0; i < images.size(); ++i )
                 {
                     if ( !m_isRunning )
                     {
                         sigMessage( "Folder run stopped" );
-                        i = images.size();
                         stopped = true;
                         break;
                     }
@@ -915,18 +910,17 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                                 msg += string( buffer );
                                 retTimeGet = GcTimestampConvert::ConvertDateToSeconds( fs::path( images[ i ] ).filename().string(),
                                                                                        params.timeStampStartPos, params.timeStampLength,
-                                                                                       params.timeStampFormat, item.secsSinceEpoch );
+                                                                                       params.timeStampFormat, secsSinceEpoch );
                                 if ( GC_OK == retTimeGet )
                                 {
                                     sprintf( buffer, "Timestamp=%s\nSecs from epoch=%lld",
-                                             findData.findlineResult.timestamp.c_str(), item.secsSinceEpoch );
+                                             findData.findlineResult.timestamp.c_str(), secsSinceEpoch );
                                 }
                                 else
                                 {
                                     sprintf( buffer, "Timestamp=FAILED CONVERSION\nSecs from epoch=FAILED CONVERSION" );
                                 }
                                 msg += string( buffer );
-                                item.measurement = findData.findlineResult.waterLevelAdjusted.y;
                             }
                             else
                             {
@@ -937,8 +931,8 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                             findData.findlineResult.timestamp = timestamp;
                             if ( !params.resultCSVPath.empty() )
                             {
-                                csvOut << filename << "," << timestamp << "," << item.secsSinceEpoch << "," <<
-                                          findData.findlineResult.waterLevelAdjusted.y << "," << item.prediction << endl;
+                                csvOut << filename << "," << timestamp << "," << secsSinceEpoch << "," <<
+                                          findData.findlineResult.waterLevelAdjusted.y << endl;
                             }
                             if ( !params.resultImagePath.empty() )
                             {
