@@ -24,6 +24,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/algorithm.hpp>
 #include <boost/exception/diagnostic_information.hpp>
+#include "animate.h"
 #include "timestampconvert.h"
 
 using namespace cv;
@@ -841,6 +842,71 @@ GC_STATUS VisApp::WriteFindlineResultToCSV( const std::string resultCSV, const s
     catch( Exception &e )
     {
         FILE_LOG( logERROR ) << "[VisApp::CreateCalibOverlayImage] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+
+    return retVal;
+}
+GC_STATUS VisApp::CreateAnimation( const std::string imageFolder, const std::string animationFilepath, const int fps )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        if ( !fs::is_directory( imageFolder ) )
+        {
+            FILE_LOG( logERROR ) << "[VisApp::CreateAnimation] Path specified is not a folder: " << imageFolder << endl;
+            retVal = GC_ERR;
+        }
+        else
+        {
+            string ext;
+            vector< string > images;
+            for ( auto& p: fs::recursive_directory_iterator( imageFolder ) )
+            {
+                ext = p.path().extension().string();
+                if ( ext == ".png" || ext == ".jpg" )
+                {
+                    images.push_back( p.path().string() );
+                }
+            }
+
+            if ( images.empty() )
+            {
+                FILE_LOG( logERROR ) << "No images found in " << imageFolder << endl;
+                retVal = GC_ERR;
+            }
+            else
+            {
+                sort( images.begin(), images.end() );
+
+                Animate animate;
+                retVal = animate.CreateCacheFolder();
+                if ( GC_OK == retVal )
+                {
+                    Mat img;
+                    char buffer[ 512 ];
+                    for ( size_t i = 0; i < images.size(); ++i )
+                    {
+                        img = imread( images[ i ], IMREAD_ANYCOLOR );
+                        if ( img.empty() )
+                        {
+                            FILE_LOG( logWARNING ) << "Could not read frame: " << images[ i ] << " for animation";
+                        }
+                        else
+                        {
+                            sprintf( buffer, "image%03d.png", static_cast< int >( i ) );
+                            retVal = animate.AddFrame( string( buffer ), img );
+                        }
+                    }
+                    retVal = animate.Create( animationFilepath, fps );
+                    retVal = animate.RemoveCacheFolder();
+                }
+            }
+        }
+    }
+    catch( const boost::exception &e )
+    {
+        FILE_LOG( logERROR ) << "[VisApp::CreateAnimation] " <<diagnostic_information( e );
         retVal = GC_EXCEPT;
     }
 

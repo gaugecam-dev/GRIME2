@@ -155,6 +155,7 @@ public:
     GC_STATUS GetImageData( const std::string filepath, string &data );
     GC_STATUS GetImageData( const std::string filepath, ExifFeatures &exifFeat );
     GC_STATUS GetImageTimestamp( const std::string filepath, std::string &timestamp );
+    GC_STATUS CreateAnimation( const std::string imageFolder, const std::string animationFilepath, const int fps );
 
     /**
      * @brief Convert world coordinates to pixel coordinates using the currently set calibration

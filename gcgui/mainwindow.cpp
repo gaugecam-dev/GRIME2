@@ -82,6 +82,7 @@ MainWindow::MainWindow(QWidget *parent) :
     if ( file.isOpen() )
     {
         ui->textBrowser_releaseNotes->setHtml( stream.readAll() );
+        file.close();
     }
     else
     {
@@ -1276,7 +1277,18 @@ int MainWindow::AddRow( const string row_string )
 
     return ret;
 }
-#include "../algorithms/metadata.h"
+void MainWindow::on_pushButton_createAnimation_clicked()
+{
+    QString strFullPath;
+    strFullPath = QFileDialog::getSaveFileName( this, "Select animation filename", ui->lineEdit_imageFolder->text(), "Animations (*.gif *.mp4)" );
+    if ( strFullPath.endsWith( ".gif" ) || strFullPath.endsWith( ".mp4" ) )
+    {
+        std::string data;
+        GC_STATUS retVal = m_visApp.CreateAnimation( ui->lineEdit_imageFolder->text().toStdString(),
+                                                     strFullPath.toStdString(), ui->spinBox_animateFPS->value() );
+        ui->textEdit_msgs->append( "Animation creation: " + QString( GC_OK == retVal ? "SUCCESS" : "FAILURE" ) );
+    }
+}
 void MainWindow::on_pushButton_test_clicked()
 {
 }

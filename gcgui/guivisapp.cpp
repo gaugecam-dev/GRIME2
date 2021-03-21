@@ -637,6 +637,12 @@ GC_STATUS GuiVisApp::GetMetadata( const std::string imgFilepath, std::string &da
     sigMessage( string( "Metadata retrieval: " ) + ( GC_OK == retVal ? "SUCCESS" : "FAILURE" ) );
     return retVal;
 }
+GC_STATUS GuiVisApp::CreateAnimation( const std::string imageFolder, const std::string animationFilepath, const int fps )
+{
+    GC_STATUS retVal = m_visApp.CreateAnimation( imageFolder, animationFilepath, fps );
+    sigMessage( string( "Create animation: " ) + ( GC_OK == retVal ? "SUCCESS" : "FAILURE" ) );
+    return retVal;
+}
 GC_STATUS GuiVisApp::LoadCalib( const std::string calibJson )
 {
     GC_STATUS retVal = m_visApp.LoadCalib( calibJson );

@@ -45,6 +45,7 @@ win32 {
 # win32:RC_ICONS += ./icons/coffee_logo.png
 
 SOURCES += \
+        ../algorithms/animate.cpp \
         ../algorithms/calib.cpp \
         ../algorithms/findcalibgrid.cpp \
         ../algorithms/findline.cpp \
@@ -55,6 +56,7 @@ SOURCES += \
         mainwindow.cpp
 
 HEADERS += \
+        ../algorithms/animate.h \
         ../algorithms/bresenham.h \
         ../algorithms/calib.h \
         ../algorithms/csvreader.h \
