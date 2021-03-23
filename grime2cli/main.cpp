@@ -73,6 +73,11 @@ int main( int argc, char *argv[] )
             {
                 retVal = RunFolder( params );
             }
+            else if ( MAKE_GIF == params.opToPerform )
+            {
+                VisApp vis;
+                retVal = vis.CreateAnimation( params.src_imagePath, params.result_imagePath, params.fps, params.scale );
+            }
             else if ( SHOW_METADATA == params.opToPerform )
             {
                 VisApp vis;

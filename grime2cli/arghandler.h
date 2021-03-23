@@ -18,6 +18,7 @@ typedef enum GRIME2_CLI_OPERATIONS
     CALIBRATE,
     FIND_LINE,
     RUN_FOLDER,
+    MAKE_GIF,
     SHOW_METADATA,
     SHOW_VERSION,
     SHOW_HELP
@@ -30,7 +31,9 @@ public:
         verbose( false ),
         opToPerform( SHOW_HELP ),
         timestamp_startPos( -1 ),
-        timeStamp_length( -1 )
+        timeStamp_length( -1 ),
+        fps( 0.5 ),
+        scale( 1.0 )
     {}
     void clear()
     {
@@ -44,6 +47,8 @@ public:
         timestamp_type.clear();
         timestamp_startPos = -1;
         timeStamp_length = -1;
+        fps = 0.5;
+        scale = 1.0;
     }
     bool verbose;
     GRIME2_CLI_OP opToPerform;
@@ -55,6 +60,8 @@ public:
     string timestamp_type;
     int timestamp_startPos;
     int timeStamp_length;
+    double fps;
+    double scale;
 };
 int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
 {
@@ -87,7 +94,7 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                 {
                     if ( i + 1 >= argc )
                     {
-                        FILE_LOG( logERROR ) << "[" << __func__ << "][GetArgs()] no log filename specified on --logFile request";
+                        FILE_LOG( logERROR ) << "[ArgHandler] no log filename specified on --logFile request";
                         retVal = -1;
                     }
                     else
@@ -95,7 +102,7 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                         g_logFile = fopen( argv[ ++i ], "w" );
                         if ( nullptr == g_logFile )
                         {
-                            FILE_LOG( logERROR ) << "[" << __func__ << "][GetArgs()] could not open requested log file: " << argv[ i ];
+                            FILE_LOG( logERROR ) << "[ArgHandler]  could not open requested log file: " << argv[ i ];
                             retVal = -1;
                             break;
                         }
@@ -117,6 +124,10 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                 {
                     params.opToPerform = RUN_FOLDER;
                 }
+                else if ( "make_gif" == string( argv[ i ] ).substr( 2 ) )
+                {
+                    params.opToPerform = MAKE_GIF;
+                }
                 else if ( "show_metadata" == string( argv[ i ] ).substr( 2 ) )
                 {
                     params.opToPerform = SHOW_METADATA;
@@ -128,6 +139,32 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                 else if ( "help" == string( argv[ i ] ).substr( 2 ) )
                 {
                     params.opToPerform = SHOW_HELP;
+                }
+                else if ( "fps" == string( argv[ i ] ).substr( 2 ) )
+                {
+                    if ( i + 1 < argc )
+                    {
+                        params.fps = stod( argv[ ++i ] );
+                    }
+                    else
+                    {
+                        FILE_LOG( logERROR ) << "[ArgHandler] No value supplied on --fps request";
+                        retVal = -1;
+                        break;
+                    }
+                }
+                else if ( "scale" == string( argv[ i ] ).substr( 2 ) )
+                {
+                    if ( i + 1 < argc )
+                    {
+                        params.scale = stod( argv[ ++i ] );
+                    }
+                    else
+                    {
+                        FILE_LOG( logERROR ) << "[ArgHandler] No value supplied on --scale request";
+                        retVal = -1;
+                        break;
+                    }
                 }
                 else if ( "timestamp_from_exif" == string( argv[ i ] ).substr( 2 ) )
                 {
@@ -145,7 +182,7 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                     }
                     else
                     {
-                        FILE_LOG( logERROR ) << "No value supplied on --timestamp_start_pos request";
+                        FILE_LOG( logERROR ) << "[ArgHandler] No value supplied on --timestamp_start_pos request";
                         retVal = -1;
                         break;
                     }
@@ -158,7 +195,7 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                     }
                     else
                     {
-                        FILE_LOG( logERROR ) << "No value supplied on --timestamp_start_pos request";
+                        FILE_LOG( logERROR ) << "[ArgHandler] No value supplied on --timestamp_start_pos request";
                         retVal = -1;
                         break;
                     }
@@ -171,7 +208,7 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                     }
                     else
                     {
-                        FILE_LOG( logERROR ) << "No value supplied on --timestamp_start_pos request";
+                        FILE_LOG( logERROR ) << "[ArgHandler] No value supplied on --timestamp_start_pos request";
                         retVal = -1;
                         break;
                     }
@@ -183,7 +220,7 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                         params.csvPath = string( argv[ ++i ] );
                         if ( string::npos == params.csvPath.find( ".csv" ) )
                         {
-                            FILE_LOG( logERROR ) << "CSV file " << params.csvPath << " extension not recognized";
+                            FILE_LOG( logERROR ) << "[ArgHandler] CSV file " << params.csvPath << " extension not recognized";
                             retVal = -1;
                         }
                         else if ( !fs::exists( fs::path( params.csvPath ).parent_path() ) )
@@ -191,7 +228,7 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                             bool isOk = fs::create_directories( fs::path( params.result_imagePath ).parent_path() );
                             if ( !isOk )
                             {
-                                FILE_LOG( logERROR ) << "Could not create result image folder: " << fs::path( params.result_imagePath ).parent_path().string();
+                                FILE_LOG( logERROR ) << "[ArgHandler] Could not create result image folder: " << fs::path( params.result_imagePath ).parent_path().string();
                                 retVal = -1;
                                 break;
                             }
@@ -199,7 +236,7 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                     }
                     else
                     {
-                        FILE_LOG( logERROR ) << "No value supplied on --csv_file request";
+                        FILE_LOG( logERROR ) << "[ArgHandler] No value supplied on --csv_file request";
                         retVal = -1;
                         break;
                     }
@@ -211,14 +248,14 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                         params.calib_jsonPath = string( argv[ ++i ] );
                         if ( string::npos == params.calib_jsonPath.find( ".json" ) )
                         {
-                            FILE_LOG( logERROR ) << "JSON file " << params.calib_jsonPath << " extension not recognized";
+                            FILE_LOG( logERROR ) << "[ArgHandler] JSON file " << params.calib_jsonPath << " extension not recognized";
                             retVal = -1;
                             break;
                         }
                     }
                     else
                     {
-                        FILE_LOG( logERROR ) << "No value supplied on --result_image request";
+                        FILE_LOG( logERROR ) << "[ArgHandler] No value supplied on --result_image request";
                         retVal = -1;
                         break;
                     }
@@ -228,25 +265,31 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                     if ( i + 1 < argc )
                     {
                         params.result_imagePath = string( argv[ ++i ] );
-                        if ( string::npos == params.result_imagePath.find( ".png" ) &&
-                             string::npos == params.result_imagePath.find( ".jpg" ) )
+                        if ( ( MAKE_GIF != params.opToPerform &&
+                               string::npos == params.result_imagePath.find( ".png" ) &&
+                               string::npos == params.result_imagePath.find( ".jpg" ) ) ||
+                             ( MAKE_GIF == params.opToPerform &&
+                               string::npos == params.result_imagePath.find( ".gif" ) ) )
                         {
-                            FILE_LOG( logERROR ) << "Image file " << params.result_imagePath << " extension not recognized";
+                            FILE_LOG( logERROR ) << "[ArgHandler] Image file " << params.result_imagePath << " extension not recognized";
                             retVal = -1;
                         }
-                        else if ( !fs::exists( params.result_imagePath ) )
+                        else
                         {
-                            bool isOk = fs::create_directories( fs::path( params.result_imagePath ).parent_path() );
-                            if ( !isOk )
+                            if ( !fs::exists( params.result_imagePath ) )
                             {
-                                FILE_LOG( logERROR ) << "Could not create result image folder: " << params.result_imagePath;
-                                retVal = -1;
+                                bool isOk = fs::create_directories( fs::path( params.result_imagePath ).parent_path() );
+                                if ( !isOk )
+                                {
+                                    FILE_LOG( logERROR ) << "[ArgHandler] Could not create result image folder: " << params.result_imagePath;
+                                    retVal = -1;
+                                }
                             }
                         }
                     }
                     else
                     {
-                        FILE_LOG( logERROR ) << "No value supplied on --result_image request";
+                        FILE_LOG( logERROR ) << "[ArgHandler] No value supplied on --result_image request";
                         retVal = -1;
                         break;
                     }
@@ -258,7 +301,7 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                         params.result_imagePath = string( argv[ ++i ] );
                         if ( !fs::is_directory( params.result_imagePath ) )
                         {
-                            FILE_LOG( logERROR ) << "Result path " << params.result_imagePath << " is not a folder";
+                            FILE_LOG( logERROR ) << "[ArgHandler] Result path " << params.result_imagePath << " is not a folder";
                             retVal = -1;
                         }
                         else if ( !fs::exists( params.result_imagePath ) )
@@ -266,21 +309,21 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                             bool isOk = fs::create_directories( params.result_imagePath );
                             if ( !isOk )
                             {
-                                FILE_LOG( logERROR ) << "Could not create result folder: " << params.result_imagePath;
+                                FILE_LOG( logERROR ) << "[ArgHandler] Could not create result folder: " << params.result_imagePath;
                                 retVal = -1;
                             }
                         }
                     }
                     else
                     {
-                        FILE_LOG( logERROR ) << "No value supplied on --result_folder request";
+                        FILE_LOG( logERROR ) << "[ArgHandler] No value supplied on --result_folder request";
                         retVal = -1;
                         break;
                     }
                 }
                 else
                 {
-                    FILE_LOG( logERROR ) << "[arghandler] Invalid command line item " << argv[ i ];
+                    FILE_LOG( logERROR ) << "[ArgHandler]  Invalid command line item " << argv[ i ];
                     retVal = -1;
                 }
             }
@@ -297,7 +340,8 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                         retVal = -1;
                     }
                 }
-                else if ( RUN_FOLDER == params.opToPerform )
+                else if ( MAKE_GIF == params.opToPerform ||
+                          RUN_FOLDER == params.opToPerform )
                 {
                     if ( !fs::is_directory( params.src_imagePath ) )
                     {
@@ -307,13 +351,13 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                 }
                 else
                 {
-                    FILE_LOG( logERROR ) << "There is no associated operation for the first path";
+                    FILE_LOG( logERROR ) << "[ArgHandler] There is no associated operation for the first path";
                     retVal = -1;
                 }
             }
             else
             {
-                FILE_LOG( logWARNING ) << "Extraneous command line item " << argv[ i ];
+                FILE_LOG( logWARNING ) << "[ArgHandler] Extraneous command line item " << argv[ i ];
             }
             if ( 0 != retVal )
                 break;
@@ -321,7 +365,7 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
     }
     catch( const boost::exception &e )
     {
-        FILE_LOG( logERROR ) << "[" << __func__ << "][GetArgs()] " << diagnostic_information( e );
+        FILE_LOG( logERROR ) << "[ArgHandler] " << diagnostic_information( e );
         retVal = -1;
     }
     return retVal;
@@ -364,7 +408,7 @@ void PrintHelp()
             "        calculates move target positions, creates calibration model, and creates" << endl <<
             "        calibration model, then stores it to the specified json file. An optional" << endl <<
             "        result image with the calibration result can be created." << endl;
-    cout << "FORMAT: find_line --timestamp_from_filename or --timestamp_from_exif " << endl <<
+    cout << "FORMAT: grime2cli --find_line --timestamp_from_filename or --timestamp_from_exif " << endl <<
             "                  --timestamp_length [length in chars of the timestamp within the source string]" << endl <<
             "                  --timestamp_pos [position of the first timestamp char of source string]" << endl <<
             "                  --timestamp_format [y-m-d H:M format string for timestamp, e.g., yyyy-mm-ddTMM:HH]" << endl <<
@@ -374,7 +418,7 @@ void PrintHelp()
             "        Loads the specified image and calibration file, extracts the image using the specified" << endl <<
             "        timestamp parameters, calculates the line position, returns a json string with the find line" << endl <<
             "        results to stdout, and creates the optional overlay result image if specified" << endl;
-    cout << "FORMAT: run_folder --timestamp_from_filename or --timestamp_from_exif " << endl <<
+    cout << "FORMAT: grime2cli --run_folder --timestamp_from_filename or --timestamp_from_exif " << endl <<
             "                   --timestamp_length [length in chars of the timestamp within the source string]" << endl <<
             "                   --timestamp_pos [position of the first timestamp char of source string]" << endl <<
             "                   --timestamp_format [y-m-d H:M format string for timestamp, e.g., yyyy-mm-ddTMM:HH]" << endl <<
@@ -384,7 +428,12 @@ void PrintHelp()
             "        Loads the specified images and calibration file, extracts the timestamps using the specified" << endl <<
             "        timestamp parameters, calculates the line positions,  and creates the optional overlay result" << endl <<
             "        image if specified" << endl;
-    cout << "--show_metadata [Image filepath]" << endl;
+    cout << "FORMAT: grime2cli --make_gif [Folder path of images] --result_image [File path of GIF to create]" << endl <<
+            "                   [--fps [Animation frames per second] OPTIONAL default=0.5]" << endl <<
+            "                   [--scale [Animation image scale from original] OPTIONAL default=1.0]" << endl <<
+            "        Creates a gif animation with the images in the specifed folder at the specified scale and" << endl <<
+            "        frame rate" << endl;
+    cout << "FORMAT: grime2cli --show_metadata [Image filepath]" << endl;
     cout << "     Returns metadata extracted from the image to stdout" << endl;
     cout << "--verbose" << endl;
     cout << "     Currently has no effect" << endl;

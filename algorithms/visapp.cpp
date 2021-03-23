@@ -19,6 +19,7 @@
 #include <cstdio>
 #include <fstream>
 #include <mutex>
+#include <algorithm>
 #include <opencv2/imgcodecs.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
@@ -201,7 +202,11 @@ GC_STATUS VisApp::GetImageTimestamp( const std::string filepath, std::string &ti
     GC_STATUS retVal = m_metaData.GetExifData( filepath, "DateTimeOriginal", timestamp );
     if ( GC_OK != retVal )
     {
-        FILE_LOG( logERROR ) << "[VisApp::ListMetadata] Could  not retrieve exif image data from " << filepath;
+        GC_STATUS retVal = m_metaData.GetExifData( filepath, "CaptureTime", timestamp );
+        if ( GC_OK != retVal )
+        {
+            FILE_LOG( logERROR ) << "[VisApp::ListMetadata] Could  not retrieve exif image data from " << filepath;
+        }
     }
     return retVal;
 }
@@ -242,7 +247,6 @@ GC_STATUS VisApp::CalcLine( const Mat &img, const string timestamp )
     try
     {
         FindLineResult result;
-        result.timestamp = timestamp;
         if ( img.empty() )
         {
             FILE_LOG( logERROR ) << "[VisApp::CalcLine] Empty image";
@@ -258,6 +262,7 @@ GC_STATUS VisApp::CalcLine( const Mat &img, const string timestamp )
             }
             else
             {
+                result.timestamp = timestamp;
                 result.msgs.push_back( "FindStatus: " + string( GC_OK == retVal ? "SUCCESS" : "FAIL" ) );
                 char buffer[ 256 ];
                 snprintf( buffer, 256, "Timestamp: %s", result.timestamp.c_str() );
@@ -847,7 +852,7 @@ GC_STATUS VisApp::WriteFindlineResultToCSV( const std::string resultCSV, const s
 
     return retVal;
 }
-GC_STATUS VisApp::CreateAnimation( const std::string imageFolder, const std::string animationFilepath, const int fps )
+GC_STATUS VisApp::CreateAnimation( const std::string imageFolder, const std::string animationFilepath, const double fps, const double scale )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -885,7 +890,7 @@ GC_STATUS VisApp::CreateAnimation( const std::string imageFolder, const std::str
                 {
                     Mat img;
                     char buffer[ 512 ];
-                    for ( size_t i = 0; i < images.size(); ++i )
+                    for ( size_t i = 0; i < static_cast< size_t >( std::min( 1000, static_cast< int >( images.size() ) ) ); ++i )
                     {
                         img = imread( images[ i ], IMREAD_ANYCOLOR );
                         if ( img.empty() )
@@ -898,7 +903,7 @@ GC_STATUS VisApp::CreateAnimation( const std::string imageFolder, const std::str
                             retVal = animate.AddFrame( string( buffer ), img );
                         }
                     }
-                    retVal = animate.Create( animationFilepath, fps );
+                    retVal = animate.Create( animationFilepath, fps, scale );
                     retVal = animate.RemoveCacheFolder();
                 }
             }

@@ -18,8 +18,8 @@ class Animate
 public:
     Animate();
 
-    GC_STATUS Create( const std::string animationFilepath, const double secondsPerFrame = 2 );
-    GC_STATUS CreateRaw( const std::string animationFilepath, const double secondsPerFrame = 2 );
+    GC_STATUS Create( const std::string animationFilepath, const double fps = 2, const double scale = 1.0 );
+    GC_STATUS CreateRaw( const std::string animationFilepath, const double fps = 2, const double scale = 1.0 );
     GC_STATUS AddFrame( std::string filename, cv::Mat frame );
 
     static GC_STATUS CreateCacheFolder();

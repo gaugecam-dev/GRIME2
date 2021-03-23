@@ -1280,13 +1280,18 @@ int MainWindow::AddRow( const string row_string )
 void MainWindow::on_pushButton_createAnimation_clicked()
 {
     QString strFullPath;
-    strFullPath = QFileDialog::getSaveFileName( this, "Select animation filename", ui->lineEdit_imageFolder->text(), "Animations (*.gif *.mp4)" );
-    if ( strFullPath.endsWith( ".gif" ) || strFullPath.endsWith( ".mp4" ) )
+    strFullPath = QFileDialog::getSaveFileName( this, "Select GIF filename", ui->lineEdit_imageFolder->text(), "Animations (*.gif *.GIF)" );
+    if ( strFullPath.endsWith( ".gif" ) || strFullPath.endsWith( ".GIF" ) )
     {
         std::string data;
         GC_STATUS retVal = m_visApp.CreateAnimation( ui->lineEdit_imageFolder->text().toStdString(),
-                                                     strFullPath.toStdString(), ui->spinBox_animateFPS->value() );
+                                                     strFullPath.toStdString(), ui->doubleSpinBox_animateFPS->value(),
+                                                     ui->doubleSpinBox_animateScale->value() );
         ui->textEdit_msgs->append( "Animation creation: " + QString( GC_OK == retVal ? "SUCCESS" : "FAILURE" ) );
+    }
+    else
+    {
+        ui->textEdit_msgs->append( "Animation creation: Invalid extension. Must be .gif" );
     }
 }
 void MainWindow::on_pushButton_test_clicked()

@@ -19,6 +19,7 @@
         <file>icons/item_down.png</file>
         <file>icons/exit_door.png</file>
         <file>icons/item_delete.png</file>
+        <file>icons/cal_target.png</file>
     </qresource>
     <qresource prefix="/">
         <file>docs/release_notes.html</file>

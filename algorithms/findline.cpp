@@ -400,7 +400,7 @@ GC_STATUS FindLine::DrawResult( const Mat &img, Mat &imgOut, const FindLineResul
                 }
                 else
                 {
-                    line( imgOut, result.calcLinePts.lftPixel, result.calcLinePts.rgtPixel, Scalar( 255, 0, 0 ) );
+                    line( imgOut, result.calcLinePts.lftPixel, result.calcLinePts.rgtPixel, Scalar( 255, 0, 0 ), 3 );
                     circle( imgOut, result.calcLinePts.ctrPixel, 5, Scalar( 0, 0, 255 ) );
                     line( imgOut, Point2d( result.calcLinePts.ctrPixel.x - 5.0, result.calcLinePts.ctrPixel.y - 5.0 ),
                                   Point2d( result.calcLinePts.ctrPixel.x + 5.0, result.calcLinePts.ctrPixel.y + 5.0 ), Scalar( 0, 0, 255 ) );
@@ -419,7 +419,7 @@ GC_STATUS FindLine::DrawResult( const Mat &img, Mat &imgOut, const FindLineResul
                 }
                 for ( size_t i = 0; i < result.msgs.size(); ++i )
                 {
-                    putText( imgOut, result.msgs[ i ], Point( 3, ( static_cast< int >( i ) + 1 ) * 12 ), FONT_HERSHEY_PLAIN, 1.0, Scalar( 0, 255, 255 ), 1 );
+                    putText( imgOut, result.msgs[ i ], Point( 3, ( static_cast< int >( i ) + 1 ) * 24 ), FONT_HERSHEY_PLAIN, 2.0, Scalar( 0, 255, 255 ), 2 );
                 }
             }
         }

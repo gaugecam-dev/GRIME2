@@ -239,6 +239,13 @@
           <item>
            <layout class="QHBoxLayout" name="horizontalLayout_6">
             <item>
+             <widget class="QLabel" name="label_10">
+              <property name="text">
+               <string>Show</string>
+              </property>
+             </widget>
+            </item>
+            <item>
              <widget class="QCheckBox" name="checkBox_showCalib">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -247,7 +254,7 @@
                </sizepolicy>
               </property>
               <property name="text">
-               <string>Calib overlay</string>
+               <string>Calib</string>
               </property>
              </widget>
             </item>
@@ -260,7 +267,7 @@
                </sizepolicy>
               </property>
               <property name="text">
-               <string>Water level overlay</string>
+               <string>Waterline</string>
               </property>
              </widget>
             </item>
@@ -268,9 +275,6 @@
              <spacer name="horizontalSpacer_2">
               <property name="orientation">
                <enum>Qt::Horizontal</enum>
-              </property>
-              <property name="sizeType">
-               <enum>QSizePolicy::Preferred</enum>
               </property>
               <property name="sizeHint" stdset="0">
                <size>
@@ -281,6 +285,26 @@
              </spacer>
             </item>
             <item>
+             <widget class="QLabel" name="label_9">
+              <property name="text">
+               <string>Current img</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="pushButton_showImageMetadata">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="text">
+               <string>Get metadata</string>
+              </property>
+             </widget>
+            </item>
+            <item>
              <widget class="QPushButton" name="pushButton_findLineCurrentImage">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -289,7 +313,7 @@
                </sizepolicy>
               </property>
               <property name="text">
-               <string>Process current image</string>
+               <string>Process </string>
               </property>
              </widget>
             </item>
@@ -378,30 +402,6 @@
               <item>
                <layout class="QHBoxLayout" name="horizontalLayout_19">
                 <item>
-                 <widget class="QPushButton" name="pushButton_createAnimation">
-                  <property name="text">
-                   <string>Animate...</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QLabel" name="label_4">
-                  <property name="text">
-                   <string>fps</string>
-                  </property>
-                  <property name="alignment">
-                   <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QSpinBox" name="spinBox_animateFPS">
-                  <property name="minimum">
-                   <number>1</number>
-                  </property>
-                 </widget>
-                </item>
-                <item>
                  <spacer name="horizontalSpacer">
                   <property name="orientation">
                    <enum>Qt::Horizontal</enum>
@@ -415,15 +415,84 @@
                  </spacer>
                 </item>
                 <item>
-                 <widget class="QPushButton" name="pushButton_showImageMetadata">
+                 <widget class="QLabel" name="label_4">
+                  <property name="text">
+                   <string>fps</string>
+                  </property>
+                  <property name="alignment">
+                   <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QDoubleSpinBox" name="doubleSpinBox_animateFPS">
+                  <property name="decimals">
+                   <number>3</number>
+                  </property>
+                  <property name="minimum">
+                   <double>0.001000000000000</double>
+                  </property>
+                  <property name="maximum">
+                   <double>60.000000000000000</double>
+                  </property>
+                  <property name="value">
+                   <double>0.500000000000000</double>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QLabel" name="label_11">
+                  <property name="text">
+                   <string>scale</string>
+                  </property>
+                  <property name="alignment">
+                   <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QDoubleSpinBox" name="doubleSpinBox_animateScale">
+                  <property name="decimals">
+                   <number>3</number>
+                  </property>
+                  <property name="minimum">
+                   <double>0.100000000000000</double>
+                  </property>
+                  <property name="maximum">
+                   <double>2.000000000000000</double>
+                  </property>
+                  <property name="singleStep">
+                   <double>0.100000000000000</double>
+                  </property>
+                  <property name="value">
+                   <double>1.000000000000000</double>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QPushButton" name="pushButton_createAnimation">
+                  <property name="text">
+                   <string>Animate...</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+              <item>
+               <layout class="QHBoxLayout" name="horizontalLayout_3">
+                <item>
+                 <widget class="QProgressBar" name="progressBar_imageLoad">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
                   <property name="sizePolicy">
-                   <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                   <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                     <horstretch>0</horstretch>
                     <verstretch>0</verstretch>
                    </sizepolicy>
                   </property>
-                  <property name="text">
-                   <string>Get image metadata...</string>
+                  <property name="value">
+                   <number>0</number>
                   </property>
                  </widget>
                 </item>
@@ -1239,22 +1308,6 @@ p, li { white-space: pre-wrap; }
             </widget>
            </widget>
           </item>
-          <item>
-           <widget class="QProgressBar" name="progressBar_imageLoad">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="value">
-             <number>0</number>
-            </property>
-           </widget>
-          </item>
          </layout>
         </item>
        </layout>
@@ -1287,7 +1340,6 @@ p, li { white-space: pre-wrap; }
    <addaction name="actionSaveVideo"/>
    <addaction name="actionZoomToFit"/>
    <addaction name="actionZoom100"/>
-   <addaction name="actionToggleGraph"/>
    <addaction name="actionSetRuler"/>
    <addaction name="actionSetROI"/>
    <addaction name="actionExit"/>
@@ -1396,21 +1448,6 @@ p, li { white-space: pre-wrap; }
    </property>
    <property name="toolTip">
     <string>Save a 1 fps video</string>
-   </property>
-  </action>
-  <action name="actionToggleGraph">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="icon">
-    <iconset resource="resources.qrc">
-     <normaloff>:/icons/icons/graph_icon.png</normaloff>:/icons/icons/graph_icon.png</iconset>
-   </property>
-   <property name="text">
-    <string>ToggleGraph</string>
-   </property>
-   <property name="toolTip">
-    <string>Show/hide graph</string>
    </property>
   </action>
  </widget>

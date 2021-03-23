@@ -56,7 +56,7 @@ GC_STATUS Animate::CreateCacheFolder()
     }
     return retVal;
 }
-GC_STATUS Animate::CreateRaw( const std::string animationFilepath, const double secondsPerFrame )
+GC_STATUS Animate::CreateRaw( const std::string animationFilepath, const double fps , const double scale )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -73,7 +73,7 @@ GC_STATUS Animate::CreateRaw( const std::string animationFilepath, const double 
         }
         else
         {
-            cmd = "ffmpeg -f image2 -framerate " + to_string( 1.0 / secondsPerFrame ) + " -i " + inputImages +
+            cmd = "ffmpeg -f image2 -framerate " + to_string( fps ) + " -i " + inputImages +
                     " -c:v libx264 -crf 0 -preset veryslow -c:a libmp3lame -b:v 320k -hide_banner -loglevel error " + TEMPORARY_CACHE_FOLDER + "video.mp4 -y";
             int ret = std::system( cmd.c_str() );
             if ( 0 != ret )
@@ -84,7 +84,7 @@ GC_STATUS Animate::CreateRaw( const std::string animationFilepath, const double 
             else
             {
                 char buf[ 256 ];
-                sprintf( buf, "%d", frameSize.width );
+                sprintf( buf, "%d", cvRound( static_cast< double >( frameSize.width ) * scale ) );
                 cmd = "ffmpeg -y -i " + TEMPORARY_CACHE_FOLDER + "video.mp4 -i " + palette + " -filter_complex \"";
                 cmd += "scale=" + string( buf );
                 cmd += ":-1:flags=lanczos[x];[x][1:v]paletteuse\" -hide_banner -loglevel error " + animationFilepath;
@@ -106,7 +106,7 @@ GC_STATUS Animate::CreateRaw( const std::string animationFilepath, const double 
 
     return retVal;
 }
-GC_STATUS Animate::Create( const std::string animationFilepath, const double secondsPerFrame )
+GC_STATUS Animate::Create( const std::string animationFilepath, const double fps, const double scale )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -123,7 +123,7 @@ GC_STATUS Animate::Create( const std::string animationFilepath, const double sec
         }
         else
         {
-            cmd = "ffmpeg -f image2 -framerate " + to_string( 1.0 / secondsPerFrame ) + " -i " + inputImages +
+            cmd = "ffmpeg -f image2 -framerate " + to_string( fps ) + " -i " + inputImages +
                     " -c:v libx264 -crf 0 -preset veryslow -c:a libmp3lame -b:v 320k -hide_banner -loglevel error " + TEMPORARY_CACHE_FOLDER + "video.mp4 -y";
             int ret = std::system( cmd.c_str() );
             if ( 0 != ret )
@@ -134,7 +134,7 @@ GC_STATUS Animate::Create( const std::string animationFilepath, const double sec
             else
             {
                 char buf[ 256 ];
-                sprintf( buf, "%d", frameSize.width );
+                sprintf( buf, "%d", cvRound( static_cast< double >( frameSize.width ) * scale ) );
                 cmd = "ffmpeg -y -i " + TEMPORARY_CACHE_FOLDER + "video.mp4 -i " + palette + " -filter_complex \"";
                 cmd += "scale=" + string( buf );
                 cmd += ":-1:flags=lanczos[x];[x][1:v]paletteuse\" -hide_banner -loglevel error " + animationFilepath;

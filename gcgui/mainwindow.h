@@ -54,8 +54,8 @@ protected:
 #endif // QT_NO_CONTEXTMENU
 
 signals:
-    void sig_visAppMessage( const QString imgPath );
-    void sig_updateProgess( const int );
+    void sig_visAppMessage( QString imgPath );
+    void sig_updateProgess( int );
     void sig_visAppLineFound( const QString imgPath );
 
 private slots:

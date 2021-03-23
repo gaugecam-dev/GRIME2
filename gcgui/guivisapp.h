@@ -83,7 +83,7 @@ public:
 
     // findline app methods
     GC_STATUS GetMetadata( const std::string imgFilepath, std::string &data );
-    GC_STATUS CreateAnimation( const std::string imageFolder, const std::string animationFilepath, const int fps );
+    GC_STATUS CreateAnimation( const std::string imageFolder, const std::string animationFilepath, const double fps , const double scale );
     GC_STATUS LoadCalib( const std::string calibJson );
     GC_STATUS Calibrate( const std::string imgFilepath, const std::string worldCoordsCsv, const std::string &calibJson );
     GC_STATUS CalcLine( const FindLineParams params, FindLineResult &result );
