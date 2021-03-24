@@ -18,6 +18,10 @@
 !define INSTALLFILEPATH_EXIFTOOL "..\thirdparty\exiftool\exiftool_12_18"
 !endif
 
+!ifndef INSTALLFILEPATH_FFMPEG
+!define INSTALLFILEPATH_FFMPEG "..\thirdparty\ffmpeg\bin"
+!endif
+
 !ifndef INSTALLFILEPATH_MSVC_REDIST
 !define INSTALLFILEPATH_MSVC_REDIST "..\thirdparty\msvc_redist"
 !endif
@@ -89,6 +93,8 @@ Section "GaugeCam Files" grime2
   SetOutPath "$INSTDIR\docs"
   File "${INSTALLFILEPATH_DOCS}\perl_artistic_license.txt"
   File "${INSTALLFILEPATH_DOCS}\Background_installation_guideline.pdf"
+  File "${INSTALLFILEPATH_DOCS}\Bowtie_Fiducial_Pattern.pdf"
+  File "${INSTALLFILEPATH_DOCS}\Bowtie_Fiducial_Pattern.dwg"
   File "${INSTALLFILEPATH_DOCS}\boost_license.txt"
   File "${INSTALLFILEPATH_DOCS}\lgpl_license.txt"
   File "${INSTALLFILEPATH_DOCS}\release_notes.html"
@@ -130,6 +136,7 @@ Section "GaugeCam Files" grime2
   File "${INSTALLFILEPATH_BOOST}\boost_date_time-vc141-mt-x64-1_74.dll"
   File "${INSTALLFILEPATH_BOOST}\boost_filesystem-vc141-mt-x64-1_74.dll"
   File "${INSTALLFILEPATH_EXIFTOOL}\ExifTool_install_12.18_64.exe"
+  File "${INSTALLFILEPATH_FFMPEG}\ffmpeg.exe"
 
   ; add shortcuts
   CreateDirectory "$SMPROGRAMS\GaugeCam"
@@ -165,7 +172,7 @@ SectionEnd
 ;--------------------------------
 ; Additional Prerequisites
 ;--------------------------------
-Section -Prerequisites
+Section -Prerequisites_exiftool
   IfFileExists "C:\Program Files\ExifTool\ExifTool.exe" endExifTool beginExifTool
     Goto endExifTool
     beginExifTool:

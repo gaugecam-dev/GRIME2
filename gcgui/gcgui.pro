@@ -163,6 +163,8 @@ DISTFILES += \
     config/settings.cfg \
     config/settingsWin.cfg \
     docs/Background_installation_guideline.pdf \
+    docs/Bowtie_Fiducial_Pattern.dwg \
+    docs/Bowtie_Fiducial_Pattern.pdf \
     docs/boost_license.txt \
     docs/lgpl_license.txt \
     docs/perl_artistic_license.txt \
