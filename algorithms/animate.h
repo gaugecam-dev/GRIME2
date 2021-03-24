@@ -5,6 +5,7 @@
 #include <opencv2/core.hpp>
 
 #ifdef WIN32
+#include "wincmd.h"
 static const std::string TEMPORARY_CACHE_FOLDER = "c:/gaugecam//animate_cache/";
 #else
 static const std::string TEMPORARY_CACHE_FOLDER = "/var/tmp/gaugecam/animate_cache/";

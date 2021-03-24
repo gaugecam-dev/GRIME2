@@ -19,7 +19,7 @@
 !endif
 
 !ifndef INSTALLFILEPATH_FFMPEG
-!define INSTALLFILEPATH_FFMPEG "..\thirdparty\ffmpeg\bin"
+!define INSTALLFILEPATH_FFMPEG "..\thirdparty\ffmpeg\ffmpeg_432"
 !endif
 
 !ifndef INSTALLFILEPATH_MSVC_REDIST
@@ -27,7 +27,15 @@
 !endif
 
 !ifndef INSTALLFILEPATH_RELEASE
-!define INSTALLFILEPATH_RELEASE "..\build-gcgui-Desktop_Qt_5_15_1_MSVC2019_64bit-Release\release"
+!define INSTALLFILEPATH_RELEASE "..\..\build-grime2-Desktop_Qt_5_15_1_MSVC2019_64bit-Release"
+!endif
+
+!ifndef INSTALLFILEPATH_GCGUI
+!define INSTALLFILEPATH_GCGUI "${INSTALLFILEPATH_RELEASE}\gcgui\release"
+!endif
+
+!ifndef INSTALLFILEPATH_GRIM2CLI
+!define INSTALLFILEPATH_GRIME2CLI "${INSTALLFILEPATH_RELEASE}\grime2cli\release"
 !endif
 
 !ifndef INSTALLFILEPATH_DOCS
@@ -118,7 +126,8 @@ Section "GaugeCam Files" grime2
   File "${INSTALLFILEPATH_MSVC_REDIST}\VC_redist.x64.exe"
 
   SetOutPath "$INSTDIR"
-  File "${INSTALLFILEPATH_RELEASE}\grime2.exe"
+  File "${INSTALLFILEPATH_GCGUI}\grime2.exe"
+  File "${INSTALLFILEPATH_GRIME2CLI}\grime2cli.exe"
   File "${INSTALLFILEPATH_QT}\Qt5Core.dll"
   File "${INSTALLFILEPATH_QT}\Qt5Gui.dll"
   File "${INSTALLFILEPATH_QT}\Qt5Widgets.dll"

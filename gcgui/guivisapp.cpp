@@ -70,9 +70,9 @@ GuiVisApp::GuiVisApp() :
     char buf[ 256 ];
     sprintf( buf, "%svisapp.log", folderExists ? LOG_FILE_FOLDER.c_str() : "" );
 
-    //    m_pFileLog = fopen( buf, "w" );
-    //    Output2FILE::Stream() = m_pFileLog;
-    Output2FILE::Stream() = stdout;
+    fopen_s( &m_pFileLog, buf, "w" );
+    Output2FILE::Stream() = m_pFileLog;
+    // Output2FILE::Stream() = stdout;
 
     if ( !graphServerOk )
     {
@@ -816,7 +816,7 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                 }
                 else
                 {
-                    csvOut << "filename, timestamp, seconds since epoch, water level" << endl;
+                    csvOut << "filename, timestamp, water level" << endl;
                 }
             }
             if ( !params.resultImagePath.empty() )
@@ -847,8 +847,6 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                 findData.calibSettings = m_visApp.GetCalibModel();
                 findData.findlineParams = params;
 
-                GC_STATUS retTimeGet;
-                long long secsSinceEpoch;
                 string tmStr, timestamp, resultString, graphData;
                 for ( size_t i = 0; i < images.size(); ++i )
                 {
@@ -911,17 +909,6 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                                 sprintf( buffer, "Target movement x=%.3f, y=%.3f\n",
                                          findData.findlineResult.offsetMovePts.ctrWorld.x, findData.findlineResult.offsetMovePts.ctrWorld.y );
                                 msg += string( buffer );
-//                                retTimeGet = GcTimestampConvert::ConvertDateToSeconds( timestamp, 0, 16, "yyyy-mm-ddTHH:MM", secsSinceEpoch );
-//                                if ( GC_OK == retTimeGet )
-//                                {
-//                                    sprintf( buffer, "Timestamp=%s\nSecs from epoch=%lld",
-//                                             findData.findlineResult.timestamp.c_str(), secsSinceEpoch );
-//                                }
-//                                else
-//                                {
-//                                    sprintf( buffer, "Timestamp=FAILED CONVERSION\nSecs from epoch=FAILED CONVERSION" );
-//                                }
-//                                msg += string( buffer );
                             }
                             else
                             {
@@ -932,7 +919,7 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                             findData.findlineResult.timestamp = timestamp;
                             if ( !params.resultCSVPath.empty() )
                             {
-                                csvOut << filename << "," << timestamp << "," << secsSinceEpoch << "," <<
+                                csvOut << filename << "," << timestamp << "," <<
                                           findData.findlineResult.waterLevelAdjusted.y << endl;
                             }
                             if ( !params.resultImagePath.empty() )

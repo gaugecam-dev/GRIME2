@@ -56,7 +56,7 @@ GC_STATUS MetaData::GetExifData( const string filepath, const string tag, string
     {
         string strBuf;
         string cmdStr = "exiftool -q -" + tag + " \"" + filepath + "\"";
-        int ret = runCmd( cmdStr.c_str(), strBuf );
+        int ret = WinRunCmd::runCmd( cmdStr.c_str(), strBuf );
         if ( 0 != ret )
         {
             FILE_LOG( logERROR ) << "[MetaData::GetExifData] Could not run exiftool command: " << cmdStr;

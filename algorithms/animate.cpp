@@ -115,7 +115,11 @@ GC_STATUS Animate::Create( const std::string animationFilepath, const double fps
         string inputImages = TEMPORARY_CACHE_FOLDER + "image%03d.png";
         string palette = TEMPORARY_CACHE_FOLDER + "palette.png";
         string cmd = "ffmpeg -f image2 -i " + inputImages + " -hide_banner -loglevel error -vf scale=1296:-1,palettegen -y " + palette;
+#ifdef WIN32
+        int ret = WinRunCmd::runCmdNoData( cmd.c_str() );
+#else
         int ret = std::system( cmd.c_str() );
+#endif
         if ( 0 != ret )
         {
             FILE_LOG( logERROR ) << "[Annotate::Create] Failed to create color palette for animation";
@@ -125,7 +129,11 @@ GC_STATUS Animate::Create( const std::string animationFilepath, const double fps
         {
             cmd = "ffmpeg -f image2 -framerate " + to_string( fps ) + " -i " + inputImages +
                     " -c:v libx264 -crf 0 -preset veryslow -c:a libmp3lame -b:v 320k -hide_banner -loglevel error " + TEMPORARY_CACHE_FOLDER + "video.mp4 -y";
+#ifdef WIN32
+            int ret = WinRunCmd::runCmdNoData( cmd.c_str() );
+#else
             int ret = std::system( cmd.c_str() );
+#endif
             if ( 0 != ret )
             {
                 FILE_LOG( logERROR ) << "[Annotate::Create] Could not create intermediate video for animation";
@@ -138,7 +146,11 @@ GC_STATUS Animate::Create( const std::string animationFilepath, const double fps
                 cmd = "ffmpeg -y -i " + TEMPORARY_CACHE_FOLDER + "video.mp4 -i " + palette + " -filter_complex \"";
                 cmd += "scale=" + string( buf );
                 cmd += ":-1:flags=lanczos[x];[x][1:v]paletteuse\" -hide_banner -loglevel error " + animationFilepath;
+#ifdef WIN32
+               int ret = WinRunCmd::runCmdNoData( cmd.c_str() );
+#else
                 int ret = std::system( cmd.c_str() );
+#endif
                 if ( 0 != ret )
                 {
                     FILE_LOG( logERROR ) << "[Annotate::Create] Could not create animation";
