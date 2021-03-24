@@ -82,10 +82,23 @@ MainWindow::MainWindow(QWidget *parent) :
     if ( file.isOpen() )
     {
         ui->textBrowser_releaseNotes->setHtml( stream.readAll() );
+        file.close();
     }
     else
     {
         ui->textBrowser_releaseNotes->setText( "Could not open release notes" );
+    }
+
+    file.setFileName( ":/LICENSE" );
+    file.open( QFile::ReadOnly | QFile::Text );
+    QTextStream licenseStream( &file );
+    if ( file.isOpen() )
+    {
+        ui->textBrowser_license->setText( licenseStream.readAll() );
+    }
+    else
+    {
+        ui->textBrowser_license->setText( "Could not open LICENSE file" );
     }
 
     QWidget *spacerWidget = new QWidget( this );
@@ -1264,7 +1277,23 @@ int MainWindow::AddRow( const string row_string )
 
     return ret;
 }
-#include "../algorithms/metadata.h"
+void MainWindow::on_pushButton_createAnimation_clicked()
+{
+    QString strFullPath;
+    strFullPath = QFileDialog::getSaveFileName( this, "Select GIF filename", ui->lineEdit_imageFolder->text(), "Animations (*.gif *.GIF)" );
+    if ( strFullPath.endsWith( ".gif" ) || strFullPath.endsWith( ".GIF" ) )
+    {
+        std::string data;
+        GC_STATUS retVal = m_visApp.CreateAnimation( ui->lineEdit_imageFolder->text().toStdString(),
+                                                     strFullPath.toStdString(), ui->doubleSpinBox_animateFPS->value(),
+                                                     ui->doubleSpinBox_animateScale->value() );
+        ui->textEdit_msgs->append( "Animation creation: " + QString( GC_OK == retVal ? "SUCCESS" : "FAILURE" ) );
+    }
+    else
+    {
+        ui->textEdit_msgs->append( "Animation creation: Invalid extension. Must be .gif" );
+    }
+}
 void MainWindow::on_pushButton_test_clicked()
 {
 }

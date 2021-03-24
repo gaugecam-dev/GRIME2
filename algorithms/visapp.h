@@ -22,7 +22,7 @@
  *
  * \author Kenneth W. Chapman
  * \copyright Copyright (C) 2010-2020, Kenneth W. Chapman <coffeesig@gmail.com>, all rights reserved.\n
- * This project is released under the 3-clause BSD License.
+ * This project is released under the Apache License, Version 2.0.
  * \bug No known bugs.
  */
 
@@ -61,7 +61,9 @@ public:
      * @brief Retreive the current software version of VisApp (executive logic class)
      * @return String holding the version
      */
-    std::string Version() { return GAUGECAM_VISAPP_VERSION; }
+    static std::string Version() { return GAUGECAM_VISAPP_VERSION; }
+    static void GetExifToolVersion() { MetaData::GetExifToolVersion(); }
+
 
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // Calibration methods
@@ -129,7 +131,7 @@ public:
      * @param result Holds the results of the line find calculation
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
-    GC_STATUS CalcLine( const FindLineParams params, const string timestamp, FindLineResult &result );
+    GC_STATUS CalcLine( const FindLineParams params, FindLineResult &result );
 
     /**
      * @brief Find the water level in an image specified in the FindLineParams
@@ -138,7 +140,7 @@ public:
      * @param timestamp Image capture time
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
-    GC_STATUS CalcLine( const FindLineParams params, const string timestamp );
+    GC_STATUS CalcLine( const FindLineParams params );
 
     /**
      * @brief Find the water level in the specified image
@@ -148,17 +150,13 @@ public:
      */
     GC_STATUS CalcLine( const cv::Mat &img, const string timestamp );
 
-    /**
-     * @brief Retrieve metadata from the specified image
-     * @param filepath Filepath of the image from which to extract the metadata
-     * @param data Metadata extracted from the image file
-     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
-     */
-    GC_STATUS GetImageMetadata( const std::string filepath, std::string &data );
-
     // TODO: Write doxygen comments
-    GC_STATUS GetExifImageData( const std::string filepath, ExifFeatures &exifFeat );
-    GC_STATUS GetExifTimestamp( const std::string filepath, std::string &timestamp );
+    GC_STATUS CalcLine( const FindLineParams params, FindLineResult &result, string &resultJson );
+    GC_STATUS GetImageData( const std::string filepath, string &data );
+    GC_STATUS GetImageData( const std::string filepath, ExifFeatures &exifFeat );
+    GC_STATUS GetImageTimestamp( const std::string filepath, std::string &timestamp );
+    GC_STATUS CreateAnimation( const std::string imageFolder, const std::string animationFilepath,
+                               const double fps, const double scale );
 
     /**
      * @brief Convert world coordinates to pixel coordinates using the currently set calibration
@@ -204,13 +202,13 @@ public:
      * A header is added to the csv file when it is created.
      *
      * @param resultCSV Output filepath of the csv file to be created or appended
-     * @param imgResultPath Filepath of the image to which the results apply
+     * @param imgPath Filepath of the image to which the results apply
      * @param result The results of the waterlevel calculation to be appended
      * @param overwrite true=overwrite the csv file destroying what was previously there
      * false=append the data to the file if exists and create a new one if it does not
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
-    GC_STATUS WriteFindlineResultToCSV( const std::string resultCSV, const std::string imgResultPath,
+    GC_STATUS WriteFindlineResultToCSV( const std::string resultCSV, const std::string imgPath,
                                         const FindLineResult &result, const bool overwrite = false );
 
     /**
@@ -232,6 +230,7 @@ private:
 
     GC_STATUS PixelToWorld( FindPointSet &ptSet );
     GC_STATUS ReadWorldCoordsFromCSV( const std::string csvFilepath, std::vector< std::vector< cv::Point2d > > &worldCoords );
+    GC_STATUS FindPtSet2JsonString( const FindPointSet set, const string set_type, string &json );
 };
 
 } // namespace gc

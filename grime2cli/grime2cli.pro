@@ -1,34 +1,8 @@
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#   Copyright 2021 Kenneth W. Chapman
-#
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-QT       += core gui
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
-
-TARGET = grime2
 TEMPLATE = app
+CONFIG += console c++11
+CONFIG -= app_bundle
+CONFIG -= qt
 
-# The following define makes your compiler emit warnings if you use
-# any feature of Qt which has been marked as deprecated (the exact warnings
-# depend on your compiler). Please consult the documentation of the
-# deprecated API in order to know how to port your code away from it.
-DEFINES += QT_DEPRECATED_WARNINGS
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# defines
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 DEFINES += BOOST_ALL_NO_LIB BOOST_BIND_GLOBAL_PLACEHOLDERS
 CONFIG += c++11
 
@@ -42,8 +16,6 @@ win32 {
     BOOST_LIBS = C:/local/boost_1_74_0/stage/lib
 }
 
-# win32:RC_ICONS += ./icons/coffee_logo.png
-
 SOURCES += \
         ../algorithms/animate.cpp \
         ../algorithms/calib.cpp \
@@ -51,28 +23,22 @@ SOURCES += \
         ../algorithms/findline.cpp \
         ../algorithms/metadata.cpp \
         ../algorithms/visapp.cpp \
-        guivisapp.cpp \
-        main.cpp \
-        mainwindow.cpp
+        main.cpp
 
 HEADERS += \
-        ../algorithms/animate.h \
-        ../algorithms/bresenham.h \
-        ../algorithms/calib.h \
-        ../algorithms/csvreader.h \
-        ../algorithms/findcalibgrid.h \
-        ../algorithms/findline.h \
-        ../algorithms/gc_types.h \
-        ../algorithms/log.h \
-        ../algorithms/metadata.h \
-        ../algorithms/timestampconvert.h \
-        ../algorithms/visapp.h \
-        ../algorithms/wincmd.h \
-        guivisapp.h \
-        mainwindow.h
-
-FORMS += \
-        mainwindow.ui
+    ../algorithms/animate.h \
+    ../algorithms/bresenham.h \
+    ../algorithms/calib.h \
+    ../algorithms/csvreader.h \
+    ../algorithms/findcalibgrid.h \
+    ../algorithms/findline.h \
+    ../algorithms/gc_types.h \
+    ../algorithms/log.h \
+    ../algorithms/metadata.h \
+    ../algorithms/timestampconvert.h \
+    ../algorithms/visapp.h \
+    ../gcgui/wincmd.h \
+    arghandler.h
 
 unix:!macx {
     INCLUDEPATH +=  /usr/local/include \
@@ -163,8 +129,6 @@ DISTFILES += \
     config/settings.cfg \
     config/settingsWin.cfg \
     docs/Background_installation_guideline.pdf \
-    docs/Bowtie_Fiducial_Pattern.dwg \
-    docs/Bowtie_Fiducial_Pattern.pdf \
     docs/boost_license.txt \
     docs/lgpl_license.txt \
     docs/perl_artistic_license.txt \

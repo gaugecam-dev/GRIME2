@@ -54,8 +54,8 @@ protected:
 #endif // QT_NO_CONTEXTMENU
 
 signals:
-    void sig_visAppMessage( const QString imgPath );
-    void sig_updateProgess( const int );
+    void sig_visAppMessage( QString imgPath );
+    void sig_updateProgess( int );
     void sig_visAppLineFound( const QString imgPath );
 
 private slots:
@@ -87,8 +87,10 @@ private slots:
     void on_pushButton_findLine_processFolder_clicked();
     void on_pushButton_findLine_stopFolderProcess_clicked();
     void on_pushButton_showImageMetadata_clicked();
+    void on_pushButton_createAnimation_clicked();
 
     void on_pushButton_test_clicked();
+
 
 private:
     Ui::MainWindow *ui;

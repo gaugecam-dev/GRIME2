@@ -19,11 +19,13 @@
 #include <cstdio>
 #include <fstream>
 #include <mutex>
+#include <algorithm>
 #include <opencv2/imgcodecs.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/algorithm.hpp>
 #include <boost/exception/diagnostic_information.hpp>
+#include "animate.h"
 #include "timestampconvert.h"
 
 using namespace cv;
@@ -150,10 +152,6 @@ GC_STATUS VisApp::Calibrate( const string imgFilepath, const string worldCoordsC
                 {
                     vector< vector< Point2d > > pixelCoords;
                     retVal = m_findCalibGrid.GetFoundPoints( pixelCoords );
-                    if ( GC_OK != retVal )
-                    {
-
-                    }
                     if ( GC_OK == retVal )
                     {
                         if ( pixelCoords.size() != worldCoords.size() )
@@ -199,18 +197,31 @@ GC_STATUS VisApp::Calibrate( const string imgFilepath, const string worldCoordsC
 
     return retVal;
 }
-GC_STATUS VisApp::GetExifTimestamp( const std::string filepath, std::string &timestamp )
+GC_STATUS VisApp::GetImageTimestamp( const std::string filepath, std::string &timestamp )
 {
     GC_STATUS retVal = m_metaData.GetExifData( filepath, "DateTimeOriginal", timestamp );
+    if ( GC_OK != retVal )
+    {
+        GC_STATUS retVal = m_metaData.GetExifData( filepath, "CaptureTime", timestamp );
+        if ( GC_OK != retVal )
+        {
+            FILE_LOG( logERROR ) << "[VisApp::ListMetadata] Could  not retrieve exif image data from " << filepath;
+        }
+    }
+    return retVal;
+}
+GC_STATUS VisApp::GetImageData( const std::string filepath, std::string &data )
+{
+    GC_STATUS retVal = m_metaData.GetImageData( filepath, data );
     if ( GC_OK != retVal )
     {
         FILE_LOG( logERROR ) << "[VisApp::ListMetadata] Could  not retrieve exif image data from " << filepath;
     }
     return retVal;
 }
-GC_STATUS VisApp::GetExifImageData( const std::string filepath, ExifFeatures &exifFeat )
+GC_STATUS VisApp::GetImageData( const std::string filepath, ExifFeatures &exifFeat )
 {
-    GC_STATUS retVal = m_metaData.GetExifImageData( filepath, exifFeat );
+    GC_STATUS retVal = m_metaData.GetImageData( filepath, exifFeat );
     if ( GC_OK != retVal )
     {
         FILE_LOG( logERROR ) << "[VisApp::ListMetadata] Could  not retrieve exif image data from " << filepath;
@@ -225,9 +236,9 @@ void VisApp::SetFindLineResult( const FindLineResult result )
 {
     m_findLineResult = result;
 }
-GC_STATUS VisApp::CalcLine( const FindLineParams params, const string timestamp )
+GC_STATUS VisApp::CalcLine( const FindLineParams params )
 {
-    GC_STATUS retVal = CalcLine( params, timestamp, m_findLineResult );
+    GC_STATUS retVal = CalcLine( params, m_findLineResult );
     return retVal;
 }
 GC_STATUS VisApp::CalcLine( const Mat &img, const string timestamp )
@@ -236,7 +247,6 @@ GC_STATUS VisApp::CalcLine( const Mat &img, const string timestamp )
     try
     {
         FindLineResult result;
-        result.timestamp = timestamp;
         if ( img.empty() )
         {
             FILE_LOG( logERROR ) << "[VisApp::CalcLine] Empty image";
@@ -252,6 +262,7 @@ GC_STATUS VisApp::CalcLine( const Mat &img, const string timestamp )
             }
             else
             {
+                result.timestamp = timestamp;
                 result.msgs.push_back( "FindStatus: " + string( GC_OK == retVal ? "SUCCESS" : "FAIL" ) );
                 char buffer[ 256 ];
                 snprintf( buffer, 256, "Timestamp: %s", result.timestamp.c_str() );
@@ -320,7 +331,7 @@ GC_STATUS VisApp::CalcLine( const Mat &img, const string timestamp )
                                         result.offsetMovePts.rgtWorld.x = result.foundMovePts.rgtWorld.x - result.refMovePts.rgtWorld.x;
                                         result.offsetMovePts.rgtWorld.y = result.foundMovePts.rgtWorld.y - result.refMovePts.rgtWorld.y;
 
-                                        sprintf( buffer, "Adjust: %.3f", result.offsetMovePts.ctrWorld.y );
+                                        snprintf( buffer, 256, "Adjust: %.3f", result.offsetMovePts.ctrWorld.y );
                                         result.msgs.push_back( buffer );
                                         result.waterLevelAdjusted.x = result.calcLinePts.ctrWorld.x - result.offsetMovePts.ctrWorld.x;
                                         result.waterLevelAdjusted.y = result.calcLinePts.ctrWorld.y - result.offsetMovePts.ctrWorld.y;
@@ -344,13 +355,116 @@ GC_STATUS VisApp::CalcLine( const Mat &img, const string timestamp )
 
     return retVal;
 }
-GC_STATUS VisApp::CalcLine( const FindLineParams params, const string timestamp, FindLineResult &result )
+GC_STATUS VisApp::FindPtSet2JsonString( const FindPointSet set, const string set_type, string &json )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        json.clear();
+        stringstream ss;
+        ss << "\"set_type\": \"" << set_type << "\",";
+        ss << "\"anglePixel\":" << set.anglePixel << ",";
+        ss << "\"angleWorld\":" << set.angleWorld << ",";
+        ss << "\"lftPixel_x\":" << set.lftPixel.x << ",";
+        ss << "\"lftPixel_y\":" << set.lftPixel.y << ",";
+        ss << "\"lftWorld_x\":" << set.lftWorld.x << ",";
+        ss << "\"lftWorld_y\":" << set.lftWorld.y << ",";
+        ss << "\"ctrPixel_x\":" << set.ctrPixel.x << ",";
+        ss << "\"ctrPixel_y\":" << set.ctrPixel.y << ",";
+        ss << "\"ctrWorld_x\":" << set.ctrWorld.x << ",";
+        ss << "\"ctrWorld_y\":" << set.ctrWorld.y << ",";
+        ss << "\"rgtPixel_x\":" << set.rgtPixel.x << ",";
+        ss << "\"rgtPixel_y\":" << set.rgtPixel.y << ",";
+        ss << "\"rgtWorld_x\":" << set.rgtWorld.x << ",";
+        ss << "\"rgtWorld_y\":" << set.rgtWorld.y;
+        json = ss.str();
+    }
+    catch( std::exception &e )
+    {
+        FILE_LOG( logERROR ) << "[VisApp::FindPtSet2JsonString] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+
+    return retVal;
+}
+GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result, string &resultJson )
+{
+    GC_STATUS retVal = CalcLine( params, result );
+    if ( GC_OK == retVal )
+    {
+        try
+        {
+            resultJson.clear();
+            stringstream ss;
+            ss << "{";
+            ss << "\"image_path\": \"" << params.imagePath << "\",";
+            ss << "\"calib_path\": \"" << params.calibFilepath << "\",";
+            ss << "\"result_path\": \"" << params.resultImagePath << "\",";
+            ss << "\"timestamp_type\": \"" << params.timeStampType << "\",";
+            ss << "\"timestamp_format\": \"" << params.timeStampFormat << "\",";
+            ss << "\"timestamp_start_pos\": " << params.timeStampStartPos << ",";
+            ss << "\"timestamp_length\": " << params.timeStampStartPos << ",";
+            ss << "\"status\":  \"" << ( result.findSuccess ? "SUCCESS" : "FAIL" ) << "\",";
+            ss << "\"timestamp\": \"" << result.timestamp << "\",";
+            ss << "\"waterLevelAdjusted_x\": " << result.waterLevelAdjusted.x << ",";
+            ss << "\"waterLevelAdjusted_y\": " << result.waterLevelAdjusted.x << ",";
+
+            string json;
+            retVal = FindPtSet2JsonString( result.calcLinePts, "calc_line_pts", json );
+            if ( GC_OK == retVal )
+            {
+                ss << json << ",";
+                retVal = FindPtSet2JsonString( result.refMovePts, "ref_move_pts", json );
+                if ( GC_OK == retVal )
+                {
+                    ss << json << ",";
+                    retVal = FindPtSet2JsonString( result.foundMovePts, "found_move_pts", json );
+                    if ( GC_OK == retVal )
+                    {
+                        ss << json << ",";
+                        retVal = FindPtSet2JsonString( result.offsetMovePts, "offset_move_pts", json );
+                        if ( GC_OK == retVal )
+                        {
+                            ss << json << ", \"found_pts\": [";
+                            for ( size_t i = 0; i < result.foundPoints.size(); ++i )
+                            {
+                                ss << "{\"x\": " << result.foundPoints[ i ].x << ",";
+                                ss <<  "\"y\": " << result.foundPoints[ i ].y << "}";
+                                if ( result.foundPoints.size() - 1 != i )
+                                    ss << ",";
+                            }
+                            ss << "],";
+                            ss << json << ", \"messages\": [";
+                            for ( size_t i = 0; i < result.msgs.size(); ++i )
+                            {
+                                ss << "\"" << result.msgs[ i ] << "\"";
+                                if ( result.msgs.size() - 1 != i )
+                                    ss << ",";
+                            }
+                            ss << "]";
+                            ss << "}";
+                            resultJson = ss.str();
+                        }
+                    }
+                }
+            }
+        }
+        catch( std::exception &e )
+        {
+            FILE_LOG( logERROR ) << "[VisApp::CalcLine] " << e.what();
+            FILE_LOG( logERROR ) << "Image=" << params.imagePath << " calib=" << params.calibFilepath;
+            retVal = GC_EXCEPT;
+        }
+    }
+
+    return retVal;
+}
+GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result )
 {
     GC_STATUS retVal = GC_OK;
     try
     {
         result.clear();
-        result.timestamp = timestamp;
         cv::Mat img = imread( params.imagePath, IMREAD_GRAYSCALE );
         if ( img.empty() )
         {
@@ -368,7 +482,7 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, const string timestamp,
             else if ( FROM_EXIF == params.timeStampType )
             {
                 string timestampTemp;
-                retVal = GetExifTimestamp( params.imagePath, timestampTemp );
+                retVal = GetImageTimestamp( params.imagePath, timestampTemp );
                 if ( GC_OK == retVal )
                 {
                     retVal = GcTimestampConvert::GetTimestampFromString( timestampTemp,
@@ -495,6 +609,24 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, const string timestamp,
                         }
                     }
                     m_findLineResult = result;
+                    if ( !params.resultCSVPath.empty() )
+                    {
+                        retVal = WriteFindlineResultToCSV( params.resultCSVPath, params.imagePath, result );
+                    }
+                    if ( !params.resultImagePath.empty() )
+                    {
+                        Mat color;
+                        retVal = DrawLineFindOverlay( img, color, result );
+                        if ( GC_OK == retVal )
+                        {
+                            bool isOk = imwrite( params.resultImagePath, color );
+                            if ( !isOk)
+                            {
+                                FILE_LOG( logERROR ) << "[VisApp::CalcLine] Could not write result image to " << params.resultImagePath;
+                                retVal = GC_ERR;
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -596,7 +728,7 @@ GC_STATUS VisApp::DrawLineFindOverlay( const cv::Mat &img, cv::Mat &imgOut, cons
     GC_STATUS retVal = m_findLine.DrawResult( img, imgOut, findLineResult );
     return retVal;
 }
-GC_STATUS VisApp::WriteFindlineResultToCSV( const std::string resultCSV, const string imgResultPath,
+GC_STATUS VisApp::WriteFindlineResultToCSV( const std::string resultCSV, const string imgPath,
                                             const FindLineResult &result, const bool overwrite )
 {
     GC_STATUS retVal = GC_OK;
@@ -618,7 +750,7 @@ GC_STATUS VisApp::WriteFindlineResultToCSV( const std::string resultCSV, const s
         {
             if ( addHeader )
             {
-                csvFile << "imgResultPath,";
+                csvFile << "imgPath,";
                 csvFile << "findSuccess,";
 
                 csvFile << "waterLevel,";
@@ -664,7 +796,7 @@ GC_STATUS VisApp::WriteFindlineResultToCSV( const std::string resultCSV, const s
                 csvFile << "...";
                 csvFile << endl;
             }
-            csvFile << imgResultPath << ",";
+            csvFile << imgPath << ",";
             csvFile << ( result.findSuccess ? "true" : "false" ) << ",";
 
             csvFile << fixed << setprecision( 3 );
@@ -715,6 +847,71 @@ GC_STATUS VisApp::WriteFindlineResultToCSV( const std::string resultCSV, const s
     catch( Exception &e )
     {
         FILE_LOG( logERROR ) << "[VisApp::CreateCalibOverlayImage] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+
+    return retVal;
+}
+GC_STATUS VisApp::CreateAnimation( const std::string imageFolder, const std::string animationFilepath, const double fps, const double scale )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        if ( !fs::is_directory( imageFolder ) )
+        {
+            FILE_LOG( logERROR ) << "[VisApp::CreateAnimation] Path specified is not a folder: " << imageFolder << endl;
+            retVal = GC_ERR;
+        }
+        else
+        {
+            string ext;
+            vector< string > images;
+            for ( auto& p: fs::recursive_directory_iterator( imageFolder ) )
+            {
+                ext = p.path().extension().string();
+                if ( ext == ".png" || ext == ".jpg" )
+                {
+                    images.push_back( p.path().string() );
+                }
+            }
+
+            if ( images.empty() )
+            {
+                FILE_LOG( logERROR ) << "No images found in " << imageFolder << endl;
+                retVal = GC_ERR;
+            }
+            else
+            {
+                sort( images.begin(), images.end() );
+
+                Animate animate;
+                retVal = animate.CreateCacheFolder();
+                if ( GC_OK == retVal )
+                {
+                    Mat img;
+                    char buffer[ 512 ];
+                    for ( size_t i = 0; i < static_cast< size_t >( std::min( 1000, static_cast< int >( images.size() ) ) ); ++i )
+                    {
+                        img = imread( images[ i ], IMREAD_ANYCOLOR );
+                        if ( img.empty() )
+                        {
+                            FILE_LOG( logWARNING ) << "Could not read frame: " << images[ i ] << " for animation";
+                        }
+                        else
+                        {
+                            sprintf( buffer, "image%03d.png", static_cast< int >( i ) );
+                            retVal = animate.AddFrame( string( buffer ), img );
+                        }
+                    }
+                    retVal = animate.Create( animationFilepath, fps, scale );
+                    retVal = animate.RemoveCacheFolder();
+                }
+            }
+        }
+    }
+    catch( const boost::exception &e )
+    {
+        FILE_LOG( logERROR ) << "[VisApp::CreateAnimation] " <<diagnostic_information( e );
         retVal = GC_EXCEPT;
     }
 
