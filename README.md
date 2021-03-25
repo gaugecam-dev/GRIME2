@@ -88,7 +88,7 @@ compliance with the Apache 2.0 license. Here are the libraries used by GRIME2:
 2. Boost 1.74 - Boost Software License - [Version 1.0](https://www.boost.org/LICENSE_1_0.txt)
 3. ExifTool 11.88 - (system calls only) - [Artistic License](https://dev.perl.org/licenses/artistic.html)
 4. ffmpeg 4.2.4 - (system calls only) - [LGPL 2.1](http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html)
-5. Qt 5.15.2 - [LGPL 3.0](https://www.gnu.org/licenses/lgpl-3.0.en.html)
+5. Qt 5.15.2 (dynamically linked) - [LGPL 3.0](https://www.gnu.org/licenses/lgpl-3.0.en.html)
 
 <a name="windev"></a>
 ## 3 Windows dev setup
