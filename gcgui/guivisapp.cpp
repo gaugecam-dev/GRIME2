@@ -33,6 +33,7 @@
 #include <boost/exception/diagnostic_information.hpp>
 #include "../algorithms/timestampconvert.h"
 #include "../algorithms/kalman.h"
+#include "../algorithms/wincmd.h"
 
 using namespace cv;
 using namespace std;
@@ -636,7 +637,21 @@ GC_STATUS GuiVisApp::GetMetadata( const std::string imgFilepath, std::string &da
 }
 GC_STATUS GuiVisApp::CreateAnimation( const std::string imageFolder, const std::string animationFilepath, const double fps, const double scale )
 {
+#if WIN32
+    string strBuf;
+    string cmdStr = "grime2cli --make_gif \"" + imageFolder + "\" ";
+    cmdStr += "--fps " + to_string( fps ) + " --scale " + to_string( scale );
+    cmdStr += " --result_image \"" + animationFilepath + "\"";
+    std::replace( cmdStr.begin(), cmdStr.end(), '/', '\\' );
+    int ret = WinRunCmd::runCmd( cmdStr.c_str(), strBuf );
+    if ( 0 != ret )
+    {
+        FILE_LOG( logERROR ) << "[MetaData::GetExifData] Could not run animate giff command: " << cmdStr;
+    }
+    GC_STATUS retVal = 0 == ret ? GC_OK : GC_ERR;
+#else
     GC_STATUS retVal = m_visApp.CreateAnimation( imageFolder, animationFilepath, fps, scale );
+ #endif
     sigMessage( string( "Create animation: " ) + ( GC_OK == retVal ? "SUCCESS" : "FAILURE" ) );
     return retVal;
 }

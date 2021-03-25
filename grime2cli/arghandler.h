@@ -99,7 +99,7 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                     }
                     else
                     {
-                        g_logFile = fopen( argv[ ++i ], "w" );
+                        fopen_s( &g_logFile, argv[ ++i ], "w" );
                         if ( nullptr == g_logFile )
                         {
                             FILE_LOG( logERROR ) << "[ArgHandler]  could not open requested log file: " << argv[ i ];
@@ -276,12 +276,13 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                         }
                         else
                         {
-                            if ( !fs::exists( params.result_imagePath ) )
+                            string result_folder = fs::path( params.result_imagePath ).parent_path().string();
+                            if ( !fs::exists( result_folder ) )
                             {
-                                bool isOk = fs::create_directories( fs::path( params.result_imagePath ).parent_path() );
+                                bool isOk = fs::create_directories( result_folder );
                                 if ( !isOk )
                                 {
-                                    FILE_LOG( logERROR ) << "[ArgHandler] Could not create result image folder: " << params.result_imagePath;
+                                    FILE_LOG( logERROR ) << "[ArgHandler] Could not create result image folder: " << result_folder;
                                     retVal = -1;
                                 }
                             }
