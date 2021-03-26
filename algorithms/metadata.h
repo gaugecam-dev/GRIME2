@@ -18,7 +18,7 @@
  * @brief A file for a class to add/retrieve metadata to/from images
  *
  * \author Kenneth W. Chapman
- * \copyright Copyright (C) 2010-2020, Kenneth W. Chapman <coffeesig@gmail.com>, all rights reserved.\n
+ * \copyright Copyright (C) 2010-2021, Kenneth W. Chapman <coffeesig@gmail.com>, all rights reserved.\n
  * This project is released under the Apache License, Version 2.0.
  * \bug No known bugs.
  */
@@ -33,36 +33,9 @@
 namespace gc
 {
 
-// TODO: Write doxygen comments
-//class ExifFeatures
-//{
-//public:
-//    ExifFeatures() :
-//        imageDims( -1, -1 ),
-//        captureTime( "" ),
-//        exposureTime( -1.0 ),
-//        fNumber( -1.0 ),
-//        isoSpeedRating( -1 ),
-//        shutterSpeed( -1.0 )
-//    {}
-
-//    void clear()
-//    {
-//        imageDims = cv::Size( -1, -1 );
-//        captureTime.clear();
-//        exposureTime = -1.0;
-//        fNumber = -1.0;
-//        isoSpeedRating = -1;
-//        shutterSpeed = -1.0;
-//    }
-//    cv::Size imageDims;
-//    std::string captureTime;
-//    double exposureTime;
-//    double fNumber;
-//    int isoSpeedRating;
-//    double shutterSpeed;
-//};
-
+/**
+ * @brief Class to read metadata from images
+ */
 class MetaData
 {
 public:
@@ -76,11 +49,41 @@ public:
      */
     ~MetaData() {}
 
-    // TODO Write doxygen comments
+    /**
+     * @brief Retreive the current software version of MetaData class
+     * @return String holding the version
+     */
     static const std::string Version() { return "0.0.0.1"; }
+
+    /**
+     * @brief Print to stdout the version of the ExifTool program used to retrieve metadaa
+     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
+     */
     static void GetExifToolVersion();
+
+    /**
+     * @brief Retrieve the metadata into a human readable string
+     * @param filepath The filepath of the image file from which to retrieve the metadata
+     * @param data String to hold the retrieved metadata
+     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
+     */
     GC_STATUS GetImageData( const std::string filepath, std::string &data );
+
+    /**
+     * @brief Retrieve the metadata into an instance of the ExifFeatures data class
+     * @param filepath The filepath of the image file from which to retrieve the metadata
+     * @param exifFeat Instance of the ExifFeatures data class to hold the retrieved metadata
+     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
+     */
     GC_STATUS GetImageData( const std::string filepath, ExifFeatures &exifFeat );
+
+    /**
+     * @brief Retrieve the metadata for a specific tag from an image file
+     * @param filepath The filepath of the image file from which to retrieve the metadata
+     * @param tag Name of tag to be retrieved
+     * @param data String to hold the retrieved metadata
+     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
+     */
     GC_STATUS GetExifData( const std::string filepath, const std::string tag, std::string &data );
 
 private:
