@@ -99,7 +99,11 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                     }
                     else
                     {
+#if WIN32
                         fopen_s( &g_logFile, argv[ ++i ], "w" );
+#else
+                        g_logFile = fopen( argv[ ++i ], "w" );
+#endif
                         if ( nullptr == g_logFile )
                         {
                             FILE_LOG( logERROR ) << "[ArgHandler]  could not open requested log file: " << argv[ i ];

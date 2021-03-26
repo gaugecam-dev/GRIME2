@@ -18,7 +18,7 @@
  * @brief An include file with data classes, enums and constants used by the gaugecam libraries.
  *
  * \author Kenneth W. Chapman
- * \copyright Copyright (C) 2010-2020, Kenneth W. Chapman <coffeesig@gmail.com>, all rights reserved.\n
+ * \copyright Copyright (C) 2010-2021, Kenneth W. Chapman <coffeesig@gmail.com>, all rights reserved.\n
  * This project is released under the Apache License, Version 2.0.
  * \bug No known bugs.
  */
@@ -50,8 +50,8 @@ enum GC_TIMESTAMP_TYPE
     FROM_EXTERNAL       ///< Pass filename to algorithm using YYYY-MM-DDThh:mm::ss format (ISO)
 };
 
-static const double DEFAULT_MIN_LINE_ANGLE = -10.0;                              ///< Default minimum line find angle
-static const double DEFAULT_MAX_LINE_ANGLE = 10.0;                               ///< Default maximum line find angle
+static const double DEFAULT_MIN_LINE_ANGLE = -10.0;                             ///< Default minimum line find angle
+static const double DEFAULT_MAX_LINE_ANGLE = 10.0;                              ///< Default maximum line find angle
 static const int FIT_LINE_RANSAC_TRIES_TOTAL = 100;                             ///< Fit line RANSAC total tries
 static const int FIT_LINE_RANSAC_TRIES_EARLY_OUT = 50;                          ///< Fit line RANSAC early out tries
 static const int FIT_LINE_RANSAC_POINT_COUNT = 5;                               ///< Fit line RANSAC early out tries

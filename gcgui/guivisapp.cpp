@@ -71,7 +71,11 @@ GuiVisApp::GuiVisApp() :
     char buf[ 256 ];
     sprintf( buf, "%svisapp.log", folderExists ? LOG_FILE_FOLDER.c_str() : "" );
 
+#if WIN32
     fopen_s( &m_pFileLog, buf, "w" );
+#else
+    m_pFileLog = fopen( buf, "w" );
+#endif
     Output2FILE::Stream() = m_pFileLog;
     // Output2FILE::Stream() = stdout;
 

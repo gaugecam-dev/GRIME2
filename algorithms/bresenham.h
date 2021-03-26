@@ -13,6 +13,15 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+/** \file bresenham.h
+ * @brief Include filt that holds a function to calculate all the points between
+ *        two user specified end points
+ *
+ * \author Kenneth W. Chapman
+ * \copyright Copyright (C) 2010-2021, Kenneth W. Chapman <coffeesig@gmail.com>, all rights reserved.\n
+ * This project is released under the Apache License, Version 2.0.
+ * \bug No known bugs.
+ */
 
 #ifndef BRESENHAM_H
 #define BRESENHAM_H
@@ -24,8 +33,17 @@
 
 using namespace gc;
 
+/**
+* @brief Standalone function to calculate all the points in a straight line between
+*        two user specified end points
+* @param pt0 Starting end point
+* @param pt1 Ending end point
+* @param linePts Vector of points on the line between pt0 and pt1
+* @param maxPoints Maximum number of points to calculate
+* @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
+*/
 GC_STATUS bresenham( const cv::Point pt0, const cv::Point pt1,
-                          std::vector< cv::Point > &linePts, const size_t maxPoints = 999999999 )
+                     std::vector< cv::Point > &linePts, const size_t maxPoints = 999999999 )
 {
     GC_STATUS retVal = pt0 == pt1 ? GC_ERR : GC_OK;
 

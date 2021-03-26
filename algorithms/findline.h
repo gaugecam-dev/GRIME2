@@ -31,7 +31,7 @@
  * \image latex images/NRmarshDN-12-02-28-11-15_reference_image.eps "Calibration Target"
  *
  * \author Kenneth W. Chapman
- * \copyright Copyright (C) 2010-2020, Kenneth W. Chapman <coffeesig@gmail.com>, all rights reserved.\n
+ * \copyright Copyright (C) 2010-2021, Kenneth W. Chapman <coffeesig@gmail.com>, all rights reserved.\n
  * This project is released under the Apache License, Version 2.0.
  * \bug No known bugs.
  */

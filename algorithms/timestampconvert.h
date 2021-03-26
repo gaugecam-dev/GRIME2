@@ -14,6 +14,16 @@
    limitations under the License.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+/** \file timestampconvert.h
+ * @brief A class to convert a string that holds a timestamp to the format used by GaugeCam
+ *
+ * \author Kenneth W. Chapman
+ * \copyright Copyright (C) 2010-2021, Kenneth W. Chapman <coffeesig@gmail.com>, all rights reserved.\n
+ * This project is released under the Apache License, Version 2.0.
+ * \bug No known bugs.
+ */
+
+
 #ifndef TIMESTAMPCONVERT_H
 #define TIMESTAMPCONVERT_H
 
@@ -41,9 +51,25 @@ public:
     int dayOfYear;
 };
 
+/**
+ * @brief Class to convert a string that holds a timestamp to the format used by GaugeCam
+ */
 class GcTimestampConvert
 {
 public:
+    /**
+     * @brief Converts a string that holds a timestamp to the format used by GaugeCam
+     *
+     * Format convention: y=year m=month d=day H=hour M=minute
+     * Example format string: "yyyy-mm-ddTHH:MM
+     *
+     * @param srcString The filepath of the image file from which to retrieve the metadata
+     * @param start_pos Start position of the timestamp in the source string
+     * @param tmStrlen Length of the timestamp in the source string
+     * @param format Format of the timestamp in the source string
+     * @param gcTime Instance of a GcTimestamp data class to hold the converted string information
+     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
+     */
     static GC_STATUS GetGcTimestampFromString( const std::string srcString, const int start_pos, const int tmStrlen, const std::string format, GcTimestamp &gcTime )
     {
         GC_STATUS retVal = GC_OK;
@@ -88,6 +114,20 @@ public:
 
         return retVal;
     }
+
+    /**
+     * @brief Converts a timestamp in a string to the number of seconds from the epoch
+     *
+     * Format convention: y=year m=month d=day H=hour M=minute
+     * Example format string: "yyyy-mm-ddTHH:MM
+     *
+     * @param srcString The filepath of the image file from which to retrieve the metadata
+     * @param start_pos Start position of the timestamp in the source string
+     * @param tmStrlen Length of the timestamp in the source string
+     * @param format Format of the timestamp in the source string
+     * @param secsFromEpoch Variable to hold the calculated number of seconds from the epoch
+     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
+     */
     static GC_STATUS ConvertDateToSeconds( const std::string srcString, const int start_pos, const int tmStrlen, const std::string format, long long &secsFromEpoch )
     {
         GcTimestamp gcTime;
@@ -102,6 +142,20 @@ public:
         }
         return retVal;
     }
+
+    /**
+     * @brief Converts a string that holds a timestamp to the format used by GaugeCam in a string
+     *
+     * Format convention: y=year m=month d=day H=hour M=minute
+     * Example format string: "yyyy-mm-ddTHH:MM
+     *
+     * @param srcString The filepath of the image file from which to retrieve the metadata
+     * @param start_pos Start position of the timestamp in the source string
+     * @param tmStrlen Length of the timestamp in the source string
+     * @param format Format of the timestamp in the source string
+     * @param timestamp String to hold the converted timestamp information
+     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
+     */
     static GC_STATUS GetTimestampFromString( const std::string srcString, const int start_pos, const int tmStrlen, const std::string format, std::string &timestamp )
     {
         GcTimestamp gcTime;
@@ -114,12 +168,21 @@ public:
         }
         return retVal;
     }
+
+    /**
+     * @brief Converts a GcTimestamp object to an ISO format timestamp string
+     *
+     * @param gcStamp Timestamp to be converted
+     * @return Timestamp string in ISO format
+     */
     static std::string GetISOTimestampFromGcTimestamp( const GcTimestamp gcStamp )
     {
         char buf[ 256 ];
         sprintf( buf, "%04d-%02d-%02dT%02d:%02d:%02d", gcStamp.year, gcStamp.month, gcStamp.day, gcStamp.hour, gcStamp.minute, gcStamp.second );
         return std::string( buf );
     }
+
+private:
     static int CalcDayOfYear( const GcTimestamp gcStamp )
     {
         int doy = gcStamp.day;

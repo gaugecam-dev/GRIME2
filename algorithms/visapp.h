@@ -21,7 +21,7 @@
  * the GaugeCam libraries easier to use.
  *
  * \author Kenneth W. Chapman
- * \copyright Copyright (C) 2010-2020, Kenneth W. Chapman <coffeesig@gmail.com>, all rights reserved.\n
+ * \copyright Copyright (C) 2010-2021, Kenneth W. Chapman <coffeesig@gmail.com>, all rights reserved.\n
  * This project is released under the Apache License, Version 2.0.
  * \bug No known bugs.
  */
@@ -62,6 +62,10 @@ public:
      * @return String holding the version
      */
     static std::string Version() { return GAUGECAM_VISAPP_VERSION; }
+
+    /**
+     * @brief Print the ExifTool (command line program) to stdout
+     */
     static void GetExifToolVersion() { MetaData::GetExifToolVersion(); }
 
 
@@ -90,7 +94,19 @@ public:
     GC_STATUS Calibrate( const std::string imgFilepath, const std::string worldCoordsCsv,
                          const std::string calibJson, const std::string resultImagepath = "" );
 
-    // TODO: Needs doxygen -- KWC
+    /**
+    * @brief Create a calibration model and write it to a calibration file
+    *
+    * @param imgFilepath Filepath of the input image with the calibration target
+    * @param worldCoordsCsv Filepath of a csv file that holds the world coordinate
+    *                       positions of the centers of the calibration target bowties
+    * @param calibJson Filepath of the output json file to which the calibration model is written
+    * @param imgOut OpenCV Mat (image) that holds the input image with a calibration overlay
+    *               if createOverlay is true
+    * @param resultImagepath Optional filepath for an image that shows the calibration result
+    *                        as an overlay on the input image
+    * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
+    */
     GC_STATUS Calibrate( const string imgFilepath, const string worldCoordsCsv,
                          const string calibJson, cv::Mat &imgOut, const bool createOverlay = false );
 
@@ -150,11 +166,46 @@ public:
      */
     GC_STATUS CalcLine( const cv::Mat &img, const string timestamp );
 
-    // TODO: Write doxygen comments
+    /**
+     * @brief Find the water level in the specified image
+     * @param img OpenCV mat image to search for the waterline using already set parameters
+     * @param resultJson Result of the water level find in json format
+     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
+     */
     GC_STATUS CalcLine( const FindLineParams params, FindLineResult &result, string &resultJson );
+
+    /**
+     * @brief Get image exif data used by GaugeCam as a human readable string
+     * @param filepath Filepath of the image from which to retrieve the exif dat
+     * @param data Human readable data from the image exif data
+     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
+     */
     GC_STATUS GetImageData( const std::string filepath, string &data );
+
+    /**
+     * @brief Get image exif data used by GaugeCam into a data object
+     * @param filepath Filepath of the image from which to retrieve the exif data
+     * @param exifFeat Instance of class to hold the exif data
+     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
+     */
     GC_STATUS GetImageData( const std::string filepath, ExifFeatures &exifFeat );
+
+    /**
+     * @brief Get the image capture timestamp string from the image exif data
+     * @param filepath Filepath of the image from which to retrieve the timestamp
+     * @param timestamp String to hold the timestamp
+     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
+     */
     GC_STATUS GetImageTimestamp( const std::string filepath, std::string &timestamp );
+
+    /**
+     * @brief Create a GIF animation from the images in a specified folder
+     * @param imageFolder Folder that holds the images to be used as GIF frames
+     * @param animationFilepath Filepath of the GIF to be created
+     * @param fps Desired GIF frames per second
+     * @param scale Resize scale of original frames to created GIF
+     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
+     */
     GC_STATUS CreateAnimation( const std::string imageFolder, const std::string animationFilepath,
                                const double fps, const double scale );
 
