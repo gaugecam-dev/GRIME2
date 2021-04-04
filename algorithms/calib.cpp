@@ -115,6 +115,11 @@ GC_STATUS Calib::Calibrate( const vector< Point2d > pixelPts, const vector< Poin
 
                 if ( GC_OK == retVal )
                 {
+                    int textOffset = cvRound( static_cast< double >( imgOut.rows ) / 6.6666667 );
+                    int circleSize =  std::max( 5, cvRound( static_cast< double >( imgOut.rows ) / 120.0 ) );
+                    int textStroke = std::max( 1, cvRound( static_cast< double >( imgOut.rows ) / 300.0 ) );
+                    double fontScale = static_cast< double >( imgOut.rows ) / 1200.0;
+
                     if ( m_model.searchLines.empty() )
                     {
                         FILE_LOG( logWARNING ) << "[Calib::Calibrate] Search lines not calculated properly so they cannot be drawn";
@@ -122,12 +127,12 @@ GC_STATUS Calib::Calibrate( const vector< Point2d > pixelPts, const vector< Poin
                     }
                     else
                     {
-                        line( imgOut, m_model.searchLines[ 0 ].top, m_model.searchLines[ 0 ].bot, Scalar( 255, 0, 0 ), 3 );
-                        line( imgOut, m_model.searchLines[ 0 ].top, m_model.searchLines[ m_model.searchLines.size() - 1 ].top, Scalar( 255, 0, 0 ), 3 );
-                        line( imgOut, m_model.searchLines[ m_model.searchLines.size() - 1 ].top, m_model.searchLines[ m_model.searchLines.size() - 1 ].bot, Scalar( 255, 0, 0 ), 3 );
-                        line( imgOut, m_model.searchLines[ 0 ].bot, m_model.searchLines[ m_model.searchLines.size() - 1 ].bot, Scalar( 255, 0, 0 ), 3 );
-                        rectangle( imgOut, m_model.moveSearchRegionLft, Scalar( 0, 0, 255 ), 2 );
-                        rectangle( imgOut, m_model.moveSearchRegionRgt, Scalar( 0, 0, 255 ), 2 );
+                        line( imgOut, m_model.searchLines[ 0 ].top, m_model.searchLines[ 0 ].bot, Scalar( 255, 0, 0 ), textStroke );
+                        line( imgOut, m_model.searchLines[ 0 ].top, m_model.searchLines[ m_model.searchLines.size() - 1 ].top, Scalar( 255, 0, 0 ), textStroke );
+                        line( imgOut, m_model.searchLines[ m_model.searchLines.size() - 1 ].top, m_model.searchLines[ m_model.searchLines.size() - 1 ].bot, Scalar( 255, 0, 0 ), textStroke );
+                        line( imgOut, m_model.searchLines[ 0 ].bot, m_model.searchLines[ m_model.searchLines.size() - 1 ].bot, Scalar( 255, 0, 0 ), textStroke );
+                        rectangle( imgOut, m_model.moveSearchRegionLft, Scalar( 0, 0, 255 ), textStroke );
+                        rectangle( imgOut, m_model.moveSearchRegionRgt, Scalar( 0, 0, 255 ), textStroke );
                     }
 
                     Point2d topLft, botRgt;
@@ -162,13 +167,13 @@ GC_STATUS Calib::Calibrate( const vector< Point2d > pixelPts, const vector< Poin
                                         retVal = WorldToPixel( Point2d( col + colInc, row ), pt2 );
                                         if ( GC_OK == retVal )
                                         {
-                                            line( imgOut, pt1, pt2, Scalar( 0, 255, 255 ), 1 );
+                                            line( imgOut, pt1, pt2, Scalar( 0, 255, 255 ), textStroke );
                                             retVal = WorldToPixel( Point2d( col, row - rowInc ), pt2 );
                                             if ( GC_OK == retVal && pt1.y < imgOut.rows )
                                             {
-                                                line( imgOut, pt1, pt2, Scalar( 0, 255, 255 ), 1 );
+                                                line( imgOut, pt1, pt2, Scalar( 0, 255, 255 ), textStroke );
                                                 if ( ( ( rowInt % 2 ) == 1 ) && ( ( colInt % 2 ) == 0 ) )
-                                                    circle( imgOut, pt1, 7, Scalar( 0, 255, 0 ), 2 );
+                                                    circle( imgOut, pt1, circleSize, Scalar( 0, 255, 0 ), textStroke );
                                             }
                                         }
                                     }
@@ -176,8 +181,8 @@ GC_STATUS Calib::Calibrate( const vector< Point2d > pixelPts, const vector< Poin
                                     {
                                         first = false;
                                         buf.str( string() ); buf << boost::format( "%.1f" ) % row;
-                                        putText( imgOut, buf.str(), Point( cvRound( pt1.x ) - 90, cvRound( pt1.y ) + 5 ),
-                                                 FONT_HERSHEY_COMPLEX, 0.5, Scalar( 0, 255, 255 ), 1 );
+                                        putText( imgOut, buf.str(), Point( cvRound( pt1.x ) - textOffset, cvRound( pt1.y ) + 5 ),
+                                                 FONT_HERSHEY_COMPLEX, fontScale, Scalar( 0, 255, 255 ), textStroke );
                                     }
                                 }
                                 retVal = WorldToPixel( Point2d( maxCol, row ), pt1 );
@@ -186,9 +191,9 @@ GC_STATUS Calib::Calibrate( const vector< Point2d > pixelPts, const vector< Poin
                                     retVal = WorldToPixel( Point2d( maxCol, row - rowInc ), pt2 );
                                     if ( GC_OK == retVal )
                                     {
-                                        line( imgOut, pt1, pt2, Scalar( 0, 255, 255 ), 1 );
+                                        line( imgOut, pt1, pt2, Scalar( 0, 255, 255 ), textStroke );
                                         if ( ( rowInt % 2 ) == 1 )
-                                            circle( imgOut, pt1, 7, Scalar( 0, 255, 0 ), 2 );
+                                            circle( imgOut, pt1, circleSize, Scalar( 0, 255, 0 ), textStroke );
                                     }
                                 }
                             }
@@ -201,15 +206,15 @@ GC_STATUS Calib::Calibrate( const vector< Point2d > pixelPts, const vector< Poin
                                     retVal = WorldToPixel( Point2d( col + colInc, minRow ), pt2 );
                                     if ( GC_OK == retVal )
                                     {
-                                        line( imgOut, pt1, pt2, Scalar( 0, 255, 255 ), 1 );
+                                        line( imgOut, pt1, pt2, Scalar( 0, 255, 255 ), textStroke );
                                     }
                                 }
                                 if ( first )
                                 {
                                     first = false;
                                     buf.str( string() ); buf << boost::format( "%.1f" ) % minRow;
-                                    putText( imgOut, buf.str(), Point( cvRound( pt1.x ) - 90, cvRound( pt1.y ) + 5 ),
-                                             FONT_HERSHEY_COMPLEX, 0.5, Scalar( 0, 255, 255 ), 1 );
+                                    putText( imgOut, buf.str(), Point( cvRound( pt1.x ) - textOffset, cvRound( pt1.y ) + 5 ),
+                                             FONT_HERSHEY_COMPLEX, fontScale, Scalar( 0, 255, 255 ), textStroke );
                                 }
                             }
                         }
