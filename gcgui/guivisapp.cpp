@@ -883,8 +883,7 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                         if ( FROM_FILENAME == params.timeStampType )
                         {
                             retVal = GcTimestampConvert::GetTimestampFromString( fs::path( images[ i ] ).filename().string(),
-                                                                                 params.timeStampStartPos, params.timeStampLength,
-                                                                                 params.timeStampFormat, timestamp );
+                                                                                 params.timeStampStartPos, params.timeStampFormat, timestamp );
                         }
                         else if ( FROM_EXIF == params.timeStampType )
                         {
@@ -892,8 +891,7 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                             retVal = m_visApp.GetImageTimestamp( images[ i ], timestampTemp );
                             if ( GC_OK == retVal )
                             {
-                                retVal = GcTimestampConvert::GetTimestampFromString( timestampTemp,
-                                                                                     params.timeStampStartPos, params.timeStampLength,
+                                retVal = GcTimestampConvert::GetTimestampFromString( timestampTemp, params.timeStampStartPos,
                                                                                      params.timeStampFormat, timestamp );
                             }
                         }

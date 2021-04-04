@@ -329,7 +329,6 @@ int MainWindow::ReadSettings( const QString filepath )
         ui->lineEdit_findLine_annotatedResultFolder->setText( pSettings->value( "findLineAnnotatedOutFolder", __CONFIGURATION_FOLDER ).toString() );
         ui->checkBox_createFindLine_annotatedResults->setChecked( pSettings->value( "createAnnotationCheckbox", false ).toBool() );
         ui->spinBox_timeStringPosZero->setValue( pSettings->value( "timestampStringStartPos", 5 ).toInt() );
-        ui->spinBox_timeStringLength->setValue( pSettings->value( "timestampStringLength", 14 ).toInt() );
         ui->radioButton_dateTimeInFilename->setChecked( pSettings->value( "timestampFromFilename", true ).toBool() );
         ui->radioButton_dateTimeInEXIF->setChecked( pSettings->value( "timestampFromEXIF", true ).toBool() );
         ui->lineEdit_timestampFormat->setText( pSettings->value( "timestampFormat", "yyyy-mm-ddTHH-MM" ).toString() );
@@ -395,8 +394,6 @@ int MainWindow::WriteSettings( const QString filepath )
     pSettings->setValue( "findLineAnnotatedOutFolder", ui->lineEdit_findLine_annotatedResultFolder->text() );
     pSettings->setValue( "createAnnotationCheckbox", ui->checkBox_createFindLine_annotatedResults->isChecked() );
     pSettings->setValue( "timestampStringStartPos", ui->spinBox_timeStringPosZero->value() );
-    pSettings->setValue( "timestampStringLength", ui->spinBox_timeStringLength->value() );
-    pSettings->setValue( "timestampFromFilename", ui->radioButton_dateTimeInFilename->isChecked() );
     pSettings->setValue( "timestampFromEXIF", ui->radioButton_dateTimeInEXIF->isChecked() );
     pSettings->setValue( "timestampFormat", ui->lineEdit_timestampFormat->text() );
     pSettings->endGroup();
@@ -1110,7 +1107,6 @@ void MainWindow::on_pushButton_findLineCurrentImage_clicked()
         params.timeStampFormat = ui->lineEdit_timestampFormat->text().toStdString();
         params.timeStampType = ui->radioButton_dateTimeInFilename->isChecked() ? FROM_FILENAME : FROM_EXIF;
         params.timeStampStartPos = ui->spinBox_timeStringPosZero->value();
-        params.timeStampLength = ui->spinBox_timeStringLength->value();
 
         FindLineResult result;
         retVal = m_visApp.CalcLine( params, result );
@@ -1142,7 +1138,6 @@ void MainWindow::on_pushButton_findLine_processFolder_clicked()
     params.timeStampFormat = ui->lineEdit_timestampFormat->text().toStdString();
     params.timeStampType = ui->radioButton_dateTimeInFilename->isChecked() ? FROM_FILENAME : FROM_EXIF;
     params.timeStampStartPos = ui->spinBox_timeStringPosZero->value();
-    params.timeStampLength = ui->spinBox_timeStringLength->value();
     params.resultImagePath = ui->checkBox_createFindLine_annotatedResults->isChecked() ? ui->lineEdit_findLine_annotatedResultFolder->text().toStdString() : "";
     params.resultCSVPath = ui->checkBox_createFindLine_csvResultsFile->isChecked() ? ui->lineEdit_findLine_resultCSVFile->text().toStdString() : "";
 
