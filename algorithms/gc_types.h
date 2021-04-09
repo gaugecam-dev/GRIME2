@@ -158,8 +158,7 @@ public:
         datetimeOriginal( std::string( "1955-09-24T12:05:00" ) ),
         datetimeProcessing( std::string( "1955-09-24T12:05:01" ) ),
         timeStampType( FROM_EXIF ),
-        timeStampStartPos( -1 ),
-        timeStampLength( -1 )
+        timeStampStartPos( -1 )
     {}
 
     /**
@@ -177,7 +176,6 @@ public:
                     const std::string calibConfigFile,
                     const GC_TIMESTAMP_TYPE tmStampType,
                     const int tmStampStartPos,
-                    const int tmStampLength,
                     const std::string tmStampFormat,
                     const std::string resultImageFilepath = "",
                     const std::string resultCSVFilepath = "" ) :
@@ -189,7 +187,6 @@ public:
         resultCSVPath( resultCSVFilepath ),
         timeStampType( tmStampType ),
         timeStampStartPos( tmStampStartPos ),
-        timeStampLength( tmStampLength ),
         timeStampFormat( tmStampFormat )
     {}
 
@@ -202,7 +199,6 @@ public:
         resultCSVPath.clear();
         timeStampType = FROM_EXIF;
         timeStampStartPos = -1;
-        timeStampLength = -1;
         timeStampFormat.clear();
         calibFilepath.clear();
     }
@@ -217,7 +213,6 @@ public:
     std::string resultCSVPath;          ///< Optional result csv file path to hold timestamps and stage measurements
     GC_TIMESTAMP_TYPE timeStampType;    ///< Specifies where to get timestamp (filename, exif, or dateTimeOriginal)
     int timeStampStartPos;              ///< start position of timestamp string in filename (not whole path)
-    int timeStampLength;                ///< length of timestamp string in filename
     std::string timeStampFormat;        ///< Format of the timestamp string, e.g. YYYY-MM-DDThh:mm::ss
 };
 

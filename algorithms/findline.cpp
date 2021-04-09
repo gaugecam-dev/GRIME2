@@ -392,34 +392,38 @@ GC_STATUS FindLine::DrawResult( const Mat &img, Mat &imgOut, const FindLineResul
             }
             if ( GC_OK == retVal )
             {
+                int circleSize =  std::max( 5, cvRound( static_cast< double >( imgOut.rows ) / 120.0 ) );
+                int textStroke = std::max( 1, cvRound( static_cast< double >( imgOut.rows ) / 300.0 ) );
+                int textRowSpacing = cvRound( static_cast< double >( imgOut.rows ) / 25.0 );
+                double fontScale = static_cast< double >( imgOut.rows ) / 300.0;
                 if ( !result.findSuccess )
                 {
                     line( imgOut, Point2d( 0.0, 0.0 ), Point2d( img.cols - 1, img.rows - 1 ), Scalar( 0, 0, 255 ), 3 );
                     line( imgOut, Point2d( 0.0, img.rows - 1 ), Point2d( img.cols - 1, 0.0 ), Scalar( 0, 0, 255 ), 3 );
-                    putText( imgOut( Rect ( 10, 200, 300, 30 ) ), "BAD FIND", Point( 5, 21 ), FONT_HERSHEY_PLAIN, 1.2, Scalar( 0, 255, 255 ), 2 );
+                    putText( imgOut, "BAD FIND", Point( 5, textRowSpacing * 2 ), FONT_HERSHEY_PLAIN, fontScale, Scalar( 0, 255, 255 ), textStroke );
                 }
                 else
                 {
-                    line( imgOut, result.calcLinePts.lftPixel, result.calcLinePts.rgtPixel, Scalar( 255, 0, 0 ), 3 );
-                    circle( imgOut, result.calcLinePts.ctrPixel, 5, Scalar( 0, 0, 255 ) );
-                    line( imgOut, Point2d( result.calcLinePts.ctrPixel.x - 5.0, result.calcLinePts.ctrPixel.y - 5.0 ),
-                                  Point2d( result.calcLinePts.ctrPixel.x + 5.0, result.calcLinePts.ctrPixel.y + 5.0 ), Scalar( 0, 0, 255 ) );
-                    line( imgOut, Point2d( result.calcLinePts.ctrPixel.x + 5.0, result.calcLinePts.ctrPixel.y - 5.0 ),
-                                  Point2d( result.calcLinePts.ctrPixel.x - 5.0, result.calcLinePts.ctrPixel.y + 5.0 ), Scalar( 0, 0, 255 ) );
-                    line( imgOut, result.refMovePts.lftPixel, result.refMovePts.rgtPixel, Scalar( 0, 0, 255 ), 5 );
-                    line( imgOut, result.foundMovePts.lftPixel, result.foundMovePts.rgtPixel, Scalar( 0, 255, 0 ), 1 );
+                    line( imgOut, result.calcLinePts.lftPixel, result.calcLinePts.rgtPixel, Scalar( 255, 0, 0 ), textStroke + 1 );
+                    circle( imgOut, result.calcLinePts.ctrPixel, circleSize, Scalar( 0, 0, 255 ), textStroke );
+                    line( imgOut, Point2d( result.calcLinePts.ctrPixel.x - circleSize, result.calcLinePts.ctrPixel.y - circleSize ),
+                                  Point2d( result.calcLinePts.ctrPixel.x + circleSize, result.calcLinePts.ctrPixel.y + circleSize ), Scalar( 0, 0, 255 ), textStroke );
+                    line( imgOut, Point2d( result.calcLinePts.ctrPixel.x + circleSize, result.calcLinePts.ctrPixel.y - circleSize ),
+                                  Point2d( result.calcLinePts.ctrPixel.x - circleSize, result.calcLinePts.ctrPixel.y + circleSize ), Scalar( 0, 0, 255 ), textStroke );
+                    line( imgOut, result.refMovePts.lftPixel, result.refMovePts.rgtPixel, Scalar( 0, 0, 255 ), circleSize );
+                    line( imgOut, result.foundMovePts.lftPixel, result.foundMovePts.rgtPixel, Scalar( 0, 255, 0 ), ( circleSize >> 1 ) - 1 );
                     if ( 3 < result.foundPoints.size() && GC_OK == retVal )
                     {
-                        circle( imgOut, result.foundPoints[ 0 ], 3, Scalar( 0, 255, 255 ) );
+                        circle( imgOut, result.foundPoints[ 0 ], max( 3, circleSize >> 1 ), Scalar( 0, 255, 255 ), FILLED );
                         for ( size_t i = 1; i < result.foundPoints.size(); ++i )
                         {
-                            circle( imgOut, result.foundPoints[ i ], 3, Scalar( 0, 255, 255 ) );
+                            circle( imgOut, result.foundPoints[ i ], max( 3, circleSize >> 1 ), Scalar( 0, 255, 255 ), FILLED );
                         }
                     }
                 }
                 for ( size_t i = 0; i < result.msgs.size(); ++i )
                 {
-                    putText( imgOut, result.msgs[ i ], Point( 3, ( static_cast< int >( i ) + 1 ) * 24 ), FONT_HERSHEY_PLAIN, 2.0, Scalar( 0, 255, 255 ), 2 );
+                    putText( imgOut, result.msgs[ i ], Point( 3, ( static_cast< int >( i ) + 1 ) * textRowSpacing ), FONT_HERSHEY_PLAIN, fontScale, Scalar( 0, 255, 255 ), textStroke );
                 }
             }
         }

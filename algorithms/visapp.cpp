@@ -476,8 +476,7 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result 
             if ( FROM_FILENAME == params.timeStampType )
             {
                 retVal = GcTimestampConvert::GetTimestampFromString( fs::path( params.imagePath ).filename().string(),
-                                                                     params.timeStampStartPos, params.timeStampLength,
-                                                                     params.timeStampFormat, result.timestamp );
+                                                                     params.timeStampStartPos, params.timeStampFormat, result.timestamp );
             }
             else if ( FROM_EXIF == params.timeStampType )
             {
@@ -485,8 +484,7 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result 
                 retVal = GetImageTimestamp( params.imagePath, timestampTemp );
                 if ( GC_OK == retVal )
                 {
-                    retVal = GcTimestampConvert::GetTimestampFromString( timestampTemp,
-                                                                         params.timeStampStartPos, params.timeStampLength,
+                    retVal = GcTimestampConvert::GetTimestampFromString( timestampTemp, params.timeStampStartPos,
                                                                          params.timeStampFormat, result.timestamp );
                 }
             }
