@@ -182,7 +182,7 @@ GC_STATUS Calib::Calibrate( const vector< Point2d > pixelPts, const vector< Poin
                                         first = false;
                                         buf.str( string() ); buf << boost::format( "%.1f" ) % row;
                                         putText( imgOut, buf.str(), Point( cvRound( pt1.x ) - textOffset, cvRound( pt1.y ) + 5 ),
-                                                 FONT_HERSHEY_COMPLEX, fontScale, Scalar( 0, 255, 255 ), textStroke );
+                                                 FONT_HERSHEY_PLAIN, fontScale, Scalar( 0, 255, 255 ), textStroke );
                                     }
                                 }
                                 retVal = WorldToPixel( Point2d( maxCol, row ), pt1 );
@@ -214,7 +214,7 @@ GC_STATUS Calib::Calibrate( const vector< Point2d > pixelPts, const vector< Poin
                                     first = false;
                                     buf.str( string() ); buf << boost::format( "%.1f" ) % minRow;
                                     putText( imgOut, buf.str(), Point( cvRound( pt1.x ) - textOffset, cvRound( pt1.y ) + 5 ),
-                                             FONT_HERSHEY_COMPLEX, fontScale, Scalar( 0, 255, 255 ), textStroke );
+                                             FONT_HERSHEY_PLAIN, fontScale, Scalar( 0, 255, 255 ), textStroke );
                                 }
                             }
                         }
