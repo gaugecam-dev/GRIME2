@@ -152,7 +152,6 @@ GC_STATUS RunFolder( const Grime2CLIParams cliParams )
                 params.timeStampFormat = cliParams.timestamp_format;
                 params.timeStampType = cliParams.timestamp_type == "from_filename" ? FROM_FILENAME : FROM_EXIF;
                 params.timeStampStartPos = cliParams.timestamp_startPos;
-                params.timeStampLength = cliParams.timeStamp_length;
 
                 VisApp visApp;
                 string resultJson;
@@ -190,7 +189,6 @@ GC_STATUS FindWaterLevel( const Grime2CLIParams cliParams )
     params.timeStampFormat = cliParams.timestamp_format;
     params.timeStampType = cliParams.timestamp_type == "from_filename" ? FROM_FILENAME : FROM_EXIF;
     params.timeStampStartPos = cliParams.timestamp_startPos;
-    params.timeStampLength = cliParams.timeStamp_length;
 
     VisApp visApp;
     string resultJson;

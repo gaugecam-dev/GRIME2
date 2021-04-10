@@ -118,7 +118,7 @@ GC_STATUS Calib::Calibrate( const vector< Point2d > pixelPts, const vector< Poin
                     int textOffset = cvRound( static_cast< double >( imgOut.rows ) / 6.6666667 );
                     int circleSize =  std::max( 5, cvRound( static_cast< double >( imgOut.rows ) / 120.0 ) );
                     int textStroke = std::max( 1, cvRound( static_cast< double >( imgOut.rows ) / 300.0 ) );
-                    double fontScale = static_cast< double >( imgOut.rows ) / 1200.0;
+                    double fontScale = 1.0 + static_cast< double >( imgOut.rows ) / 1200.0;
 
                     if ( m_model.searchLines.empty() )
                     {

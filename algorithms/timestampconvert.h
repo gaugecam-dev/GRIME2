@@ -131,7 +131,7 @@ public:
     static GC_STATUS ConvertDateToSeconds( const std::string srcString, const int start_pos, const std::string format, long long &secsFromEpoch )
     {
         GcTimestamp gcTime;
-        GC_STATUS retVal = GetGcTimestampFromString( srcString, start_pos, format.size(), format, gcTime );
+        GC_STATUS retVal = GetGcTimestampFromString( srcString, start_pos, static_cast< int >( format.size() ), format, gcTime );
         if ( GC_OK == retVal )
         {
             std::tm tm = {};
@@ -159,7 +159,7 @@ public:
     static GC_STATUS GetTimestampFromString( const std::string srcString, const int start_pos, const std::string format, std::string &timestamp )
     {
         GcTimestamp gcTime;
-        GC_STATUS retVal = GetGcTimestampFromString( srcString, start_pos, format.size(), format, gcTime );
+        GC_STATUS retVal = GetGcTimestampFromString( srcString, start_pos, static_cast< int >( format.size() ), format, gcTime );
         if ( GC_OK == retVal )
         {
             char buf[ 256 ];
