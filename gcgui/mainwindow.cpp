@@ -215,6 +215,7 @@ void MainWindow::createConnections()
     connect( ui->checkBox_showRowSums, &QCheckBox::stateChanged, this, &MainWindow::UpdatePixmapTarget );
     connect( ui->checkBox_showDerivOne, &QCheckBox::stateChanged, this, &MainWindow::UpdatePixmapTarget );
     connect( ui->checkBox_showDerivTwo, &QCheckBox::stateChanged, this, &MainWindow::UpdatePixmapTarget );
+    connect( ui->checkBox_showRANSAC, &QCheckBox::stateChanged, this, &MainWindow::UpdatePixmapTarget );
     connect( ui->checkBox_createFindLine_csvResultsFile, &QCheckBox::stateChanged, this, &MainWindow::UpdateGUIEnables );
     connect( ui->checkBox_createFindLine_annotatedResults, &QCheckBox::stateChanged, this, &MainWindow::UpdateGUIEnables );
 
@@ -558,7 +559,8 @@ void MainWindow::UpdatePixmap()
                 ( ui->checkBox_showFindLine->isChecked() ? FINDLINE : OVERLAYS_NONE ) +
                 ( ui->checkBox_showRowSums->isChecked() ? DIAG_ROWSUMS : OVERLAYS_NONE ) +
                 ( ui->checkBox_showDerivOne->isChecked() ? DIAG_1ST_DERIV : OVERLAYS_NONE ) +
-                ( ui->checkBox_showDerivTwo->isChecked() ? DIAG_2ND_DERIV : OVERLAYS_NONE ) );
+                ( ui->checkBox_showDerivTwo->isChecked() ? DIAG_2ND_DERIV : OVERLAYS_NONE ) +
+                ( ui->checkBox_showRANSAC->isChecked() ? DIAG_RANSAC : OVERLAYS_NONE ) );
     gc::GC_STATUS retVal = m_visApp.GetImage( cv::Size( m_pQImg->width(), m_pQImg->height() ),
                                               static_cast< size_t >( m_pQImg->bytesPerLine() ),
                                               CV_8UC4, m_pQImg->scanLine( 0 ), nColorType, overlays );

@@ -386,7 +386,7 @@ GC_STATUS FindLine::SetMoveTargetROI( const cv::Mat &img, const cv::Rect rect, c
     return m_findGrid.SetMoveTargetROI( img, rect, isLeft );
 }
 GC_STATUS FindLine::DrawResult( const Mat &img, Mat &imgOut, const FindLineResult &result, const bool drawLine,
-                                const bool drawRowSums, const bool draw1stDeriv, const bool draw2ndDeriv )
+                                const bool drawRowSums, const bool draw1stDeriv, const bool draw2ndDeriv, const bool drawRANSAC )
 {
     GC_STATUS retVal = img.empty() ? GC_ERR : GC_OK;
     if ( GC_OK != retVal )
@@ -429,7 +429,7 @@ GC_STATUS FindLine::DrawResult( const Mat &img, Mat &imgOut, const FindLineResul
                         {
                             for ( size_t j = 1; j < result.diagRowSums[ i ].size(); ++j )
                             {
-                                line( imgOut, result.diagRowSums[ i ][ j - 1 ], result.diagRowSums[ i ][ j ], Scalar( 0, 0, 255 ), 1 );
+                                line( imgOut, result.diagRowSums[ i ][ j - 1 ], result.diagRowSums[ i ][ j ], Scalar( 0, 255, 255 ), 1 );
                             }
                         }
                     }
@@ -444,7 +444,7 @@ GC_STATUS FindLine::DrawResult( const Mat &img, Mat &imgOut, const FindLineResul
                         {
                             for ( size_t j = 1; j < result.diag1stDeriv[ i ].size(); ++j )
                             {
-                                line( imgOut, result.diag1stDeriv[ i ][ j - 1 ], result.diag1stDeriv[ i ][ j ], Scalar( 0, 255, 255 ), 1 );
+                                line( imgOut, result.diag1stDeriv[ i ][ j - 1 ], result.diag1stDeriv[ i ][ j ], Scalar( 0, 0, 255 ), 1 );
                             }
                         }
                     }
@@ -474,20 +474,23 @@ GC_STATUS FindLine::DrawResult( const Mat &img, Mat &imgOut, const FindLineResul
                 else if ( drawLine )
                 {
                     line( imgOut, result.calcLinePts.lftPixel, result.calcLinePts.rgtPixel, Scalar( 255, 0, 0 ), textStroke + 1 );
-                    circle( imgOut, result.calcLinePts.ctrPixel, circleSize, Scalar( 0, 0, 255 ), textStroke );
-                    line( imgOut, Point2d( result.calcLinePts.ctrPixel.x - circleSize, result.calcLinePts.ctrPixel.y - circleSize ),
-                                  Point2d( result.calcLinePts.ctrPixel.x + circleSize, result.calcLinePts.ctrPixel.y + circleSize ), Scalar( 0, 0, 255 ), textStroke );
-                    line( imgOut, Point2d( result.calcLinePts.ctrPixel.x + circleSize, result.calcLinePts.ctrPixel.y - circleSize ),
-                                  Point2d( result.calcLinePts.ctrPixel.x - circleSize, result.calcLinePts.ctrPixel.y + circleSize ), Scalar( 0, 0, 255 ), textStroke );
                     line( imgOut, result.refMovePts.lftPixel, result.refMovePts.rgtPixel, Scalar( 0, 0, 255 ), circleSize );
                     line( imgOut, result.foundMovePts.lftPixel, result.foundMovePts.rgtPixel, Scalar( 0, 255, 0 ), ( circleSize >> 1 ) - 1 );
-                    if ( 3 < result.foundPoints.size() && GC_OK == retVal )
+                    circle( imgOut, result.calcLinePts.ctrPixel, circleSize + textStroke, Scalar( 0, 255, 0 ), textStroke );
+                    line( imgOut, Point2d( result.calcLinePts.ctrPixel.x - circleSize - textStroke * 2,
+                                           result.calcLinePts.ctrPixel.y - circleSize - textStroke * 2 ),
+                                  Point2d( result.calcLinePts.ctrPixel.x + circleSize + textStroke * 2,
+                                           result.calcLinePts.ctrPixel.y + circleSize + textStroke * 2 ), Scalar( 0, 0, 255 ), textStroke );
+                    line( imgOut, Point2d( result.calcLinePts.ctrPixel.x + circleSize + textStroke * 2,
+                                           result.calcLinePts.ctrPixel.y - circleSize - textStroke * 2 ),
+                                  Point2d( result.calcLinePts.ctrPixel.x - circleSize - textStroke * 2,
+                                           result.calcLinePts.ctrPixel.y + circleSize + textStroke * 2 ), Scalar( 0, 0, 255 ), textStroke );
+                }
+                if ( 3 < result.foundPoints.size() && drawRANSAC )
+                {
+                    for ( size_t i = 0; i < result.foundPoints.size(); ++i )
                     {
-                        circle( imgOut, result.foundPoints[ 0 ], max( 3, circleSize >> 1 ), Scalar( 0, 255, 255 ), FILLED );
-                        for ( size_t i = 1; i < result.foundPoints.size(); ++i )
-                        {
-                            circle( imgOut, result.foundPoints[ i ], max( 3, circleSize >> 1 ), Scalar( 0, 255, 255 ), FILLED );
-                        }
+                        circle( imgOut, result.foundPoints[ i ], max( 3, circleSize >> 1 ), Scalar( 0, 255, 255 ), FILLED );
                     }
                 }
                 for ( size_t i = 0; i < result.msgs.size(); ++i )
