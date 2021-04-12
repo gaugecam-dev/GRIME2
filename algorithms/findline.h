@@ -102,7 +102,8 @@ public:
      * @param result The data for the found position of the water line to be drawn
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
-    GC_STATUS DrawResult( const cv::Mat &img, cv::Mat &imgOut, const FindLineResult &result );
+    GC_STATUS DrawResult( const cv::Mat &img, cv::Mat &imgOut, const FindLineResult &result, const bool drawLine,
+                          const bool drawRowSums, const bool draw1stDeriv, const bool draw2ndDeriv );
 
     /**
      * @brief Method to set the move target search regions
@@ -122,13 +123,14 @@ private:
     GC_STATUS GetRandomNumbers( const int low_bound, const int high_bound, const int cnt_to_generate,
                                 vector< int > &numbers, const bool isFirst );
     GC_STATUS CalcRowSums( const cv::Mat &img, const std::vector< LineEnds > &lines, std::vector< uint > &rowSums );
-    GC_STATUS EvaluateSwath( const cv::Mat &img, const std::vector<LineEnds> &lines,
-                             const size_t startIndex, const size_t endIndex, cv::Point2d &resultPt );
+    GC_STATUS EvaluateSwath( const cv::Mat &img, const std::vector< LineEnds > &lines, const size_t startIndex,
+                             const size_t endIndex, cv::Point2d &resultPt, FindLineResult &result );
     GC_STATUS CalcSwathPoint( const std::vector< LineEnds > &swath, const std::vector< uint > &rowSums, cv::Point2d &resultPt );
     GC_STATUS MedianFilter( const size_t kernSize, const std::vector< uint > values, std::vector< uint > &valuesOut );
 
     GC_STATUS GetSlopeIntercept( const cv::Point2d one, const cv::Point2d two, double &slope, double &intercept );
-    GC_STATUS DrawRowSums( const cv::Mat &img, std::vector< uint > rowSums, const std::vector< LineEnds > lines, cv::Mat &imgOut );
+    GC_STATUS CalculateRowSumsLines( const vector< uint > rowSums, const vector< LineEnds > lines, vector< vector< cv::Point > > &rowSumsLines,
+                                     vector< vector< cv::Point > > &deriveOneLines,  vector< vector< cv::Point > > &deriveTwoLines );
 };
 
 } // namespace gc

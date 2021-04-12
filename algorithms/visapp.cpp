@@ -716,14 +716,16 @@ GC_STATUS VisApp::DrawCalibOverlay( const cv::Mat matIn, cv::Mat &imgMatOut )
 
     return retVal;
 }
-GC_STATUS VisApp::DrawLineFindOverlay( const cv::Mat &img, cv::Mat &imgOut )
+GC_STATUS VisApp::DrawLineFindOverlay( const cv::Mat &img, cv::Mat &imgOut, const bool drawLine,
+                                       const bool drawRowSums, const bool draw1stDeriv, const bool draw2ndDeriv )
 {
-    GC_STATUS retVal = m_findLine.DrawResult( img, imgOut, m_findLineResult );
+    GC_STATUS retVal = m_findLine.DrawResult( img, imgOut, m_findLineResult, drawLine, drawRowSums, draw1stDeriv, draw2ndDeriv );
     return retVal;
 }
-GC_STATUS VisApp::DrawLineFindOverlay( const cv::Mat &img, cv::Mat &imgOut, const FindLineResult findLineResult )
+GC_STATUS VisApp::DrawLineFindOverlay( const cv::Mat &img, cv::Mat &imgOut, const FindLineResult findLineResult,
+                                       const bool drawLine, const bool drawRowSums, const bool draw1stDeriv, const bool draw2ndDeriv )
 {
-    GC_STATUS retVal = m_findLine.DrawResult( img, imgOut, findLineResult );
+    GC_STATUS retVal = m_findLine.DrawResult( img, imgOut, findLineResult, drawLine, drawRowSums, draw1stDeriv, draw2ndDeriv );
     return retVal;
 }
 GC_STATUS VisApp::WriteFindlineResultToCSV( const std::string resultCSV, const string imgPath,
