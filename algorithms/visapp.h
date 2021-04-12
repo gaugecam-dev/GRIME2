@@ -223,7 +223,9 @@ public:
      * @param imgOut Destination OpenCV Mat image holding the source image with find line overlay
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
-    GC_STATUS DrawLineFindOverlay( const cv::Mat &img, cv::Mat &imgOut );
+    GC_STATUS DrawLineFindOverlay( const cv::Mat &img, cv::Mat &imgOut, const bool drawLine = true,
+                                   const bool drawRowSums = false, const bool draw1stDeriv = false,
+                                   const bool draw2ndDeriv = false, const bool drawRANSAC = false );
 
     /**
      * @brief Create an overlay image with a user specified found water line
@@ -232,7 +234,10 @@ public:
      * @param findLineResult User specified found line result object
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
-    GC_STATUS DrawLineFindOverlay( const cv::Mat &img, cv::Mat &imgOut, const FindLineResult findLineResult );
+    GC_STATUS DrawLineFindOverlay( const cv::Mat &img, cv::Mat &imgOut, const FindLineResult findLineResult,
+                                   const bool drawLine = true, const bool drawRowSums = false,
+                                   const bool draw1stDeriv = false, const bool draw2ndDeriv = false,
+                                   const bool drawRANSAC = false);
 
     /**
      * @brief Set the internal found line position from a user specifed find line result

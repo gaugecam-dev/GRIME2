@@ -587,7 +587,7 @@ GC_STATUS FindCalibGrid::FindMoveTargets( const Mat &img, Point2d &ptLeft, Point
 
             m_matchItems.clear();
 
-            retVal = MatchTemplate( TEMPLATE_COUNT >> 1, scratch, 0.1, 2 );
+            retVal = MatchTemplate( TEMPLATE_COUNT >> 1, scratch, TEMPLATE_MATCH_MIN_SCORE, 2 );
             if ( GC_OK == retVal )
             {
                 vector< TemplateBowtieItem > tempItems;

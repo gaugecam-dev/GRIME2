@@ -275,9 +275,15 @@ GC_STATUS GuiVisApp::GetImageOverlay( const IMG_BUFFERS nImgColor, const IMG_DIS
             {
                 retVal = m_visApp.DrawCalibOverlay( m_matDisplay, m_matDisplay );
             }
-            if ( overlays & FINDLINE )
+            if ( ( overlays & FINDLINE ) ||
+                 ( overlays & DIAG_ROWSUMS ) ||
+                 ( overlays & DIAG_1ST_DERIV ) ||
+                 ( overlays & DIAG_2ND_DERIV ) ||
+                 ( overlays & DIAG_RANSAC ) )
             {
-                retVal = m_visApp.DrawLineFindOverlay( m_matDisplay, m_matDisplay );
+                retVal = m_visApp.DrawLineFindOverlay( m_matDisplay, m_matDisplay, overlays & FINDLINE,
+                                                       overlays & DIAG_ROWSUMS, overlays & DIAG_1ST_DERIV,
+                                                       overlays & DIAG_2ND_DERIV, overlays & DIAG_RANSAC );
             }
         }
     }

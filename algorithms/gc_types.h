@@ -300,6 +300,9 @@ public:
      * @param moveFoundPoints       Line between the move targets at the time of the current line find
      * @param moveOffsetPoints      Offset between the moveRef and the moveFound lines
      * @param lineFoundPts          Water line points used to calculate the found water level line
+     * @param rowSumDiag            Find line row sums vector of vectors of points
+     * @param oneDerivDiag          Find line row sums first derivative vector of vectors of points
+     * @param twoDerivDiag          Find line row sums second derivative vector of vectors of points
      * @param messages              Vector of strings with messages about the line find
      */
     FindLineResult( const bool findOk,
@@ -310,6 +313,9 @@ public:
                     const FindPointSet moveFoundPoints,
                     const FindPointSet moveOffsetPoints,
                     const std::vector< cv::Point2d > lineFoundPts,
+                    const std::vector< std::vector< cv::Point > > rowSumDiag,
+                    const std::vector< std::vector< cv::Point > > oneDerivDiag,
+                    const std::vector< std::vector< cv::Point > > twoDerivDiag,
                     const std::vector< std::string > messages ) :
         findSuccess( findOk ),
         timestamp( captureTime ),
@@ -319,6 +325,9 @@ public:
         foundMovePts( moveFoundPoints ),
         offsetMovePts( moveOffsetPoints ),
         foundPoints( lineFoundPts ),
+        diagRowSums( rowSumDiag ),
+        diag1stDeriv( oneDerivDiag ),
+        diag2ndDeriv( twoDerivDiag ),
         msgs( messages )
     {
     }
@@ -336,6 +345,9 @@ public:
         foundMovePts.clear();
         foundPoints.clear();
         offsetMovePts.clear();
+        diagRowSums.clear();
+        diag1stDeriv.clear();
+        diag2ndDeriv.clear();
         msgs.clear();
     }
 
@@ -347,6 +359,9 @@ public:
     FindPointSet foundMovePts;              ///< Line between the move targets at the time of the current line find
     FindPointSet offsetMovePts;             ///< Offset between the moveRef and the moveFound lines
     std::vector< cv::Point2d > foundPoints; ///< Water line points used to calculate the found water level line
+    std::vector< std::vector< cv::Point > > diagRowSums;   ///< Row sums diagnostic lines
+    std::vector< std::vector< cv::Point > > diag1stDeriv;  ///< 1st deriv diagnostic lines
+    std::vector< std::vector< cv::Point > > diag2ndDeriv;  ///< 2nd deriv diagnostic lines
     std::vector< std::string > msgs;        ///< Vector of strings with messages about the line find
 };
 

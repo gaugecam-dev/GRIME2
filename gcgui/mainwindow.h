@@ -71,8 +71,8 @@ private slots:
     void on_listWidget_imageFolder_currentRowChanged(int row);
     void on_toolButton_imageFolder_browse_clicked();
     void on_toolButton_clearMsgs_clicked();
-    void on_visAppMessage( const string msg );
-    void do_visAppMessage( const QString msg );
+    void on_visAppMessage(string);
+    void do_visAppMessage(QString);
     void on_updateProgress( const int );
     void do_updateProgress( const int );
     void on_tableAddRow( const string row_strings );
