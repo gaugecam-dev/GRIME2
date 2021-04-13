@@ -20,6 +20,7 @@
         <file>icons/exit_door.png</file>
         <file>icons/item_delete.png</file>
         <file>icons/cal_target.png</file>
+        <file>icons/check_boxes.png</file>
     </qresource>
     <qresource prefix="/">
         <file>docs/release_notes.html</file>

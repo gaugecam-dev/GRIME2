@@ -386,7 +386,8 @@ GC_STATUS FindLine::SetMoveTargetROI( const cv::Mat &img, const cv::Rect rect, c
     return m_findGrid.SetMoveTargetROI( img, rect, isLeft );
 }
 GC_STATUS FindLine::DrawResult( const Mat &img, Mat &imgOut, const FindLineResult &result, const bool drawLine,
-                                const bool drawRowSums, const bool draw1stDeriv, const bool draw2ndDeriv, const bool drawRANSAC )
+                                const bool drawRowSums, const bool draw1stDeriv, const bool draw2ndDeriv,
+                                const bool drawRANSAC, const bool drawMoveFind )
 {
     GC_STATUS retVal = img.empty() ? GC_ERR : GC_OK;
     if ( GC_OK != retVal )
@@ -471,20 +472,27 @@ GC_STATUS FindLine::DrawResult( const Mat &img, Mat &imgOut, const FindLineResul
                     line( imgOut, Point2d( 0.0, img.rows - 1 ), Point2d( img.cols - 1, 0.0 ), Scalar( 0, 0, 255 ), 3 );
                     putText( imgOut, "BAD FIND", Point( 5, textRowSpacing * 2 ), FONT_HERSHEY_PLAIN, fontScale, Scalar( 0, 255, 255 ), textStroke );
                 }
-                else if ( drawLine )
+                else
                 {
-                    line( imgOut, result.calcLinePts.lftPixel, result.calcLinePts.rgtPixel, Scalar( 255, 0, 0 ), textStroke + 1 );
-                    line( imgOut, result.refMovePts.lftPixel, result.refMovePts.rgtPixel, Scalar( 0, 0, 255 ), circleSize );
-                    line( imgOut, result.foundMovePts.lftPixel, result.foundMovePts.rgtPixel, Scalar( 0, 255, 0 ), ( circleSize >> 1 ) - 1 );
-                    circle( imgOut, result.calcLinePts.ctrPixel, circleSize + textStroke, Scalar( 0, 255, 0 ), textStroke );
-                    line( imgOut, Point2d( result.calcLinePts.ctrPixel.x - circleSize - textStroke * 2,
-                                           result.calcLinePts.ctrPixel.y - circleSize - textStroke * 2 ),
-                                  Point2d( result.calcLinePts.ctrPixel.x + circleSize + textStroke * 2,
-                                           result.calcLinePts.ctrPixel.y + circleSize + textStroke * 2 ), Scalar( 0, 0, 255 ), textStroke );
-                    line( imgOut, Point2d( result.calcLinePts.ctrPixel.x + circleSize + textStroke * 2,
-                                           result.calcLinePts.ctrPixel.y - circleSize - textStroke * 2 ),
-                                  Point2d( result.calcLinePts.ctrPixel.x - circleSize - textStroke * 2,
-                                           result.calcLinePts.ctrPixel.y + circleSize + textStroke * 2 ), Scalar( 0, 0, 255 ), textStroke );
+                    if ( drawLine )
+                    {
+                        line( imgOut, result.calcLinePts.lftPixel, result.calcLinePts.rgtPixel, Scalar( 255, 0, 0 ), textStroke + 1 );
+                        circle( imgOut, result.calcLinePts.ctrPixel, circleSize + textStroke, Scalar( 0, 255, 0 ), textStroke );
+                        line( imgOut, Point2d( result.calcLinePts.ctrPixel.x - circleSize - textStroke * 2,
+                                               result.calcLinePts.ctrPixel.y - circleSize - textStroke * 2 ),
+                                      Point2d( result.calcLinePts.ctrPixel.x + circleSize + textStroke * 2,
+                                               result.calcLinePts.ctrPixel.y + circleSize + textStroke * 2 ), Scalar( 0, 0, 255 ), textStroke );
+                        line( imgOut, Point2d( result.calcLinePts.ctrPixel.x + circleSize + textStroke * 2,
+                                               result.calcLinePts.ctrPixel.y - circleSize - textStroke * 2 ),
+                                      Point2d( result.calcLinePts.ctrPixel.x - circleSize - textStroke * 2,
+                                               result.calcLinePts.ctrPixel.y + circleSize + textStroke * 2 ), Scalar( 0, 0, 255 ), textStroke );
+                    }
+
+                    if ( drawMoveFind )
+                    {
+                        line( imgOut, result.refMovePts.lftPixel, result.refMovePts.rgtPixel, Scalar( 0, 0, 255 ), circleSize );
+                        line( imgOut, result.foundMovePts.lftPixel, result.foundMovePts.rgtPixel, Scalar( 0, 255, 0 ), ( circleSize >> 1 ) - 1 );
+                    }
                 }
                 if ( 3 < result.foundPoints.size() && drawRANSAC )
                 {

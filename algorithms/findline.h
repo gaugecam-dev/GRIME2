@@ -103,7 +103,8 @@ public:
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
     GC_STATUS DrawResult( const cv::Mat &img, cv::Mat &imgOut, const FindLineResult &result, const bool drawLine,
-                          const bool drawRowSums, const bool draw1stDeriv, const bool draw2ndDeriv , const bool drawRANSAC );
+                          const bool drawRowSums, const bool draw1stDeriv, const bool draw2ndDeriv,
+                          const bool drawRANSAC, const bool drawMoveFind );
 
     /**
      * @brief Method to set the move target search regions

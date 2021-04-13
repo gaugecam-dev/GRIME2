@@ -125,7 +125,8 @@ GC_STATUS VisApp::Calibrate( const string imgFilepath, const string worldCoordsC
 
     return retVal;
 }
-GC_STATUS VisApp::Calibrate( const string imgFilepath, const string worldCoordsCsv, const string calibJson, Mat &imgOut, const bool createOverlay )
+GC_STATUS VisApp::Calibrate( const string imgFilepath, const string worldCoordsCsv, const string calibJson,
+                             Mat &imgOut, const bool drawCalib, const bool drawMoveROIs )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -177,7 +178,7 @@ GC_STATUS VisApp::Calibrate( const string imgFilepath, const string worldCoordsC
                                     worldPtArray.push_back( worldCoords[ i ][ j ] );
                                 }
                             }
-                            retVal = m_calib.Calibrate( pixPtArray, worldPtArray, Size( 2, 4 ), img.size(), img, imgOut, createOverlay );
+                            retVal = m_calib.Calibrate( pixPtArray, worldPtArray, Size( 2, 4 ), img.size(), img, imgOut, drawCalib, drawMoveROIs );
                             if ( GC_OK == retVal )
                             {
                                 retVal = m_calib.Save( calibJson );
@@ -699,14 +700,15 @@ GC_STATUS VisApp::ReadWorldCoordsFromCSV( const string csvFilepath, vector< vect
 
     return retVal;
 }
-GC_STATUS VisApp::DrawCalibOverlay( const cv::Mat matIn, cv::Mat &imgMatOut )
+GC_STATUS VisApp::DrawCalibOverlay( const cv::Mat matIn, cv::Mat &imgMatOut,
+                                    const bool drawCalib, const bool drawMoveROIs )
 {
     GC_STATUS retVal = GC_OK;
     try
     {
         CalibModel model = m_calib.GetModel();
-        retVal = m_calib.Calibrate( model.pixelPoints, model.worldPoints,
-                                    model.gridSize, matIn.size(), matIn, imgMatOut, true );
+        retVal = m_calib.Calibrate( model.pixelPoints, model.worldPoints, model.gridSize, matIn.size(),
+                                    matIn, imgMatOut, drawCalib, drawMoveROIs );
     }
     catch( Exception &e )
     {
@@ -717,15 +719,18 @@ GC_STATUS VisApp::DrawCalibOverlay( const cv::Mat matIn, cv::Mat &imgMatOut )
     return retVal;
 }
 GC_STATUS VisApp::DrawLineFindOverlay( const cv::Mat &img, cv::Mat &imgOut, const bool drawLine, const bool drawRowSums,
-                                       const bool draw1stDeriv, const bool draw2ndDeriv, const bool drawRANSAC )
+                                       const bool draw1stDeriv, const bool draw2ndDeriv, const bool drawRANSAC, const bool drawMoveFind )
 {
-    GC_STATUS retVal = m_findLine.DrawResult( img, imgOut, m_findLineResult, drawLine, drawRowSums, draw1stDeriv, draw2ndDeriv, drawRANSAC );
+    GC_STATUS retVal = m_findLine.DrawResult( img, imgOut, m_findLineResult, drawLine, drawRowSums, draw1stDeriv,
+                                              draw2ndDeriv, drawRANSAC, drawMoveFind );
     return retVal;
 }
 GC_STATUS VisApp::DrawLineFindOverlay( const cv::Mat &img, cv::Mat &imgOut, const FindLineResult findLineResult, const bool drawLine,
-                                       const bool drawRowSums, const bool draw1stDeriv, const bool draw2ndDeriv, const bool drawRANSAC )
+                                       const bool drawRowSums, const bool draw1stDeriv, const bool draw2ndDeriv, const bool drawRANSAC,
+                                       const bool drawMoveFind )
 {
-    GC_STATUS retVal = m_findLine.DrawResult( img, imgOut, findLineResult, drawLine, drawRowSums, draw1stDeriv, draw2ndDeriv, drawRANSAC );
+    GC_STATUS retVal = m_findLine.DrawResult( img, imgOut, findLineResult, drawLine, drawRowSums, draw1stDeriv,
+                                              draw2ndDeriv, drawRANSAC, drawMoveFind );
     return retVal;
 }
 GC_STATUS VisApp::WriteFindlineResultToCSV( const std::string resultCSV, const string imgPath,

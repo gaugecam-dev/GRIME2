@@ -57,7 +57,8 @@ enum PIX_POS_INDEX
 };
 
 GC_STATUS Calib::Calibrate( const vector< Point2d > pixelPts, const vector< Point2d > worldPts,
-                            const Size gridSize, const Size imgSize, const Mat &img, Mat &imgOut, const bool createOverlay )
+                            const Size gridSize, const Size imgSize, const Mat &img, Mat &imgOut,
+                            const bool drawCalib, const bool drawMoveROIs )
 {
     GC_STATUS retVal = GC_OK;
     if ( pixelPts.size() != worldPts.size() || pixelPts.empty() || worldPts.empty() ||
@@ -97,7 +98,7 @@ GC_STATUS Calib::Calibrate( const vector< Point2d > pixelPts, const vector< Poin
                                            std::min( imgSize.height - cvRound( m_model.pixelPoints[ idx ].y ), GC_BOWTIE_TEMPLATE_DIM * 2 ) );
             }
 
-            if ( createOverlay && !img.empty() )
+            if ( ( drawCalib || drawMoveROIs ) && !img.empty() )
             {
                 if ( CV_8UC1 == img.type() )
                 {
@@ -120,101 +121,108 @@ GC_STATUS Calib::Calibrate( const vector< Point2d > pixelPts, const vector< Poin
                     int textStroke = std::max( 1, cvRound( static_cast< double >( imgOut.rows ) / 300.0 ) );
                     double fontScale = 1.0 + static_cast< double >( imgOut.rows ) / 1200.0;
 
-                    if ( m_model.searchLines.empty() )
+                    if ( drawMoveROIs )
                     {
-                        FILE_LOG( logWARNING ) << "[Calib::Calibrate] Search lines not calculated properly so they cannot be drawn";
-                        retVal = GC_WARN;
-                    }
-                    else
-                    {
-                        line( imgOut, m_model.searchLines[ 0 ].top, m_model.searchLines[ 0 ].bot, Scalar( 255, 0, 0 ), textStroke );
-                        line( imgOut, m_model.searchLines[ 0 ].top, m_model.searchLines[ m_model.searchLines.size() - 1 ].top, Scalar( 255, 0, 0 ), textStroke );
-                        line( imgOut, m_model.searchLines[ m_model.searchLines.size() - 1 ].top, m_model.searchLines[ m_model.searchLines.size() - 1 ].bot, Scalar( 255, 0, 0 ), textStroke );
-                        line( imgOut, m_model.searchLines[ 0 ].bot, m_model.searchLines[ m_model.searchLines.size() - 1 ].bot, Scalar( 255, 0, 0 ), textStroke );
                         rectangle( imgOut, m_model.moveSearchRegionLft, Scalar( 0, 0, 255 ), textStroke );
                         rectangle( imgOut, m_model.moveSearchRegionRgt, Scalar( 0, 0, 255 ), textStroke );
                     }
 
-                    Point2d topLft, botRgt;
-                    retVal = PixelToWorld( m_model.pixelPoints[ 0 ], topLft );
-                    if ( GC_OK == retVal )
+                    if ( drawCalib )
                     {
-                        retVal = PixelToWorld( m_model.pixelPoints[ m_model.pixelPoints.size() - 1 ], botRgt );
+                        if ( m_model.searchLines.empty() )
+                        {
+                            FILE_LOG( logWARNING ) << "[Calib::Calibrate] Search lines not calculated properly so they cannot be drawn";
+                            retVal = GC_WARN;
+                        }
+                        else
+                        {
+                            line( imgOut, m_model.searchLines[ 0 ].top, m_model.searchLines[ 0 ].bot, Scalar( 255, 0, 0 ), textStroke );
+                            line( imgOut, m_model.searchLines[ 0 ].top, m_model.searchLines[ m_model.searchLines.size() - 1 ].top, Scalar( 255, 0, 0 ), textStroke );
+                            line( imgOut, m_model.searchLines[ m_model.searchLines.size() - 1 ].top, m_model.searchLines[ m_model.searchLines.size() - 1 ].bot, Scalar( 255, 0, 0 ), textStroke );
+                            line( imgOut, m_model.searchLines[ 0 ].bot, m_model.searchLines[ m_model.searchLines.size() - 1 ].bot, Scalar( 255, 0, 0 ), textStroke );
+                        }
+
+                        Point2d topLft, botRgt;
+                        retVal = PixelToWorld( m_model.pixelPoints[ 0 ], topLft );
                         if ( GC_OK == retVal )
                         {
-                            Point2d pt1, pt2;
-                            double minCol = std::min( topLft.x, botRgt.x );
-                            double maxCol = std::max( topLft.x, botRgt.x );
-                            double minRow = std::min( topLft.y, botRgt.y );
-                            double maxRow = std::max( topLft.y, botRgt.y );
-                            double rowInc = ( maxRow - minRow ) / static_cast< double >( m_model.gridSize.height + 2 );
-                            double colInc = ( maxCol - minCol ) / static_cast< double >( m_model.gridSize.width );
-                            minRow -= rowInc;
-                            maxRow += rowInc;
-                            stringstream buf;
-
-                            bool first;
-                            double row, col;
-                            int rowInt, colInt;
-                            for ( rowInt = 0, row = maxRow; row > minRow; row -= rowInc, ++rowInt )
+                            retVal = PixelToWorld( m_model.pixelPoints[ m_model.pixelPoints.size() - 1 ], botRgt );
+                            if ( GC_OK == retVal )
                             {
-                                first = true;
-                                for ( colInt = 0, col = minCol; col < maxCol; col += colInc, ++colInt )
+                                Point2d pt1, pt2;
+                                double minCol = std::min( topLft.x, botRgt.x );
+                                double maxCol = std::max( topLft.x, botRgt.x );
+                                double minRow = std::min( topLft.y, botRgt.y );
+                                double maxRow = std::max( topLft.y, botRgt.y );
+                                double rowInc = ( maxRow - minRow ) / static_cast< double >( m_model.gridSize.height + 2 );
+                                double colInc = ( maxCol - minCol ) / static_cast< double >( m_model.gridSize.width );
+                                minRow -= rowInc;
+                                maxRow += rowInc;
+                                stringstream buf;
+
+                                bool first;
+                                double row, col;
+                                int rowInt, colInt;
+                                for ( rowInt = 0, row = maxRow; row > minRow; row -= rowInc, ++rowInt )
                                 {
-                                    retVal = WorldToPixel( Point2d( col, row ), pt1 );
-                                    if ( GC_OK == retVal )
+                                    first = true;
+                                    for ( colInt = 0, col = minCol; col < maxCol; col += colInc, ++colInt )
                                     {
-                                        retVal = WorldToPixel( Point2d( col + colInc, row ), pt2 );
+                                        retVal = WorldToPixel( Point2d( col, row ), pt1 );
+                                        if ( GC_OK == retVal )
+                                        {
+                                            retVal = WorldToPixel( Point2d( col + colInc, row ), pt2 );
+                                            if ( GC_OK == retVal )
+                                            {
+                                                line( imgOut, pt1, pt2, Scalar( 0, 255, 255 ), textStroke );
+                                                retVal = WorldToPixel( Point2d( col, row - rowInc ), pt2 );
+                                                if ( GC_OK == retVal && pt1.y < imgOut.rows )
+                                                {
+                                                    line( imgOut, pt1, pt2, Scalar( 0, 255, 255 ), textStroke );
+                                                    if ( ( ( rowInt % 2 ) == 1 ) && ( ( colInt % 2 ) == 0 ) )
+                                                        circle( imgOut, pt1, circleSize, Scalar( 0, 255, 0 ), textStroke );
+                                                }
+                                            }
+                                        }
+                                        if ( first )
+                                        {
+                                            first = false;
+                                            buf.str( string() ); buf << boost::format( "%.1f" ) % row;
+                                            putText( imgOut, buf.str(), Point( cvRound( pt1.x ) - textOffset, cvRound( pt1.y ) + 5 ),
+                                                     FONT_HERSHEY_PLAIN, fontScale, Scalar( 0, 255, 255 ), textStroke );
+                                        }
+                                    }
+                                    retVal = WorldToPixel( Point2d( maxCol, row ), pt1 );
+                                    if ( GC_OK == retVal && pt1.y < imgOut.rows )
+                                    {
+                                        retVal = WorldToPixel( Point2d( maxCol, row - rowInc ), pt2 );
                                         if ( GC_OK == retVal )
                                         {
                                             line( imgOut, pt1, pt2, Scalar( 0, 255, 255 ), textStroke );
-                                            retVal = WorldToPixel( Point2d( col, row - rowInc ), pt2 );
-                                            if ( GC_OK == retVal && pt1.y < imgOut.rows )
-                                            {
-                                                line( imgOut, pt1, pt2, Scalar( 0, 255, 255 ), textStroke );
-                                                if ( ( ( rowInt % 2 ) == 1 ) && ( ( colInt % 2 ) == 0 ) )
-                                                    circle( imgOut, pt1, circleSize, Scalar( 0, 255, 0 ), textStroke );
-                                            }
+                                            if ( ( rowInt % 2 ) == 1 )
+                                                circle( imgOut, pt1, circleSize, Scalar( 0, 255, 0 ), textStroke );
+                                        }
+                                    }
+                                }
+                                first = true;
+                                for ( double col = minCol; col < maxCol; col += colInc )
+                                {
+                                    retVal = WorldToPixel( Point2d( col, minRow ), pt1 );
+                                    if ( GC_OK == retVal )
+                                    {
+                                        retVal = WorldToPixel( Point2d( col + colInc, minRow ), pt2 );
+                                        if ( GC_OK == retVal )
+                                        {
+                                            line( imgOut, pt1, pt2, Scalar( 0, 255, 255 ), textStroke );
                                         }
                                     }
                                     if ( first )
                                     {
                                         first = false;
-                                        buf.str( string() ); buf << boost::format( "%.1f" ) % row;
+                                        buf.str( string() ); buf << boost::format( "%.1f" ) % minRow;
                                         putText( imgOut, buf.str(), Point( cvRound( pt1.x ) - textOffset, cvRound( pt1.y ) + 5 ),
                                                  FONT_HERSHEY_PLAIN, fontScale, Scalar( 0, 255, 255 ), textStroke );
                                     }
-                                }
-                                retVal = WorldToPixel( Point2d( maxCol, row ), pt1 );
-                                if ( GC_OK == retVal && pt1.y < imgOut.rows )
-                                {
-                                    retVal = WorldToPixel( Point2d( maxCol, row - rowInc ), pt2 );
-                                    if ( GC_OK == retVal )
-                                    {
-                                        line( imgOut, pt1, pt2, Scalar( 0, 255, 255 ), textStroke );
-                                        if ( ( rowInt % 2 ) == 1 )
-                                            circle( imgOut, pt1, circleSize, Scalar( 0, 255, 0 ), textStroke );
-                                    }
-                                }
-                            }
-                            first = true;
-                            for ( double col = minCol; col < maxCol; col += colInc )
-                            {
-                                retVal = WorldToPixel( Point2d( col, minRow ), pt1 );
-                                if ( GC_OK == retVal )
-                                {
-                                    retVal = WorldToPixel( Point2d( col + colInc, minRow ), pt2 );
-                                    if ( GC_OK == retVal )
-                                    {
-                                        line( imgOut, pt1, pt2, Scalar( 0, 255, 255 ), textStroke );
-                                    }
-                                }
-                                if ( first )
-                                {
-                                    first = false;
-                                    buf.str( string() ); buf << boost::format( "%.1f" ) % minRow;
-                                    putText( imgOut, buf.str(), Point( cvRound( pt1.x ) - textOffset, cvRound( pt1.y ) + 5 ),
-                                             FONT_HERSHEY_PLAIN, fontScale, Scalar( 0, 255, 255 ), textStroke );
                                 }
                             }
                         }
@@ -399,7 +407,7 @@ GC_STATUS Calib::Load( const string jsonCalFilepath )
             m_model.gridSize = Size( static_cast< int >( cols ), static_cast< int >( rows ) );
 
             Mat matIn, matOut;
-            retVal = Calibrate( m_model.pixelPoints, m_model.worldPoints, m_model.gridSize, m_imgSize, matIn, matOut );
+            retVal = Calibrate( m_model.pixelPoints, m_model.worldPoints, m_model.gridSize, m_imgSize, matIn, matOut, false, false );
         }
 #ifdef LOG_CALIB_VALUES
         FILE_LOG( logINFO ) << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;

@@ -108,7 +108,8 @@ public:
     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
     */
     GC_STATUS Calibrate( const string imgFilepath, const string worldCoordsCsv,
-                         const string calibJson, cv::Mat &imgOut, const bool createOverlay = false );
+                         const string calibJson, cv::Mat &imgOut,
+                         const bool drawCalib = false, const bool drawMoveROIs = false );
 
     /**
      * @brief Set the current calibration from a calibration model json file
@@ -123,7 +124,8 @@ public:
      * @param imageMatOut OpenCV Mat of the output image that holds the input image with an overlay of the calibration
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
-    GC_STATUS DrawCalibOverlay( const cv::Mat matIn, cv::Mat &imgMatOut );
+    GC_STATUS DrawCalibOverlay( const cv::Mat matIn, cv::Mat &imgMatOut,
+                                const bool drawCalib = true, const bool drawMoveROIs = true );
 
     /**
      * @brief Retrieve the current calibration model to a CalibModel object
@@ -225,7 +227,8 @@ public:
      */
     GC_STATUS DrawLineFindOverlay( const cv::Mat &img, cv::Mat &imgOut, const bool drawLine = true,
                                    const bool drawRowSums = false, const bool draw1stDeriv = false,
-                                   const bool draw2ndDeriv = false, const bool drawRANSAC = false );
+                                   const bool draw2ndDeriv = false, const bool drawRANSAC = false,
+                                   const bool drawMoveFind = false );
 
     /**
      * @brief Create an overlay image with a user specified found water line
@@ -237,7 +240,7 @@ public:
     GC_STATUS DrawLineFindOverlay( const cv::Mat &img, cv::Mat &imgOut, const FindLineResult findLineResult,
                                    const bool drawLine = true, const bool drawRowSums = false,
                                    const bool draw1stDeriv = false, const bool draw2ndDeriv = false,
-                                   const bool drawRANSAC = false);
+                                   const bool drawRANSAC = false, const bool drawMoveFind = false );
 
     /**
      * @brief Set the internal found line position from a user specifed find line result
