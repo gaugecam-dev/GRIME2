@@ -42,6 +42,7 @@ using namespace std;
 namespace gc
 {
 
+static const double TEMPLATE_MATCH_MIN_SCORE = 0.1; /**< Minimum bow tie template match score 0.0 < x < 1.0 */
 static const int TARGET_COUNT = 8;                  /**< Number of bowties in a gaugecam calibration target */
 static const int TEMPLATE_COUNT = 21;               /**< Number of rotated bowtie match templates */
 static const double ROTATE_INC = CV_PI / 180.0;     /**< Rotation increment for bowtie match templates */

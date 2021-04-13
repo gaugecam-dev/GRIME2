@@ -79,7 +79,8 @@ public:
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
     GC_STATUS Calibrate( const std::vector< cv::Point2d > pixelPts, const std::vector< cv::Point2d > worldPts,
-                         const cv::Size gridSize, const cv::Size imgSize, const cv::Mat &img, cv::Mat &imgOut, const bool createOverlay = false );
+                         const cv::Size gridSize, const cv::Size imgSize, const cv::Mat &img, cv::Mat &imgOut,
+                         const bool drawCalib = false, const bool drawMoveROIs = false );
     /**
      * @brief Load a calibration model from a json file
      *

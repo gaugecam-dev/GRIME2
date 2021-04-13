@@ -20,8 +20,8 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/imgcodecs.hpp>
 
-#ifdef DEBUG_FIND_LINE
-#undef DEBUG_FIND_LINE
+#ifndef DEBUG_FIND_LINE
+#define DEBUG_FIND_LINE
 #include <iostream>
 #include <boost/filesystem.hpp>
 #ifdef WIN32
@@ -122,6 +122,19 @@ GC_STATUS FindLine::Find( const Mat &img, const vector< LineEnds > &lines, FindL
             dilate( img, scratch, kern, Point( -1, -1 ), 3 );
             erode( scratch, scratch, kern, Point( -1, -1 ), 3 );
 
+            Mat outImg;
+#ifdef DEBUG_FIND_LINE
+            if ( CV_8UC1 == img.type() )
+                cvtColor( img, outImg, COLOR_GRAY2BGR );
+            else if ( CV_8UC3 == img.type() )
+                outImg = img.clone();
+            else
+            {
+                FILE_LOG( logERROR ) << "[FindLine::Find] Invalid image type for drawing row sum must be 8-bit gray or 8-bit bgr";
+                retVal = GC_ERR;
+            }
+#endif
+
             size_t start;
             Point2d linePt;
             vector< uint > rowSums;
@@ -130,10 +143,19 @@ GC_STATUS FindLine::Find( const Mat &img, const vector< LineEnds > &lines, FindL
             for ( size_t i = 0; i < 10; ++i )
             {
                 start = i * linesPerSwath;
-                retVal = EvaluateSwath( scratch, lines, start, start + linesPerSwath, linePt );
+                retVal = EvaluateSwath( scratch, lines, start, start + linesPerSwath, linePt, result );
                 if ( GC_OK == retVal )
                     result.foundPoints.push_back( linePt );
             }
+
+#ifdef DEBUG_FIND_LINE
+            bool isOK = imwrite( DEBUG_RESULT_FOLDER + "rowsums.png", outImg );
+            if ( !isOK )
+            {
+                FILE_LOG( logERROR ) << "[FindLine::Find] Could not write debug image " << DEBUG_RESULT_FOLDER << "rowsums.png";
+            }
+#endif
+
 #if 1
             FindPointSet findPtSet;
             double xCenter = ( lines[ 0 ].bot.x + lines[ lines.size() - 1 ].bot.x ) / 2.0;
@@ -363,7 +385,9 @@ GC_STATUS FindLine::SetMoveTargetROI( const cv::Mat &img, const cv::Rect rect, c
 {
     return m_findGrid.SetMoveTargetROI( img, rect, isLeft );
 }
-GC_STATUS FindLine::DrawResult( const Mat &img, Mat &imgOut, const FindLineResult &result )
+GC_STATUS FindLine::DrawResult( const Mat &img, Mat &imgOut, const FindLineResult &result, const bool drawLine,
+                                const bool drawRowSums, const bool draw1stDeriv, const bool draw2ndDeriv,
+                                const bool drawRANSAC, const bool drawMoveFind )
 {
     GC_STATUS retVal = img.empty() ? GC_ERR : GC_OK;
     if ( GC_OK != retVal )
@@ -396,6 +420,52 @@ GC_STATUS FindLine::DrawResult( const Mat &img, Mat &imgOut, const FindLineResul
                 int textStroke = std::max( 1, cvRound( static_cast< double >( imgOut.rows ) / 300.0 ) );
                 int textRowSpacing = cvRound( static_cast< double >( imgOut.rows ) / 25.0 );
                 double fontScale = static_cast< double >( imgOut.rows ) / 300.0;
+
+                if ( drawRowSums && !result.diagRowSums.empty() )
+                {
+                    Point pt1, pt2;
+                    for ( size_t i = 0; i < result.diagRowSums.size(); ++i )
+                    {
+                        if ( result.diagRowSums[ i ].size() > 1 )
+                        {
+                            for ( size_t j = 1; j < result.diagRowSums[ i ].size(); ++j )
+                            {
+                                line( imgOut, result.diagRowSums[ i ][ j - 1 ], result.diagRowSums[ i ][ j ], Scalar( 0, 255, 255 ), 1 );
+                            }
+                        }
+                    }
+                }
+
+                if ( draw1stDeriv && !result.diag1stDeriv.empty() )
+                {
+                    Point pt1, pt2;
+                    for ( size_t i = 0; i < result.diag1stDeriv.size(); ++i )
+                    {
+                        if ( result.diag1stDeriv[ i ].size() > 1 )
+                        {
+                            for ( size_t j = 1; j < result.diag1stDeriv[ i ].size(); ++j )
+                            {
+                                line( imgOut, result.diag1stDeriv[ i ][ j - 1 ], result.diag1stDeriv[ i ][ j ], Scalar( 0, 0, 255 ), 1 );
+                            }
+                        }
+                    }
+                }
+
+                if ( draw2ndDeriv && !result.diag2ndDeriv.empty() )
+                {
+                    Point pt1, pt2;
+                    for ( size_t i = 0; i < result.diag2ndDeriv.size(); ++i )
+                    {
+                        if ( result.diag2ndDeriv[ i ].size() > 1 )
+                        {
+                            for ( size_t j = 1; j < result.diag2ndDeriv[ i ].size(); ++j )
+                            {
+                                line( imgOut, result.diag2ndDeriv[ i ][ j - 1 ], result.diag2ndDeriv[ i ][ j ], Scalar( 255, 0, 0 ), 1 );
+                            }
+                        }
+                    }
+                }
+
                 if ( !result.findSuccess )
                 {
                     line( imgOut, Point2d( 0.0, 0.0 ), Point2d( img.cols - 1, img.rows - 1 ), Scalar( 0, 0, 255 ), 3 );
@@ -404,21 +474,31 @@ GC_STATUS FindLine::DrawResult( const Mat &img, Mat &imgOut, const FindLineResul
                 }
                 else
                 {
-                    line( imgOut, result.calcLinePts.lftPixel, result.calcLinePts.rgtPixel, Scalar( 255, 0, 0 ), textStroke + 1 );
-                    circle( imgOut, result.calcLinePts.ctrPixel, circleSize, Scalar( 0, 0, 255 ), textStroke );
-                    line( imgOut, Point2d( result.calcLinePts.ctrPixel.x - circleSize, result.calcLinePts.ctrPixel.y - circleSize ),
-                                  Point2d( result.calcLinePts.ctrPixel.x + circleSize, result.calcLinePts.ctrPixel.y + circleSize ), Scalar( 0, 0, 255 ), textStroke );
-                    line( imgOut, Point2d( result.calcLinePts.ctrPixel.x + circleSize, result.calcLinePts.ctrPixel.y - circleSize ),
-                                  Point2d( result.calcLinePts.ctrPixel.x - circleSize, result.calcLinePts.ctrPixel.y + circleSize ), Scalar( 0, 0, 255 ), textStroke );
-                    line( imgOut, result.refMovePts.lftPixel, result.refMovePts.rgtPixel, Scalar( 0, 0, 255 ), circleSize );
-                    line( imgOut, result.foundMovePts.lftPixel, result.foundMovePts.rgtPixel, Scalar( 0, 255, 0 ), ( circleSize >> 1 ) - 1 );
-                    if ( 3 < result.foundPoints.size() && GC_OK == retVal )
+                    if ( drawLine )
                     {
-                        circle( imgOut, result.foundPoints[ 0 ], max( 3, circleSize >> 1 ), Scalar( 0, 255, 255 ), FILLED );
-                        for ( size_t i = 1; i < result.foundPoints.size(); ++i )
-                        {
-                            circle( imgOut, result.foundPoints[ i ], max( 3, circleSize >> 1 ), Scalar( 0, 255, 255 ), FILLED );
-                        }
+                        line( imgOut, result.calcLinePts.lftPixel, result.calcLinePts.rgtPixel, Scalar( 255, 0, 0 ), textStroke + 1 );
+                        circle( imgOut, result.calcLinePts.ctrPixel, circleSize + textStroke, Scalar( 0, 255, 0 ), textStroke );
+                        line( imgOut, Point2d( result.calcLinePts.ctrPixel.x - circleSize - textStroke * 2,
+                                               result.calcLinePts.ctrPixel.y - circleSize - textStroke * 2 ),
+                                      Point2d( result.calcLinePts.ctrPixel.x + circleSize + textStroke * 2,
+                                               result.calcLinePts.ctrPixel.y + circleSize + textStroke * 2 ), Scalar( 0, 0, 255 ), textStroke );
+                        line( imgOut, Point2d( result.calcLinePts.ctrPixel.x + circleSize + textStroke * 2,
+                                               result.calcLinePts.ctrPixel.y - circleSize - textStroke * 2 ),
+                                      Point2d( result.calcLinePts.ctrPixel.x - circleSize - textStroke * 2,
+                                               result.calcLinePts.ctrPixel.y + circleSize + textStroke * 2 ), Scalar( 0, 0, 255 ), textStroke );
+                    }
+
+                    if ( drawMoveFind )
+                    {
+                        line( imgOut, result.refMovePts.lftPixel, result.refMovePts.rgtPixel, Scalar( 0, 0, 255 ), circleSize );
+                        line( imgOut, result.foundMovePts.lftPixel, result.foundMovePts.rgtPixel, Scalar( 0, 255, 0 ), ( circleSize >> 1 ) - 1 );
+                    }
+                }
+                if ( 3 < result.foundPoints.size() && drawRANSAC )
+                {
+                    for ( size_t i = 0; i < result.foundPoints.size(); ++i )
+                    {
+                        circle( imgOut, result.foundPoints[ i ], max( 3, circleSize >> 1 ), Scalar( 0, 255, 255 ), FILLED );
                     }
                 }
                 for ( size_t i = 0; i < result.msgs.size(); ++i )
@@ -435,8 +515,8 @@ GC_STATUS FindLine::DrawResult( const Mat &img, Mat &imgOut, const FindLineResul
     }
     return retVal;
 }
-GC_STATUS FindLine::EvaluateSwath( const Mat &img, const vector< LineEnds > &lines,
-                                   const size_t startIndex, const size_t endIndex, Point2d &resultPt )
+GC_STATUS FindLine::EvaluateSwath( const Mat &img, const vector< LineEnds > &lines, const size_t startIndex,
+                                   const size_t endIndex, Point2d &resultPt, FindLineResult &result )
 {
     GC_STATUS retVal = ( lines.empty() || img.empty() || startIndex > endIndex ||
                          lines.size() - 1 < endIndex ) ? GC_ERR : GC_OK;
@@ -456,6 +536,13 @@ GC_STATUS FindLine::EvaluateSwath( const Mat &img, const vector< LineEnds > &lin
             retVal = CalcRowSums( img, swath, rowSums );
             if ( GC_OK == retVal )
             {
+                retVal = CalculateRowSumsLines( rowSums, swath, result.diagRowSums,
+                                                result.diag1stDeriv, result.diag2ndDeriv );
+                if ( GC_OK != retVal )
+                {
+                    FILE_LOG( logWARNING ) << "[FindLine::EvaluateSwath] Cannot retrieve diagnosic line points";
+                    retVal = GC_OK;
+                }
                 retVal = CalcSwathPoint( swath, rowSums, resultPt );
             }
         }
@@ -493,7 +580,7 @@ GC_STATUS FindLine::CalcSwathPoint( const vector< LineEnds > &swath, const vecto
             }
             if ( -1 == index )
             {
-                FILE_LOG( logERROR ) << "[" << __func__ << "] No swath edge found";
+                FILE_LOG( logERROR ) << "[FindLine::CalcSwathPoint] No swath edge found";
                 retVal = GC_WARN;
             }
             else
@@ -537,37 +624,10 @@ GC_STATUS FindLine::CalcRowSums( const Mat &img, const vector< LineEnds > &lines
                 LineIterator iter( img, lines[ i ].top, lines[ i ].bot );
                 for ( int j = 0; j < std::min( height, iter.count ); ++j, ++iter )
                 {
-                    // temp = static_cast< uint >( **iter );
                     rowSumsTemp[ static_cast< size_t >( j ) ] += static_cast< uint >( **iter );
                 }
             }
-#ifdef DEBUG_FIND_LINE
-            Mat imgOut;
-            retVal = DrawRowSums( img, rowSumsTemp, lines, imgOut );
-            if ( GC_OK == retVal )
-            {
-                bool isOK = imwrite( DEBUG_RESULT_FOLDER + "rowsums_raw.png", imgOut );
-                if ( !isOK )
-                {
-                    FILE_LOG( logERROR ) << "[" << __func__ << "] Could not write debug image " << DEBUG_RESULT_FOLDER << "rowsums_raw.png";
-                }
-            }
-#endif
             retVal = MedianFilter( MEDIAN_FILTER_KERN_SIZE, rowSumsTemp, rowSums );
-#ifdef DEBUG_FIND_LINE
-            if ( GC_OK == retVal )
-            {
-                retVal = DrawRowSums( img, rowSums, lines, imgOut );
-                if ( GC_OK == retVal )
-                {
-                    bool isOK = imwrite( DEBUG_RESULT_FOLDER + "rowsums_smooth.png", imgOut );
-                    if ( !isOK )
-                    {
-                        FILE_LOG( logERROR ) << "[" << __func__ << "] Could not write debug image " << DEBUG_RESULT_FOLDER << "rowsums_smooth.png";
-                    }
-                }
-            }
-#endif
         }
         catch( cv::Exception &e )
         {
@@ -578,49 +638,129 @@ GC_STATUS FindLine::CalcRowSums( const Mat &img, const vector< LineEnds > &lines
 
     return retVal;
 }
-GC_STATUS FindLine::DrawRowSums( const Mat &img, const vector< uint > rowSums, const vector< LineEnds > lines, Mat &imgOut )
+GC_STATUS FindLine::CalculateRowSumsLines( const vector< uint > rowSums, const vector< LineEnds > lines, vector< vector< Point > > &rowSumsLines,
+                                           vector< vector< Point > > &deriveOneLines,  vector< vector< Point > > &deriveTwoLines )
 {
-    GC_STATUS retVal = lines.empty() || img.empty() || rowSums.empty() ? GC_ERR : GC_OK;
+    GC_STATUS retVal = lines.empty() || rowSums.empty() ? GC_ERR : GC_OK;
     if ( GC_OK != retVal )
     {
-        FILE_LOG( logERROR ) << "[FindLine::DrawRowSums] Cannot draw row sums with empty search lines, image, or row sum array";
+        FILE_LOG( logERROR ) << "[FindLine::CalculateRowSumsLines] Cannot calculate row sums line points with empty search lines, image, or row sum array";
     }
     else
     {
         try
         {
-            if ( CV_8UC1 == img.type() )
-                cvtColor( img, imgOut, COLOR_GRAY2BGR );
-            else if ( CV_8UC3 == img.type() )
-                imgOut = img.clone();
-            else
+            uint maxVal = 0;
+            for ( size_t i = 0; i < rowSums.size(); ++i )
             {
-                FILE_LOG( logERROR ) << "[" << __func__ << "] Invalid image type for drawing row sum must be 8-bit gray or 8-bit bgr";
+                if ( maxVal < rowSums[ i ] )
+                    maxVal = rowSums[ i ];
+            }
+
+            int beg = min( lines[ 0 ].top.x, lines[ 0 ].bot.x ) - 180;
+            // double wide = static_cast< double >( min( lines[ lines.size() - 1 ].top.x, lines[ lines.size() - 1 ].bot.x ) - beg - 3 );
+            double wide = 64.0;
+
+            int right;
+            int y = lines[ 0 ].top.y;
+            double dMaxVal = static_cast< double >( maxVal );
+
+            vector< Point > rowSumsPts;
+            right = beg + cvRound( wide * ( static_cast< double >( rowSums[ 0 ] ) / dMaxVal ) );
+            Point pt = Point( right, y );
+            rowSumsPts.push_back( pt );
+            ++y;
+
+            int diff;
+            int minDiff = 9999999;
+            int maxDiff = -9999999;
+            vector< int > firstDeriv;
+            for ( size_t i = 1; i < rowSums.size(); ++i )
+            {
+                diff = rowSums[ i ] - rowSums[ i - 1 ];
+                right = beg + cvRound( wide * ( static_cast< double >( rowSums[ i ] ) / dMaxVal ) );
+                pt = Point( right, y );
+                rowSumsPts.push_back( pt );
+                ++y;
+
+                firstDeriv.push_back( diff );
+                if ( diff > maxDiff )
+                    maxDiff = diff;
+                if ( diff < minDiff )
+                    minDiff = diff;
+            }
+
+            rowSumsLines.push_back( rowSumsPts );
+
+            if ( maxDiff == minDiff )
+            {
+                FILE_LOG( logERROR ) << "[FindLine::CalculateRowSumsLines] Cannot calculate row sums first deriv if all values are the same";
                 retVal = GC_ERR;
             }
-            if ( GC_OK == retVal )
+            else
             {
-                uint maxVal = 0;
-                for ( size_t i = 0; i < rowSums.size(); ++i )
+                beg += 120;
+                y = lines[ 0 ].top.y + 1;
+                rowSumsPts.clear();
+
+                int minDiff2 = 9999999;
+                int maxDiff2 = -9999999;
+                vector< int > secondDeriv;
+                double totDiff = maxDiff - minDiff;
+                right = beg + cvRound( wide * ( static_cast< double >( firstDeriv[ 0 ] - minDiff ) / totDiff ) );
+                pt = Point( right, y );
+                rowSumsPts.push_back( pt );
+                ++y;
+
+                for ( size_t i = 1; i < firstDeriv.size(); ++i )
                 {
-                    if ( maxVal < rowSums[ i ] )
-                        maxVal = rowSums[ i ];
+                    diff = firstDeriv[ i ] - firstDeriv[ i - 1 ];
+                    right = beg + cvRound( wide * ( static_cast< double >( firstDeriv[ i ] - minDiff ) / totDiff ) );
+                    pt = Point( right, y );
+                    rowSumsPts.push_back( pt );
+                    ++y;
+
+                    secondDeriv.push_back( diff );
+                    if ( diff > maxDiff2 )
+                        maxDiff2 = diff;
+                    if ( diff < minDiff2 )
+                        minDiff2 = diff;
                 }
 
-                int right;
-                int y = lines[ 0 ].top.y;
-                double dMaxVal = static_cast< double >( maxVal );
-                for ( size_t i = 0; i < rowSums.size(); ++i )
+                deriveOneLines.push_back( rowSumsPts );
+
+                if ( maxDiff2 == minDiff2 )
                 {
-                    right = cvRound( 180.0 * ( static_cast< double >( rowSums[ i ]  ) / dMaxVal ) );
-                    line( imgOut, Point( 0, y ), Point( right, y ), Scalar( 0, 0, 255 ) );
+                    FILE_LOG( logERROR ) << "[FindLine::CalculateRowSumsLines] Cannot calculate row sums second deriv if all values are the same";
+                    retVal = GC_ERR;
+                }
+                else
+                {
+                    beg += 150;
+                    y = lines[ 0 ].top.y + 1;
+                    rowSumsPts.clear();
+
+                    double totDiff = maxDiff2 - minDiff;
+                    right = beg + cvRound( wide * ( static_cast< double >( secondDeriv[ 0 ] - minDiff2 ) / totDiff ) );
+                    pt = Point( right, y );
+                    rowSumsPts.push_back( pt );
                     ++y;
+
+                    for ( size_t i = 1; i < secondDeriv.size(); ++i )
+                    {
+                        right = beg + cvRound( wide * ( static_cast< double >( secondDeriv[ i ] - minDiff2 ) / totDiff ) );
+                        pt = Point( right, y );
+                        rowSumsPts.push_back( pt );
+                        ++y;
+                    }
+
+                    deriveTwoLines.push_back( rowSumsPts );
                 }
             }
         }
         catch( cv::Exception &e )
         {
-            FILE_LOG( logERROR ) << "[FindLine::DrawRowSums] " << e.what();
+            FILE_LOG( logERROR ) << "[FindLine::CalculateRowSumsLines] " << e.what();
             retVal = GC_EXCEPT;
         }
     }

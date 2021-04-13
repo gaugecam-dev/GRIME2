@@ -162,6 +162,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     on_lineEdit_imageFolder_textEdited( ui->lineEdit_imageFolder->text() );
     on_actionZoom100_triggered();
+    ui->groupBox_overLays->hide();
     UpdateGUIEnables();
 }
 MainWindow::~MainWindow()
@@ -212,11 +213,18 @@ void MainWindow::createConnections()
     connect( m_pComboBoxImageToView,  &QComboBox::currentTextChanged, this, &MainWindow::UpdatePixmapTarget );
     connect( ui->checkBox_showCalib, &QCheckBox::stateChanged, this, &MainWindow::UpdatePixmapTarget );
     connect( ui->checkBox_showFindLine, &QCheckBox::stateChanged, this, &MainWindow::UpdatePixmapTarget );
+    connect( ui->checkBox_showRowSums, &QCheckBox::stateChanged, this, &MainWindow::UpdatePixmapTarget );
+    connect( ui->checkBox_showDerivOne, &QCheckBox::stateChanged, this, &MainWindow::UpdatePixmapTarget );
+    connect( ui->checkBox_showDerivTwo, &QCheckBox::stateChanged, this, &MainWindow::UpdatePixmapTarget );
+    connect( ui->checkBox_showRANSAC, &QCheckBox::stateChanged, this, &MainWindow::UpdatePixmapTarget );
+    connect( ui->checkBox_showMoveROIs, &QCheckBox::stateChanged, this, &MainWindow::UpdatePixmapTarget );
+    connect( ui->checkBox_showMoveFind, &QCheckBox::stateChanged, this, &MainWindow::UpdatePixmapTarget );
     connect( ui->checkBox_createFindLine_csvResultsFile, &QCheckBox::stateChanged, this, &MainWindow::UpdateGUIEnables );
     connect( ui->checkBox_createFindLine_annotatedResults, &QCheckBox::stateChanged, this, &MainWindow::UpdateGUIEnables );
+    connect( ui->actionToggleControls, &QAction::toggled, this, &MainWindow::UpdateGUIEnables );
 
-    connect( this, SIGNAL( sig_visAppMessage( const QString ) ), this, SLOT( do_visAppMessage( const QString ) ) );
-    connect( this, SIGNAL( sig_updateProgess( const int ) ),     this, SLOT( do_updateProgress( const int ) ) );
+    connect( this, SIGNAL( sig_visAppMessage(QString) ), this, SLOT( do_visAppMessage(QString) ) );
+    connect( this, SIGNAL( sig_updateProgess(int) ),     this, SLOT( do_updateProgress(int) ) );
 
     m_visApp.sigMessage.connect( bind( &MainWindow::on_visAppMessage, this, boost::placeholders::_1 ) );
     m_visApp.sigProgress.connect( bind( &MainWindow::on_updateProgress, this, boost::placeholders::_1 ) );
@@ -501,6 +509,7 @@ void MainWindow::UpdateGUIEnables()
     ui->toolButton_findLine_resultCSVFile_browse->setEnabled( ui->checkBox_createFindLine_csvResultsFile->isChecked() );
     ui->lineEdit_findLine_annotatedResultFolder->setEnabled( ui->checkBox_createFindLine_annotatedResults->isChecked() );
     ui->toolButton_findLine_annotatedResultFolder_browse->setEnabled( ui->checkBox_createFindLine_annotatedResults->isChecked() );
+    ui->groupBox_overLays->setHidden( !ui->actionToggleControls->isChecked() );
 }
 void MainWindow::AdjustPointFindLines()
 {
@@ -552,7 +561,13 @@ void MainWindow::UpdatePixmap()
 
     IMG_DISPLAY_OVERLAYS overlays = static_cast< IMG_DISPLAY_OVERLAYS >(
                 ( ui->checkBox_showCalib->isChecked() ? CALIB : OVERLAYS_NONE ) +
-                ( ui->checkBox_showFindLine->isChecked() ? FINDLINE : OVERLAYS_NONE ) );
+                ( ui->checkBox_showFindLine->isChecked() ? FINDLINE : OVERLAYS_NONE ) +
+                ( ui->checkBox_showRowSums->isChecked() ? DIAG_ROWSUMS : OVERLAYS_NONE ) +
+                ( ui->checkBox_showDerivOne->isChecked() ? DIAG_1ST_DERIV : OVERLAYS_NONE ) +
+                ( ui->checkBox_showDerivTwo->isChecked() ? DIAG_2ND_DERIV : OVERLAYS_NONE ) +
+                ( ui->checkBox_showRANSAC->isChecked() ? DIAG_RANSAC : OVERLAYS_NONE ) +
+                ( ui->checkBox_showMoveROIs->isChecked() ? MOVE_ROIS : OVERLAYS_NONE ) +
+                ( ui->checkBox_showMoveFind->isChecked() ? MOVE_FIND : OVERLAYS_NONE ) );
     gc::GC_STATUS retVal = m_visApp.GetImage( cv::Size( m_pQImg->width(), m_pQImg->height() ),
                                               static_cast< size_t >( m_pQImg->bytesPerLine() ),
                                               CV_8UC4, m_pQImg->scanLine( 0 ), nColorType, overlays );
@@ -622,8 +637,8 @@ void MainWindow::do_updateProgress( const int value )
 {
     ui->progressBar_imageLoad->setValue( std::min( 100, std::max( 0, value ) ) );
 }
-void MainWindow::on_visAppMessage( const string msg ) { emit sig_visAppMessage( QString::fromStdString( msg ) ); }
-void MainWindow::do_visAppMessage( const QString msg )
+void MainWindow::on_visAppMessage(string msg) { emit sig_visAppMessage( QString::fromStdString( msg ) ); }
+void MainWindow::do_visAppMessage(QString msg)
 {
     if ( msg.contains( "update image only" ) )
     {
@@ -1014,7 +1029,7 @@ void MainWindow::on_pushButton_visionCalibrate_clicked()
 }
 void MainWindow::on_toolButton_calibVisionTarget_csv_browse_clicked()
 {
-    QString strFullPath = QFileDialog::getSaveFileName( this, "Select calibration world coordinate CSV file", ui->lineEdit_calibVisionTarget_csv->text() );
+    QString strFullPath = QFileDialog::getOpenFileName( this, "Select calibration world coordinate CSV file", ui->lineEdit_calibVisionTarget_csv->text() );
     if ( strFullPath.isNull() )
     {
         ui->statusBar->showMessage( "No calibration world coordinate CSV file selected" );
@@ -1030,7 +1045,7 @@ void MainWindow::on_toolButton_calibVisionTarget_csv_browse_clicked()
 }
 void MainWindow::on_toolButton_calibVisionResult_json_browse_clicked()
 {
-    QString strFullPath = QFileDialog::getOpenFileName( this, "Set calibration json filepath", ui->lineEdit_calibVisionResult_json->text() );
+    QString strFullPath = QFileDialog::getSaveFileName( this, "Set calibration json filepath", ui->lineEdit_calibVisionResult_json->text() );
     if ( strFullPath.isNull() )
     {
         ui->statusBar->showMessage( "Could not set calib result json file" );

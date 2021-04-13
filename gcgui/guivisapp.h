@@ -47,7 +47,12 @@ enum IMG_DISPLAY_OVERLAYS
     CALIB = 1,
     FINDLINE = 2,
     FEATROIS = 4,
-    MOVEMENT = 8
+    MOVE_ROIS = 8,
+    MOVE_FIND = 16,
+    DIAG_ROWSUMS = 32,
+    DIAG_1ST_DERIV = 64,
+    DIAG_2ND_DERIV = 128,
+    DIAG_RANSAC = 256
 };
 
 class GuiVisApp

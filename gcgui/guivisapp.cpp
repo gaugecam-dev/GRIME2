@@ -271,13 +271,23 @@ GC_STATUS GuiVisApp::GetImageOverlay( const IMG_BUFFERS nImgColor, const IMG_DIS
         else if ( BUF_OVERLAY == nImgColor )
         {
             m_matDisplay = m_matColor.clone();
-            if ( overlays & CALIB )
+            if ( overlays & CALIB ||
+                 overlays & MOVE_ROIS )
             {
-                retVal = m_visApp.DrawCalibOverlay( m_matDisplay, m_matDisplay );
+                retVal = m_visApp.DrawCalibOverlay( m_matDisplay, m_matDisplay, overlays & CALIB, overlays & MOVE_ROIS );
             }
-            if ( overlays & FINDLINE )
+            if ( ( overlays & FINDLINE ) ||
+                 ( overlays & DIAG_ROWSUMS ) ||
+                 ( overlays & DIAG_1ST_DERIV ) ||
+                 ( overlays & DIAG_2ND_DERIV ) ||
+                 ( overlays & DIAG_RANSAC ) ||
+                 ( overlays & MOVE_ROIS ) ||
+                 ( overlays & MOVE_FIND ) )
             {
-                retVal = m_visApp.DrawLineFindOverlay( m_matDisplay, m_matDisplay );
+                retVal = m_visApp.DrawLineFindOverlay( m_matDisplay, m_matDisplay, overlays & FINDLINE,
+                                                       overlays & DIAG_ROWSUMS, overlays & DIAG_1ST_DERIV,
+                                                       overlays & DIAG_2ND_DERIV, overlays & DIAG_RANSAC,
+                                                       overlays & MOVE_FIND );
             }
         }
     }
