@@ -80,7 +80,7 @@ public:
      */
     GC_STATUS Calibrate( const std::vector< cv::Point2d > pixelPts, const std::vector< cv::Point2d > worldPts,
                          const cv::Size gridSize, const cv::Size imgSize, const cv::Mat &img, cv::Mat &imgOut,
-                         const bool drawCalib = false, const bool drawMoveROIs = false );
+                         const bool drawCalib = false, const bool drawMoveROIs = false, const bool drawSearchROI = false );
     /**
      * @brief Load a calibration model from a json file
      *

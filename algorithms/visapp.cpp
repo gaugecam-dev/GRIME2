@@ -701,14 +701,14 @@ GC_STATUS VisApp::ReadWorldCoordsFromCSV( const string csvFilepath, vector< vect
     return retVal;
 }
 GC_STATUS VisApp::DrawCalibOverlay( const cv::Mat matIn, cv::Mat &imgMatOut,
-                                    const bool drawCalib, const bool drawMoveROIs )
+                                    const bool drawCalib, const bool drawMoveROIs, const bool drawSearchROI )
 {
     GC_STATUS retVal = GC_OK;
     try
     {
         CalibModel model = m_calib.GetModel();
         retVal = m_calib.Calibrate( model.pixelPoints, model.worldPoints, model.gridSize, matIn.size(),
-                                    matIn, imgMatOut, drawCalib, drawMoveROIs );
+                                    matIn, imgMatOut, drawCalib, drawMoveROIs, drawSearchROI );
     }
     catch( Exception &e )
     {
