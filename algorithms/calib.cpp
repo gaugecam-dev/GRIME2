@@ -58,7 +58,7 @@ enum PIX_POS_INDEX
 
 GC_STATUS Calib::Calibrate( const vector< Point2d > pixelPts, const vector< Point2d > worldPts,
                             const Size gridSize, const Size imgSize, const Mat &img, Mat &imgOut,
-                            const bool drawCalib, const bool drawMoveROIs )
+                            const bool drawCalib, const bool drawMoveROIs, const bool drawSearchROI )
 {
     GC_STATUS retVal = GC_OK;
     if ( pixelPts.size() != worldPts.size() || pixelPts.empty() || worldPts.empty() ||
@@ -98,7 +98,7 @@ GC_STATUS Calib::Calibrate( const vector< Point2d > pixelPts, const vector< Poin
                                            std::min( imgSize.height - cvRound( m_model.pixelPoints[ idx ].y ), GC_BOWTIE_TEMPLATE_DIM * 2 ) );
             }
 
-            if ( ( drawCalib || drawMoveROIs ) && !img.empty() )
+            if ( ( drawCalib || drawMoveROIs || drawSearchROI ) && !img.empty() )
             {
                 if ( CV_8UC1 == img.type() )
                 {
@@ -127,7 +127,7 @@ GC_STATUS Calib::Calibrate( const vector< Point2d > pixelPts, const vector< Poin
                         rectangle( imgOut, m_model.moveSearchRegionRgt, Scalar( 0, 0, 255 ), textStroke );
                     }
 
-                    if ( drawCalib )
+                    if ( drawSearchROI )
                     {
                         if ( m_model.searchLines.empty() )
                         {
@@ -141,7 +141,10 @@ GC_STATUS Calib::Calibrate( const vector< Point2d > pixelPts, const vector< Poin
                             line( imgOut, m_model.searchLines[ m_model.searchLines.size() - 1 ].top, m_model.searchLines[ m_model.searchLines.size() - 1 ].bot, Scalar( 255, 0, 0 ), textStroke );
                             line( imgOut, m_model.searchLines[ 0 ].bot, m_model.searchLines[ m_model.searchLines.size() - 1 ].bot, Scalar( 255, 0, 0 ), textStroke );
                         }
+                    }
 
+                    if ( drawCalib )
+                    {
                         Point2d topLft, botRgt;
                         retVal = PixelToWorld( m_model.pixelPoints[ 0 ], topLft );
                         if ( GC_OK == retVal )
@@ -189,7 +192,7 @@ GC_STATUS Calib::Calibrate( const vector< Point2d > pixelPts, const vector< Poin
                                             first = false;
                                             buf.str( string() ); buf << boost::format( "%.1f" ) % row;
                                             putText( imgOut, buf.str(), Point( cvRound( pt1.x ) - textOffset, cvRound( pt1.y ) + 5 ),
-                                                     FONT_HERSHEY_PLAIN, fontScale, Scalar( 0, 255, 255 ), textStroke );
+                                                     FONT_HERSHEY_COMPLEX, fontScale * 0.5, Scalar( 0, 255, 255 ), textStroke );
                                         }
                                     }
                                     retVal = WorldToPixel( Point2d( maxCol, row ), pt1 );
@@ -221,7 +224,7 @@ GC_STATUS Calib::Calibrate( const vector< Point2d > pixelPts, const vector< Poin
                                         first = false;
                                         buf.str( string() ); buf << boost::format( "%.1f" ) % minRow;
                                         putText( imgOut, buf.str(), Point( cvRound( pt1.x ) - textOffset, cvRound( pt1.y ) + 5 ),
-                                                 FONT_HERSHEY_PLAIN, fontScale, Scalar( 0, 255, 255 ), textStroke );
+                                                 FONT_HERSHEY_COMPLEX, fontScale * 0.5, Scalar( 0, 255, 255 ), textStroke );
                                     }
                                 }
                             }

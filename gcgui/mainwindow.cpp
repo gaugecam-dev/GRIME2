@@ -162,7 +162,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     on_lineEdit_imageFolder_textEdited( ui->lineEdit_imageFolder->text() );
     on_actionZoom100_triggered();
-    ui->groupBox_overLays->hide();
+    ui->widget_overlayCheckboxes->hide();
     UpdateGUIEnables();
 }
 MainWindow::~MainWindow()
@@ -219,6 +219,7 @@ void MainWindow::createConnections()
     connect( ui->checkBox_showRANSAC, &QCheckBox::stateChanged, this, &MainWindow::UpdatePixmapTarget );
     connect( ui->checkBox_showMoveROIs, &QCheckBox::stateChanged, this, &MainWindow::UpdatePixmapTarget );
     connect( ui->checkBox_showMoveFind, &QCheckBox::stateChanged, this, &MainWindow::UpdatePixmapTarget );
+    connect( ui->checkBox_showSearchROI, &QCheckBox::stateChanged, this, &MainWindow::UpdatePixmapTarget );
     connect( ui->checkBox_createFindLine_csvResultsFile, &QCheckBox::stateChanged, this, &MainWindow::UpdateGUIEnables );
     connect( ui->checkBox_createFindLine_annotatedResults, &QCheckBox::stateChanged, this, &MainWindow::UpdateGUIEnables );
     connect( ui->actionToggleControls, &QAction::toggled, this, &MainWindow::UpdateGUIEnables );
@@ -509,7 +510,7 @@ void MainWindow::UpdateGUIEnables()
     ui->toolButton_findLine_resultCSVFile_browse->setEnabled( ui->checkBox_createFindLine_csvResultsFile->isChecked() );
     ui->lineEdit_findLine_annotatedResultFolder->setEnabled( ui->checkBox_createFindLine_annotatedResults->isChecked() );
     ui->toolButton_findLine_annotatedResultFolder_browse->setEnabled( ui->checkBox_createFindLine_annotatedResults->isChecked() );
-    ui->groupBox_overLays->setHidden( !ui->actionToggleControls->isChecked() );
+    ui->widget_overlayCheckboxes->setHidden( !ui->actionToggleControls->isChecked() );
 }
 void MainWindow::AdjustPointFindLines()
 {
@@ -567,7 +568,8 @@ void MainWindow::UpdatePixmap()
                 ( ui->checkBox_showDerivTwo->isChecked() ? DIAG_2ND_DERIV : OVERLAYS_NONE ) +
                 ( ui->checkBox_showRANSAC->isChecked() ? DIAG_RANSAC : OVERLAYS_NONE ) +
                 ( ui->checkBox_showMoveROIs->isChecked() ? MOVE_ROIS : OVERLAYS_NONE ) +
-                ( ui->checkBox_showMoveFind->isChecked() ? MOVE_FIND : OVERLAYS_NONE ) );
+                ( ui->checkBox_showMoveFind->isChecked() ? MOVE_FIND : OVERLAYS_NONE ) +
+                ( ui->checkBox_showSearchROI->isChecked() ? SEARCH_ROI : OVERLAYS_NONE ) );
     gc::GC_STATUS retVal = m_visApp.GetImage( cv::Size( m_pQImg->width(), m_pQImg->height() ),
                                               static_cast< size_t >( m_pQImg->bytesPerLine() ),
                                               CV_8UC4, m_pQImg->scanLine( 0 ), nColorType, overlays );

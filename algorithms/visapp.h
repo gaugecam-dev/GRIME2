@@ -125,7 +125,7 @@ public:
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
     GC_STATUS DrawCalibOverlay( const cv::Mat matIn, cv::Mat &imgMatOut,
-                                const bool drawCalib = true, const bool drawMoveROIs = true );
+                                const bool drawCalib = true, const bool drawMoveROIs = true, const bool drawSearchROI = true );
 
     /**
      * @brief Retrieve the current calibration model to a CalibModel object
