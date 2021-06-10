@@ -718,19 +718,15 @@ GC_STATUS VisApp::DrawCalibOverlay( const cv::Mat matIn, cv::Mat &imgMatOut,
 
     return retVal;
 }
-GC_STATUS VisApp::DrawLineFindOverlay( const cv::Mat &img, cv::Mat &imgOut, const bool drawLine, const bool drawRowSums,
-                                       const bool draw1stDeriv, const bool draw2ndDeriv, const bool drawRANSAC, const bool drawMoveFind )
+GC_STATUS VisApp::DrawLineFindOverlay( const cv::Mat &img, cv::Mat &imgOut, const LineDrawType overlayTypes )
 {
-    GC_STATUS retVal = m_findLine.DrawResult( img, imgOut, m_findLineResult, drawLine, drawRowSums, draw1stDeriv,
-                                              draw2ndDeriv, drawRANSAC, drawMoveFind );
+    GC_STATUS retVal = m_findLine.DrawResult( img, imgOut, m_findLineResult, overlayTypes );
     return retVal;
 }
-GC_STATUS VisApp::DrawLineFindOverlay( const cv::Mat &img, cv::Mat &imgOut, const FindLineResult findLineResult, const bool drawLine,
-                                       const bool drawRowSums, const bool draw1stDeriv, const bool draw2ndDeriv, const bool drawRANSAC,
-                                       const bool drawMoveFind )
+GC_STATUS VisApp::DrawLineFindOverlay( const cv::Mat &img, cv::Mat &imgOut, const FindLineResult findLineResult,
+                                       const LineDrawType overlayTypes )
 {
-    GC_STATUS retVal = m_findLine.DrawResult( img, imgOut, findLineResult, drawLine, drawRowSums, draw1stDeriv,
-                                              draw2ndDeriv, drawRANSAC, drawMoveFind );
+    GC_STATUS retVal = m_findLine.DrawResult( img, imgOut, findLineResult, overlayTypes );
     return retVal;
 }
 GC_STATUS VisApp::WriteFindlineResultToCSV( const std::string resultCSV, const string imgPath,

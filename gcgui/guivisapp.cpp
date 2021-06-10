@@ -278,17 +278,22 @@ GC_STATUS GuiVisApp::GetImageOverlay( const IMG_BUFFERS nImgColor, const IMG_DIS
                 retVal = m_visApp.DrawCalibOverlay( m_matDisplay, m_matDisplay,
                                                     overlays & CALIB, overlays & MOVE_ROIS, overlays & SEARCH_ROI );
             }
-            if ( ( overlays & FINDLINE ) ||
-                 ( overlays & DIAG_ROWSUMS ) ||
-                 ( overlays & DIAG_1ST_DERIV ) ||
-                 ( overlays & DIAG_2ND_DERIV ) ||
-                 ( overlays & DIAG_RANSAC ) ||
-                 ( overlays & MOVE_FIND ) )
+            int overlayType = OVERLAYS_NONE;
+            if( overlays & FINDLINE )
+                overlayType += FOUND_LINE;
+            if( overlays & DIAG_ROWSUMS )
+                    overlayType += ROW_SUMS;
+            if( overlays & DIAG_1ST_DERIV )
+                    overlayType += FIRST_DERIVE;
+            if( overlays & DIAG_2ND_DERIV )
+                    overlayType += SECOND_DERIVE;
+            if( overlays & DIAG_RANSAC )
+                    overlayType += RANSAC_POINTS;
+            if( overlays & MOVE_FIND )
+                    overlayType += MOVE_FIND_RESULT;
+            if ( OVERLAYS_NONE != overlayType )
             {
-                retVal = m_visApp.DrawLineFindOverlay( m_matDisplay, m_matDisplay, overlays & FINDLINE,
-                                                       overlays & DIAG_ROWSUMS, overlays & DIAG_1ST_DERIV,
-                                                       overlays & DIAG_2ND_DERIV, overlays & DIAG_RANSAC,
-                                                       overlays & MOVE_FIND );
+                retVal = m_visApp.DrawLineFindOverlay( m_matDisplay, m_matDisplay, static_cast< LineDrawType >( overlayType ) );
             }
         }
     }

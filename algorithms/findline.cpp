@@ -385,9 +385,8 @@ GC_STATUS FindLine::SetMoveTargetROI( const cv::Mat &img, const cv::Rect rect, c
 {
     return m_findGrid.SetMoveTargetROI( img, rect, isLeft );
 }
-GC_STATUS FindLine::DrawResult( const Mat &img, Mat &imgOut, const FindLineResult &result, const bool drawLine,
-                                const bool drawRowSums, const bool draw1stDeriv, const bool draw2ndDeriv,
-                                const bool drawRANSAC, const bool drawMoveFind )
+GC_STATUS FindLine::DrawResult( const Mat &img, Mat &imgOut, const FindLineResult &result,
+                                const LineDrawType overlayTypes )
 {
     GC_STATUS retVal = img.empty() ? GC_ERR : GC_OK;
     if ( GC_OK != retVal )
@@ -421,46 +420,43 @@ GC_STATUS FindLine::DrawResult( const Mat &img, Mat &imgOut, const FindLineResul
                 int textRowSpacing = cvRound( static_cast< double >( imgOut.rows ) / 25.0 );
                 double fontScale = static_cast< double >( imgOut.rows ) / 300.0;
 
-                if ( drawRowSums && !result.diagRowSums.empty() )
+                if ( ( overlayTypes & ROW_SUMS ) && !result.diagRowSums.empty() )
                 {
-                    Point pt1, pt2;
                     for ( size_t i = 0; i < result.diagRowSums.size(); ++i )
                     {
                         if ( result.diagRowSums[ i ].size() > 1 )
                         {
                             for ( size_t j = 1; j < result.diagRowSums[ i ].size(); ++j )
                             {
-                                line( imgOut, result.diagRowSums[ i ][ j - 1 ], result.diagRowSums[ i ][ j ], Scalar( 0, 255, 255 ), 1 );
+                                line( imgOut, result.diagRowSums[ i ][ j - 1 ], result.diagRowSums[ i ][ j ], Scalar( 0, 255, 255 ), 2 );
                             }
                         }
                     }
                 }
 
-                if ( draw1stDeriv && !result.diag1stDeriv.empty() )
+                if ( ( overlayTypes & FIRST_DERIVE ) && !result.diag1stDeriv.empty() )
                 {
-                    Point pt1, pt2;
                     for ( size_t i = 0; i < result.diag1stDeriv.size(); ++i )
                     {
                         if ( result.diag1stDeriv[ i ].size() > 1 )
                         {
                             for ( size_t j = 1; j < result.diag1stDeriv[ i ].size(); ++j )
                             {
-                                line( imgOut, result.diag1stDeriv[ i ][ j - 1 ], result.diag1stDeriv[ i ][ j ], Scalar( 0, 0, 255 ), 1 );
+                                line( imgOut, result.diag1stDeriv[ i ][ j - 1 ], result.diag1stDeriv[ i ][ j ], Scalar( 0, 0, 255 ), 2 );
                             }
                         }
                     }
                 }
 
-                if ( draw2ndDeriv && !result.diag2ndDeriv.empty() )
+                if ( ( overlayTypes & SECOND_DERIVE ) && !result.diag2ndDeriv.empty() )
                 {
-                    Point pt1, pt2;
                     for ( size_t i = 0; i < result.diag2ndDeriv.size(); ++i )
                     {
                         if ( result.diag2ndDeriv[ i ].size() > 1 )
                         {
                             for ( size_t j = 1; j < result.diag2ndDeriv[ i ].size(); ++j )
                             {
-                                line( imgOut, result.diag2ndDeriv[ i ][ j - 1 ], result.diag2ndDeriv[ i ][ j ], Scalar( 255, 0, 0 ), 1 );
+                                line( imgOut, result.diag2ndDeriv[ i ][ j - 1 ], result.diag2ndDeriv[ i ][ j ], Scalar( 255, 127, 127 ), 2 );
                             }
                         }
                     }
@@ -474,7 +470,7 @@ GC_STATUS FindLine::DrawResult( const Mat &img, Mat &imgOut, const FindLineResul
                 }
                 else
                 {
-                    if ( drawLine )
+                    if ( ( overlayTypes & FOUND_LINE ) )
                     {
                         line( imgOut, result.calcLinePts.lftPixel, result.calcLinePts.rgtPixel, Scalar( 255, 0, 0 ), textStroke + 1 );
                         circle( imgOut, result.calcLinePts.ctrPixel, circleSize + textStroke, Scalar( 0, 255, 0 ), textStroke );
@@ -488,13 +484,13 @@ GC_STATUS FindLine::DrawResult( const Mat &img, Mat &imgOut, const FindLineResul
                                                result.calcLinePts.ctrPixel.y + circleSize + textStroke * 2 ), Scalar( 0, 0, 255 ), textStroke );
                     }
 
-                    if ( drawMoveFind )
+                    if ( ( overlayTypes & MOVE_FIND_RESULT ) )
                     {
                         line( imgOut, result.refMovePts.lftPixel, result.refMovePts.rgtPixel, Scalar( 0, 0, 255 ), circleSize );
                         line( imgOut, result.foundMovePts.lftPixel, result.foundMovePts.rgtPixel, Scalar( 0, 255, 0 ), ( circleSize >> 1 ) - 1 );
                     }
                 }
-                if ( 3 < result.foundPoints.size() && drawRANSAC )
+                if ( 3 < result.foundPoints.size() && ( overlayTypes & RANSAC_POINTS ) )
                 {
                     for ( size_t i = 0; i < result.foundPoints.size(); ++i )
                     {
