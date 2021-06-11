@@ -220,6 +220,14 @@ public:
     GC_STATUS WorldToPixel( const cv::Point2d worldPt, cv::Point2d &pixelPt );
 
     /**
+     * @brief Convert pixel coordinates to world coordinates using the currently set calibration
+     * @param pixelPt Pixel coordinate xy position
+     * @param worldPt Point to hold the converted world coordinate position
+     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
+     */
+    GC_STATUS PixelToWorld( const cv::Point2d pixelPt, cv::Point2d &worldPt );
+
+    /**
      * @brief Create an overlay image with the current found water line
      * @param img Source OpenCV Mat image that was searched for a water line
      * @param imgOut Destination OpenCV Mat image holding the source image with find line overlay

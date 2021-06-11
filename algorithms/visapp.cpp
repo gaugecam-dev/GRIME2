@@ -644,6 +644,11 @@ GC_STATUS VisApp::WorldToPixel( const Point2d worldPt, Point2d &pixelPt )
     GC_STATUS retVal = m_calib.WorldToPixel( worldPt, pixelPt );
     return retVal;
 }
+GC_STATUS VisApp::PixelToWorld( const Point2d pixelPt, Point2d &worldPt )
+{
+    GC_STATUS retVal = m_calib.PixelToWorld( pixelPt, worldPt );
+    return retVal;
+}
 GC_STATUS VisApp::PixelToWorld( FindPointSet &ptSet )
 {
     GC_STATUS retVal = m_calib.PixelToWorld( ptSet.ctrPixel, ptSet.ctrWorld );

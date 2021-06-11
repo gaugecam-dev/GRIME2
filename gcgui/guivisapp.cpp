@@ -694,6 +694,11 @@ GC_STATUS GuiVisApp::Calibrate( const std::string imgFilepath, const std::string
     sigMessage( string( "Calibration: " ) + ( GC_OK == retVal ? "SUCCESS" : "FAILURE" ) );
     return retVal;
 }
+GC_STATUS GuiVisApp::PixelToWorld( const cv::Point2d pixelPt, cv::Point2d &worldPt )
+{
+    GC_STATUS retVal = m_visApp.PixelToWorld( pixelPt, worldPt );
+    return retVal;
+}
 GC_STATUS GuiVisApp::CalcLine( const FindLineParams params, FindLineResult &result )
 {
     GC_STATUS retVal = GC_OK;
