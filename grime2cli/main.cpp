@@ -166,7 +166,9 @@ GC_STATUS RunFolder( const Grime2CLIParams cliParams )
                                 fs::path( images[ i ] ).stem().string() + "_result.png";
                     }
                     params.imagePath = images[ i ];
+                    cout << fs::path( images[ i ] ).filename().string();
                     retVal = visApp.CalcLine( params, result );
+                    cout << ( GC_OK == retVal ? ": SUCCESS" : " FAILURE" ) << endl;
                 }
             }
         }

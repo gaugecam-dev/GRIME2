@@ -191,19 +191,6 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                         break;
                     }
                 }
-                else if ( "timestamp_length" == string( argv[ i ] ).substr( 2 ) )
-                {
-                    if ( i + 1 < argc )
-                    {
-                        params.timeStamp_length = stoi( argv[ ++i ] );
-                    }
-                    else
-                    {
-                        FILE_LOG( logERROR ) << "[ArgHandler] No value supplied on --timestamp_start_pos request";
-                        retVal = -1;
-                        break;
-                    }
-                }
                 else if ( "timestamp_format" == string( argv[ i ] ).substr( 2 ) )
                 {
                     if ( i + 1 < argc )
@@ -414,8 +401,7 @@ void PrintHelp()
             "        calibration model, then stores it to the specified json file. An optional" << endl <<
             "        result image with the calibration result can be created." << endl;
     cout << "FORMAT: grime2cli --find_line --timestamp_from_filename or --timestamp_from_exif " << endl <<
-            "                  --timestamp_length [length in chars of the timestamp within the source string]" << endl <<
-            "                  --timestamp_pos [position of the first timestamp char of source string]" << endl <<
+            "                  --timestamp_start_pos [position of the first timestamp char of source string]" << endl <<
             "                  --timestamp_format [y-m-d H:M format string for timestamp, e.g., yyyy-mm-ddTMM:HH]" << endl <<
             "                  [Image path to be analyzed] --calib_json [Calibration json file path]" << endl <<
             "                  [--csv_file [Path of csv file to create or append with find line result] OPTIONAL]" << endl <<
@@ -424,8 +410,7 @@ void PrintHelp()
             "        timestamp parameters, calculates the line position, returns a json string with the find line" << endl <<
             "        results to stdout, and creates the optional overlay result image if specified" << endl;
     cout << "FORMAT: grime2cli --run_folder --timestamp_from_filename or --timestamp_from_exif " << endl <<
-            "                   --timestamp_length [length in chars of the timestamp within the source string]" << endl <<
-            "                   --timestamp_pos [position of the first timestamp char of source string]" << endl <<
+            "                   --timestamp_start_pos [position of the first timestamp char of source string]" << endl <<
             "                   --timestamp_format [y-m-d H:M format string for timestamp, e.g., yyyy-mm-ddTMM:HH]" << endl <<
             "                   [Folder path of images to be analyzed] --calib_json [Calibration json file path]" << endl <<
             "                   [--csv_file [Path of csv file to create or append with find line results] OPTIONAL]" << endl <<

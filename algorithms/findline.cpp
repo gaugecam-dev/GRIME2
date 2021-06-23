@@ -20,8 +20,8 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/imgcodecs.hpp>
 
-#ifndef DEBUG_FIND_LINE
-#define DEBUG_FIND_LINE
+#ifdef DEBUG_FIND_LINE
+#undef DEBUG_FIND_LINE
 #include <iostream>
 #include <boost/filesystem.hpp>
 #ifdef WIN32
@@ -138,7 +138,9 @@ GC_STATUS FindLine::Find( const Mat &img, const vector< LineEnds > &lines, FindL
             size_t start;
             Point2d linePt;
             vector< uint > rowSums;
+            string timestamp = result.timestamp;
             result.clear();
+            result.timestamp = timestamp;
             size_t linesPerSwath = lines.size() / 10;
             for ( size_t i = 0; i < 10; ++i )
             {
