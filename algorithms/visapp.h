@@ -38,7 +38,7 @@
 namespace gc
 {
 
-static const std::string GAUGECAM_VISAPP_VERSION = "0.0.0.2";           ///< GaugeCam executive logic (VisApp) software version
+static const std::string GAUGECAM_VISAPP_VERSION = "0.0.0.3";           ///< GaugeCam executive logic (VisApp) software version
 
 /**
  * @brief Business logic that instantiates objects of the GaugeCam classes and provides methods

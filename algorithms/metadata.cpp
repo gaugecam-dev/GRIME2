@@ -45,7 +45,11 @@ namespace gc
 void MetaData::GetExifToolVersion()
 {
     string cmdStr = "exiftool -ver";
-    std::system( cmdStr.c_str() );
+    int ret = std::system( cmdStr.c_str() );
+    if ( 0 != ret )
+    {
+        cout << "FAIL: System error " << ret << " on command line call (" << cmdStr << ")" << endl;
+    }
 }
 #ifdef WIN32
 GC_STATUS MetaData::GetExifData( const string filepath, const string tag, string &data )
