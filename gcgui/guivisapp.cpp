@@ -84,10 +84,7 @@ GuiVisApp::GuiVisApp() :
         FILE_LOG( logWARNING ) << "[GuiVisApp()] Could not start graph server";
     }
 }
-GuiVisApp::~GuiVisApp()
-{
-    Destroy();
-}
+GuiVisApp::~GuiVisApp() { Destroy(); }
 GC_STATUS GuiVisApp::Init( const string strConfigFolder, Size &sizeImg )
 {
     GC_STATUS retVal = GC_OK;
