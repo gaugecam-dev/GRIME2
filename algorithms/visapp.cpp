@@ -31,7 +31,7 @@
 using namespace cv;
 using namespace std;
 using namespace boost;
-namespace fs = boost::filesystem;
+namespace fs = filesystem;
 
 static const double MIN_BOWTIE_FIND_SCORE = 0.55;
 
