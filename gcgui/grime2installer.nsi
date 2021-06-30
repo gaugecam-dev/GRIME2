@@ -10,17 +10,17 @@
 !define INSTALLFILEPATH_OPENCV "..\thirdparty\opencv\opencv_451\bin\vc19"
 !endif
 
-!ifndef INSTALLFILEPATH_BOOST
-!define INSTALLFILEPATH_BOOST "..\thirdparty\boost\boost_1_74_0\vc141\bin"
-!endif
+; !ifndef INSTALLFILEPATH_BOOST
+; !define INSTALLFILEPATH_BOOST "..\thirdparty\boost\boost_1_74_0\vc141\bin"
+; !endif
 
 !ifndef INSTALLFILEPATH_EXIFTOOL
-!define INSTALLFILEPATH_EXIFTOOL "..\thirdparty\exiftool\exiftool_12_18"
+!define INSTALLFILEPATH_EXIFTOOL "..\thirdparty\exiftool\exiftool_12_28"
 !endif
 
-!ifndef INSTALLFILEPATH_FFMPEG
-!define INSTALLFILEPATH_FFMPEG "..\thirdparty\ffmpeg\ffmpeg_432"
-!endif
+; !ifndef INSTALLFILEPATH_FFMPEG
+; !define INSTALLFILEPATH_FFMPEG "..\thirdparty\ffmpeg\ffmpeg_432"
+; !endif
 
 !ifndef INSTALLFILEPATH_MSVC_REDIST
 !define INSTALLFILEPATH_MSVC_REDIST "..\thirdparty\msvc_redist"
@@ -140,12 +140,15 @@ Section "GaugeCam Files" grime2
   File "${INSTALLFILEPATH_OPENCV}\opencv_calib3d451.dll"
   File "${INSTALLFILEPATH_OPENCV}\opencv_flann451.dll"
   File "${INSTALLFILEPATH_OPENCV}\opencv_features2d451.dll"
-  File "${INSTALLFILEPATH_BOOST}\boost_system-vc141-mt-x64-1_74.dll"
-  File "${INSTALLFILEPATH_BOOST}\boost_chrono-vc141-mt-x64-1_74.dll"
-  File "${INSTALLFILEPATH_BOOST}\boost_date_time-vc141-mt-x64-1_74.dll"
-  File "${INSTALLFILEPATH_BOOST}\boost_filesystem-vc141-mt-x64-1_74.dll"
-  File "${INSTALLFILEPATH_EXIFTOOL}\ExifTool_install_12.18_64.exe"
-  File "${INSTALLFILEPATH_FFMPEG}\ffmpeg.exe"
+  ; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ; boost now linked statically
+  ; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ; File "${INSTALLFILEPATH_BOOST}\boost_system-vc141-mt-x64-1_74.dll"
+  ; File "${INSTALLFILEPATH_BOOST}\boost_chrono-vc141-mt-x64-1_74.dll"
+  ; File "${INSTALLFILEPATH_BOOST}\boost_date_time-vc141-mt-x64-1_74.dll"
+  ; File "${INSTALLFILEPATH_BOOST}\boost_filesystem-vc141-mt-x64-1_74.dll"
+  File "${INSTALLFILEPATH_EXIFTOOL}\ExifTool_install_12.28_64.exe"
+  ; File "${INSTALLFILEPATH_FFMPEG}\ffmpeg.exe"
 
   ; add shortcuts
   CreateDirectory "$SMPROGRAMS\GaugeCam"
@@ -186,8 +189,8 @@ Section -Prerequisites_exiftool
     Goto endExifTool
     beginExifTool:
     MessageBox MB_OK "Your system does not appear to have ExifTool installed.$\n$\nPress OK to install it."
-    File "${INSTALLFILEPATH_EXIFTOOL}\ExifTool_install_12.18_64.exe"
-    ExecWait "${INSTALLFILEPATH_EXIFTOOL}\ExifTool_install_12.18_64.exe"
+    File "${INSTALLFILEPATH_EXIFTOOL}\ExifTool_install_12.28_64.exe"
+    ExecWait "${INSTALLFILEPATH_EXIFTOOL}\ExifTool_install_12.28_64.exe"
   endExifTool:
 SectionEnd
 
