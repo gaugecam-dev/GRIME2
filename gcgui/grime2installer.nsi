@@ -164,35 +164,59 @@ SectionEnd
 ;--------------------------------
  Section "CheckVCRedist"
 
-  IfFileExists "C:\Program Files\ExifTool\ExifTool.exe" endExifTool beginExifTool
-  Goto endExifTool
-  beginExifTool:
-  MessageBox MB_OK "Your system does not appear to have ExifTool installed.$\n$\nPress OK to install it."
-  File "${INSTDIR}\prereqs\ExifTool_install_12.26_64.exe"
-  ExecWait "$INSTDIR\prereqs\ExifTool_install_12.26_64.exe"
-  endExifTool:
-  Delete "$INSTDIR\prereqs\ExifTool_install_12.26_64.exe"
-
   SetOutPath "$INSTDIR\prereqs"
+
   ReadRegStr $0 HKLM "SOFTWARE\WOW6432Node\Microsoft\VisualStudio\14.0\VC\Runtimes\X64" "Version"
   DetailPrint "Found version $0"
   ; Check for v14.27.29016.00 [sic]
   ${If} $0 >= "v14.27.29016.00"
      DetailPrint "The installed version is usable"
   ${Else}
-     SetOutPath "$INSTDIR"
      ; File "${MSVS_DIR}\VC_redist.x64.exe"
-     ExecWait '"$INSTDIR\prereqs\VC_redist.x64.exe"  /passive /norestart'
+     ExecWait '"..\prereqs\VC_redist.x64.exe"  /passive /norestart'
   ${EndIf}
-  RMDIR "$INSTDIR\prereqs"
-  Delete "$INSTDIR\prereqs\VC_redist.x64.exe"
-
 SectionEnd
 
 ;--------------------------------
 ; Additional Prerequisites
 ;--------------------------------
+var earliest
 Section "Prerequisites_exiftool"
+  SetOutPath "$INSTDIR\prereqs"
+
+  IfFileExists "C:\Program Files\ExifTool\ExifTool.exe" testTexifTool beginExifTool
+  testTexifTool:
+    DetailPrint "Hello world!"
+    nsExec::ExecToStack '"C:\Program Files\ExifTool\ExifTool.exe" -ver'
+    Pop $0
+    Pop $1
+    ; ${VersionConvert} "0.15c+" "abcdefghijklmnopqrstuvwxyz+" $R0
+    ; $R0="0.15.0327"
+
+    ; ${VersionConvert} "0.15c" "abcdefghijklmnopqrstuvwxyz+" $R1
+    ; $R1="0.15.03"
+    ; $R0 = $1
+    ; $R1="12.25"
+    DetailPrint "$1"
+    DetailPrint "12.25"
+
+    ${VersionCompare} $1 "12.25" $R2
+    ${If} $R2 < 2
+      MessageBox MB_OK "Your system does not appear to have ExifTool installed.$\n$\nPress OK to install it."
+      ExecWait "..\prereqs\ExifTool_install_12.26_64.exe"
+    ${Else}
+      DetailPrint "ExifTool already installed"
+      Goto endExifTool
+    ${EndIf}
+  endExifTool:
+SectionEnd
+
+;--------------------------------
+; Clean up Prerequisites
+;--------------------------------
+Section "Cleanup_prerequisites"
+  Delete "$INSTDIR\prereqs\*.*"
+  RMDIR "$INSTDIR\prereqs"
 SectionEnd
 
 ;--------------------------------
