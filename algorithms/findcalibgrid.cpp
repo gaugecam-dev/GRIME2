@@ -43,7 +43,7 @@ GC_STATUS FindCalibGrid::InitBowtieTemplate( const int templateDim, const Size s
     GC_STATUS retVal = GC_OK;
     if ( 20 > templateDim || 1000 < templateDim )
     {
-        FILE_LOG( logERROR ) << "[" << __func__ << "][FindCalibGrid::InitBowtieTemplate]"
+        FILE_LOG( logERROR ) << "[FindCalibGrid::InitBowtieTemplate]"
                                                    " Invalid template dimension " << templateDim;
         retVal = GC_ERR;
     }
@@ -113,15 +113,45 @@ GC_STATUS FindCalibGrid::InitBowtieTemplate( const int templateDim, const Size s
             m_matchSpaceSmall.create( Size( ( templateDimEven >> 1 ) + 1, ( templateDimEven >> 1 ) + 1 ), CV_32F );
 
 #ifdef DEBUG_FIND_CALIB_GRID   // debug of template rotation
-            for ( size_t i = 0; i < TEMPLATE_COUNT; ++i )
+            Rect rect;
+            const int borderAmt = 30;
+            size_t centerIdex = TEMPLATE_COUNT / 3;
+            int tileSize = m_templates[ 0 ].cols + borderAmt;
+            Mat allTemplates( Size( ( tileSize ) * centerIdex + borderAmt, m_templates[ 0 ].rows * 3 + borderAmt * 4 ), CV_8UC1 );
+            allTemplates = 255;
+            for ( size_t i = 0; i < centerIdex; ++i )
             {
-                imwrite( DEBUG_RESULT_FOLDER + "template_" + to_string( i ) + ".png", m_templates[ i ] );
+                rect = Rect( borderAmt + i * ( tileSize ), borderAmt, m_templates[ 0 ].cols, m_templates[ 0 ].rows );
+                m_templates[ i ].copyTo( allTemplates( rect ) );
+                rect = Rect( borderAmt + i * ( tileSize ), m_templates[ 0 ].rows + borderAmt * 2, m_templates[ 0 ].cols, m_templates[ 0 ].rows );
+                m_templates[ i + centerIdex ].copyTo( allTemplates( rect ) );
+                rect = Rect( borderAmt + i * ( tileSize ), m_templates[ 0 ].rows * 2 + borderAmt * 3, m_templates[ 0 ].cols, m_templates[ 0 ].rows );
+                m_templates[ i + 2 * centerIdex ].copyTo( allTemplates( rect ) );
             }
+            string angleText;
+            cvtColor( allTemplates, allTemplates, COLOR_GRAY2BGR );
+            for ( size_t i = 0; i < centerIdex; ++i )
+            {
+                angleText = to_string( -( static_cast< int >( i ) - ( TEMPLATE_COUNT - 1 ) / 2 ) );
+                rect = Rect( i * tileSize, 0, tileSize, tileSize );
+                putText( allTemplates( rect ), angleText, Point( borderAmt, borderAmt - 5 ), FONT_HERSHEY_PLAIN, 1.0, Scalar( 0, 0, 255 ), 1 );
+                circle( allTemplates( rect ), Point( borderAmt + ( 0 == i ? 25 : 15 ), borderAmt - 14 ), 3, Scalar( 0, 0, 255 ), 1 );
+                angleText = to_string( -( static_cast< int >( i ) - ( TEMPLATE_COUNT - 1 ) / 2 + static_cast< int >( centerIdex ) ) );
+                rect = Rect( i * tileSize, tileSize, tileSize, tileSize );
+                putText( allTemplates( rect ), angleText, Point( borderAmt, borderAmt - 5), FONT_HERSHEY_PLAIN, 1.0, Scalar( 0, 0, 255 ), 1 );
+                circle( allTemplates( rect ), Point( borderAmt + ( 4 > i ? 15 : 27 ), borderAmt - 14 ), 3, Scalar( 0, 0, 255 ), 1 );
+                angleText = to_string( -( static_cast< int >( i ) - ( TEMPLATE_COUNT - 1 ) / 2 + static_cast< int >( centerIdex * 2 ) ) );
+                rect = Rect( i * tileSize, tileSize * 2, tileSize, tileSize );
+                putText( allTemplates( rect ), angleText, Point( borderAmt, borderAmt - 5), FONT_HERSHEY_PLAIN, 1.0, Scalar( 0, 0, 255 ), 1 );
+                circle( allTemplates( rect ), Point( borderAmt + ( 5 >= i ? 27 : 37 ), borderAmt - 14 ), 3, Scalar( 0, 0, 255 ), 1 );
+            }
+            // threshold( allTemplates, allTemplates, 127, 255, THRESH_BINARY );
+            imwrite( DEBUG_RESULT_FOLDER + "rotated_templates.png", allTemplates );
 #endif
         }
         catch( exception &e )
         {
-            FILE_LOG( logERROR ) << "[" << __func__ << "][FindCalibGrid::InitBowtieTemplate] " << e.what();
+            FILE_LOG( logERROR ) << "[FindCalibGrid::InitBowtieTemplate] " << e.what();
             retVal = GC_EXCEPT;
         }
     }
@@ -138,7 +168,7 @@ GC_STATUS FindCalibGrid::RotateImage( const Mat &src, Mat &dst, const double ang
     }
     catch( exception &e )
     {
-        FILE_LOG( logERROR ) << "[" << __func__ << "][FindCalibGrid::RotateImage] " << e.what();
+        FILE_LOG( logERROR ) << "[FindCalibGrid::RotateImage] " << e.what();
         retVal = GC_EXCEPT;
     }
     return retVal;
@@ -148,17 +178,17 @@ GC_STATUS FindCalibGrid::FindTargets( const Mat &img, const double minScore, con
     GC_STATUS retVal = GC_OK;
     if ( m_templates.empty() )
     {
-        FILE_LOG( logERROR ) << "[" << __func__ << "][FindCalibGrid::FindTargets] Templates not devined";
+        FILE_LOG( logERROR ) << "[FindCalibGrid::FindTargets] Templates not devined";
         retVal = GC_ERR;
     }
     else if ( img.empty() )
     {
-        FILE_LOG( logERROR ) << "[" << __func__ << "][FindCalibGrid::FindTargets] Cannot find targets in a NULL image";
+        FILE_LOG( logERROR ) << "[FindCalibGrid::FindTargets] Cannot find targets in a NULL image";
         retVal = GC_ERR;
     }
     if ( 0.01 > minScore || 1.0 < minScore )
     {
-        FILE_LOG( logERROR ) << "[" << __func__ << "][FindCalibGrid::FindTargets] Invalid minimum target score " << minScore;
+        FILE_LOG( logERROR ) << "[FindCalibGrid::FindTargets] Invalid minimum target score " << minScore;
         retVal = GC_ERR;
     }
     else
@@ -233,20 +263,20 @@ GC_STATUS FindCalibGrid::MatchRefine( const int index, const Mat &img, const dou
 
     if ( 0 > index || TEMPLATE_COUNT <= index )
     {
-        FILE_LOG( logERROR ) << "[" << __func__ << "][FindCalibGrid::MatchRefine]"
+        FILE_LOG( logERROR ) << "[FindCalibGrid::MatchRefine]"
                                                    " Attempted to find template index=" << index << \
                                                    " Must be in range 0-" << TEMPLATE_COUNT - 1;
         retVal = GC_ERR;
     }
     else if ( 0.05 > minScore || 1.0 < minScore )
     {
-        FILE_LOG( logERROR ) << "[" << __func__ << "][FindCalibGrid::MatchRefine]"
+        FILE_LOG( logERROR ) << "[FindCalibGrid::MatchRefine]"
                                                    " Min score %.3f must be in range 0.05-1.0" << minScore;
         retVal = GC_ERR;
     }
     else if ( 1 > numToFind || 1000 < numToFind )
     {
-        FILE_LOG( logERROR ) << "[" << __func__ << "][FindCalibGrid::MatchRefine]"
+        FILE_LOG( logERROR ) << "[FindCalibGrid::MatchRefine]"
                                                    " Attempted to find " << numToFind << \
                                                    " matches.  Must be in range 1-1000";
         retVal = GC_ERR;
@@ -297,7 +327,7 @@ GC_STATUS FindCalibGrid::MatchRefine( const int index, const Mat &img, const dou
         }
         catch( exception &e )
         {
-            FILE_LOG( logERROR ) << "[" << __func__ << "][FindCalibGrid::MatchRefine] " << e.what();
+            FILE_LOG( logERROR ) << "[FindCalibGrid::MatchRefine] " << e.what();
             retVal = GC_EXCEPT;
         }
     }
@@ -309,20 +339,20 @@ GC_STATUS FindCalibGrid::MatchTemplate( const int index, const Mat &img, const d
 
     if ( 0 > index || TEMPLATE_COUNT <= index )
     {
-        FILE_LOG( logERROR ) << "[" << __func__ << "][FindCalibGrid::MatchTemplate]"
+        FILE_LOG( logERROR ) << "[FindCalibGrid::MatchTemplate]"
                                 " Attempted to find template index=" << index << \
                                 " Must be in range 0-" << TEMPLATE_COUNT - 1;
         retVal = GC_ERR;
     }
     else if ( 0.05 > minScore || 1.0 < minScore )
     {
-        FILE_LOG( logERROR ) << "[" << __func__ << "][FindCalibGrid::MatchTemplate]"
+        FILE_LOG( logERROR ) << "[FindCalibGrid::MatchTemplate]"
                                 " Min score %.3f must be in range 0.05-1.0" << minScore;
         retVal = GC_ERR;
     }
     else if ( 1 > numToFind || 1000 < numToFind )
     {
-        FILE_LOG( logERROR ) << "[" << __func__ << "][FindCalibGrid::MatchTemplate]"
+        FILE_LOG( logERROR ) << "[FindCalibGrid::MatchTemplate]"
                                                    " Attempted to find " << numToFind << \
                                                    " matches.  Must be in range 1-1000";
         retVal = GC_ERR;
@@ -345,6 +375,7 @@ GC_STATUS FindCalibGrid::MatchTemplate( const int index, const Mat &img, const d
             Mat matTemp;
             normalize( m_matchSpace, matTemp, 255.0 );
             imwrite( DEBUG_RESULT_FOLDER + "bowtie_match_coarse.png", matTemp );
+            imwrite( DEBUG_RESULT_FOLDER + "bowtie_match_coarse_double.tiff", m_matchSpace );
 #endif
 
             for ( int i = 0; i < numToFind; i++ )
@@ -364,16 +395,16 @@ GC_STATUS FindCalibGrid::MatchTemplate( const int index, const Mat &img, const d
                 }
                 circle( m_matchSpace, ptMax, 17, Scalar( 0.0 ), FILLED );
             }
+            if ( m_matchItems.empty() )
+            {
+                FILE_LOG( logERROR ) << "[FindCalibGrid::MatchTemplate] No template matches found";
+                retVal = GC_ERR;
+            }
         }
         catch( exception &e )
         {
-            FILE_LOG( logERROR ) << "[" << __func__ << "][FindCalibGrid::MatchTemplate] " << e.what();
+            FILE_LOG( logERROR ) << "[FindCalibGrid::MatchTemplate] " << e.what();
             return GC_EXCEPT;
-        }
-        if ( m_matchItems.empty() )
-        {
-            FILE_LOG( logERROR ) << "[" << __func__ << "][FindCalibGrid::MatchTemplate] No template matches found";
-            retVal = GC_ERR;
         }
     }
     return retVal;
@@ -383,13 +414,13 @@ GC_STATUS FindCalibGrid::GetFoundPoints( vector< vector< Point2d > > &pts )
     GC_STATUS retVal = GC_OK;
     if ( m_itemArray.empty() )
     {
-        FILE_LOG( logERROR ) << "[" << __func__ << "][FindCalibGrid::GetFoundPoints]"
+        FILE_LOG( logERROR ) << "[FindCalibGrid::GetFoundPoints]"
                                 " No points available in found points array";
         retVal = GC_ERR;
     }
     else if ( CALIB_POINT_COL_COUNT * CALIB_POINT_ROW_COUNT != m_itemArray[ 0 ].size() * m_itemArray.size() )
     {
-        FILE_LOG( logERROR ) << "[" << __func__ << "][FindCalibGrid::GetFoundPoints]"
+        FILE_LOG( logERROR ) << "[FindCalibGrid::GetFoundPoints]"
                                 " Invalid found points array " << m_itemArray[ 0 ].size() << "x" << \
                                 m_itemArray.size() << " should be " << CALIB_POINT_COL_COUNT << "x" << CALIB_POINT_ROW_COUNT;
         retVal = GC_ERR;
@@ -420,7 +451,7 @@ GC_STATUS FindCalibGrid::SortPoints( const Size sizeSearchImage )
     size_t bowtieCount = CALIB_POINT_ROW_COUNT * CALIB_POINT_COL_COUNT;
     if ( bowtieCount > m_matchItems.size() )
     {
-        FILE_LOG( logERROR ) << "[" << __func__ << "][FindCalibGrid::SortPoints] Invalid found point count="
+        FILE_LOG( logERROR ) << "[FindCalibGrid::SortPoints] Invalid found point count="
                              << m_matchItems.size() << " --  Should be at least " << bowtieCount;
         retVal = GC_ERR;
     }
@@ -476,7 +507,7 @@ GC_STATUS FindCalibGrid::SortPoints( const Size sizeSearchImage )
         }
         catch( exception &e )
         {
-            FILE_LOG( logERROR ) << "[" << __func__ << "][FindCalibGrid::SortPoints] " << e.what();
+            FILE_LOG( logERROR ) << "[FindCalibGrid::SortPoints] " << e.what();
             return GC_EXCEPT;
         }
     }
@@ -488,13 +519,13 @@ GC_STATUS FindCalibGrid::SubpixelPointRefine( const Mat &matchSpace, const Point
     GC_STATUS retVal = GC_OK;
     if ( 1 > ptMax.x || 1 > ptMax.y || matchSpace.cols - 2 < ptMax.x || matchSpace.rows - 2 < ptMax.y )
     {
-        FILE_LOG( logERROR ) << "[" << __func__ << "][FindCalibGrid::SubpixelPointRefine]"
+        FILE_LOG( logERROR ) << "[FindCalibGrid::SubpixelPointRefine]"
                                 " Invalid point (not on image) for subpixel refinement";
         retVal = GC_ERR;
     }
     else if ( CV_32FC1 != matchSpace.type() )
     {
-        FILE_LOG( logERROR ) << "[" << __func__ << "][FindCalibGrid::SubpixelPointRefine]"
+        FILE_LOG( logERROR ) << "[FindCalibGrid::SubpixelPointRefine]"
                                 " Invalid image format for subpixel refinement";
         retVal = GC_ERR;
     }
@@ -522,7 +553,7 @@ GC_STATUS FindCalibGrid::SubpixelPointRefine( const Mat &matchSpace, const Point
         }
         catch( exception &e )
         {
-            FILE_LOG( logERROR ) << "[" << __func__ << "][FindCalibGrid::SubpixelPointRefine] " << e.what();
+            FILE_LOG( logERROR ) << "[FindCalibGrid::SubpixelPointRefine] " << e.what();
             retVal = GC_EXCEPT;
         }
     }
@@ -536,7 +567,7 @@ GC_STATUS FindCalibGrid::SetMoveTargetROI( const Mat &img, const Rect rect, cons
     GC_STATUS retVal = GC_OK;
     if ( rect.x < 0 || rect.y < 0 || rect.x + rect.width > img.cols || rect.y + rect.height > img.rows )
     {
-        FILE_LOG( logERROR ) << "[" << __func__ << "][FindCalibGrid::SetMoveTargetROI]"
+        FILE_LOG( logERROR ) << "[FindCalibGrid::SetMoveTargetROI]"
                                 " Invalid " << ( isLeft ? "left" : "right" ) << "search ROI dimension";
         retVal = GC_ERR;
     }
@@ -556,13 +587,13 @@ GC_STATUS FindCalibGrid::FindMoveTargets( const Mat &img, Point2d &ptLeft, Point
     GC_STATUS retVal = GC_OK;
     if ( m_templates.empty() )
     {
-        FILE_LOG( logERROR ) << "[" << __func__ << "][FindCalibGrid::FindMoveTargets]"
+        FILE_LOG( logERROR ) << "[FindCalibGrid::FindMoveTargets]"
                                  " Cannot find move targets in an uninitialized object";
         retVal = GC_ERR;
     }
     else if ( img.empty() )
     {
-        FILE_LOG( logERROR ) << "[" << __func__ << "][FindCalibGrid::FindMoveTargets]"
+        FILE_LOG( logERROR ) << "[FindCalibGrid::FindMoveTargets]"
                                 " Cannot find move targets in an empty image";
         retVal = GC_ERR;
     }
@@ -610,7 +641,7 @@ GC_STATUS FindCalibGrid::FindMoveTargets( const Mat &img, Point2d &ptLeft, Point
             }
             if ( 2 != m_matchItems.size() )
             {
-                FILE_LOG( logERROR ) << "[" << __func__ << "][FindCalibGrid::FindMoveTargets]"
+                FILE_LOG( logERROR ) << "[FindCalibGrid::FindMoveTargets]"
                                         " Invalid move point count=" << m_matchItems.size() << ".  Should be 2";
                 retVal = GC_ERR;
             }
@@ -630,7 +661,7 @@ GC_STATUS FindCalibGrid::FindMoveTargets( const Mat &img, Point2d &ptLeft, Point
         }
         catch( Exception &e )
         {
-            FILE_LOG( logERROR ) << "[" << __func__ << "][FindCalibGrid::FindMoveTargets] " << e.what();
+            FILE_LOG( logERROR ) << "[FindCalibGrid::FindMoveTargets] " << e.what();
             retVal = GC_EXCEPT;
         }
     }
@@ -642,7 +673,7 @@ GC_STATUS FindCalibGrid::DrawMoveROIs( Mat &img )
     GC_STATUS retVal = GC_OK;
     if ( CV_8UC1 != img.depth() )
     {
-        FILE_LOG( logERROR ) << "[" << __func__ << "][FindCalibGrid::DrawMoveROIs]"
+        FILE_LOG( logERROR ) << "[FindCalibGrid::DrawMoveROIs]"
                                 " Invalid image format for drawing move search ROI's";
         retVal = GC_ERR;
     }
@@ -653,7 +684,7 @@ GC_STATUS FindCalibGrid::DrawMoveROIs( Mat &img )
               m_rectRightMoveSearch.x + m_rectRightMoveSearch.width > img.cols ||
               m_rectRightMoveSearch.y + m_rectRightMoveSearch.height > img.rows )
     {
-        FILE_LOG( logERROR ) << "[" << __func__ << "][FindCalibGrid::DrawMoveROIs]"
+        FILE_LOG( logERROR ) << "[FindCalibGrid::DrawMoveROIs]"
                                 " Invalid search ROI dimension for move ROI drawing";
         retVal = GC_ERR;
     }
@@ -672,7 +703,7 @@ GC_STATUS FindCalibGrid::DrawMoveROIs( Mat &img )
         }
         catch( exception &e )
         {
-            FILE_LOG( logERROR ) << "[" << __func__ << "][FindCalibGrid::DrawMoveROIs] " << e.what();
+            FILE_LOG( logERROR ) << "[FindCalibGrid::DrawMoveROIs] " << e.what();
             retVal = GC_EXCEPT;
         }
     }

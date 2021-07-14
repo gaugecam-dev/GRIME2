@@ -38,7 +38,7 @@
 namespace gc
 {
 
-static const std::string GAUGECAM_VISAPP_VERSION = "0.0.0.2";           ///< GaugeCam executive logic (VisApp) software version
+static const std::string GAUGECAM_VISAPP_VERSION = "0.0.0.3";           ///< GaugeCam executive logic (VisApp) software version
 
 /**
  * @brief Business logic that instantiates objects of the GaugeCam classes and provides methods
@@ -220,15 +220,20 @@ public:
     GC_STATUS WorldToPixel( const cv::Point2d worldPt, cv::Point2d &pixelPt );
 
     /**
+     * @brief Convert pixel coordinates to world coordinates using the currently set calibration
+     * @param pixelPt Pixel coordinate xy position
+     * @param worldPt Point to hold the converted world coordinate position
+     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
+     */
+    GC_STATUS PixelToWorld( const cv::Point2d pixelPt, cv::Point2d &worldPt );
+
+    /**
      * @brief Create an overlay image with the current found water line
      * @param img Source OpenCV Mat image that was searched for a water line
      * @param imgOut Destination OpenCV Mat image holding the source image with find line overlay
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
-    GC_STATUS DrawLineFindOverlay( const cv::Mat &img, cv::Mat &imgOut, const bool drawLine = true,
-                                   const bool drawRowSums = false, const bool draw1stDeriv = false,
-                                   const bool draw2ndDeriv = false, const bool drawRANSAC = false,
-                                   const bool drawMoveFind = false );
+    GC_STATUS DrawLineFindOverlay( const cv::Mat &img, cv::Mat &imgOut, const LineDrawType overlayTypes = NO_OVERLAY );
 
     /**
      * @brief Create an overlay image with a user specified found water line
@@ -238,9 +243,8 @@ public:
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
     GC_STATUS DrawLineFindOverlay( const cv::Mat &img, cv::Mat &imgOut, const FindLineResult findLineResult,
-                                   const bool drawLine = true, const bool drawRowSums = false,
-                                   const bool draw1stDeriv = false, const bool draw2ndDeriv = false,
-                                   const bool drawRANSAC = false, const bool drawMoveFind = false );
+                                   const LineDrawType overlayTypes = static_cast< LineDrawType >( static_cast< int >( FOUND_LINE ) |
+                                                                                                  static_cast< int >( RANSAC_POINTS ) ) );
 
     /**
      * @brief Set the internal found line position from a user specifed find line result

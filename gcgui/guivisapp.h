@@ -87,11 +87,14 @@ public:
 
     std::string ConfigFolder() { return m_strConfigFolder; }
 
+    // calibration methods
+    GC_STATUS LoadCalib( const std::string calibJson );
+    GC_STATUS Calibrate( const std::string imgFilepath, const std::string worldCoordsCsv, const std::string &calibJson );
+    GC_STATUS PixelToWorld( const cv::Point2d pixelPt, cv::Point2d &worldPt );
+
     // findline app methods
     GC_STATUS GetMetadata( const std::string imgFilepath, std::string &data );
     GC_STATUS CreateAnimation( const std::string imageFolder, const std::string animationFilepath, const double fps , const double scale );
-    GC_STATUS LoadCalib( const std::string calibJson );
-    GC_STATUS Calibrate( const std::string imgFilepath, const std::string worldCoordsCsv, const std::string &calibJson );
     GC_STATUS CalcLine( const FindLineParams params, FindLineResult &result );
     GC_STATUS CalcLinesInFolder( const std::string folder, const FindLineParams params, const bool isFolderOfImages );
     GC_STATUS CalcLinesThreadFinish();

@@ -31,7 +31,7 @@
 using namespace cv;
 using namespace std;
 using namespace boost;
-namespace fs = boost::filesystem;
+namespace fs = filesystem;
 
 static const double MIN_BOWTIE_FIND_SCORE = 0.55;
 
@@ -644,6 +644,11 @@ GC_STATUS VisApp::WorldToPixel( const Point2d worldPt, Point2d &pixelPt )
     GC_STATUS retVal = m_calib.WorldToPixel( worldPt, pixelPt );
     return retVal;
 }
+GC_STATUS VisApp::PixelToWorld( const Point2d pixelPt, Point2d &worldPt )
+{
+    GC_STATUS retVal = m_calib.PixelToWorld( pixelPt, worldPt );
+    return retVal;
+}
 GC_STATUS VisApp::PixelToWorld( FindPointSet &ptSet )
 {
     GC_STATUS retVal = m_calib.PixelToWorld( ptSet.ctrPixel, ptSet.ctrWorld );
@@ -718,19 +723,15 @@ GC_STATUS VisApp::DrawCalibOverlay( const cv::Mat matIn, cv::Mat &imgMatOut,
 
     return retVal;
 }
-GC_STATUS VisApp::DrawLineFindOverlay( const cv::Mat &img, cv::Mat &imgOut, const bool drawLine, const bool drawRowSums,
-                                       const bool draw1stDeriv, const bool draw2ndDeriv, const bool drawRANSAC, const bool drawMoveFind )
+GC_STATUS VisApp::DrawLineFindOverlay( const cv::Mat &img, cv::Mat &imgOut, const LineDrawType overlayTypes )
 {
-    GC_STATUS retVal = m_findLine.DrawResult( img, imgOut, m_findLineResult, drawLine, drawRowSums, draw1stDeriv,
-                                              draw2ndDeriv, drawRANSAC, drawMoveFind );
+    GC_STATUS retVal = m_findLine.DrawResult( img, imgOut, m_findLineResult, overlayTypes );
     return retVal;
 }
-GC_STATUS VisApp::DrawLineFindOverlay( const cv::Mat &img, cv::Mat &imgOut, const FindLineResult findLineResult, const bool drawLine,
-                                       const bool drawRowSums, const bool draw1stDeriv, const bool draw2ndDeriv, const bool drawRANSAC,
-                                       const bool drawMoveFind )
+GC_STATUS VisApp::DrawLineFindOverlay( const cv::Mat &img, cv::Mat &imgOut, const FindLineResult findLineResult,
+                                       const LineDrawType overlayTypes )
 {
-    GC_STATUS retVal = m_findLine.DrawResult( img, imgOut, findLineResult, drawLine, drawRowSums, draw1stDeriv,
-                                              draw2ndDeriv, drawRANSAC, drawMoveFind );
+    GC_STATUS retVal = m_findLine.DrawResult( img, imgOut, findLineResult, overlayTypes );
     return retVal;
 }
 GC_STATUS VisApp::WriteFindlineResultToCSV( const std::string resultCSV, const string imgPath,
@@ -758,6 +759,7 @@ GC_STATUS VisApp::WriteFindlineResultToCSV( const std::string resultCSV, const s
                 csvFile << "imgPath,";
                 csvFile << "findSuccess,";
 
+                csvFile << "timestamp,";
                 csvFile << "waterLevel,";
                 csvFile << "waterLevelAdjusted,";
 
@@ -803,10 +805,11 @@ GC_STATUS VisApp::WriteFindlineResultToCSV( const std::string resultCSV, const s
             }
             csvFile << imgPath << ",";
             csvFile << ( result.findSuccess ? "true" : "false" ) << ",";
+            csvFile << result.timestamp << ",";
 
             csvFile << fixed << setprecision( 3 );
             csvFile << result.calcLinePts.ctrWorld.y << ",";
-            csvFile << result.waterLevelAdjusted << ",";
+            csvFile << result.waterLevelAdjusted.y << ",";
 
             csvFile << result.calcLinePts.angleWorld << ",";
             csvFile << result.calcLinePts.lftPixel.x << ","; csvFile << result.calcLinePts.lftPixel.y << ",";

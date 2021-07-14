@@ -75,6 +75,7 @@ private slots:
     void do_visAppMessage(QString);
     void on_updateProgress( const int );
     void do_updateProgress( const int );
+    void on_pushButton_clearTable_clicked();
     void on_tableAddRow( const string row_strings );
     void on_actionSaveVideo_triggered();
     void on_pushButton_visionCalibrate_clicked();
@@ -90,7 +91,6 @@ private slots:
     void on_pushButton_createAnimation_clicked();
 
     void on_pushButton_test_clicked();
-
 
 private:
     Ui::MainWindow *ui;

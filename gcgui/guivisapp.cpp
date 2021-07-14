@@ -84,10 +84,7 @@ GuiVisApp::GuiVisApp() :
         FILE_LOG( logWARNING ) << "[GuiVisApp()] Could not start graph server";
     }
 }
-GuiVisApp::~GuiVisApp()
-{
-    Destroy();
-}
+GuiVisApp::~GuiVisApp() { Destroy(); }
 GC_STATUS GuiVisApp::Init( const string strConfigFolder, Size &sizeImg )
 {
     GC_STATUS retVal = GC_OK;
@@ -278,17 +275,22 @@ GC_STATUS GuiVisApp::GetImageOverlay( const IMG_BUFFERS nImgColor, const IMG_DIS
                 retVal = m_visApp.DrawCalibOverlay( m_matDisplay, m_matDisplay,
                                                     overlays & CALIB, overlays & MOVE_ROIS, overlays & SEARCH_ROI );
             }
-            if ( ( overlays & FINDLINE ) ||
-                 ( overlays & DIAG_ROWSUMS ) ||
-                 ( overlays & DIAG_1ST_DERIV ) ||
-                 ( overlays & DIAG_2ND_DERIV ) ||
-                 ( overlays & DIAG_RANSAC ) ||
-                 ( overlays & MOVE_FIND ) )
+            int overlayType = OVERLAYS_NONE;
+            if( overlays & FINDLINE )
+                overlayType += FOUND_LINE;
+            if( overlays & DIAG_ROWSUMS )
+                    overlayType += ROW_SUMS;
+            if( overlays & DIAG_1ST_DERIV )
+                    overlayType += FIRST_DERIVE;
+            if( overlays & DIAG_2ND_DERIV )
+                    overlayType += SECOND_DERIVE;
+            if( overlays & DIAG_RANSAC )
+                    overlayType += RANSAC_POINTS;
+            if( overlays & MOVE_FIND )
+                    overlayType += MOVE_FIND_RESULT;
+            if ( OVERLAYS_NONE != overlayType )
             {
-                retVal = m_visApp.DrawLineFindOverlay( m_matDisplay, m_matDisplay, overlays & FINDLINE,
-                                                       overlays & DIAG_ROWSUMS, overlays & DIAG_1ST_DERIV,
-                                                       overlays & DIAG_2ND_DERIV, overlays & DIAG_RANSAC,
-                                                       overlays & MOVE_FIND );
+                retVal = m_visApp.DrawLineFindOverlay( m_matDisplay, m_matDisplay, static_cast< LineDrawType >( overlayType ) );
             }
         }
     }
@@ -687,6 +689,11 @@ GC_STATUS GuiVisApp::Calibrate( const std::string imgFilepath, const std::string
         retVal = m_visApp.Calibrate( imgFilepath, worldCoordsCsv, calibJson, matOut );
     }
     sigMessage( string( "Calibration: " ) + ( GC_OK == retVal ? "SUCCESS" : "FAILURE" ) );
+    return retVal;
+}
+GC_STATUS GuiVisApp::PixelToWorld( const cv::Point2d pixelPt, cv::Point2d &worldPt )
+{
+    GC_STATUS retVal = m_visApp.PixelToWorld( pixelPt, worldPt );
     return retVal;
 }
 GC_STATUS GuiVisApp::CalcLine( const FindLineParams params, FindLineResult &result )

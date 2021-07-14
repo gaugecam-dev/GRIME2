@@ -10,20 +10,16 @@
 !define INSTALLFILEPATH_OPENCV "..\thirdparty\opencv\opencv_451\bin\vc19"
 !endif
 
-!ifndef INSTALLFILEPATH_BOOST
-!define INSTALLFILEPATH_BOOST "..\thirdparty\boost\boost_1_74_0\vc141\bin"
-!endif
+; !ifndef INSTALLFILEPATH_BOOST
+; !define INSTALLFILEPATH_BOOST "..\thirdparty\boost\boost_1_74_0\vc141\bin"
+; !endif
 
-!ifndef INSTALLFILEPATH_EXIFTOOL
-!define INSTALLFILEPATH_EXIFTOOL "..\thirdparty\exiftool\exiftool_12_18"
-!endif
+; !ifndef INSTALLFILEPATH_FFMPEG
+; !define INSTALLFILEPATH_FFMPEG "..\thirdparty\ffmpeg\ffmpeg_432"
+; !endif
 
-!ifndef INSTALLFILEPATH_FFMPEG
-!define INSTALLFILEPATH_FFMPEG "..\thirdparty\ffmpeg\ffmpeg_432"
-!endif
-
-!ifndef INSTALLFILEPATH_MSVC_REDIST
-!define INSTALLFILEPATH_MSVC_REDIST "..\thirdparty\msvc_redist"
+!ifndef INSTALLFILEPATH_PREREQS
+!define INSTALLFILEPATH_PREREQS "..\thirdparty\prereqs"
 !endif
 
 !ifndef INSTALLFILEPATH_RELEASE
@@ -122,8 +118,9 @@ Section "GaugeCam Files" grime2
   SetOutPath "$INSTDIR\platforms"
   File "${INSTALLFILEPATH_QT}\plugins\platforms\qwindows.dll"
 
-  SetOutPath "$INSTDIR\msvc_redist"
-  File "${INSTALLFILEPATH_MSVC_REDIST}\VC_redist.x64.exe"
+  SetOutPath "$INSTDIR\prereqs"
+  File "${INSTALLFILEPATH_PREREQS}\VC_redist.x64.exe"
+  File "${INSTALLFILEPATH_PREREQS}\ExifTool_install_12.26_64.exe"
 
   SetOutPath "$INSTDIR"
   File "${INSTALLFILEPATH_GCGUI}\grime2.exe"
@@ -140,12 +137,14 @@ Section "GaugeCam Files" grime2
   File "${INSTALLFILEPATH_OPENCV}\opencv_calib3d451.dll"
   File "${INSTALLFILEPATH_OPENCV}\opencv_flann451.dll"
   File "${INSTALLFILEPATH_OPENCV}\opencv_features2d451.dll"
-  File "${INSTALLFILEPATH_BOOST}\boost_system-vc141-mt-x64-1_74.dll"
-  File "${INSTALLFILEPATH_BOOST}\boost_chrono-vc141-mt-x64-1_74.dll"
-  File "${INSTALLFILEPATH_BOOST}\boost_date_time-vc141-mt-x64-1_74.dll"
-  File "${INSTALLFILEPATH_BOOST}\boost_filesystem-vc141-mt-x64-1_74.dll"
-  File "${INSTALLFILEPATH_EXIFTOOL}\ExifTool_install_12.18_64.exe"
-  File "${INSTALLFILEPATH_FFMPEG}\ffmpeg.exe"
+  ; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ; now linked statically
+  ; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ; File "${INSTALLFILEPATH_BOOST}\boost_system-vc141-mt-x64-1_74.dll"
+  ; File "${INSTALLFILEPATH_BOOST}\boost_chrono-vc141-mt-x64-1_74.dll"
+  ; File "${INSTALLFILEPATH_BOOST}\boost_date_time-vc141-mt-x64-1_74.dll"
+  ; File "${INSTALLFILEPATH_BOOST}\boost_filesystem-vc141-mt-x64-1_74.dll"
+  ; File "${INSTALLFILEPATH_FFMPEG}\ffmpeg.exe"
 
   ; add shortcuts
   CreateDirectory "$SMPROGRAMS\GaugeCam"
@@ -163,32 +162,44 @@ SectionEnd
 ;--------------------------------
 ; Redistributable section
 ;--------------------------------
-Section "CheckVCRedist"
+ Section "CheckVCRedist"
+
+  SetOutPath "$INSTDIR\prereqs"
+
   ReadRegStr $0 HKLM "SOFTWARE\WOW6432Node\Microsoft\VisualStudio\14.0\VC\Runtimes\X64" "Version"
   DetailPrint "Found version $0"
   ; Check for v14.27.29016.00 [sic]
   ${If} $0 >= "v14.27.29016.00"
      DetailPrint "The installed version is usable"
   ${Else}
-     SetOutPath "$INSTDIR"
      ; File "${MSVS_DIR}\VC_redist.x64.exe"
-     ExecWait '"$INSTDIR\msvc_redist\VC_redist.x64.exe"  /passive /norestart'
+     ExecWait '"..\prereqs\VC_redist.x64.exe"  /passive /norestart'
   ${EndIf}
-  Delete "$INSTDIR\msvc_redist\*.*"
-  RMDIR "$INSTDIR\temp"
 SectionEnd
 
 ;--------------------------------
 ; Additional Prerequisites
 ;--------------------------------
-Section -Prerequisites_exiftool
-  IfFileExists "C:\Program Files\ExifTool\ExifTool.exe" endExifTool beginExifTool
-    Goto endExifTool
-    beginExifTool:
+Section "Prerequisites_exiftool"
+  SetOutPath "$INSTDIR\prereqs"
+
+  IfFileExists "C:\Program Files\ExifTool\ExifTool.exe" alreadyInstalledExifTool beginExifTool
+  beginExifTool:
     MessageBox MB_OK "Your system does not appear to have ExifTool installed.$\n$\nPress OK to install it."
-    File "${INSTALLFILEPATH_EXIFTOOL}\ExifTool_install_12.18_64.exe"
-    ExecWait "${INSTALLFILEPATH_EXIFTOOL}\ExifTool_install_12.18_64.exe"
+    ExecWait "..\prereqs\ExifTool_install_12.26_64.exe"
+    Goto endExifTool
+  alreadyInstalledExifTool:
+    DetailPrint "ExifTool already installed"
+    Goto endExifTool
   endExifTool:
+SectionEnd
+
+;--------------------------------
+; Clean up Prerequisites
+;--------------------------------
+Section "Cleanup_prerequisites"
+  Delete "$INSTDIR\prereqs\*.*"
+  RMDIR "$INSTDIR\prereqs"
 SectionEnd
 
 ;--------------------------------
@@ -203,15 +214,15 @@ Section "Uninstall"
   Delete "$INSTDIR\config\2012_demo\05\*.*"
   Delete "$INSTDIR\config\2012_demo\06\*.*"
   Delete "$INSTDIR\platforms\*.*"
-  Delete "$INSTDIR\msvc_redist\*.*"
+  Delete "$INSTDIR\installers\*.*"
   Delete "${WIN_CONFIG_PATH}\*.*"
   Delete "${WIN_CONFIG_PATH}\2012_demo\05\*.*"
   Delete "${WIN_CONFIG_PATH}\2012_demo\06\*.*"
 
   RMDIR "$INSTDIR\docs"
   RMDIR "$INSTDIR\platforms"
-  RMDIR "$INSTDIR\msvc_redist"
-  RMDIR "$INSTDIR\"
+  RMDIR "$INSTDIR\installers"
+  RMDIR "$INSTDIR"
   RMDIR "${WIN_CONFIG_PATH}"
   RMDIR "${WIN_CONFIG_PATH}\2012_demo\05"
   RMDIR "${WIN_CONFIG_PATH}\2012_demo\06"

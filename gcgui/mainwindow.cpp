@@ -28,6 +28,7 @@
 #include <QtWidgets/QFileDialog>
 #include <QtWidgets/QInputDialog>
 #include <QtWidgets/QMessageBox>
+#include <QAbstractItemModel>
 #include <boost/signals2.hpp>
 #include <boost/bind/bind.hpp>
 #include <boost/chrono.hpp>
@@ -47,11 +48,17 @@ static const QString __CONFIGURATION_FOLDER = "./config/";
 static const QString __SETTINGS_FILEPATH = "./config/settings.cfg";
 #endif
 
-double DistToLine( double dX, double dY, double dX1, double dY1, double dX2, double dY2 )
+static double DistToLine( const double dX, const double dY,
+                          const double dX1, const double dY1,
+                          const double dX2, const double dY2 )
 {
     double dNum = fabs( ( dX2 - dX1 ) * ( dY1 - dY ) - ( dX1 - dX ) * ( dY2 - dY1 ) );
     double dDenom = sqrt( ( dX2 - dX1 ) * ( dX2 - dX1 ) + ( dY2 - dY1 ) * ( dY2 - dY1 ) );
     return 0.0 == dDenom ? 0.0 : dNum / dDenom;
+}
+static double Distance( const double x1, const int y1, const int x2, const int y2 )
+{
+    return sqrt( ( x2 - x1 ) * ( x2 - x1 ) + ( y2 - y1 ) * ( y2 - y1 ) );
 }
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -337,10 +344,10 @@ int MainWindow::ReadSettings( const QString filepath )
 
         ui->lineEdit_findLine_annotatedResultFolder->setText( pSettings->value( "findLineAnnotatedOutFolder", __CONFIGURATION_FOLDER ).toString() );
         ui->checkBox_createFindLine_annotatedResults->setChecked( pSettings->value( "createAnnotationCheckbox", false ).toBool() );
-        ui->spinBox_timeStringPosZero->setValue( pSettings->value( "timestampStringStartPos", 5 ).toInt() );
+        ui->spinBox_timeStringPosZero->setValue( pSettings->value( "timestampStringStartPos", 10 ).toInt() );
         ui->radioButton_dateTimeInFilename->setChecked( pSettings->value( "timestampFromFilename", true ).toBool() );
-        ui->radioButton_dateTimeInEXIF->setChecked( pSettings->value( "timestampFromEXIF", true ).toBool() );
-        ui->lineEdit_timestampFormat->setText( pSettings->value( "timestampFormat", "yyyy-mm-ddTHH-MM" ).toString() );
+        ui->radioButton_dateTimeInEXIF->setChecked( pSettings->value( "timestampFromEXIF", false ).toBool() );
+        ui->lineEdit_timestampFormat->setText( pSettings->value( "timestampFormat", "yy-mm-ddTHH-MM" ).toString() );
         pSettings->endGroup();
 
         delete pSettings;
@@ -633,6 +640,7 @@ void MainWindow::paintEvent( QPaintEvent * )
     UpdatePixmap();
 #endif
 }
+void MainWindow::on_pushButton_clearTable_clicked() { ClearTable(); }
 void MainWindow::on_tableAddRow( const string row_string ) { AddRow( row_string ); }
 void MainWindow::on_updateProgress( const int value ) { emit sig_updateProgess( value ); }
 void MainWindow::do_updateProgress( const int value )
@@ -726,9 +734,19 @@ void MainWindow::mouseMoveEvent( QMouseEvent *pEvent )
     {
         if ( !ui->actionSetRuler->isChecked() )
         {
-            QString strMsg = QString( "pixel(" ) + QString::number( nX ) +
-                    ", " + QString::number( nY ) + ")";
-            ui->textEdit_msgs->setText( strMsg );
+            Point2d world;
+            GC_STATUS retVal = m_visApp.PixelToWorld( Point2d( nX, nY ), world );
+            if ( GC_OK != retVal )
+            {
+                world = Point2d( -9999999.9, -9999999.9 );
+            }
+
+            ui->textEdit_measures->setText( "PIXEL" );
+            QString strMsg = QString( "X=" ) + QString::number( nX ) + " Y=" + QString::number( nY );
+            ui->textEdit_measures->append( strMsg );
+            ui->textEdit_measures->append( "WORLD" );
+            strMsg = QString( "X1=" ) + QString::number( world.x ) + " Y1=" + QString::number( world.y );
+            ui->textEdit_measures->append( strMsg );
         }
     }
     else
@@ -743,6 +761,38 @@ void MainWindow::mouseMoveEvent( QMouseEvent *pEvent )
         else if ( ui->actionSetRuler->isChecked() )
         {
             TestAgainstFindLines( pt );
+            int nXpix1 = qRound( ( static_cast< double >( m_lineOne.p1().x() ) / m_scaleFactor ) + 0.5 );
+            int nYpix1 = qRound( ( static_cast< double >( m_lineOne.p1().y() ) / m_scaleFactor ) + 0.5 );
+            int nXpix2 = qRound( ( static_cast< double >( m_lineOne.p2().x() ) / m_scaleFactor ) + 0.5 );
+            int nYpix2 = qRound( ( static_cast< double >( m_lineOne.p2().y() ) / m_scaleFactor ) + 0.5 );
+            double lenPix = Distance( nXpix1, nYpix1, nXpix2, nYpix2 );
+
+            Point2d world1, world2;
+            GC_STATUS retVal1 = m_visApp.PixelToWorld( Point2d( nXpix1, nYpix1 ), world1 );
+            if ( GC_OK != retVal1 )
+            {
+                world1 = Point2d( -9999999.9, -9999999.9 );
+            }
+            GC_STATUS retVal2 = m_visApp.PixelToWorld( Point2d( nXpix2, nYpix2 ), world2 );
+            if ( GC_OK != retVal2 )
+            {
+                world2 = Point2d( -9999999.9, -9999999.9 );
+            }
+            double lenWorld = ( GC_OK != retVal1 || GC_OK != retVal2 ) ? -9999999.9 :  Distance( world1.x, world1.y, world2.x, world2.y );
+
+            ui->textEdit_measures->setText( "PIXEL" );
+            QString strMsg = QString( "X1=" ) + QString::number( nXpix1 ) + " Y1=" + QString::number( nYpix1 );
+            strMsg += QString( " X2=" ) + QString::number( nXpix2 ) + " Y2=" + QString::number( nYpix2 );
+            ui->textEdit_measures->append( strMsg );
+            strMsg = QString( "Length=" ) + QString::number( lenPix );
+            ui->textEdit_measures->append( strMsg );
+            ui->textEdit_measures->append( "WORLD" );
+            strMsg = QString( "X1=" ) + QString::number( world1.x ) + " Y1=" + QString::number( world1.y );
+            ui->textEdit_measures->append( strMsg );
+            strMsg = QString( "X2=" ) + QString::number( world2.x ) + " Y2=" + QString::number( world2.y );
+            ui->textEdit_measures->append( strMsg );
+            strMsg = QString( "Length=" ) + QString::number( lenWorld );
+            ui->textEdit_measures->append( strMsg );
         }
     }
 }
@@ -1225,7 +1275,13 @@ void MainWindow::on_pushButton_showImageMetadata_clicked()
         }
     }
 }
-void MainWindow::ClearTable() { ui->tableWidget->clear(); }
+void MainWindow::ClearTable()
+{
+    QAbstractItemModel *const mdl = ui->tableWidget->model();
+    mdl->removeRows( 0, mdl->rowCount() );
+    if ( !m_visApp.isRunningFindLine() )
+        mdl->removeColumns( 0, mdl->columnCount() );
+}
 int MainWindow::InitTable( const vector< string > headings )
 {
     int ret = 0;
@@ -1236,6 +1292,7 @@ int MainWindow::InitTable( const vector< string > headings )
     }
     else
     {
+        ClearTable();
         QStringList headerList;
         for ( size_t i = 0; i < headings.size(); ++i )
         {
@@ -1309,3 +1366,4 @@ void MainWindow::on_pushButton_createAnimation_clicked()
 void MainWindow::on_pushButton_test_clicked()
 {
 }
+
