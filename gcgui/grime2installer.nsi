@@ -180,34 +180,17 @@ SectionEnd
 ;--------------------------------
 ; Additional Prerequisites
 ;--------------------------------
-var earliest
 Section "Prerequisites_exiftool"
   SetOutPath "$INSTDIR\prereqs"
 
-  IfFileExists "C:\Program Files\ExifTool\ExifTool.exe" testTexifTool beginExifTool
-  testTexifTool:
-    DetailPrint "Hello world!"
-    nsExec::ExecToStack '"C:\Program Files\ExifTool\ExifTool.exe" -ver'
-    Pop $0
-    Pop $1
-    ; ${VersionConvert} "0.15c+" "abcdefghijklmnopqrstuvwxyz+" $R0
-    ; $R0="0.15.0327"
-
-    ; ${VersionConvert} "0.15c" "abcdefghijklmnopqrstuvwxyz+" $R1
-    ; $R1="0.15.03"
-    ; $R0 = $1
-    ; $R1="12.25"
-    DetailPrint "$1"
-    DetailPrint "12.25"
-
-    ${VersionCompare} $1 "12.25" $R2
-    ${If} $R2 < 2
-      MessageBox MB_OK "Your system does not appear to have ExifTool installed.$\n$\nPress OK to install it."
-      ExecWait "..\prereqs\ExifTool_install_12.26_64.exe"
-    ${Else}
-      DetailPrint "ExifTool already installed"
-      Goto endExifTool
-    ${EndIf}
+  IfFileExists "C:\Program Files\ExifTool\ExifTool.exe" alreadyInstalledExifTool beginExifTool
+  beginExifTool:
+    MessageBox MB_OK "Your system does not appear to have ExifTool installed.$\n$\nPress OK to install it."
+    ExecWait "..\prereqs\ExifTool_install_12.26_64.exe"
+    Goto endExifTool
+  alreadyInstalledExifTool:
+    DetailPrint "ExifTool already installed"
+    Goto endExifTool
   endExifTool:
 SectionEnd
 

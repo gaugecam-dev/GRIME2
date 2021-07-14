@@ -28,6 +28,7 @@
 #include <QtWidgets/QFileDialog>
 #include <QtWidgets/QInputDialog>
 #include <QtWidgets/QMessageBox>
+#include <QAbstractItemModel>
 #include <boost/signals2.hpp>
 #include <boost/bind/bind.hpp>
 #include <boost/chrono.hpp>
@@ -343,10 +344,10 @@ int MainWindow::ReadSettings( const QString filepath )
 
         ui->lineEdit_findLine_annotatedResultFolder->setText( pSettings->value( "findLineAnnotatedOutFolder", __CONFIGURATION_FOLDER ).toString() );
         ui->checkBox_createFindLine_annotatedResults->setChecked( pSettings->value( "createAnnotationCheckbox", false ).toBool() );
-        ui->spinBox_timeStringPosZero->setValue( pSettings->value( "timestampStringStartPos", 5 ).toInt() );
+        ui->spinBox_timeStringPosZero->setValue( pSettings->value( "timestampStringStartPos", 10 ).toInt() );
         ui->radioButton_dateTimeInFilename->setChecked( pSettings->value( "timestampFromFilename", true ).toBool() );
-        ui->radioButton_dateTimeInEXIF->setChecked( pSettings->value( "timestampFromEXIF", true ).toBool() );
-        ui->lineEdit_timestampFormat->setText( pSettings->value( "timestampFormat", "yyyy-mm-ddTHH-MM" ).toString() );
+        ui->radioButton_dateTimeInEXIF->setChecked( pSettings->value( "timestampFromEXIF", false ).toBool() );
+        ui->lineEdit_timestampFormat->setText( pSettings->value( "timestampFormat", "yy-mm-ddTHH-MM" ).toString() );
         pSettings->endGroup();
 
         delete pSettings;
@@ -639,6 +640,7 @@ void MainWindow::paintEvent( QPaintEvent * )
     UpdatePixmap();
 #endif
 }
+void MainWindow::on_pushButton_clearTable_clicked() { ClearTable(); }
 void MainWindow::on_tableAddRow( const string row_string ) { AddRow( row_string ); }
 void MainWindow::on_updateProgress( const int value ) { emit sig_updateProgess( value ); }
 void MainWindow::do_updateProgress( const int value )
@@ -1273,7 +1275,13 @@ void MainWindow::on_pushButton_showImageMetadata_clicked()
         }
     }
 }
-void MainWindow::ClearTable() { ui->tableWidget->clear(); }
+void MainWindow::ClearTable()
+{
+    QAbstractItemModel *const mdl = ui->tableWidget->model();
+    mdl->removeRows( 0, mdl->rowCount() );
+    if ( !m_visApp.isRunningFindLine() )
+        mdl->removeColumns( 0, mdl->columnCount() );
+}
 int MainWindow::InitTable( const vector< string > headings )
 {
     int ret = 0;
@@ -1284,6 +1292,7 @@ int MainWindow::InitTable( const vector< string > headings )
     }
     else
     {
+        ClearTable();
         QStringList headerList;
         for ( size_t i = 0; i < headings.size(); ++i )
         {
@@ -1357,3 +1366,4 @@ void MainWindow::on_pushButton_createAnimation_clicked()
 void MainWindow::on_pushButton_test_clicked()
 {
 }
+
