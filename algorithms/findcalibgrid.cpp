@@ -166,7 +166,7 @@ GC_STATUS FindCalibGrid::RotateImage( const Mat &src, Mat &dst, const double ang
         Mat matRotMatrix = getRotationMatrix2D( ptCenter, angle, 1.0 );
         warpAffine( src, dst, matRotMatrix, dst.size(), INTER_CUBIC );
     }
-    catch( exception &e )
+    catch( Exception &e )
     {
         FILE_LOG( logERROR ) << "[FindCalibGrid::RotateImage] " << e.what();
         retVal = GC_EXCEPT;
@@ -176,83 +176,91 @@ GC_STATUS FindCalibGrid::RotateImage( const Mat &src, Mat &dst, const double ang
 GC_STATUS FindCalibGrid::FindTargets( const Mat &img, const double minScore, const string resultFilepath )
 {
     GC_STATUS retVal = GC_OK;
-    if ( m_templates.empty() )
+    try
     {
-        FILE_LOG( logERROR ) << "[FindCalibGrid::FindTargets] Templates not devined";
-        retVal = GC_ERR;
-    }
-    else if ( img.empty() )
-    {
-        FILE_LOG( logERROR ) << "[FindCalibGrid::FindTargets] Cannot find targets in a NULL image";
-        retVal = GC_ERR;
-    }
-    if ( 0.01 > minScore || 1.0 < minScore )
-    {
-        FILE_LOG( logERROR ) << "[FindCalibGrid::FindTargets] Invalid minimum target score " << minScore;
-        retVal = GC_ERR;
-    }
-    else
-    {
-        retVal = MatchTemplate( TEMPLATE_COUNT >> 1, img, minScore, TARGET_COUNT * 2 );
-        if ( GC_OK == retVal )
+        if ( m_templates.empty() )
         {
-            vector< TemplateBowtieItem > itemsTemp;
-            for ( size_t i = 0; i < m_matchItems.size(); ++i )
-                itemsTemp.push_back( m_matchItems[ i ] );
-
-            m_matchItems.clear();
-            for ( size_t i = 0; i < itemsTemp.size(); ++i )
+            FILE_LOG( logERROR ) << "[FindCalibGrid::FindTargets] Templates not devined";
+            retVal = GC_ERR;
+        }
+        else if ( img.empty() )
+        {
+            FILE_LOG( logERROR ) << "[FindCalibGrid::FindTargets] Cannot find targets in a NULL image";
+            retVal = GC_ERR;
+        }
+        if ( 0.01 > minScore || 1.0 < minScore )
+        {
+            FILE_LOG( logERROR ) << "[FindCalibGrid::FindTargets] Invalid minimum target score " << minScore;
+            retVal = GC_ERR;
+        }
+        else
+        {
+            retVal = MatchTemplate( TEMPLATE_COUNT >> 1, img, minScore, TARGET_COUNT * 2 );
+            if ( GC_OK == retVal )
             {
-                for ( size_t j = 0; j < TEMPLATE_COUNT; ++j )
+                vector< TemplateBowtieItem > itemsTemp;
+                for ( size_t i = 0; i < m_matchItems.size(); ++i )
+                    itemsTemp.push_back( m_matchItems[ i ] );
+
+                m_matchItems.clear();
+                for ( size_t i = 0; i < itemsTemp.size(); ++i )
                 {
-                    retVal = MatchRefine( static_cast< int >( j ), img, minScore, 1, itemsTemp[ i ] );
+                    for ( size_t j = 0; j < TEMPLATE_COUNT; ++j )
+                    {
+                        retVal = MatchRefine( static_cast< int >( j ), img, minScore, 1, itemsTemp[ i ] );
+                        if ( GC_OK != retVal )
+                            break;
+                    }
                     if ( GC_OK != retVal )
                         break;
+                    m_matchItems.push_back( itemsTemp[ i ] );
                 }
-                if ( GC_OK != retVal )
-                    break;
-                m_matchItems.push_back( itemsTemp[ i ] );
-            }
 
-            retVal = SortPoints( img.size() );
+                retVal = SortPoints( img.size() );
 
-            if ( !resultFilepath.empty() )
-            {
-                Mat matTemp1;
-                cvtColor( img, matTemp1, COLOR_GRAY2BGR );
-                for ( size_t i = 0; i < m_matchItems.size(); ++i )
+                if ( !resultFilepath.empty() )
                 {
-                    line( matTemp1, Point( static_cast< int >( m_matchItems[ i ].pt.x ) - 5,
-                                           static_cast< int >( m_matchItems[ i ].pt.y ) ),
-                            Point( static_cast< int >( m_matchItems[ i ].pt.x ) + 5,
-                                   static_cast< int >( m_matchItems[ i ].pt.y ) ), Scalar( 0, 0, 255 ) );
-                    line( matTemp1, Point( static_cast< int >( m_matchItems[ i ].pt.x ),
-                                           static_cast< int >( m_matchItems[ i ].pt.y ) - 5 ),
-                            Point( static_cast< int >( m_matchItems[ i ].pt.x ),
-                                   static_cast< int >( m_matchItems[ i ].pt.y ) + 5 ), Scalar( 0, 0, 255 ) );
+                    Mat matTemp1;
+                    cvtColor( img, matTemp1, COLOR_GRAY2BGR );
+                    for ( size_t i = 0; i < m_matchItems.size(); ++i )
+                    {
+                        line( matTemp1, Point( static_cast< int >( m_matchItems[ i ].pt.x ) - 5,
+                                               static_cast< int >( m_matchItems[ i ].pt.y ) ),
+                                Point( static_cast< int >( m_matchItems[ i ].pt.x ) + 5,
+                                       static_cast< int >( m_matchItems[ i ].pt.y ) ), Scalar( 0, 0, 255 ) );
+                        line( matTemp1, Point( static_cast< int >( m_matchItems[ i ].pt.x ),
+                                               static_cast< int >( m_matchItems[ i ].pt.y ) - 5 ),
+                                Point( static_cast< int >( m_matchItems[ i ].pt.x ),
+                                       static_cast< int >( m_matchItems[ i ].pt.y ) + 5 ), Scalar( 0, 0, 255 ) );
+                    }
+                    bool isOK = imwrite( resultFilepath, matTemp1 );
+                    if ( !isOK )
+                    {
+                        FILE_LOG( logERROR ) << "[" << __func__ << "[FindCalibGrid::FindTargets]"
+                                                                   " Could not save result calib grid find to cache";
+                        retVal = GC_ERR;
+                    }
                 }
-                bool isOK = imwrite( resultFilepath, matTemp1 );
-                if ( !isOK )
-                {
-                    FILE_LOG( logERROR ) << "[" << __func__ << "[FindCalibGrid::FindTargets]"
-                                                               " Could not save result calib grid find to cache";
-                    retVal = GC_ERR;
-                }
-            }
 #ifdef DEBUG_FIND_CALIB_GRID   // output template matches to CSV file
-            FILE *fp = fopen( ( DEBUG_RESULT_FOLDER + "matches.csv" ).c_str(), "w" );
-            if ( nullptr != fp )
-            {
-                fprintf( fp, "Score, X, Y\n" );
-                for ( size_t i = 0; i < m_matchItems.size(); ++i )
+                FILE *fp = fopen( ( DEBUG_RESULT_FOLDER + "matches.csv" ).c_str(), "w" );
+                if ( nullptr != fp )
                 {
-                    fprintf( fp, "%.3f, %.3f, %.3f\n", m_matchItems[ i ].score,
-                             m_matchItems[ i ].pt.x, m_matchItems[ i ].pt.y );
+                    fprintf( fp, "Score, X, Y\n" );
+                    for ( size_t i = 0; i < m_matchItems.size(); ++i )
+                    {
+                        fprintf( fp, "%.3f, %.3f, %.3f\n", m_matchItems[ i ].score,
+                                 m_matchItems[ i ].pt.x, m_matchItems[ i ].pt.y );
+                    }
+                    fclose( fp );
                 }
-                fclose( fp );
-            }
 #endif
+            }
         }
+    }
+    catch( Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[FindCalibGrid::RotateImage] " << e.what();
+        retVal = GC_EXCEPT;
     }
     return retVal;
 }

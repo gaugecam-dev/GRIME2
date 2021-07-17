@@ -1363,7 +1363,12 @@ void MainWindow::on_pushButton_createAnimation_clicked()
         ui->textEdit_msgs->append( "Animation creation: Invalid extension. Must be .gif" );
     }
 }
+#include "../algorithms/findsymbol.h"
+#include <opencv2/imgcodecs.hpp>
 void MainWindow::on_pushButton_test_clicked()
 {
+    FindSymbol findSym;
+    Mat refTemplate = imread( "/media/kchapman/Elements/data/stop_signs/stop_sign_ref_teml.png", IMREAD_GRAYSCALE );
+    GC_STATUS retVal = findSym.CreateSymbolTemplates( refTemplate );
 }
 
