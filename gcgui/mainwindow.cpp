@@ -1368,7 +1368,21 @@ void MainWindow::on_pushButton_createAnimation_clicked()
 void MainWindow::on_pushButton_test_clicked()
 {
     FindSymbol findSym;
+
+#if 1
+    Mat searchImg = imread( "/media/kchapman/Elements/data/stop_signs/stop-sign-pics.jpg", IMREAD_ANYCOLOR );
+
+    vector< Point > calibPtsPixel;
+    GC_STATUS retVal = findSym.Find( searchImg, calibPtsPixel );
+#else
+    Mat searchImg = imread( "/media/kchapman/Elements/data/stop_signs/59dc2042aa1f8.image.jpg", IMREAD_GRAYSCALE );
     Mat refTemplate = imread( "/media/kchapman/Elements/data/stop_signs/stop_sign_ref_teml.png", IMREAD_GRAYSCALE );
     GC_STATUS retVal = findSym.CreateSymbolTemplates( refTemplate );
+    if ( GC_OK == retVal )
+    {
+        SymbolMatch matchResult;
+        retVal = findSym.FindCenter( searchImg, matchResult );
+    }
+#endif
 }
 
