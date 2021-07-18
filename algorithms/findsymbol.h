@@ -88,6 +88,7 @@ private:
     GC_STATUS FindSymbolCorners( const cv::Mat &mask, const std::vector< cv::Point > &contour, std::vector< cv::Point > &corners );
     GC_STATUS CreateSymbolTemplates( const cv::Mat &refTemplate );
     GC_STATUS GetNonZeroPoints( cv::Mat &img, std::vector< cv::Point > &pts );
+    GC_STATUS GetLineEndPoints( cv::Mat &mask, const cv::Rect rect, cv::Point2d &pt1, cv::Point2d &pt2 );
 };
 
 } // namespace gc

@@ -156,19 +156,18 @@ GC_STATUS FindSymbol::FindSymbolCorners( const cv::Mat &mask, const std::vector<
             Mat edges = Mat::zeros( mask.size(), CV_8UC1 );
             drawContours( edges, vector< vector< Point > >( 1, contour ), -1, Scalar( 255 ), 1 );
 #ifdef DEBUG_FIND_CALIB_SYMBOL
+            Mat color;
+            cvtColor( mask, color, COLOR_GRAY2BGR );
             imwrite( DEBUG_RESULT_FOLDER + "candidate_contour.png", edges );
 #endif
-            int swathSize = 201;
+            Rect bb = boundingRect( contour );
+            int swathSize = bb.height / 5;
             RotatedRect rotRect = fitEllipse( contour );
             Mat scratch = Mat::zeros( mask.size(), CV_8UC1 );
-            line( scratch, rotRect.center, Point( 0, rotRect.center.y ), Scalar( 255 ), 200 );
-#ifdef DEBUG_FIND_CALIB_SYMBOL
-            imwrite( DEBUG_RESULT_FOLDER + "left_edge_pts_swath.png", scratch );
-#endif
-
+            line( scratch, rotRect.center, Point( 0, rotRect.center.y ), Scalar( 255 ), swathSize );
             scratch &= edges;
 #ifdef DEBUG_FIND_CALIB_SYMBOL
-            imwrite( DEBUG_RESULT_FOLDER + "left_edge_pts.png", scratch );
+            imwrite( DEBUG_RESULT_FOLDER + "left_edge_pts_swath.png", scratch );
 #endif
 
             int top = rotRect.center.y - swathSize / 2;
@@ -177,52 +176,61 @@ GC_STATUS FindSymbol::FindSymbolCorners( const cv::Mat &mask, const std::vector<
             bot = scratch.rows <= bot ? scratch.rows - 1 : bot;
 
             Rect rect( 0, top, rotRect.center.x, bot - top );
-            Mat search = scratch( rect );
-#ifdef DEBUG_FIND_CALIB_SYMBOL
-            imwrite( DEBUG_RESULT_FOLDER + "pt_search_img.png", search );
-#endif
-
-            vector< Point > pts;
-            retVal = GetNonZeroPoints( search, pts );
+            Point2d lftPt1, lftPt2;
+            retVal = GetLineEndPoints( scratch, rect, lftPt1, lftPt2 );
             if ( GC_OK == retVal )
             {
-                for ( size_t i = 0; i < pts.size(); ++i )
-                    pts[ i ].y += top;
-
-                Vec4d lineLft;
-                fitLine( pts, lineLft, DIST_L12, 0.0, 0.01, 0.01 );
-
-                Point2d vertLftPt1, vertLftPt2;
-
-                // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`
-                // line equation: y = mx + b
-                // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`
-                double a = lineLft[ 1 ];
-                double b = -lineLft[ 0 ];
-                double c = lineLft[ 0 ] * lineLft[ 3 ] - lineLft[ 1 ] * lineLft[ 2 ];
-
-                double denom = ( 0.0 == a ? std::numeric_limits< double >::epsilon() : a );
-                vertLftPt1.y = 0;
-                vertLftPt1.x = c / -denom;
-
-                vertLftPt2.y = static_cast< double >( mask.cols - 1 );
-                vertLftPt2.x = ( b * vertLftPt2.y + c ) / -denom;
-
-
-                // horizontal line
-                // vertLftPt1.x = lineLft[ 2 ] + ( lineLft[ 0 ] * -lineLft[ 2 ] );
-                // vertLftPt1.y = lineLft[ 3 ] + ( lineLft[ 1 ] * -lineLft[ 2 ] );
-                // vertLftPt2.x = lineLft[ 2 ] + ( lineLft[ 0 ] * ( mask.cols - lineLft[ 2 ] - 1 ) );
-                // vertLftPt2.y = lineLft[ 3 ] + ( lineLft[ 1 ] * ( mask.cols - lineLft[ 2 ] - 1 ) );
-
 #ifdef DEBUG_FIND_CALIB_SYMBOL
-                Mat color;
-                cvtColor( mask, color, COLOR_GRAY2BGR );
-                // drawContours( color, vector< vector< Point > >( 1, pts ), -1, Scalar( 0, 255, 255 ), 5 );
-                line( color, vertLftPt1, vertLftPt2, Scalar( 0, 0, 255 ), 1 );
-                imwrite( DEBUG_RESULT_FOLDER + "left_edge.png", color );
+                line( color, lftPt1, lftPt2, Scalar( 0, 0, 255 ), 1 );
 #endif
+                scratch = 0;
+                line( scratch, rotRect.center, Point( scratch.cols - 1, rotRect.center.y ), Scalar( 255 ), swathSize );
+                scratch &= edges;
+
+                rect = Rect( rotRect.center.x, top, scratch.cols - rotRect.center.x, bot - top );
+                Point2d rgtPt1, rgtPt2;
+                retVal = GetLineEndPoints( scratch, rect, rgtPt1, rgtPt2 );
+                if ( GC_OK == retVal )
+                {
+#ifdef DEBUG_FIND_CALIB_SYMBOL
+                    line( color, rgtPt1, rgtPt2, Scalar( 0, 0, 255 ), 1 );
+#endif
+                    scratch = 0;
+                    line( scratch, rotRect.center, Point( rotRect.center.x, 0 ), Scalar( 255 ), swathSize );
+                    scratch &= edges;
+
+                    int lft = rotRect.center.x - swathSize / 2;
+                    lft = 0 > lft ? 0 : lft;
+                    int rgt = rotRect.center.x + swathSize / 2;
+                    rgt = scratch.cols <= rgt ? scratch.cols - 1 : rgt;
+
+                    rect = Rect( lft, 0, rgt - lft, rotRect.center.y );
+                    Point2d topPt1, topPt2;
+                    retVal = GetLineEndPoints( scratch, rect, topPt1, topPt2 );
+                    if ( GC_OK == retVal )
+                    {
+#ifdef DEBUG_FIND_CALIB_SYMBOL
+                        line( color, topPt1, topPt2, Scalar( 0, 0, 255 ), 1 );
+#endif
+                        scratch = 0;
+                        line( scratch, rotRect.center, Point( rotRect.center.x, scratch.rows - 1 ), Scalar( 255 ), swathSize );
+                        scratch &= edges;
+
+                        rect = Rect( lft, rotRect.center.y, rgt - lft, scratch.rows - rotRect.center.y );
+                        Point2d botPt1, botPt2;
+                        retVal = GetLineEndPoints( scratch, rect, botPt1, botPt2 );
+                        if ( GC_OK == retVal )
+                        {
+    #ifdef DEBUG_FIND_CALIB_SYMBOL
+                            line( color, botPt1, botPt2, Scalar( 0, 0, 255 ), 1 );
+    #endif
+                        }
+                    }
+                }
             }
+#ifdef DEBUG_FIND_CALIB_SYMBOL
+            imwrite( DEBUG_RESULT_FOLDER + "symbol_edges.png", color );
+#endif
         }
     }
     catch( cv::Exception &e )
@@ -232,6 +240,91 @@ GC_STATUS FindSymbol::FindSymbolCorners( const cv::Mat &mask, const std::vector<
     }
 
     return retVal;
+}
+GC_STATUS FindSymbol::GetLineEndPoints( cv::Mat &mask, const cv::Rect rect, cv::Point2d &pt1, cv::Point2d &pt2 )
+{
+    GC_STATUS retVal = GC_OK;
+
+    try
+    {
+        Mat search = mask( rect );
+#ifdef DEBUG_FIND_CALIB_SYMBOL
+        imwrite( DEBUG_RESULT_FOLDER + "pt_search_img.png", mask );
+        imwrite( DEBUG_RESULT_FOLDER + "pt_search_rect.png", search );
+#endif
+
+        vector< Point > pts;
+        retVal = GetNonZeroPoints( search, pts );
+        if ( GC_OK == retVal )
+        {
+            for ( size_t i = 0; i < pts.size(); ++i )
+            {
+                pts[ i ].x += rect.x;
+                pts[ i ].y += rect.y;
+            }
+#ifdef DEBUG_FIND_CALIB_SYMBOL
+            Mat color;
+            cvtColor( mask, color, COLOR_GRAY2BGR );
+            drawContours( color, vector< vector< Point > >( 1, pts ), -1, Scalar( 0, 255, 255 ), 1 );
+            imwrite( DEBUG_RESULT_FOLDER + "pt_search_pts.png", color );
+#endif
+
+            Vec4d lne;
+            fitLine( pts, lne, DIST_L12, 0.0, 0.01, 0.01 );
+
+            // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            // line equation: y = mx + b
+            // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Point2d pt1x0, pt1y0, pt2x0, pt2y0;
+
+            double a = lne[ 1 ];
+            double b = -lne[ 0 ];
+            double c = lne[ 0 ] * lne[ 3 ] - lne[ 1 ] * lne[ 2 ];
+
+            double denom = ( 0.0 == a ? std::numeric_limits< double >::epsilon() : a );
+            pt1y0.y = 0.0;
+            pt1y0.x = c / -denom;
+            pt2y0.y = static_cast< double >( mask.rows - 1 );
+            pt2y0.x = ( b * pt2y0.y + c ) / -denom;
+
+            denom = ( 0.0 == b ? std::numeric_limits< double >::epsilon() : b );
+            pt1x0.x = 0.0;
+            pt1x0.y = c / -denom;
+            pt2x0.x = static_cast< double >( mask.cols - 1 );
+            pt2x0.y = ( a * pt2x0.x + c ) / -denom;
+
+            if ( 0.0 <= pt1y0.x && 0.0 <= pt1y0.y && mask.cols > pt1y0.x && mask.rows > pt1y0.y )
+            {
+                pt1 = pt1y0;
+            }
+            else
+            {
+                pt1 = pt1x0;
+            }
+
+
+            if ( 0.0 <= pt2y0.x && 0.0 <= pt2y0.y && mask.cols > pt2y0.x && mask.rows > pt2y0.y )
+            {
+                pt2 = pt2y0;
+            }
+            else
+            {
+                pt2 = pt2x0;
+            }
+#ifdef DEBUG_FIND_CALIB_SYMBOL
+            line( color, pt1, pt2, Scalar( 0, 255, 0 ), 1 );
+            imwrite( DEBUG_RESULT_FOLDER + "pt_search_line.png", color );
+#endif
+        }
+    }
+    catch( cv::Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[FindSymbol::GetLineEndPoints] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+
+    return retVal;
+
 }
 GC_STATUS FindSymbol::GetNonZeroPoints( cv::Mat &img, std::vector< cv::Point > &pts )
 {
