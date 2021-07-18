@@ -1,6 +1,7 @@
 #include "log.h"
 #include "findsymbol.h"
 #include <opencv2/imgproc.hpp>
+#include <limits>
 
 #ifndef DEBUG_FIND_CALIB_SYMBOL
 #define DEBUG_FIND_CALIB_SYMBOL
@@ -30,13 +31,14 @@ GC_STATUS FindSymbol::Find( const cv::Mat &img, std::vector< cv::Point > &symbol
 {
     std::vector< SymbolCandidate > candidates;
 
-    GC_STATUS retVal = FindRed( img, candidates );
+    cv::Mat1b mask;
+    GC_STATUS retVal = FindRed( img, mask, candidates );
     if ( GC_OK == retVal )
     {
         vector< Point > corners;
         for ( size_t i = 0; i < candidates.size(); ++i )
         {
-            retVal = FindSymbolCorners( candidates[ i ].contour, corners );
+            retVal = FindSymbolCorners( mask, candidates[ i ].contour, corners );
             if ( GC_OK == retVal )
             {
 #ifdef DEBUG_FIND_CALIB_SYMBOL
@@ -58,7 +60,7 @@ GC_STATUS FindSymbol::Find( const cv::Mat &img, std::vector< cv::Point > &symbol
 
     return retVal;
 }
-GC_STATUS FindSymbol::FindRed( const cv::Mat &img, std::vector< SymbolCandidate > &symbolCandidates )
+GC_STATUS FindSymbol::FindRed( const cv::Mat &img, cv::Mat1b &redMask, std::vector< SymbolCandidate > &symbolCandidates )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -78,7 +80,7 @@ GC_STATUS FindSymbol::FindRed( const cv::Mat &img, std::vector< SymbolCandidate 
             inRange( hsv, Scalar( 0, 70, 50 ), Scalar( 10, 255, 255 ), mask1 );
             inRange( hsv, Scalar( 170, 70, 50 ), Scalar( 180, 255, 255 ), mask2 );
 
-            Mat1b redMask = mask1 | mask2;
+            redMask = mask1 | mask2;
 
             vector< vector< Point > > contours;
             findContours( redMask, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE );
@@ -133,7 +135,7 @@ GC_STATUS FindSymbol::FindRed( const cv::Mat &img, std::vector< SymbolCandidate 
 
     return retVal;
 }
-GC_STATUS FindSymbol::FindSymbolCorners( const std::vector< cv::Point > &contour, std::vector< cv::Point > &corners )
+GC_STATUS FindSymbol::FindSymbolCorners( const cv::Mat &mask, const std::vector< cv::Point > &contour, std::vector< cv::Point > &corners )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -144,31 +146,122 @@ GC_STATUS FindSymbol::FindSymbolCorners( const std::vector< cv::Point > &contour
             FILE_LOG( logERROR ) << "[FindSymbol::FindSymbolCorners] Contour must have at least " << MIN_SYMBOL_CONTOUR_SIZE << " contour points";
             retVal = GC_ERR;
         }
+        else if ( mask.empty() || CV_8UC1 != mask.type() )
+        {
+            FILE_LOG( logERROR ) << "[FindSymbol::FindSymbolCorners] Invalid mask image";
+            retVal = GC_ERR;
+        }
         else
         {
+            Mat edges = Mat::zeros( mask.size(), CV_8UC1 );
+            drawContours( edges, vector< vector< Point > >( 1, contour ), -1, Scalar( 255 ), 1 );
+#ifdef DEBUG_FIND_CALIB_SYMBOL
+            imwrite( DEBUG_RESULT_FOLDER + "candidate_contour.png", edges );
+#endif
+            int swathSize = 201;
             RotatedRect rotRect = fitEllipse( contour );
+            Mat scratch = Mat::zeros( mask.size(), CV_8UC1 );
+            line( scratch, rotRect.center, Point( 0, rotRect.center.y ), Scalar( 255 ), 200 );
+#ifdef DEBUG_FIND_CALIB_SYMBOL
+            imwrite( DEBUG_RESULT_FOLDER + "left_edge_pts_swath.png", scratch );
+#endif
 
-            double spokeLength;
-            int maxSpokeIdx = -1;
-            double maxSpokeLength = -1.0;
-            vector< double > spokeLengths;
-            for ( size_t i = 0; i < contour.size(); ++i )
+            scratch &= edges;
+#ifdef DEBUG_FIND_CALIB_SYMBOL
+            imwrite( DEBUG_RESULT_FOLDER + "left_edge_pts.png", scratch );
+#endif
+
+            int top = rotRect.center.y - swathSize / 2;
+            top = 0 > top ? 0 : top;
+            int bot = rotRect.center.y + swathSize / 2;
+            bot = scratch.rows <= bot ? scratch.rows - 1 : bot;
+
+            Rect rect( 0, top, rotRect.center.x, bot - top );
+            Mat search = scratch( rect );
+#ifdef DEBUG_FIND_CALIB_SYMBOL
+            imwrite( DEBUG_RESULT_FOLDER + "pt_search_img.png", search );
+#endif
+
+            vector< Point > pts;
+            retVal = GetNonZeroPoints( search, pts );
+            if ( GC_OK == retVal )
             {
-                spokeLength = EuclidianDistance( contour[ i ], rotRect.center );
-                if ( maxSpokeLength < spokeLength )
-                {
-                    maxSpokeLength = spokeLength;
-                    maxSpokeIdx = static_cast< int >( i );
-                }
-                spokeLengths.push_back( spokeLength );
-            }
+                for ( size_t i = 0; i < pts.size(); ++i )
+                    pts[ i ].y += top;
 
-            corners.push_back( contour[ maxSpokeIdx ] );
+                Vec4d lineLft;
+                fitLine( pts, lineLft, DIST_L12, 0.0, 0.01, 0.01 );
+
+                Point2d vertLftPt1, vertLftPt2;
+
+                // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`
+                // line equation: y = mx + b
+                // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`
+                double a = lineLft[ 1 ];
+                double b = -lineLft[ 0 ];
+                double c = lineLft[ 0 ] * lineLft[ 3 ] - lineLft[ 1 ] * lineLft[ 2 ];
+
+                double denom = ( 0.0 == a ? std::numeric_limits< double >::epsilon() : a );
+                vertLftPt1.y = 0;
+                vertLftPt1.x = c / -denom;
+
+                vertLftPt2.y = static_cast< double >( mask.cols - 1 );
+                vertLftPt2.x = ( b * vertLftPt2.y + c ) / -denom;
+
+
+                // horizontal line
+                // vertLftPt1.x = lineLft[ 2 ] + ( lineLft[ 0 ] * -lineLft[ 2 ] );
+                // vertLftPt1.y = lineLft[ 3 ] + ( lineLft[ 1 ] * -lineLft[ 2 ] );
+                // vertLftPt2.x = lineLft[ 2 ] + ( lineLft[ 0 ] * ( mask.cols - lineLft[ 2 ] - 1 ) );
+                // vertLftPt2.y = lineLft[ 3 ] + ( lineLft[ 1 ] * ( mask.cols - lineLft[ 2 ] - 1 ) );
+
+#ifdef DEBUG_FIND_CALIB_SYMBOL
+                Mat color;
+                cvtColor( mask, color, COLOR_GRAY2BGR );
+                // drawContours( color, vector< vector< Point > >( 1, pts ), -1, Scalar( 0, 255, 255 ), 5 );
+                line( color, vertLftPt1, vertLftPt2, Scalar( 0, 0, 255 ), 1 );
+                imwrite( DEBUG_RESULT_FOLDER + "left_edge.png", color );
+#endif
+            }
         }
     }
     catch( cv::Exception &e )
     {
         FILE_LOG( logERROR ) << "[FindSymbol::FindSymbolCorners] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+
+    return retVal;
+}
+GC_STATUS FindSymbol::GetNonZeroPoints( cv::Mat &img, std::vector< cv::Point > &pts )
+{
+    GC_STATUS retVal = GC_OK;
+
+    try
+    {
+        if ( img.empty() )
+        {
+            FILE_LOG( logERROR ) << "[FindSymbol::GetNonZeroPoints] Can not get points from an empty image";
+            retVal = GC_ERR;
+        }
+        else
+        {
+            pts.clear();
+            uchar *pPix;
+            for( int r = 0; r < img.rows; ++r )
+            {
+                pPix = img.ptr< uchar >( r );
+                for ( int c = 0; c < img.cols; ++c )
+                {
+                    if ( 0 != pPix[ c ] )
+                        pts.push_back( Point( c, r ) );
+                }
+            }
+        }
+    }
+    catch( cv::Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[FindSymbol::GetNonZeroPoints] " << e.what();
         retVal = GC_EXCEPT;
     }
 

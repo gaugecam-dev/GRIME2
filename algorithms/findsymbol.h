@@ -82,11 +82,12 @@ public:
 private:
     std::vector< cv::Mat > symbolTemplates;
 
-    GC_STATUS FindRed( const cv::Mat &img, std::vector< SymbolCandidate > &symbolCandidates );
+    GC_STATUS FindRed( const cv::Mat &img, cv::Mat1b &redMask, std::vector< SymbolCandidate > &symbolCandidates );
     GC_STATUS RotateImage( const cv::Mat &src, cv::Mat &dst, const double angle );
     GC_STATUS FindCenter( const cv::Mat &img, SymbolMatch &matchResult );
-    GC_STATUS FindSymbolCorners( const std::vector< cv::Point > &contour, std::vector< cv::Point > &corners );
+    GC_STATUS FindSymbolCorners( const cv::Mat &mask, const std::vector< cv::Point > &contour, std::vector< cv::Point > &corners );
     GC_STATUS CreateSymbolTemplates( const cv::Mat &refTemplate );
+    GC_STATUS GetNonZeroPoints( cv::Mat &img, std::vector< cv::Point > &pts );
 };
 
 } // namespace gc
