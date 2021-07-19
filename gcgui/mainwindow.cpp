@@ -1368,7 +1368,7 @@ void MainWindow::on_pushButton_createAnimation_clicked()
 void MainWindow::on_pushButton_test_clicked()
 {
 
-    Mat searchImg = imread( "/media/kchapman/Elements/data/stop_signs/001-Cross_Traffic_Hoy.jpg", IMREAD_ANYCOLOR );
+    Mat searchImg = imread( "/media/kchapman/Elements/data/stop_signs/stop-sign-pics.jpg", IMREAD_ANYCOLOR );
 
     FindSymbol findSym;
     double facetLength = 10.0;
@@ -1379,7 +1379,7 @@ void MainWindow::on_pushButton_test_clicked()
         retVal = findSym.DrawCalibration( searchImg, color );
         if ( GC_OK == retVal )
         {
-            imwrite( "/var/tmp/water/calibration_04.png", color );
+            imwrite( "/var/tmp/water/calibration_00.png", color );
         }
     }
 }

@@ -890,14 +890,23 @@ GC_STATUS FindSymbol::DrawCalibration( const cv::Mat &img, cv::Mat &result )
                                 double incX = ( maxXW - minXW ) / 10.0;
                                 double incY = ( maxYW - minYW ) / 10.0;
 
+                                bool isFirst;
+                                char msg[ 256 ];
                                 Point2d pt1, pt2;
                                 for ( double r = minYW; r < maxYW; r += incY )
                                 {
+                                    isFirst = true;
                                     for ( double c = minXW; c < maxXW; c += incX )
                                     {
                                         retVal = WorldToPixel( Point2d( c, r ), pt1 );
                                         if ( GC_OK == retVal )
                                         {
+                                            if ( isFirst )
+                                            {
+                                                isFirst = false;
+                                                sprintf( msg, "%.1f", r );
+                                                putText( result, msg, Point( 10, pt1.y - 10 ), FONT_HERSHEY_PLAIN, 2.0, Scalar( 0, 0, 255 ), 2 );
+                                            }
                                             retVal = WorldToPixel( Point2d( c + incX, r ), pt2 );
                                             if ( GC_OK == retVal )
                                             {
