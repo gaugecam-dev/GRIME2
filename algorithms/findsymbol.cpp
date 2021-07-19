@@ -35,25 +35,14 @@ GC_STATUS FindSymbol::Find( const cv::Mat &img, std::vector< cv::Point > &symbol
     GC_STATUS retVal = FindRed( img, mask, candidates );
     if ( GC_OK == retVal )
     {
-        vector< Point > corners;
+        Point2d ptTopLft, ptTopRgt, ptBotLft, ptBotRgt;
         for ( size_t i = 0; i < candidates.size(); ++i )
         {
-            retVal = FindSymbolCorners( mask, candidates[ i ].contour, corners );
+            retVal = FindSymbolCorners( mask, candidates[ i ].contour, ptTopLft, ptTopRgt, ptBotLft, ptBotRgt );
             if ( GC_OK == retVal )
             {
-#ifdef DEBUG_FIND_CALIB_SYMBOL
-                Mat color;
-                img.copyTo( color );
-                for ( size_t j = 0; j < corners.size(); ++j )
-                {
-                    circle( color, corners[ j ], 25, Scalar( 255, 0, 0 ), 5 );
-                    line( color, Point( corners[ j ].x - 25, corners[ j ].y ), Point( corners[ j ].x + 25, corners[ j ].y ), Scalar( 0, 255, 255 ), 1 );
-                    line( color, Point( corners[ j ].x, corners[ j ].y - 25 ), Point( corners[ j ].x, corners[ j ].y + 25 ), Scalar( 0, 255, 255 ), 1 );
-                }
-                char msg[ 256 ];
-                sprintf( msg, "%scorners_%03d.png", DEBUG_RESULT_FOLDER.c_str(), static_cast< int >( i ) );
-                imwrite( msg, color );
-#endif
+                vector< Point > corners;
+                retVal = FindDiagonals( mask, ptTopLft, ptTopRgt, ptBotLft, ptBotRgt, candidates[ i ].contour, corners );
             }
         }
     }
@@ -135,7 +124,8 @@ GC_STATUS FindSymbol::FindRed( const cv::Mat &img, cv::Mat1b &redMask, std::vect
 
     return retVal;
 }
-GC_STATUS FindSymbol::FindSymbolCorners( const cv::Mat &mask, const std::vector< cv::Point > &contour, std::vector< cv::Point > &corners )
+GC_STATUS FindSymbol::FindSymbolCorners( const cv::Mat &mask, const std::vector< cv::Point > &contour, cv::Point2d &ptTopLft,
+                                         cv::Point2d &ptTopRgt, cv::Point2d &ptBotLft, cv::Point2d &ptBotRgt )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -180,9 +170,6 @@ GC_STATUS FindSymbol::FindSymbolCorners( const cv::Mat &mask, const std::vector<
             retVal = GetLineEndPoints( scratch, rect, lftPt1, lftPt2 );
             if ( GC_OK == retVal )
             {
-#ifdef DEBUG_FIND_CALIB_SYMBOL
-                line( color, lftPt1, lftPt2, Scalar( 0, 0, 255 ), 1 );
-#endif
                 scratch = 0;
                 line( scratch, rotRect.center, Point( scratch.cols - 1, rotRect.center.y ), Scalar( 255 ), swathSize );
                 scratch &= edges;
@@ -192,9 +179,6 @@ GC_STATUS FindSymbol::FindSymbolCorners( const cv::Mat &mask, const std::vector<
                 retVal = GetLineEndPoints( scratch, rect, rgtPt1, rgtPt2 );
                 if ( GC_OK == retVal )
                 {
-#ifdef DEBUG_FIND_CALIB_SYMBOL
-                    line( color, rgtPt1, rgtPt2, Scalar( 0, 0, 255 ), 1 );
-#endif
                     scratch = 0;
                     line( scratch, rotRect.center, Point( rotRect.center.x, 0 ), Scalar( 255 ), swathSize );
                     scratch &= edges;
@@ -209,9 +193,6 @@ GC_STATUS FindSymbol::FindSymbolCorners( const cv::Mat &mask, const std::vector<
                     retVal = GetLineEndPoints( scratch, rect, topPt1, topPt2 );
                     if ( GC_OK == retVal )
                     {
-#ifdef DEBUG_FIND_CALIB_SYMBOL
-                        line( color, topPt1, topPt2, Scalar( 0, 0, 255 ), 1 );
-#endif
                         scratch = 0;
                         line( scratch, rotRect.center, Point( rotRect.center.x, scratch.rows - 1 ), Scalar( 255 ), swathSize );
                         scratch &= edges;
@@ -221,9 +202,34 @@ GC_STATUS FindSymbol::FindSymbolCorners( const cv::Mat &mask, const std::vector<
                         retVal = GetLineEndPoints( scratch, rect, botPt1, botPt2 );
                         if ( GC_OK == retVal )
                         {
-    #ifdef DEBUG_FIND_CALIB_SYMBOL
+#ifdef DEBUG_FIND_CALIB_SYMBOL
+                            line( color, lftPt1, lftPt2, Scalar( 0, 0, 255 ), 1 );
+                            line( color, rgtPt1, rgtPt2, Scalar( 0, 0, 255 ), 1 );
+                            line( color, topPt1, topPt2, Scalar( 0, 0, 255 ), 1 );
                             line( color, botPt1, botPt2, Scalar( 0, 0, 255 ), 1 );
-    #endif
+#endif
+                            retVal = LineIntersection( topPt1, topPt2, lftPt1, lftPt2, ptTopLft );
+                            if ( GC_OK == retVal )
+                            {
+                                retVal = LineIntersection( topPt1, topPt2, rgtPt1, rgtPt2, ptTopRgt );
+                                if ( GC_OK == retVal )
+                                {
+                                    retVal = LineIntersection( botPt1, botPt2, lftPt1, lftPt2, ptBotLft );
+                                    if ( GC_OK == retVal )
+                                    {
+                                        retVal = LineIntersection( botPt1, botPt2, rgtPt1, rgtPt2, ptBotRgt );
+                                        if ( GC_OK == retVal )
+                                        {
+#ifdef DEBUG_FIND_CALIB_SYMBOL
+                                            circle( color, ptTopLft, 10, Scalar( 0, 0, 255 ), 3 );
+                                            circle( color, ptTopRgt, 10, Scalar( 0, 0, 255 ), 3 );
+                                            circle( color, ptBotLft, 10, Scalar( 0, 0, 255 ), 3 );
+                                            circle( color, ptBotRgt, 10, Scalar( 0, 0, 255 ), 3 );
+#endif
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -240,6 +246,163 @@ GC_STATUS FindSymbol::FindSymbolCorners( const cv::Mat &mask, const std::vector<
     }
 
     return retVal;
+}
+// Finds the intersection of two lines, or returns false.
+// The lines are defined by (o1, p1) and (o2, p2).
+GC_STATUS FindSymbol::LineIntersection( Point2d o1, Point2d p1, Point2d o2, Point2d p2, Point2d &r )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        Point2d x = o2 - o1;
+        Point2d d1 = p1 - o1;
+        Point2d d2 = p2 - o2;
+
+        double cross = d1.x * d2.y - d1.y * d2.x;
+        if (abs(cross) < numeric_limits< double >::epsilon() )
+        {
+            FILE_LOG( logERROR ) << "[FindSymbol::LineIntersection] Lines are parallel";
+            return GC_ERR;
+        }
+
+        double t1 = ( x.x * d2.y - x.y * d2.x ) / cross;
+        r = o1 + d1 * t1;
+    }
+    catch( cv::Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[FindSymbol::LineIntersection] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+
+    return retVal;
+}
+GC_STATUS FindSymbol::FindDiagonals( const cv::Mat &mask, const cv::Point2d ptTopLft, const cv::Point2d ptTopRgt,
+                                     const cv::Point2d ptBotLft, const cv::Point2d ptBotRgt, const std::vector< cv::Point >
+                                     &contour, std::vector< cv::Point > &corners )
+{
+    GC_STATUS retVal = GC_OK;
+
+    try
+    {
+        if ( contour.size() < MIN_SYMBOL_CONTOUR_SIZE )
+        {
+            FILE_LOG( logERROR ) << "[FindSymbol::FindSymbolCorners] Contour must have at least " << MIN_SYMBOL_CONTOUR_SIZE << " contour points";
+            retVal = GC_ERR;
+        }
+        else if ( mask.empty() || CV_8UC1 != mask.type() )
+        {
+            FILE_LOG( logERROR ) << "[FindSymbol::FindSymbolCorners] Invalid mask image";
+            retVal = GC_ERR;
+        }
+        else
+        {
+            Mat edges = Mat::zeros( mask.size(), CV_8UC1 );
+            drawContours( edges, vector< vector< Point > >( 1, contour ), -1, Scalar( 255 ), 1 );
+#ifdef DEBUG_FIND_CALIB_SYMBOL
+            Mat color;
+            cvtColor( mask, color, COLOR_GRAY2BGR );
+            imwrite( DEBUG_RESULT_FOLDER + "candidate_contour.png", edges );
+#endif
+            Rect bb = boundingRect( contour );
+            int swathSize = bb.height / 5;
+            RotatedRect rotRect = fitEllipse( contour );
+            Mat scratch = Mat::zeros( mask.size(), CV_8UC1 );
+            line( scratch, rotRect.center, ptTopLft, Scalar( 255 ), swathSize );
+            scratch &= edges;
+#ifdef DEBUG_FIND_CALIB_SYMBOL
+            imwrite( DEBUG_RESULT_FOLDER + "top_left_edge_pts_swath.png", scratch );
+#endif
+
+            Rect rect( ptTopLft.x, ptTopLft.y, rotRect.center.x - ptTopLft.x, rotRect.center.y - ptTopLft.y );
+            Point2d topLftPt1, topLftPt2;
+            retVal = GetLineEndPoints( scratch, rect, topLftPt1, topLftPt2 );
+            if ( GC_OK == retVal )
+            {
+                scratch = 0;
+                line( scratch, rotRect.center, ptTopRgt, Scalar( 255 ), swathSize );
+                scratch &= edges;
+#ifdef DEBUG_FIND_CALIB_SYMBOL
+                imwrite( DEBUG_RESULT_FOLDER + "top_right_edge_pts_swath.png", scratch );
+#endif
+
+                rect = Rect( rotRect.center.x, ptTopRgt.y, ptTopRgt.x - rotRect.center.x, rotRect.center.y - ptTopRgt.y );
+                Point2d topRgtPt1, topRgtPt2;
+                retVal = GetLineEndPoints( scratch, rect, topRgtPt1, topRgtPt2 );
+                if ( GC_OK == retVal )
+                {
+                    scratch = 0;
+                    line( scratch, rotRect.center, ptBotLft, Scalar( 255 ), swathSize );
+                    scratch &= edges;
+#ifdef DEBUG_FIND_CALIB_SYMBOL
+                    imwrite( DEBUG_RESULT_FOLDER + "bot_left_edge_pts_swath.png", scratch );
+#endif
+
+                    rect = Rect( ptBotLft.x, rotRect.center.y, rotRect.center.x - ptBotLft.x, ptBotLft.y - rotRect.center.y );
+                    Point2d botLftPt1, botLftPt2;
+                    retVal = GetLineEndPoints( scratch, rect, botLftPt1, botLftPt2 );
+                    if ( GC_OK == retVal )
+                    {
+                        scratch = 0;
+                        line( scratch, rotRect.center, ptBotRgt, Scalar( 255 ), swathSize );
+                        scratch &= edges;
+#ifdef DEBUG_FIND_CALIB_SYMBOL
+                        imwrite( DEBUG_RESULT_FOLDER + "bot_right_edge_pts_swath.png", scratch );
+#endif
+
+                        rect = Rect( rotRect.center.x, rotRect.center.y, ptBotRgt.x - rotRect.center.x, ptBotRgt.y - rotRect.center.y );
+                        Point2d botRgtPt1, botRgtPt2;
+                        retVal = GetLineEndPoints( scratch, rect, botRgtPt1, botRgtPt2 );
+                        if ( GC_OK == retVal )
+                        {
+#ifdef DEBUG_FIND_CALIB_SYMBOL
+                            line( color, topLftPt1, topLftPt2, Scalar( 0, 0, 255 ), 1 );
+                            line( color, topRgtPt1, topRgtPt2, Scalar( 0, 0, 255 ), 1 );
+                            line( color, botLftPt1, botLftPt2, Scalar( 0, 0, 255 ), 1 );
+                            line( color, botRgtPt1, botRgtPt2, Scalar( 0, 0, 255 ), 1 );
+#endif
+//                            retVal = LineIntersection( topPt1, topPt2, lftPt1, lftPt2, ptTopLft );
+//                            if ( GC_OK == retVal )
+//                            {
+//                                retVal = LineIntersection( topPt1, topPt2, rgtPt1, rgtPt2, ptTopRgt );
+//                                if ( GC_OK == retVal )
+//                                {
+//                                    retVal = LineIntersection( botPt1, botPt2, lftPt1, lftPt2, ptBotLft );
+//                                    if ( GC_OK == retVal )
+//                                    {
+//                                        retVal = LineIntersection( botPt1, botPt2, rgtPt1, rgtPt2, ptBotRgt );
+//                                        if ( GC_OK == retVal )
+//                                        {
+#ifdef DEBUG_FIND_CALIB_SYMBOL
+//                                            circle( color, ptTopLft, 10, Scalar( 0, 0, 255 ), 3 );
+//                                            circle( color, ptTopRgt, 10, Scalar( 0, 0, 255 ), 3 );
+//                                            circle( color, ptBotLft, 10, Scalar( 0, 0, 255 ), 3 );
+//                                            circle( color, ptBotRgt, 10, Scalar( 0, 0, 255 ), 3 );
+#endif
+//                                        }
+//                                    }
+//                                }
+//                            }
+                        }
+                    }
+                }
+            }
+#ifdef DEBUG_FIND_CALIB_SYMBOL
+            imwrite( DEBUG_RESULT_FOLDER + "symbol_edges_diagonal.png", color );
+#endif
+        }
+    }
+    catch( cv::Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[FindSymbol::FindDiagonals] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+
+    return retVal;
+}
+GC_STATUS FindSymbol::FindSymbolDiagonals( const cv::Mat &mask, const std::vector< cv::Point > &contour, const cv::Point2d ptTopLft,
+                                           const cv::Point2d ptTopRgt, const cv::Point2d ptBotLft, const cv::Point2d ptBotRgt )
+{
+
 }
 GC_STATUS FindSymbol::GetLineEndPoints( cv::Mat &mask, const cv::Rect rect, cv::Point2d &pt1, cv::Point2d &pt2 )
 {
