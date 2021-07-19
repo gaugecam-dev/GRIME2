@@ -1370,9 +1370,9 @@ void MainWindow::on_pushButton_test_clicked()
     FindSymbol findSym;
 
 #if 1
-    Mat searchImg = imread( "/media/kchapman/Elements/data/stop_signs/59dc2042aa1f8.image.jpg", IMREAD_ANYCOLOR );
+    Mat searchImg = imread( "/media/kchapman/Elements/data/stop_signs/stop-sign-pics.jpg", IMREAD_ANYCOLOR );
 
-    vector< Point > calibPtsPixel;
+    vector< Point2d > calibPtsPixel;
     GC_STATUS retVal = findSym.Find( searchImg, calibPtsPixel );
 #else
     Mat searchImg = imread( "/media/kchapman/Elements/data/stop_signs/59dc2042aa1f8.image.jpg", IMREAD_GRAYSCALE );

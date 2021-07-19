@@ -70,12 +70,61 @@ public:
     double area;
     double elongation;
 };
+class SymbolLine
+{
+public:
+    SymbolLine() :
+        pt1( cv::Point2d( -1.0, -1.0 ) ),
+        pt2( cv::Point2d( -1.0, -1.0 ) )
+    {}
+
+    SymbolLine( const cv::Point2d point1, const cv::Point2d point2 ) :
+        pt1( point1 ),
+        pt2( point2 )
+    {}
+
+    void clear()
+    {
+        pt1 = cv::Point2d( -1.0, -1.0 );
+        pt2 = cv::Point2d( -1.0, -1.0 );
+    }
+
+    cv::Point2d pt1;
+    cv::Point2d pt2;
+};
+
+class SymbolOctagonLines
+{
+public:
+    SymbolOctagonLines() {}
+
+    void clear()
+    {
+        top.clear();
+        topRight.clear();
+        right.clear();
+        botRight.clear();
+        bot.clear();
+        botLeft.clear();
+        left.clear();
+        topLeft.clear();
+    }
+
+    SymbolLine top;
+    SymbolLine topRight;
+    SymbolLine right;
+    SymbolLine botRight;
+    SymbolLine bot;
+    SymbolLine botLeft;
+    SymbolLine left;
+    SymbolLine topLeft;
+};
 
 class FindSymbol
 {
 public:
     FindSymbol();
-    GC_STATUS Find( const cv::Mat &img, std::vector< cv::Point > &symbolPoints );
+    GC_STATUS Find( const cv::Mat &img, std::vector< cv::Point2d > &symbolPoints );
     void clear() { symbolTemplates.clear(); }
 
 private:
@@ -84,17 +133,13 @@ private:
     GC_STATUS FindRed( const cv::Mat &img, cv::Mat1b &redMask, std::vector< SymbolCandidate > &symbolCandidates );
     GC_STATUS RotateImage( const cv::Mat &src, cv::Mat &dst, const double angle );
     GC_STATUS FindCenter( const cv::Mat &img, SymbolMatch &matchResult );
-    GC_STATUS FindSymbolCorners( const cv::Mat &mask, const std::vector< cv::Point > &contour, cv::Point2d &ptTopLft,
-                                 cv::Point2d &ptTopRgt, cv::Point2d &ptBotLft, cv::Point2d &ptBotRgt );
-    GC_STATUS FindSymbolDiagonals( const cv::Mat &mask, const std::vector< cv::Point > &contour, const cv::Point2d ptTopLft,
-                                   const cv::Point2d ptTopRgt, const cv::Point2d ptBotLft, const cv::Point2d ptBotRgt );
     GC_STATUS CreateSymbolTemplates( const cv::Mat &refTemplate );
     GC_STATUS GetNonZeroPoints( cv::Mat &img, std::vector< cv::Point > &pts );
     GC_STATUS GetLineEndPoints( cv::Mat &mask, const cv::Rect rect, cv::Point2d &pt1, cv::Point2d &pt2 );
-    GC_STATUS LineIntersection( cv::Point2d o1, cv::Point2d p1, cv::Point2d o2, cv::Point2d p2, cv::Point2d &r );
-    GC_STATUS FindDiagonals( const cv::Mat &mask, const cv::Point2d ptTopLft, const cv::Point2d ptTopRgt,
-                             const cv::Point2d ptBotLft, const cv::Point2d ptBotRgt, const std::vector< cv::Point > &contour,
-                             std::vector< cv::Point > &corners );
+    GC_STATUS LineIntersection( const SymbolLine line1, const SymbolLine line2, cv::Point2d &r );
+    GC_STATUS FindCorners( const cv::Mat &mask, const std::vector< cv::Point > &contour, SymbolOctagonLines &octoLines );
+    GC_STATUS FindDiagonals( const cv::Mat &mask, const std::vector< cv::Point > &contour, SymbolOctagonLines &octoLines );
+    GC_STATUS CalcCorners( const SymbolOctagonLines octoLines, std::vector< cv::Point2d > &symbolCorners );
 };
 
 } // namespace gc
