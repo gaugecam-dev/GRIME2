@@ -124,11 +124,16 @@ class FindSymbol
 {
 public:
     FindSymbol();
-    GC_STATUS Find( const cv::Mat &img, std::vector< cv::Point2d > &symbolPoints );
-    void clear() { symbolTemplates.clear(); }
+    GC_STATUS Calibrate( const cv::Mat &img, const double octoSideLength );
+    GC_STATUS PixelToWorld( const cv::Point2d ptPixel, cv::Point2d &ptWorld );
+    GC_STATUS WorldToPixel( const cv::Point2d ptWorld, cv::Point2d &ptPixel );
+    GC_STATUS DrawCalibration( const cv::Mat &img, cv::Mat &result );
+    void clear();
 
 private:
     std::vector< cv::Mat > symbolTemplates;
+    cv::Mat matHomogPixToWorld;
+    cv::Mat matHomogWorldToPix;
 
     GC_STATUS FindRed( const cv::Mat &img, cv::Mat1b &redMask, std::vector< SymbolCandidate > &symbolCandidates );
     GC_STATUS RotateImage( const cv::Mat &src, cv::Mat &dst, const double angle );
@@ -140,6 +145,7 @@ private:
     GC_STATUS FindCorners( const cv::Mat &mask, const std::vector< cv::Point > &contour, SymbolOctagonLines &octoLines );
     GC_STATUS FindDiagonals( const cv::Mat &mask, const std::vector< cv::Point > &contour, SymbolOctagonLines &octoLines );
     GC_STATUS CalcCorners( const SymbolOctagonLines octoLines, std::vector< cv::Point2d > &symbolCorners );
+    GC_STATUS CalcOctoWorldPoints( const double sideLength, std::vector< cv::Point2d > &pts );
 };
 
 } // namespace gc

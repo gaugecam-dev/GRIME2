@@ -1,6 +1,7 @@
 #include "log.h"
 #include "findsymbol.h"
 #include <opencv2/imgproc.hpp>
+#include <opencv2/calib3d.hpp>
 #include <limits>
 
 #ifndef DEBUG_FIND_CALIB_SYMBOL
@@ -27,48 +28,110 @@ FindSymbol::FindSymbol()
 {
 
 }
-// symbolPoints are clockwise ordered with 0 being the topmost left point
-GC_STATUS FindSymbol::Find( const cv::Mat &img, std::vector< cv::Point2d > &symbolPoints )
+void FindSymbol::clear()
 {
-    std::vector< SymbolCandidate > candidates;
-
-    cv::Mat1b mask;
-    GC_STATUS retVal = FindRed( img, mask, candidates );
-    if ( GC_OK == retVal )
+    symbolTemplates.clear();
+    matHomogPixToWorld = Mat();
+    matHomogWorldToPix = Mat();
+}
+// symbolPoints are clockwise ordered with 0 being the topmost left point
+GC_STATUS FindSymbol::Calibrate( const cv::Mat &img, const double octoSideLength )
+{
+    GC_STATUS retVal = GC_OK;
+    try
     {
-        SymbolOctagonLines octoLines;
-        Point2d ptTopLft, ptTopRgt, ptBotLft, ptBotRgt;
-        for ( size_t i = 0; i < candidates.size(); ++i )
+        matHomogPixToWorld = Mat();
+        matHomogWorldToPix = Mat();
+        std::vector< SymbolCandidate > candidates;
+
+        cv::Mat1b mask;
+        retVal = FindRed( img, mask, candidates );
+        if ( GC_OK == retVal )
         {
             SymbolOctagonLines octoLines;
-            retVal = FindCorners( mask, candidates[ i ].contour, octoLines );
-            if ( GC_OK == retVal )
+            Point2d ptTopLft, ptTopRgt, ptBotLft, ptBotRgt;
+            for ( size_t i = 0; i < candidates.size(); ++i )
             {
-                vector< Point > corners;
-                retVal = FindDiagonals( mask, candidates[ i ].contour, octoLines );
+                SymbolOctagonLines octoLines;
+                retVal = FindCorners( mask, candidates[ i ].contour, octoLines );
                 if ( GC_OK == retVal )
                 {
-                    retVal = CalcCorners( octoLines, symbolPoints );
+                    vector< Point > corners;
+                    retVal = FindDiagonals( mask, candidates[ i ].contour, octoLines );
                     if ( GC_OK == retVal )
                     {
-#ifdef DEBUG_FIND_CALIB_SYMBOL
-                        Mat color;
-                        img.copyTo( color );
-                        for ( size_t i = 0; i < symbolPoints.size(); ++i )
+                        std::vector< cv::Point2d > symbolPoints;
+                        retVal = CalcCorners( octoLines, symbolPoints );
+                        if ( GC_OK == retVal )
                         {
-                            line( color, Point( symbolPoints[ i ].x - 10, symbolPoints[ i ].y ),
-                                         Point( symbolPoints[ i ].x + 10, symbolPoints[ i ].y ),
-                                  Scalar( 0, 255, 255 ), 1 );
-                            line( color, Point( symbolPoints[ i ].x, symbolPoints[ i ].y - 10 ),
-                                         Point( symbolPoints[ i ].x, symbolPoints[ i ].y + 10 ),
-                                  Scalar( 0, 255, 255 ), 1 );
-                        }
-                        imwrite( DEBUG_RESULT_FOLDER + "___FINAL.png", color );
+#ifdef DEBUG_FIND_CALIB_SYMBOL
+                            Mat color;
+                            img.copyTo( color );
+                            for ( size_t i = 0; i < symbolPoints.size(); ++i )
+                            {
+                                line( color, Point( symbolPoints[ i ].x - 10, symbolPoints[ i ].y ),
+                                             Point( symbolPoints[ i ].x + 10, symbolPoints[ i ].y ),
+                                      Scalar( 0, 255, 255 ), 1 );
+                                line( color, Point( symbolPoints[ i ].x, symbolPoints[ i ].y - 10 ),
+                                             Point( symbolPoints[ i ].x, symbolPoints[ i ].y + 10 ),
+                                      Scalar( 0, 255, 255 ), 1 );
+                            }
+                            imwrite( DEBUG_RESULT_FOLDER + "___FINAL.png", color );
 #endif
+                            vector< Point2d > worldPts;
+                            retVal = CalcOctoWorldPoints( octoSideLength, worldPts );
+                            if ( GC_OK == retVal )
+                            {
+                                matHomogPixToWorld = findHomography( symbolPoints, worldPts );
+                                if ( matHomogPixToWorld.empty() )
+                                {
+                                    FILE_LOG( logERROR ) << "[FindSymbol::Calibrate] Could not find pixel to world coordinate homography";
+                                    retVal = GC_ERR;
+                                }
+                                else
+                                {
+                                    matHomogWorldToPix = findHomography( worldPts, symbolPoints );
+                                    if ( matHomogPixToWorld.empty() )
+                                    {
+                                        FILE_LOG( logERROR ) << "[FindSymbol::Calibrate] Could not find world to pixel coordinate homography";
+                                        retVal = GC_ERR;
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
+    }
+    catch( cv::Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[FindSymbol::FindRed] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+
+    return retVal;
+}
+GC_STATUS FindSymbol::CalcOctoWorldPoints( const double sideLength, std::vector< cv::Point2d > &pts )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        pts.clear();
+        double cornerLength = sideLength * sqrt( 2.0 );
+        pts.push_back( Point2d( cornerLength, 0.0 ) );
+        pts.push_back( Point2d( cornerLength + sideLength, 0.0 ) );
+        pts.push_back( Point2d( cornerLength * 2.0 + sideLength, cornerLength ) );
+        pts.push_back( Point2d( cornerLength * 2.0 + sideLength, cornerLength + sideLength ) );
+        pts.push_back( Point2d( cornerLength + sideLength, cornerLength * 2.0 + sideLength ) );
+        pts.push_back( Point2d( cornerLength, cornerLength * 2.0 + sideLength ) );
+        pts.push_back( Point2d( 0.0, cornerLength + sideLength ) );
+        pts.push_back( Point2d( 0.0, cornerLength ) );
+    }
+    catch( exception &e )
+    {
+        FILE_LOG( logERROR ) << "[FindSymbol::CalcWorldPoints] " << e.what();
+        retVal = GC_EXCEPT;
     }
 
     return retVal;
@@ -707,9 +770,160 @@ GC_STATUS FindSymbol::RotateImage( const Mat &src, Mat &dst, const double angle 
     }
     catch( Exception &e )
     {
-        FILE_LOG( logERROR ) << "[RotateImage::RotateImage] " << e.what();
+        FILE_LOG( logERROR ) << "[FindSymbol::RotateImage] " << e.what();
         retVal = GC_EXCEPT;
     }
+    return retVal;
+}
+GC_STATUS FindSymbol::PixelToWorld( const Point2d ptPixel, Point2d &ptWorld )
+{
+    GC_STATUS retVal = GC_OK;
+
+    try
+    {
+        if ( matHomogPixToWorld.empty() )
+        {
+            FILE_LOG( logERROR ) << "[Calib::PixelToWorld] No calibration for pixel to world conversion";
+            retVal = GC_ERR;
+        }
+        else
+        {
+            vector< Point2d > vecIn, vecOut;
+            vecIn.push_back( ptPixel );
+            perspectiveTransform( vecIn, vecOut, matHomogPixToWorld );
+            ptWorld = vecOut[ 0 ];
+        }
+    }
+    catch( Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[FindSymbol::PixelToWorld] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+
+    return retVal;
+}
+GC_STATUS FindSymbol::WorldToPixel( const Point2d ptWorld, Point2d &ptPixel )
+{
+    GC_STATUS retVal = GC_OK;
+
+    try
+    {
+        if ( matHomogWorldToPix.empty() )
+        {
+            FILE_LOG( logERROR ) << "[Calib::WorldToPixel]"
+                                    "No calibration for world to pixel conversion";
+            retVal = GC_ERR;
+        }
+        else
+        {
+            vector< Point2d > vecIn, vecOut;
+            vecIn.push_back( ptWorld );
+            perspectiveTransform( vecIn, vecOut, matHomogWorldToPix );
+            ptPixel = vecOut[ 0 ];
+        }
+    }
+    catch( Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[FindSymbol::WorldToPixel] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+
+    return retVal;
+}
+GC_STATUS FindSymbol::DrawCalibration( const cv::Mat &img, cv::Mat &result )
+{
+    GC_STATUS retVal = GC_OK;
+
+    try
+    {
+        if ( matHomogPixToWorld.empty() || matHomogWorldToPix.empty() )
+        {
+            FILE_LOG( logERROR ) << "[FindSymbol::DrawCalibration] System not calibrated";
+            retVal = GC_ERR;
+        }
+        else if ( img.empty() )
+        {
+            FILE_LOG( logERROR ) << "[FindSymbol::DrawCalibration] Empty image";
+            retVal = GC_ERR;
+        }
+        else
+        {
+            if ( CV_8UC1 == img.type() )
+            {
+                cvtColor( img, result, COLOR_GRAY2BGR );
+            }
+            else if ( CV_8UC3 == img.type() )
+            {
+                img.copyTo( result );
+            }
+            else
+            {
+                FILE_LOG( logERROR ) << "[FindSymbol::DrawCalibration] Invalid image type";
+                retVal = GC_ERR;
+            }
+
+            if ( GC_OK == retVal )
+            {
+                Point2d ptLftTopPix( 0.0, 0.0 );
+                Point2d ptRgtTopPix( static_cast< double >( result.cols - 1 ), 0.0 );
+                Point2d ptLftBotPix( 0.0, static_cast< double >( result.rows - 1 ) );
+                Point2d ptRgtBotPix( static_cast< double >( result.cols - 1 ), static_cast< double >( result.rows - 1 ) );
+
+                Point2d ptLftTopW, ptRgtTopW, ptLftBotW, ptRgtBotW;
+                retVal = PixelToWorld( ptLftTopPix, ptLftTopW );
+                if ( GC_OK == retVal )
+                {
+                    retVal = PixelToWorld( ptRgtTopPix, ptRgtTopW );
+                    if ( GC_OK == retVal )
+                    {
+                        retVal = PixelToWorld( ptLftBotPix, ptLftBotW );
+                        if ( GC_OK == retVal )
+                        {
+                            retVal = PixelToWorld( ptRgtBotPix, ptRgtBotW );
+                            if ( GC_OK == retVal )
+                            {
+                                double minXW = std::min( ptLftTopW.x, ptLftBotW.x );
+                                double maxXW = std::max( ptRgtTopW.x, ptRgtBotW.x );
+                                double minYW = std::min( ptLftTopW.y, ptRgtTopW.y );
+                                double maxYW = std::max( ptLftBotW.y, ptRgtBotW.y );
+
+                                double incX = ( maxXW - minXW ) / 10.0;
+                                double incY = ( maxYW - minYW ) / 10.0;
+
+                                Point2d pt1, pt2;
+                                for ( double r = minYW; r < maxYW; r += incY )
+                                {
+                                    for ( double c = minXW; c < maxXW; c += incX )
+                                    {
+                                        retVal = WorldToPixel( Point2d( c, r ), pt1 );
+                                        if ( GC_OK == retVal )
+                                        {
+                                            retVal = WorldToPixel( Point2d( c + incX, r ), pt2 );
+                                            if ( GC_OK == retVal )
+                                            {
+                                                line( result, pt1, pt2, Scalar( 0, 255, 255 ), 3 );
+                                                retVal = WorldToPixel( Point2d( c, r + incY ), pt2 );
+                                                if ( GC_OK == retVal )
+                                                {
+                                                    line( result, pt1, pt2, Scalar( 0, 255, 255 ), 3 );
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    catch( Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[FindSymbol::DrawCalibration] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+
     return retVal;
 }
 

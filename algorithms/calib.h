@@ -164,7 +164,7 @@ public:
 
     /**
      * @brief Returns the current calibration model object
-     * @return The curren calibration model object
+     * @return The current calibration model object
      */
     CalibModel &GetModel() { return m_model; }
 
