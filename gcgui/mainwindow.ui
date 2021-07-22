@@ -124,7 +124,7 @@
            </property>
            <property name="sizeHint" stdset="0">
             <size>
-             <width>629</width>
+             <width>20</width>
              <height>17</height>
             </size>
            </property>
@@ -187,7 +187,7 @@
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>841</width>
+                 <width>618</width>
                  <height>559</height>
                 </rect>
                </property>
@@ -458,7 +458,7 @@ metadata</string>
                <enum>QTabWidget::South</enum>
               </property>
               <property name="currentIndex">
-               <number>3</number>
+               <number>2</number>
               </property>
               <widget class="QWidget" name="tab_mainRunFolder">
                <attribute name="title">
@@ -520,6 +520,9 @@ metadata</string>
                    <spacer name="horizontalSpacer">
                     <property name="orientation">
                      <enum>Qt::Horizontal</enum>
+                    </property>
+                    <property name="sizeType">
+                     <enum>QSizePolicy::Preferred</enum>
                     </property>
                     <property name="sizeHint" stdset="0">
                      <size>
@@ -1163,33 +1166,28 @@ metadata</string>
                 <item>
                  <layout class="QHBoxLayout" name="horizontalLayout_23">
                   <item>
-                   <widget class="QGroupBox" name="groupBox_2">
-                    <property name="title">
-                     <string>Target type</string>
-                    </property>
-                    <layout class="QHBoxLayout" name="horizontalLayout_17">
-                     <item>
-                      <widget class="QRadioButton" name="radioButton_2">
-                       <property name="text">
-                        <string>Bow tie</string>
-                       </property>
-                       <property name="checked">
-                        <bool>true</bool>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <widget class="QRadioButton" name="radioButton">
-                       <property name="enabled">
-                        <bool>false</bool>
-                       </property>
-                       <property name="text">
-                        <string>Stop sign</string>
-                       </property>
-                      </widget>
-                     </item>
-                    </layout>
-                   </widget>
+                   <layout class="QVBoxLayout" name="verticalLayout_17">
+                    <item>
+                     <widget class="QLabel" name="label_10">
+                      <property name="text">
+                       <string>Stop sign facet length</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QDoubleSpinBox" name="doubleSpinBox_stopSignFacetLength">
+                      <property name="minimum">
+                       <double>0.000000000000000</double>
+                      </property>
+                      <property name="maximum">
+                       <double>99999999.000000000000000</double>
+                      </property>
+                      <property name="value">
+                       <double>10.000000000000000</double>
+                      </property>
+                     </widget>
+                    </item>
+                   </layout>
                   </item>
                   <item>
                    <spacer name="horizontalSpacer_6">
@@ -1201,11 +1199,40 @@ metadata</string>
                     </property>
                     <property name="sizeHint" stdset="0">
                      <size>
-                      <width>293</width>
+                      <width>20</width>
                       <height>20</height>
                      </size>
                     </property>
                    </spacer>
+                  </item>
+                  <item>
+                   <widget class="QGroupBox" name="groupBox_2">
+                    <property name="title">
+                     <string>Target type</string>
+                    </property>
+                    <layout class="QHBoxLayout" name="horizontalLayout_17">
+                     <item>
+                      <widget class="QRadioButton" name="radioButton_calibBowtie">
+                       <property name="text">
+                        <string>Bow tie</string>
+                       </property>
+                       <property name="checked">
+                        <bool>true</bool>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QRadioButton" name="radioButton_calibStopSign">
+                       <property name="enabled">
+                        <bool>true</bool>
+                       </property>
+                       <property name="text">
+                        <string>Stop sign</string>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </widget>
                   </item>
                   <item>
                    <layout class="QVBoxLayout" name="verticalLayout_14">
@@ -1303,7 +1330,7 @@ p, li { white-space: pre-wrap; }
                    <enum>QTabWidget::South</enum>
                   </property>
                   <property name="currentIndex">
-                   <number>1</number>
+                   <number>3</number>
                   </property>
                   <widget class="QWidget" name="tab_helpReleaseNotes">
                    <attribute name="title">
@@ -1354,6 +1381,9 @@ p, li { white-space: pre-wrap; }
                         <property name="orientation">
                          <enum>Qt::Horizontal</enum>
                         </property>
+                        <property name="sizeType">
+                         <enum>QSizePolicy::Preferred</enum>
+                        </property>
                         <property name="sizeHint" stdset="0">
                          <size>
                           <width>40</width>
@@ -1380,6 +1410,12 @@ p, li { white-space: pre-wrap; }
                    <layout class="QVBoxLayout" name="verticalLayout_2">
                     <item>
                      <widget class="QTextBrowser" name="textBrowser_license">
+                      <property name="sizePolicy">
+                       <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+                        <horstretch>0</horstretch>
+                        <verstretch>0</verstretch>
+                       </sizepolicy>
+                      </property>
                       <property name="lineWrapMode">
                        <enum>QTextEdit::NoWrap</enum>
                       </property>

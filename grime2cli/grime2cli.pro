@@ -21,6 +21,7 @@ win32 {
 SOURCES += \
         ../algorithms/animate.cpp \
         ../algorithms/calib.cpp \
+    ../algorithms/calibexecutive.cpp \
         ../algorithms/findcalibgrid.cpp \
         ../algorithms/findline.cpp \
 	../algorithms/findsymbol.cpp \
@@ -32,6 +33,7 @@ HEADERS += \
     ../algorithms/animate.h \
     ../algorithms/bresenham.h \
     ../algorithms/calib.h \
+    ../algorithms/calibexecutive.h \
     ../algorithms/csvreader.h \
     ../algorithms/findcalibgrid.h \
     ../algorithms/findline.h \
