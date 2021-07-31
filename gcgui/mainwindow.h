@@ -144,6 +144,7 @@ private:
     void UpdateGUIEnables();
     void UpdatePixmap();
     void UpdatePixmapTarget();
+    void UpdateCalibType();
     void TestAgainstFindLines( QPoint pt );
     void TestAgainstRubberBands( QPoint pt );
     void AdjustPointRubberBand();

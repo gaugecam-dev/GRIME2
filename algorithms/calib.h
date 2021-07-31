@@ -120,11 +120,11 @@ public:
      *   ]
      * }
      * \endcode
-     * @param jsonCalFilepath File to load
+     * @param jsonCalibString json string to parse
      * @see Load()
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
-    GC_STATUS Load( const std::string jsonCalFilepath );
+    GC_STATUS Load( const std::string &jsonCalibString );
 
     /**
      * @brief Save the current calibration model to a json file
@@ -192,7 +192,6 @@ private:
     cv::Mat m_matHomogPixToWorld;
     cv::Mat m_matHomogWorldToPix;
 
-    cv::Size m_imgSize;
     CalibModel m_model;
 
     GC_STATUS CalcSearchSwaths();

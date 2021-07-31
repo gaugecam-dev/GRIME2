@@ -881,7 +881,6 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
 
 
                 FindData findData;
-                findData.calibSettings = m_visApp.GetCalibModel();
                 findData.findlineParams = params;
 
                 string tmStr, timestamp, resultString, graphData;

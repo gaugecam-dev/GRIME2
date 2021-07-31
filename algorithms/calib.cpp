@@ -72,7 +72,7 @@ GC_STATUS Calib::Calibrate( const vector< Point2d > pixelPts, const vector< Poin
         try
         {
             m_model.clear();
-            m_imgSize = imgSize;
+            m_model.imgSize = imgSize;
             m_model.gridSize = gridSize;
             m_model.pixelPoints.clear();
             m_model.worldPoints.clear();
@@ -245,7 +245,7 @@ GC_STATUS Calib::PixelToWorld( const Point2d ptPixel, Point2d &ptWorld )
 {
     if ( m_matHomogPixToWorld.empty() )
     {
-        FILE_LOG( logERROR ) << "[" << __func__ << "][Calib::PixelToWorld] No calibration for pixel to world conversion";
+        FILE_LOG( logERROR ) << "[Calib::PixelToWorld] No calibration for pixel to world conversion";
         return GC_ERR;
     }
 
@@ -260,7 +260,7 @@ GC_STATUS Calib::PixelToWorld( const Point2d ptPixel, Point2d &ptWorld )
     }
     catch( Exception &e )
     {
-        FILE_LOG( logERROR ) << "[" << __func__ << "][Calib::PixelToWorld] " << e.what();
+        FILE_LOG( logERROR ) << "[Calib::PixelToWorld] " << e.what();
         return GC_EXCEPT;
     }
 
@@ -270,8 +270,7 @@ GC_STATUS Calib::WorldToPixel( const Point2d ptWorld, Point2d &ptPixel )
 {
     if ( m_matHomogWorldToPix.empty() )
     {
-        FILE_LOG( logERROR ) << "[" << __func__ << "][Calib::WorldToPixel]"
-                                "No calibration for world to pixel conversion";
+        FILE_LOG( logERROR ) << "[Calib::WorldToPixel] No calibration for world to pixel conversion";
         return GC_ERR;
     }
 
@@ -286,7 +285,7 @@ GC_STATUS Calib::WorldToPixel( const Point2d ptWorld, Point2d &ptPixel )
     }
     catch( Exception &e )
     {
-        FILE_LOG( logERROR ) << "[" << __func__ << "][Calib::WorldToPixel] " << e.what();
+        FILE_LOG( logERROR ) << "[Calib::WorldToPixel] " << e.what();
         return GC_EXCEPT;
     }
 
@@ -302,13 +301,13 @@ cv::Point2d Calib::MoveRefPoint( const bool isLeft )
     Point2d pt( numeric_limits< double >::min(), numeric_limits< double >::min() );
     if ( m_model.pixelPoints.empty() )
     {
-        FILE_LOG( logERROR ) << "[" << __func__ << "][Calib::MoveRefPoint]"
+        FILE_LOG( logERROR ) << "[Calib::MoveRefPoint]"
                                 "Cannot retrieve move reference point from an uncalibrated system: " << \
                                 ( isLeft ? "Left point" : "Right point");
     }
     else if ( static_cast< size_t >( m_model.gridSize.width * m_model.gridSize.height ) != m_model.pixelPoints.size() )
     {
-        FILE_LOG( logERROR ) << "[" << __func__ << "][Calib::MoveRefPoint]"
+        FILE_LOG( logERROR ) << "[Calib::MoveRefPoint]"
                                 "Cannot retrieve move reference point with invalid calibration: " << \
                                 ( isLeft ? "Left point" : "Right point");
     }
@@ -319,110 +318,114 @@ cv::Point2d Calib::MoveRefPoint( const bool isLeft )
     }
     return pt;
 }
-GC_STATUS Calib::Load( const string jsonCalFilepath )
+GC_STATUS Calib::Load( const string &jsonCalibString )
 {
     GC_STATUS retVal = GC_OK;
 
-    if ( !fs::exists( jsonCalFilepath ) )
-    {
-        FILE_LOG( logERROR ) << "[Calib::Load] " << jsonCalFilepath << " does not exist";
-        return GC_ERR;
-    }
-
     try
     {
-        property_tree::ptree ptreeTop;
-        property_tree::json_parser::read_json( jsonCalFilepath, ptreeTop );
-
-        m_imgSize.width = ptreeTop.get< int >( "imageWidth", 0 );
-        m_imgSize.height = ptreeTop.get< int >( "imageHeight", 0 );
-        property_tree::ptree ptreeCalib = ptreeTop.get_child( "PixelToWorld" );
-
-        Point2d ptTemp;
-        size_t cols = ptreeCalib.get< size_t >( "columns", 2 );
-        size_t rows = ptreeCalib.get< size_t >( "rows", 4 );
-        m_model.pixelPoints.clear();
-        m_model.worldPoints.clear();
-
-        BOOST_FOREACH( property_tree::ptree::value_type &node, ptreeCalib.get_child( "points" ) )
+        if ( !fs::exists( jsonCalibString ) )
         {
-            ptTemp.x = node.second.get< double >( "pixelX", 0.0 );
-            ptTemp.y = node.second.get< double >( "pixelY", 0.0 );
-            m_model.pixelPoints.push_back( ptTemp );
-            ptTemp.x = node.second.get< double >( "worldX", 0.0 );
-            ptTemp.y = node.second.get< double >( "worldY", 0.0 );
-            m_model.worldPoints.push_back( ptTemp );
-        }
-
-        const property_tree::ptree &ptreeMoveSearch = ptreeTop.get_child( "MoveSearchRegions" );
-        property_tree::ptree::const_iterator end = ptreeMoveSearch.end();
-        for ( property_tree::ptree::const_iterator iter = ptreeMoveSearch.begin(); iter != end; ++iter )
-        {
-            if ( iter->first == "Left" )
-            {
-                m_model.moveSearchRegionLft.x =      iter->second.get< int >( "x", 0 );
-                m_model.moveSearchRegionLft.y =      iter->second.get< int >( "y", 0 );
-                m_model.moveSearchRegionLft.width =  iter->second.get< int >( "width", 0 );
-                m_model.moveSearchRegionLft.height = iter->second.get< int >( "height", 0 );
-            }
-            else if ( iter->first == "Right" )
-            {
-                m_model.moveSearchRegionRgt.x =      iter->second.get< int >( "x", 0 );
-                m_model.moveSearchRegionRgt.y =      iter->second.get< int >( "y", 0 );
-                m_model.moveSearchRegionRgt.width =  iter->second.get< int >( "width", 0 );
-                m_model.moveSearchRegionRgt.height = iter->second.get< int >( "height", 0 );
-            }
-        }
-
-        Point ptTop, ptBot;
-        m_model.searchLines.clear();
-        BOOST_FOREACH( property_tree::ptree::value_type &node, ptreeTop.get_child( "SearchLines" ) )
-        {
-            ptTop.x = node.second.get< int >( "topX", std::numeric_limits< int >::min() );
-            ptTop.y = node.second.get< int >( "topY", std::numeric_limits< int >::min() );
-            ptBot.x = node.second.get< int >( "botX", std::numeric_limits< int >::min() );
-            ptBot.y = node.second.get< int >( "botY", std::numeric_limits< int >::min() );
-            m_model.searchLines.push_back( LineEnds( ptTop, ptBot ) );
-        }
-
-#ifdef LOG_CALIB_VALUES
-        FILE_LOG( logINFO ) << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~";
-        FILE_LOG( logINFO ) << "Camera calibration association points";
-        FILE_LOG( logINFO ) << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~";
-        FILE_LOG( logINFO ) << "Columns=" << cols << " Rows=" << rows;
-        FILE_LOG( logINFO ) << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~";
-#endif
-        if ( cols * rows != m_model.pixelPoints.size() )
-        {
-            FILE_LOG( logERROR ) << "[Calib::Load] Invalid association point count";
+            FILE_LOG( logERROR ) << "[Calib::Load] Bow tie calibration string is empty";
             retVal = GC_ERR;
         }
         else
         {
-#ifdef LOG_CALIB_VALUES
-            for ( size_t i = 0; i < m_settings.pixelPoints.size(); ++i )
+            stringstream ss;
+            ss << jsonCalibString;
+            property_tree::ptree ptreeTop;
+            property_tree::json_parser::read_json( ss, ptreeTop );
+
+            m_model.imgSize.width = ptreeTop.get< int >( "imageWidth", 0 );
+            m_model.imgSize.height = ptreeTop.get< int >( "imageHeight", 0 );
+            property_tree::ptree ptreeCalib = ptreeTop.get_child( "PixelToWorld" );
+
+            Point2d ptTemp;
+            size_t cols = ptreeCalib.get< size_t >( "columns", 2 );
+            size_t rows = ptreeCalib.get< size_t >( "rows", 4 );
+            m_model.pixelPoints.clear();
+            m_model.worldPoints.clear();
+
+            BOOST_FOREACH( property_tree::ptree::value_type &node, ptreeCalib.get_child( "points" ) )
             {
-                FILE_LOG( logINFO ) << "[r=" << i / cols << " c=" << i % cols << "] " << \
-                                       " pixelX=" << m_settings.pixelPoints[ i ].x << " pixelY=" << m_settings.pixelPoints[ i ].y << \
-                                       " worldX=" << m_settings.worldPoints[ i ].x << " worldY=" << m_settings.worldPoints[ i ].y;
+                ptTemp.x = node.second.get< double >( "pixelX", 0.0 );
+                ptTemp.y = node.second.get< double >( "pixelY", 0.0 );
+                m_model.pixelPoints.push_back( ptTemp );
+                ptTemp.x = node.second.get< double >( "worldX", 0.0 );
+                ptTemp.y = node.second.get< double >( "worldY", 0.0 );
+                m_model.worldPoints.push_back( ptTemp );
+            }
+
+            const property_tree::ptree &ptreeMoveSearch = ptreeTop.get_child( "MoveSearchRegions" );
+            property_tree::ptree::const_iterator end = ptreeMoveSearch.end();
+            for ( property_tree::ptree::const_iterator iter = ptreeMoveSearch.begin(); iter != end; ++iter )
+            {
+                if ( iter->first == "Left" )
+                {
+                    m_model.moveSearchRegionLft.x =      iter->second.get< int >( "x", 0 );
+                    m_model.moveSearchRegionLft.y =      iter->second.get< int >( "y", 0 );
+                    m_model.moveSearchRegionLft.width =  iter->second.get< int >( "width", 0 );
+                    m_model.moveSearchRegionLft.height = iter->second.get< int >( "height", 0 );
+                }
+                else if ( iter->first == "Right" )
+                {
+                    m_model.moveSearchRegionRgt.x =      iter->second.get< int >( "x", 0 );
+                    m_model.moveSearchRegionRgt.y =      iter->second.get< int >( "y", 0 );
+                    m_model.moveSearchRegionRgt.width =  iter->second.get< int >( "width", 0 );
+                    m_model.moveSearchRegionRgt.height = iter->second.get< int >( "height", 0 );
+                }
+            }
+
+            Point ptTop, ptBot;
+            m_model.searchLines.clear();
+            BOOST_FOREACH( property_tree::ptree::value_type &node, ptreeTop.get_child( "SearchLines" ) )
+            {
+                ptTop.x = node.second.get< int >( "topX", std::numeric_limits< int >::min() );
+                ptTop.y = node.second.get< int >( "topY", std::numeric_limits< int >::min() );
+                ptBot.x = node.second.get< int >( "botX", std::numeric_limits< int >::min() );
+                ptBot.y = node.second.get< int >( "botY", std::numeric_limits< int >::min() );
+                m_model.searchLines.push_back( LineEnds( ptTop, ptBot ) );
+            }
+
+#ifdef LOG_CALIB_VALUES
+            FILE_LOG( logINFO ) << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~";
+            FILE_LOG( logINFO ) << "Camera calibration association points";
+            FILE_LOG( logINFO ) << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~";
+            FILE_LOG( logINFO ) << "Columns=" << cols << " Rows=" << rows;
+            FILE_LOG( logINFO ) << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~";
+#endif
+            if ( cols * rows != m_model.pixelPoints.size() )
+            {
+                FILE_LOG( logERROR ) << "[Calib::Load] Invalid association point count";
+                retVal = GC_ERR;
+            }
+            else
+            {
+#ifdef LOG_CALIB_VALUES
+                for ( size_t i = 0; i < m_settings.pixelPoints.size(); ++i )
+                {
+                    FILE_LOG( logINFO ) << "[r=" << i / cols << " c=" << i % cols << "] " << \
+                                           " pixelX=" << m_settings.pixelPoints[ i ].x << " pixelY=" << m_settings.pixelPoints[ i ].y << \
+                                           " worldX=" << m_settings.worldPoints[ i ].x << " worldY=" << m_settings.worldPoints[ i ].y;
+                }
+#endif
+                m_model.gridSize = Size( static_cast< int >( cols ), static_cast< int >( rows ) );
+
+                Mat matIn, matOut;
+                retVal = Calibrate( m_model.pixelPoints, m_model.worldPoints, m_model.gridSize, m_model.imgSize, matIn, matOut, false, false );
+            }
+#ifdef LOG_CALIB_VALUES
+            FILE_LOG( logINFO ) << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
+            FILE_LOG( logINFO ) << "Search lines";
+            FILE_LOG( logINFO ) << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~";
+            for ( size_t i = 0; i < m_settings.searchLines.size(); ++i )
+            {
+                FILE_LOG( logINFO ) << "[index=" << i << "] " << \
+                                       " topX=" << m_settings.searchLines[ i ].top.x << " topY=" << m_settings.searchLines[ i ].top.y << \
+                                       " botX=" << m_settings.searchLines[ i ].bot.x << " botY=" << m_settings.searchLines[ i ].bot.y;
             }
 #endif
-            m_model.gridSize = Size( static_cast< int >( cols ), static_cast< int >( rows ) );
-
-            Mat matIn, matOut;
-            retVal = Calibrate( m_model.pixelPoints, m_model.worldPoints, m_model.gridSize, m_imgSize, matIn, matOut, false, false );
         }
-#ifdef LOG_CALIB_VALUES
-        FILE_LOG( logINFO ) << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
-        FILE_LOG( logINFO ) << "Search lines";
-        FILE_LOG( logINFO ) << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~";
-        for ( size_t i = 0; i < m_settings.searchLines.size(); ++i )
-        {
-            FILE_LOG( logINFO ) << "[index=" << i << "] " << \
-                                   " topX=" << m_settings.searchLines[ i ].top.x << " topY=" << m_settings.searchLines[ i ].top.y << \
-                                   " botX=" << m_settings.searchLines[ i ].bot.x << " botY=" << m_settings.searchLines[ i ].bot.y;
-        }
-#endif
     }
     catch( boost::exception &e )
     {
@@ -440,8 +443,7 @@ GC_STATUS Calib::Save( const string jsonCalFilepath )
          m_model.pixelPoints.size() != m_model.worldPoints.size() ||
          2 > m_model.gridSize.width || 4 > m_model.gridSize.height || m_model.searchLines.empty() )
     {
-        FILE_LOG( logERROR ) << "[" << __func__ << "][Calib::Save]"
-                                "Invalid calib grid dimension(s) or empty cal point vector(s)";
+        FILE_LOG( logERROR ) << "[Calib::Save] Invalid calib grid dimension(s) or empty cal point vector(s)";
         retVal = GC_ERR;
     }
     else
@@ -452,8 +454,9 @@ GC_STATUS Calib::Save( const string jsonCalFilepath )
             if ( fileStream.is_open() )
             {
                 fileStream << "{" << endl;
-                fileStream << "  \"imageWidth\":" << m_imgSize.width << "," << endl;
-                fileStream << "  \"imageHeight\":" << m_imgSize.height << "," << endl;
+                fileStream << "  \"calibType\":\"BowTie\"" << "," << endl;
+                fileStream << "  \"imageWidth\":" << m_model.imgSize.width << "," << endl;
+                fileStream << "  \"imageHeight\":" << m_model.imgSize.height << "," << endl;
                 fileStream << "  \"PixelToWorld\": " << endl;
                 fileStream << "  {" << endl;
                 fileStream << "    \"columns\": " << m_model.gridSize.width << "," << endl;
@@ -505,14 +508,13 @@ GC_STATUS Calib::Save( const string jsonCalFilepath )
             }
             else
             {
-                FILE_LOG( logERROR ) << "[" << __func__ << "][Calib::Save]"
-                                        "Could not open calibration save file " << jsonCalFilepath;
+                FILE_LOG( logERROR ) << "[Calib::Save] Could not open calibration save file " << jsonCalFilepath;
                 retVal = GC_ERR;
             }
         }
         catch( boost::exception &e )
         {
-            FILE_LOG( logERROR ) << "[" << __func__ << "][Calib::Save] " << diagnostic_information( e );
+            FILE_LOG( logERROR ) << "[Calib::Save] " << diagnostic_information( e );
             retVal = GC_EXCEPT;
         }
     }
@@ -542,7 +544,7 @@ GC_STATUS Calib::CalcSearchSwaths()
             double topLftY = m_model.pixelPoints[ 0 ].y - ( static_cast< double >( height ) / 8.0 ) + static_cast< double >( height >> 4 );
             double botLftX = m_model.pixelPoints[ static_cast< size_t >( m_model.gridSize.width * ( m_model.gridSize.height - 1 ) ) ].x + static_cast< double >( widthBot );
             double botLftY = m_model.pixelPoints[ static_cast< size_t >( m_model.gridSize.width * ( m_model.gridSize.height - 1 ) ) ].y + static_cast< double >( height ) / 8.0 + static_cast< double >( height >> 4 );
-            botLftY = std::min( botLftY, static_cast< double >( m_imgSize.height - 1 ) );
+            botLftY = std::min( botLftY, static_cast< double >( m_model.imgSize.height - 1 ) );
 
             double xInc = 1.0;
             double xIncBot = widthBot / static_cast< double >( widthTop );
@@ -563,7 +565,7 @@ GC_STATUS Calib::CalcSearchSwaths()
         }
         catch( boost::exception &e )
         {
-            FILE_LOG( logERROR ) << "[" << __func__ << "][Calib::CalcSearchSwaths] " << diagnostic_information( e );
+            FILE_LOG( logERROR ) << "[Calib::CalcSearchSwaths] " << diagnostic_information( e );
             retVal = GC_EXCEPT;
         }
     }
@@ -578,8 +580,7 @@ string Calib::ModelJsonString()
          m_model.pixelPoints.size() != m_model.worldPoints.size() ||
          2 > m_model.gridSize.width || 4 > m_model.gridSize.height || m_model.searchLines.empty() )
     {
-        FILE_LOG( logERROR ) << "[" << __func__ << "][Calib::SettingsJsonString]"
-                                "Invalid calib grid dimension(s) or empty cal point vector(s)";
+        FILE_LOG( logERROR ) << "[Calib::SettingsJsonString] Invalid calib grid dimension(s) or empty cal point vector(s)";
     }
     else
     {
@@ -634,7 +635,7 @@ string Calib::ModelJsonString()
         }
         catch( boost::exception &e )
         {
-            FILE_LOG( logERROR ) << "[" << __func__ << "][Calib::SettingsJsonString] " << diagnostic_information( e );
+            FILE_LOG( logERROR ) << "[Calib::SettingsJsonString] " << diagnostic_information( e );
         }
     }
 

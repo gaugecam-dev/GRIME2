@@ -29,9 +29,8 @@
 #ifndef VISAPP_H
 #define VISAPP_H
 
-#include "calib.h"
+#include "calibexecutive.h"
 #include "findline.h"
-#include "findcalibgrid.h"
 #include "metadata.h"
 
 //! GaugeCam classes, functions and variables
@@ -126,18 +125,6 @@ public:
      */
     GC_STATUS DrawCalibOverlay( const cv::Mat matIn, cv::Mat &imgMatOut,
                                 const bool drawCalib = true, const bool drawMoveROIs = true, const bool drawSearchROI = true );
-
-    /**
-     * @brief Retrieve the current calibration model to a CalibModel object
-     * @return The CalibModel
-     */
-    CalibModel GetCalibModel() { return m_calib.GetModel(); }
-
-    /**
-     * @brief Retrieve the current calibration model settings as a json string
-     * @return The json string
-     */
-    std::string CalibString() { return m_calib.ModelJsonString(); }
 
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // Findline methods
@@ -285,10 +272,11 @@ public:
 private:
     std::string m_calibFilepath;
 
-    Calib m_calib;
+    FindCalibGrid m_findCalibGrid;   // TODO: to be replace with m_calibExec
+    Calib m_calib;                   // TODO: to be replace with m_calibExec
+    CalibExecutive m_calibExec;
     FindLine m_findLine;
     FindLineResult m_findLineResult;
-    FindCalibGrid m_findCalibGrid;
     MetaData m_metaData;
 
     GC_STATUS PixelToWorld( FindPointSet &ptSet );

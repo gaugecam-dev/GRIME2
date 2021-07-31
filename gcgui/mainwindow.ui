@@ -122,6 +122,9 @@
            <property name="orientation">
             <enum>Qt::Horizontal</enum>
            </property>
+           <property name="sizeType">
+            <enum>QSizePolicy::Expanding</enum>
+           </property>
            <property name="sizeHint" stdset="0">
             <size>
              <width>20</width>
@@ -187,7 +190,7 @@
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>618</width>
+                 <width>948</width>
                  <height>559</height>
                 </rect>
                </property>
@@ -1072,6 +1075,107 @@ metadata</string>
                </attribute>
                <layout class="QVBoxLayout" name="verticalLayout_3">
                 <item>
+                 <layout class="QHBoxLayout" name="horizontalLayout_18">
+                  <item>
+                   <widget class="QGroupBox" name="groupBox_calibTargetType">
+                    <property name="title">
+                     <string>Target type</string>
+                    </property>
+                    <layout class="QHBoxLayout" name="horizontalLayout_17">
+                     <item>
+                      <widget class="QRadioButton" name="radioButton_calibBowtie">
+                       <property name="text">
+                        <string>Bow tie</string>
+                       </property>
+                       <property name="checked">
+                        <bool>true</bool>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QRadioButton" name="radioButton_calibStopSign">
+                       <property name="enabled">
+                        <bool>true</bool>
+                       </property>
+                       <property name="text">
+                        <string>Stop sign</string>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </widget>
+                  </item>
+                  <item>
+                   <spacer name="horizontalSpacer_9">
+                    <property name="orientation">
+                     <enum>Qt::Horizontal</enum>
+                    </property>
+                    <property name="sizeType">
+                     <enum>QSizePolicy::Expanding</enum>
+                    </property>
+                    <property name="sizeHint" stdset="0">
+                     <size>
+                      <width>20</width>
+                      <height>20</height>
+                     </size>
+                    </property>
+                   </spacer>
+                  </item>
+                 </layout>
+                </item>
+                <item>
+                 <widget class="QGroupBox" name="groupBox_stopsignCalibMethods">
+                  <property name="title">
+                   <string>Stop sign calibration method</string>
+                  </property>
+                  <layout class="QHBoxLayout" name="horizontalLayout_23">
+                   <item>
+                    <widget class="QRadioButton" name="radioButton_stopsignFromFile">
+                     <property name="text">
+                      <string>World coord. file</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <spacer name="horizontalSpacer_6">
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>40</width>
+                       <height>20</height>
+                      </size>
+                     </property>
+                    </spacer>
+                   </item>
+                   <item>
+                    <widget class="QRadioButton" name="radioButton_stopsignFacetLength">
+                     <property name="text">
+                      <string>Facet length</string>
+                     </property>
+                     <property name="checked">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QDoubleSpinBox" name="doubleSpinBox_stopSignFacetLength">
+                     <property name="minimum">
+                      <double>0.000000000000000</double>
+                     </property>
+                     <property name="maximum">
+                      <double>99999999.000000000000000</double>
+                     </property>
+                     <property name="value">
+                      <double>10.000000000000000</double>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+                <item>
                  <widget class="QLabel" name="label_3">
                   <property name="text">
                    <string>Calibration result JSON file (pixel/world associations)</string>
@@ -1164,110 +1268,17 @@ metadata</string>
                  </layout>
                 </item>
                 <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_23">
-                  <item>
-                   <layout class="QVBoxLayout" name="verticalLayout_17">
-                    <item>
-                     <widget class="QLabel" name="label_10">
-                      <property name="text">
-                       <string>Stop sign facet length</string>
-                      </property>
-                     </widget>
-                    </item>
-                    <item>
-                     <widget class="QDoubleSpinBox" name="doubleSpinBox_stopSignFacetLength">
-                      <property name="minimum">
-                       <double>0.000000000000000</double>
-                      </property>
-                      <property name="maximum">
-                       <double>99999999.000000000000000</double>
-                      </property>
-                      <property name="value">
-                       <double>10.000000000000000</double>
-                      </property>
-                     </widget>
-                    </item>
-                   </layout>
-                  </item>
-                  <item>
-                   <spacer name="horizontalSpacer_6">
-                    <property name="orientation">
-                     <enum>Qt::Horizontal</enum>
-                    </property>
-                    <property name="sizeType">
-                     <enum>QSizePolicy::Preferred</enum>
-                    </property>
-                    <property name="sizeHint" stdset="0">
-                     <size>
-                      <width>20</width>
-                      <height>20</height>
-                     </size>
-                    </property>
-                   </spacer>
-                  </item>
-                  <item>
-                   <widget class="QGroupBox" name="groupBox_2">
-                    <property name="title">
-                     <string>Target type</string>
-                    </property>
-                    <layout class="QHBoxLayout" name="horizontalLayout_17">
-                     <item>
-                      <widget class="QRadioButton" name="radioButton_calibBowtie">
-                       <property name="text">
-                        <string>Bow tie</string>
-                       </property>
-                       <property name="checked">
-                        <bool>true</bool>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <widget class="QRadioButton" name="radioButton_calibStopSign">
-                       <property name="enabled">
-                        <bool>true</bool>
-                       </property>
-                       <property name="text">
-                        <string>Stop sign</string>
-                       </property>
-                      </widget>
-                     </item>
-                    </layout>
-                   </widget>
-                  </item>
-                  <item>
-                   <layout class="QVBoxLayout" name="verticalLayout_14">
-                    <item>
-                     <spacer name="verticalSpacer">
-                      <property name="orientation">
-                       <enum>Qt::Vertical</enum>
-                      </property>
-                      <property name="sizeType">
-                       <enum>QSizePolicy::Preferred</enum>
-                      </property>
-                      <property name="sizeHint" stdset="0">
-                       <size>
-                        <width>20</width>
-                        <height>5</height>
-                       </size>
-                      </property>
-                     </spacer>
-                    </item>
-                    <item>
-                     <widget class="QPushButton" name="pushButton_visionCalibrate">
-                      <property name="sizePolicy">
-                       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                        <horstretch>0</horstretch>
-                        <verstretch>0</verstretch>
-                       </sizepolicy>
-                      </property>
-                      <property name="text">
-                       <string>Calibrate</string>
-                      </property>
-                     </widget>
-                    </item>
-                   </layout>
-                  </item>
-                 </layout>
+                 <widget class="QPushButton" name="pushButton_visionCalibrate">
+                  <property name="sizePolicy">
+                   <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                    <horstretch>0</horstretch>
+                    <verstretch>0</verstretch>
+                   </sizepolicy>
+                  </property>
+                  <property name="text">
+                   <string>Calibrate</string>
+                  </property>
+                 </widget>
                 </item>
                 <item>
                  <spacer name="verticalSpacer_4">
@@ -1330,7 +1341,7 @@ p, li { white-space: pre-wrap; }
                    <enum>QTabWidget::South</enum>
                   </property>
                   <property name="currentIndex">
-                   <number>3</number>
+                   <number>1</number>
                   </property>
                   <widget class="QWidget" name="tab_helpReleaseNotes">
                    <attribute name="title">

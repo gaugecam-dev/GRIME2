@@ -3,9 +3,12 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/calib3d.hpp>
 #include <limits>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
 
-#ifndef DEBUG_FIND_CALIB_SYMBOL
-#define DEBUG_FIND_CALIB_SYMBOL
+#ifdef DEBUG_FIND_CALIB_SYMBOL
+#undef DEBUG_FIND_CALIB_SYMBOL
 #include <iostream>
 #include <opencv2/imgcodecs.hpp>
 static const std::string DEBUG_RESULT_FOLDER = "/var/tmp/water/";
@@ -30,18 +33,18 @@ FindSymbol::FindSymbol()
 }
 void FindSymbol::clear()
 {
-    symbolTemplates.clear();
     matHomogPixToWorld = Mat();
     matHomogWorldToPix = Mat();
+    model.clear();
 }
 // symbolPoints are clockwise ordered with 0 being the topmost left point
-GC_STATUS FindSymbol::Calibrate( const cv::Mat &img, const double octoSideLength )
+GC_STATUS FindSymbol::Calibrate( const cv::Mat &img, const double octoSideLength, const Point searchLftTopPt,
+                                 const Point searchRgtTopPt, const Point searchLftBotPt, const Point searchRgtBotPt )
 {
     GC_STATUS retVal = GC_OK;
     try
     {
-        matHomogPixToWorld = Mat();
-        matHomogWorldToPix = Mat();
+        clear();
         std::vector< SymbolCandidate > candidates;
 
         cv::Mat1b mask;
@@ -60,29 +63,27 @@ GC_STATUS FindSymbol::Calibrate( const cv::Mat &img, const double octoSideLength
                     retVal = FindDiagonals( mask, candidates[ i ].contour, octoLines );
                     if ( GC_OK == retVal )
                     {
-                        std::vector< cv::Point2d > symbolPoints;
-                        retVal = CalcCorners( octoLines, symbolPoints );
+                        retVal = CalcCorners( octoLines, model.pixelPoints );
                         if ( GC_OK == retVal )
                         {
 #ifdef DEBUG_FIND_CALIB_SYMBOL
                             Mat color;
                             img.copyTo( color );
-                            for ( size_t i = 0; i < symbolPoints.size(); ++i )
+                            for ( size_t i = 0; i < model.pixelPoints.size(); ++i )
                             {
-                                line( color, Point( symbolPoints[ i ].x - 10, symbolPoints[ i ].y ),
-                                             Point( symbolPoints[ i ].x + 10, symbolPoints[ i ].y ),
+                                line( color, Point( model.pixelPoints[ i ].x - 10, model.pixelPoints[ i ].y ),
+                                             Point( model.pixelPoints[ i ].x + 10, model.pixelPoints[ i ].y ),
                                       Scalar( 0, 255, 255 ), 1 );
-                                line( color, Point( symbolPoints[ i ].x, symbolPoints[ i ].y - 10 ),
-                                             Point( symbolPoints[ i ].x, symbolPoints[ i ].y + 10 ),
+                                line( color, Point( model.pixelPoints[ i ].x, model.pixelPoints[ i ].y - 10 ),
+                                             Point( model.pixelPoints[ i ].x, model.pixelPoints[ i ].y + 10 ),
                                       Scalar( 0, 255, 255 ), 1 );
                             }
                             imwrite( DEBUG_RESULT_FOLDER + "___FINAL.png", color );
 #endif
-                            vector< Point2d > worldPts;
-                            retVal = CalcOctoWorldPoints( octoSideLength, worldPts );
+                            retVal = CalcOctoWorldPoints( octoSideLength, model.worldPoints );
                             if ( GC_OK == retVal )
                             {
-                                matHomogPixToWorld = findHomography( symbolPoints, worldPts );
+                                matHomogPixToWorld = findHomography( model.pixelPoints, model.worldPoints );
                                 if ( matHomogPixToWorld.empty() )
                                 {
                                     FILE_LOG( logERROR ) << "[FindSymbol::Calibrate] Could not find pixel to world coordinate homography";
@@ -90,7 +91,7 @@ GC_STATUS FindSymbol::Calibrate( const cv::Mat &img, const double octoSideLength
                                 }
                                 else
                                 {
-                                    matHomogWorldToPix = findHomography( worldPts, symbolPoints );
+                                    matHomogWorldToPix = findHomography( model.worldPoints, model.pixelPoints );
                                     if ( matHomogPixToWorld.empty() )
                                     {
                                         FILE_LOG( logERROR ) << "[FindSymbol::Calibrate] Could not find world to pixel coordinate homography";
@@ -108,6 +109,112 @@ GC_STATUS FindSymbol::Calibrate( const cv::Mat &img, const double octoSideLength
     {
         FILE_LOG( logERROR ) << "[FindSymbol::FindRed] " << e.what();
         retVal = GC_EXCEPT;
+    }
+
+    return retVal;
+}
+GC_STATUS FindSymbol::Load( const std::string jsonCalFilepath )
+{
+    GC_STATUS retVal = GC_OK;
+
+    if ( jsonCalFilepath.empty() )
+    {
+        FILE_LOG( logERROR ) << "[FindSymbol::Load] Calibration filepath is empty";
+        retVal = GC_ERR;
+    }
+    else
+    {
+        try
+        {
+        }
+        catch( exception &e )
+        {
+            FILE_LOG( logERROR ) << "[FindSymbol::Load] " << e.what();
+            retVal = GC_EXCEPT;
+        }
+    }
+
+    return retVal;
+}
+GC_STATUS FindSymbol::Save( const std::string jsonCalFilepath )
+{
+    GC_STATUS retVal = GC_OK;
+
+    if ( model.pixelPoints.empty() || model.worldPoints.empty() ||
+         model.pixelPoints.size() != model.worldPoints.size() || model.searchLines.empty() )
+    {
+        FILE_LOG( logERROR ) << "[FindSymbol::Save] Empty cal point vector(s)";
+        retVal = GC_ERR;
+    }
+    else if ( jsonCalFilepath.empty() )
+    {
+        FILE_LOG( logERROR ) << "[FindSymbol::Save] Calibration filepath is empty";
+        retVal = GC_ERR;
+    }
+    else
+    {
+        try
+        {
+            ofstream fileStream( jsonCalFilepath );
+            if ( fileStream.is_open() )
+            {
+                fileStream << "{" << endl;
+                fileStream << "  \"calibType\":\"StopSign\"" << "," << endl;
+                fileStream << "  \"imageWidth\":" << model.imgSize.width << "," << endl;
+                fileStream << "  \"imageHeight\":" << model.imgSize.height << "," << endl;
+                fileStream << "  \"PixelToWorld\": " << endl;
+                fileStream << "  {" << endl;
+                fileStream << "    \"points\": [" << endl;
+                fileStream << fixed << setprecision( 3 );
+                for ( size_t i = 0; i < model.pixelPoints.size() - 1; ++i )
+                {
+                    fileStream << "      { \"pixelX\": " << model.pixelPoints[ i ].x << ", " << \
+                                          "\"pixelY\": " << model.pixelPoints[ i ].y << ", " << \
+                                          "\"worldX\": " << model.worldPoints[ i ].x << ", " << \
+                                          "\"worldY\": " << model.worldPoints[ i ].y << " }," << endl;
+                }
+                fileStream << "      { \"pixelX\": " << model.pixelPoints[ model.pixelPoints.size() - 1 ].x << ", " << \
+                                      "\"pixelY\": " << model.pixelPoints[ model.pixelPoints.size() - 1 ].y << ", " << \
+                                      "\"worldX\": " << model.worldPoints[ model.pixelPoints.size() - 1 ].x << ", " << \
+                                      "\"worldY\": " << model.worldPoints[ model.pixelPoints.size() - 1 ].y << " }" << endl;
+                fileStream << "    ]" << endl;
+                fileStream << "  }," << endl;
+                fileStream << "  \"MoveSearchRegion\": " << endl;
+                fileStream << "  {" << endl;
+                fileStream << fixed << setprecision( 0 );
+                fileStream << "      \"x\": " <<      model.moveSearchRegion.x << ", " << \
+                                    "\"y\": " <<      model.moveSearchRegion.y << ", " << \
+                                    "\"width\": " <<  model.moveSearchRegion.width << ", " << \
+                                    "\"height\": " << model.moveSearchRegion.height << endl;
+                fileStream << "  }," << endl;
+                fileStream << "  \"SearchLines\": [" << endl;
+                for ( size_t i = 0; i < model.searchLines.size() - 1; ++i )
+                {
+                    fileStream << "      { \"topX\": " << model.searchLines[ i ].top.x << ", " << \
+                                          "\"topY\": " << model.searchLines[ i ].top.y << ", " << \
+                                          "\"botX\": " << model.searchLines[ i ].bot.x << ", " << \
+                                          "\"botY\": " << model.searchLines[ i ].bot.y << " }," << endl;
+                }
+                fileStream << "      { \"topX\": " << model.searchLines[ model.searchLines.size() - 1 ].top.x << ", " << \
+                                      "\"topY\": " << model.searchLines[ model.searchLines.size() - 1 ].top.y << ", " << \
+                                      "\"botX\": " << model.searchLines[ model.searchLines.size() - 1 ].bot.x << ", " << \
+                                      "\"botY\": " << model.searchLines[ model.searchLines.size() - 1 ].bot.y << " }" << endl;
+                fileStream << "  ]" << endl;
+                fileStream << "}" << endl;
+                fileStream.close();
+            }
+            else
+            {
+                FILE_LOG( logERROR ) << "[FindSymbol::Save]"
+                                        "Could not open calibration save file " << jsonCalFilepath;
+                retVal = GC_ERR;
+            }
+        }
+        catch( exception &e )
+        {
+            FILE_LOG( logERROR ) << "[FindSymbol::Save] " << e.what();
+            retVal = GC_EXCEPT;
+        }
     }
 
     return retVal;
@@ -179,7 +286,9 @@ GC_STATUS FindSymbol::FindRed( const cv::Mat &img, cv::Mat1b &redMask, std::vect
                     {
                         m = moments( contours[ i ] );
                         elong = elongation( m );
+#ifdef DEBUG_FIND_CALIB_SYMBOL
                         cout << "elongation=" << elong << endl;
+#endif
                         if ( MAX_SYMBOL_CONTOUR_ELONG >= elong )
                         {
                             symbolCandidates.push_back( SymbolCandidate( contours[ i ], area, elong ) );
@@ -638,143 +747,6 @@ GC_STATUS FindSymbol::GetNonZeroPoints( cv::Mat &img, std::vector< cv::Point > &
 
     return retVal;
 }
-GC_STATUS FindSymbol::FindCenter( const Mat &img, SymbolMatch &matchResult )
-{
-    GC_STATUS retVal = GC_OK;
-
-    try
-    {
-        Mat searchImg;
-        Mat matchSpace;
-        double dMin, dMax;
-        Point ptMin, ptMax;
-        double sizeRatio = static_cast< double >( img.rows ) / static_cast< double >( img.cols );
-        for ( int w = SYMBOL_SEARCH_IMAGE_WIDTH_START; w <= SYMBOL_SEARCH_IMAGE_WIDTH_END; w += SYMBOL_SEARCH_IMAGE_WIDTH_INC )
-        {
-            resize( img, searchImg, Size( w, cvRound( static_cast< double >( w ) * sizeRatio ) ), 0.0, 0.0, INTER_CUBIC );
-            for ( size_t i = 0; i < symbolTemplates.size(); ++i )
-            {
-                matchSpace = Mat();
-                matchTemplate( searchImg, symbolTemplates[ i ], matchSpace, cv::TM_CCOEFF_NORMED );
-                minMaxLoc( matchSpace, &dMin, &dMax, &ptMin, &ptMax );
-                if ( dMax >= matchResult.score )
-                {
-                    ptMax.x += symbolTemplates[ i ].cols / 2;
-                    ptMax.y += symbolTemplates[ i ].rows / 2;
-                    matchResult = SymbolMatch( ptMax, dMax, w, i );
-                }
-            }
-        }
-        double scale = static_cast< double >( img.cols ) / static_cast< double >( matchResult.width );
-        matchResult.pt = Point( cvRound( static_cast< double >( matchResult.pt.x ) * scale ), cvRound( static_cast< double >( matchResult.pt.y ) *scale ) );
-
-#ifdef DEBUG_FIND_CALIB_SYMBOL   // debug of template rotation
-        std::cout << "Score=" << matchResult.score << " x=" << matchResult.pt.x << " y=" << matchResult.pt.y;
-        std::cout << " angleIndex=" << matchResult.angleIdx << " scale=" << scale << std::endl;
-        Mat color;
-        cvtColor( img, color, COLOR_GRAY2BGR );
-        circle( color, matchResult.pt, 25, Scalar( 255, 0, 0 ), 5 );
-        line( color, Point( matchResult.pt.x - 25, matchResult.pt.y ), Point( matchResult.pt.x + 25, matchResult.pt.y ), Scalar( 0, 255, 255 ), 3 );
-        line( color, Point( matchResult.pt.x, matchResult.pt.y - 25 ), Point( matchResult.pt.x, matchResult.pt.y + 25 ), Scalar( 0, 255, 255 ), 3 );
-        imwrite( DEBUG_RESULT_FOLDER + "sign_center.png", color );
-#endif
-    }
-    catch( cv::Exception &e )
-    {
-        FILE_LOG( logERROR ) << "[FindSymbol::FindCenter] " << e.what();
-        retVal = GC_EXCEPT;
-    }
-
-    return retVal;
-}
-GC_STATUS FindSymbol::CreateSymbolTemplates( const cv::Mat &refTemplate )
-{
-    GC_STATUS retVal = GC_OK;
-
-    try
-    {
-        // create templates
-        symbolTemplates.clear();
-
-        Mat refAdj;
-        double sizeRatio = static_cast< double >( SYMBOL_TEMPL_WIDTH ) / static_cast< double >( refTemplate.cols );
-        Size sizeAdj( SYMBOL_TEMPL_WIDTH, cvRound( sizeRatio * static_cast< double >( refTemplate.rows ) ) );
-        resize( refTemplate, refAdj, sizeAdj, 0.0, 0.0, INTER_CUBIC );
-
-        int templateCount = cvRound( 2.0 * ( SYMBOL_TEMPL_ANGLE_MAX / SYMBOL_TEMPL_ANGLE_INC ) ) + 1;
-
-        int tempWidth = refAdj.cols << 1;
-        int tempHeight = refAdj.rows << 1;
-        Rect roiRotate( tempWidth >> 2, tempHeight >> 2, refAdj.cols, refAdj.rows );
-        Mat matTemp = Mat::zeros( Size( tempWidth, tempHeight ), CV_8U );
-        refAdj.copyTo( matTemp( roiRotate ) );
-        Mat matTempRot( Size( tempWidth, tempHeight ), CV_8U );
-
-        for ( int i = 0; i < templateCount; ++i )
-            symbolTemplates.push_back( Mat::zeros( sizeAdj, CV_8U ) );
-
-        // create the rotated templates
-        int center = templateCount / 2;
-
-        Mat matTemplateTemp = matTemp( roiRotate );
-
-        matTemplateTemp.copyTo( symbolTemplates[ static_cast< size_t >( center ) ] );
-#ifdef DEBUG_FIND_CALIB_SYMBOL   // debug of template rotation
-        char msg[ 1024 ];
-        sprintf( msg, "%02d_template_center.png", center );
-        imwrite( DEBUG_RESULT_FOLDER + msg, symbolTemplates[ static_cast< size_t >( center ) ] );
-        imwrite( DEBUG_RESULT_FOLDER + "ref_template.png", refTemplate );
-#endif
-
-        for ( int i = 0; i < center; ++i )
-        {
-            retVal = RotateImage( matTemp, matTempRot, static_cast< double >( i - center ) );
-            if ( GC_OK != retVal )
-                break;
-
-            matTemplateTemp = matTempRot( roiRotate );
-            matTemplateTemp.copyTo( symbolTemplates[ static_cast< size_t >( i ) ] );
-
-#ifdef DEBUG_FIND_CALIB_SYMBOL   // debug of template rotation
-            sprintf( msg, "%02d_template.png", i );
-            imwrite( DEBUG_RESULT_FOLDER + msg, symbolTemplates[ static_cast< size_t >( i ) ] );
-#endif
-            retVal = RotateImage( matTemp, matTempRot, static_cast< double >( i + 1 ) );
-            if ( 0 != retVal )
-                break;
-
-            matTemplateTemp = matTempRot( roiRotate );
-            matTemplateTemp.copyTo( symbolTemplates[ static_cast< size_t >( center + i + 1 ) ] );
-#ifdef DEBUG_FIND_CALIB_SYMBOL   // debug of template rotation
-            sprintf( msg, "%02d_template.png", center + i + 1 );
-            imwrite( DEBUG_RESULT_FOLDER + msg, symbolTemplates[ static_cast< size_t >( center + i + 1 ) ] );
-#endif
-        }
-    }
-    catch( cv::Exception &e )
-    {
-        FILE_LOG( logERROR ) << "[FindSymbol::CreateSymbolTemplates] " << e.what();
-        retVal = GC_EXCEPT;
-    }
-
-    return retVal;
-}
-GC_STATUS FindSymbol::RotateImage( const Mat &src, Mat &dst, const double angle )
-{
-    GC_STATUS retVal = GC_OK;
-    try
-    {
-        Point2d ptCenter = Point2d( static_cast< double >( src.cols ) / 2.0, static_cast< double >( src.rows ) / 2.0 );
-        Mat matRotMatrix = getRotationMatrix2D( ptCenter, angle, 1.0 );
-        warpAffine( src, dst, matRotMatrix, dst.size(), INTER_CUBIC );
-    }
-    catch( Exception &e )
-    {
-        FILE_LOG( logERROR ) << "[FindSymbol::RotateImage] " << e.what();
-        retVal = GC_EXCEPT;
-    }
-    return retVal;
-}
 GC_STATUS FindSymbol::PixelToWorld( const Point2d ptPixel, Point2d &ptWorld )
 {
     GC_STATUS retVal = GC_OK;
@@ -905,16 +877,16 @@ GC_STATUS FindSymbol::DrawCalibration( const cv::Mat &img, cv::Mat &result )
                                             {
                                                 isFirst = false;
                                                 sprintf( msg, "%.1f", r );
-                                                putText( result, msg, Point( 10, pt1.y - 10 ), FONT_HERSHEY_PLAIN, 2.0, Scalar( 0, 0, 255 ), 2 );
+                                                putText( result, msg, Point( 10, pt1.y - 10 ), FONT_HERSHEY_PLAIN, 5.0, Scalar( 0, 0, 255 ), 5 );
                                             }
                                             retVal = WorldToPixel( Point2d( c + incX, r ), pt2 );
                                             if ( GC_OK == retVal )
                                             {
-                                                line( result, pt1, pt2, Scalar( 0, 255, 255 ), 3 );
+                                                line( result, pt1, pt2, Scalar( 0, 255, 255 ), 11 );
                                                 retVal = WorldToPixel( Point2d( c, r + incY ), pt2 );
                                                 if ( GC_OK == retVal )
                                                 {
-                                                    line( result, pt1, pt2, Scalar( 0, 255, 255 ), 3 );
+                                                    line( result, pt1, pt2, Scalar( 0, 255, 255 ), 11 );
                                                 }
                                             }
                                         }

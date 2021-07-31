@@ -84,19 +84,7 @@ VisApp::VisApp() :
 }
 GC_STATUS VisApp::LoadCalib( const std::string calibJson )
 {
-    GC_STATUS retVal = GC_OK;
-
-    try
-    {
-        retVal = m_calib.Load( calibJson );
-    }
-    catch( std::exception &e )
-    {
-        FILE_LOG( logERROR ) << "[VisApp::LoadCalib] " << e.what();
-        FILE_LOG( logERROR ) << "Calib file=" << calibJson ;
-        retVal = GC_EXCEPT;
-    }
-
+    GC_STATUS retVal = m_calibExec.Load( calibJson );
     return retVal;
 }
 GC_STATUS VisApp::Calibrate( const string imgFilepath, const string worldCoordsCsv, const string calibJson, const string resultImagepath )

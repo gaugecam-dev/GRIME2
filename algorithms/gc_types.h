@@ -42,13 +42,21 @@ enum GC_STATUS
     GC_WARN =    1       ///< Warning
 };
 
-/// enum for namespace gc method return values
+/// enum for namespace gc timestamp sources
 enum GC_TIMESTAMP_TYPE
 {
     FROM_FILENAME = 0,  ///< Extract timestamp from filename using specified format
     FROM_EXIF,          ///< Get timestamp from image file exif data using specified format
     FROM_EXTERNAL       ///< Pass filename to algorithm using YYYY-MM-DDThh:mm::ss format (ISO)
 };
+
+/// enum for namespace gc calibration types
+typedef enum CALIB_TYPE
+{
+    BOWTIE,
+    STOPSIGN,
+    NOT_SET
+} GcCalibType;
 
 static const double DEFAULT_MIN_LINE_ANGLE = -10.0;                             ///< Default minimum line find angle
 static const double DEFAULT_MAX_LINE_ANGLE = 10.0;                              ///< Default maximum line find angle
@@ -96,6 +104,7 @@ public:
      * @brief Constructor to set the model to an uninitialized state
      */
     CalibModel() :
+        imgSize( cv::Size( -1, -1 ) ),
         gridSize( cv::Size( -1, -1 ) ),
         moveSearchRegionLft( cv::Rect( -1, -1, -1, -1 ) ),
         moveSearchRegionRgt( cv::Rect( -1, -1, -1, -1 ) )
@@ -110,12 +119,14 @@ public:
      * @param mvSrchROILft Left move search region (to search for top-left bowtie)
      * @param mvSrchROIRgt Right move search region (to search for top-right bowtie)
      */
-    CalibModel( cv::Size gridSz,
+    CalibModel( cv::Size imageSize,
+                cv::Size gridSz,
                 std::vector< cv::Point2d > pixelPts,
                 std::vector< cv::Point2d > worldPts,
                 std::vector< LineEnds > lineEndPts,
                 cv::Rect mvSrchROILft,
                 cv::Rect mvSrchROIRgt ) :
+        imgSize( imageSize ),
         gridSize( gridSz ),
         pixelPoints( pixelPts ),
         worldPoints( worldPts ),
@@ -129,6 +140,7 @@ public:
     */
     void clear()
     {
+        imgSize = cv::Size( -1, -1 );
         gridSize = cv::Size( -1, -1 );
         pixelPoints.clear();
         worldPoints.clear();
@@ -137,12 +149,64 @@ public:
         moveSearchRegionRgt = cv::Rect( -1, -1, -1, -1 );
     }
 
+    cv::Size imgSize;                       ///< Dimensions of the calibration image
     cv::Size gridSize;                      ///< Dimensions of the calibration grid
     std::vector< cv::Point2d > pixelPoints; ///< Vector of pixel points ordered to match the world point vector
     std::vector< cv::Point2d > worldPoints; ///< Vector of world points ordered to match the pixel point vector
     std::vector< LineEnds > searchLines;    ///< Vector of search lines to be searched for the water line
     cv::Rect moveSearchRegionLft;           ///< Left move search region (to search for top-left bowtie)
     cv::Rect moveSearchRegionRgt;           ///< Right move search region (to search for top-right bowtie)
+};
+
+class SymbolCalibModel
+{
+public:
+    /**
+     * @brief Constructor to set the model to an uninitialized state
+     */
+    SymbolCalibModel() :
+        imgSize( cv::Size( -1, -1 ) ),
+        moveSearchRegion( cv::Rect( -1, -1, -1, -1 ) )
+    {}
+
+    /**
+     * @brief Constructor to set the model to a valid state
+     * @param gridSz Dimensions of the calibration grid
+     * @param pixelPts Vector of pixel points ordered to match the world point vector
+     * @param worldPts Vector of world points ordered to match the pixel point vector
+     * @param lineEndPts Vector of search lines to be searched for the water line
+     * @param mvSrchROILft Left move search region (to search for top-left bowtie)
+     * @param mvSrchROIRgt Right move search region (to search for top-right bowtie)
+     */
+    SymbolCalibModel( cv::Size imageSize,
+                      std::vector< cv::Point2d > pixelPts,
+                      std::vector< cv::Point2d > worldPts,
+                      std::vector< LineEnds > lineEndPts,
+                      cv::Rect moveSrchROI ) :
+        imgSize( imageSize ),
+        pixelPoints( pixelPts ),
+        worldPoints( worldPts ),
+        searchLines( lineEndPts ),
+        moveSearchRegion( moveSrchROI )
+    {}
+
+    /**
+    * @brief Resets the object to uninitialized values
+    */
+    void clear()
+    {
+        imgSize = cv::Size( -1, -1 );
+        pixelPoints.clear();
+        worldPoints.clear();
+        searchLines.clear();
+        moveSearchRegion = cv::Rect( -1, -1, -1, -1 );
+    }
+
+    cv::Size imgSize;                       ///< Dimensions of the calibration image
+    std::vector< cv::Point2d > pixelPoints; ///< Vector of pixel points ordered to match the world point vector
+    std::vector< cv::Point2d > worldPoints; ///< Vector of world points ordered to match the pixel point vector
+    std::vector< LineEnds > searchLines;    ///< Vector of search lines to be searched for the water line
+    cv::Rect moveSearchRegion;              ///< Left move search region (to search for top-left bowtie)
 };
 
 /**

@@ -171,6 +171,7 @@ MainWindow::MainWindow(QWidget *parent) :
     on_actionZoom100_triggered();
     ui->widget_overlayCheckboxes->hide();
     UpdateGUIEnables();
+    UpdateCalibType();
 }
 MainWindow::~MainWindow()
 {
@@ -230,6 +231,8 @@ void MainWindow::createConnections()
     connect( ui->checkBox_createFindLine_csvResultsFile, &QCheckBox::stateChanged, this, &MainWindow::UpdateGUIEnables );
     connect( ui->checkBox_createFindLine_annotatedResults, &QCheckBox::stateChanged, this, &MainWindow::UpdateGUIEnables );
     connect( ui->actionToggleControls, &QAction::toggled, this, &MainWindow::UpdateGUIEnables );
+    connect( ui->radioButton_calibBowtie, &QRadioButton::toggled, this, &MainWindow::UpdateCalibType );
+    connect( ui->radioButton_stopsignFromFile, &QRadioButton::toggled, this, &MainWindow::UpdateCalibType );
 
     connect( this, SIGNAL( sig_visAppMessage(QString) ), this, SLOT( do_visAppMessage(QString) ) );
     connect( this, SIGNAL( sig_updateProgess(int) ),     this, SLOT( do_updateProgress(int) ) );
@@ -510,6 +513,31 @@ void MainWindow::AdjustPointRubberBand()
             m_rectRubberBand.setBottom( m_pLabelImgDisplay->height() - 1 );
     if ( 5 > m_rectRubberBand.width() ) m_rectRubberBand.setLeft( m_rectRubberBand.right() - 5 );
     if ( 5 > m_rectRubberBand.height() ) m_rectRubberBand.setTop( m_rectRubberBand.bottom() - 5 );
+}
+void MainWindow::UpdateCalibType()
+{
+    if ( ui->radioButton_calibBowtie->isChecked() )
+    {
+        ui->groupBox_stopsignCalibMethods->setEnabled( false );
+        ui->lineEdit_calibVisionTarget_csv->setEnabled( true );
+        ui->toolButton_calibVisionTarget_csv_browse->setEnabled( true );
+    }
+    else
+    {
+        ui->groupBox_stopsignCalibMethods->setEnabled( true );
+        if ( ui->radioButton_stopsignFromFile->isChecked() )
+        {
+            ui->doubleSpinBox_stopSignFacetLength->setEnabled( false );
+            ui->lineEdit_calibVisionTarget_csv->setEnabled( true );
+            ui->toolButton_calibVisionTarget_csv_browse->setEnabled( true );
+        }
+        else
+        {
+            ui->doubleSpinBox_stopSignFacetLength->setEnabled( true );
+            ui->lineEdit_calibVisionTarget_csv->setEnabled( false );
+            ui->toolButton_calibVisionTarget_csv_browse->setEnabled( false );
+        }
+    }
 }
 void MainWindow::UpdateGUIEnables()
 {
@@ -1368,19 +1396,18 @@ void MainWindow::on_pushButton_createAnimation_clicked()
 void MainWindow::on_pushButton_test_clicked()
 {
 
-    Mat searchImg = imread( "/media/kchapman/Elements/data/stop_signs/stop-sign-pics.jpg", IMREAD_ANYCOLOR );
+    Mat searchImg = imread( "/media/kchapman/Elements/data/stop_signs/stop_sign_on_street_corner.jpg", IMREAD_ANYCOLOR );
 
-    FindSymbol findSym;
-    double facetLength = 10.0;
-    GC_STATUS retVal = findSym.Calibrate( searchImg, facetLength );
-    if ( GC_OK == retVal )
-    {
-        Mat color;
-        retVal = findSym.DrawCalibration( searchImg, color );
-        if ( GC_OK == retVal )
-        {
-            imwrite( "/var/tmp/water/calibration_00.png", color );
-        }
-    }
+//    FindSymbol findSym;
+//    double facetLength = 10.0;
+//    GC_STATUS retVal = findSym.Calibrate( searchImg, facetLength );
+//    if ( GC_OK == retVal )
+//    {
+//        Mat color;
+//        retVal = findSym.DrawCalibration( searchImg, color );
+//        if ( GC_OK == retVal )
+//        {
+//            imwrite( "/var/tmp/water/calibration_01.png", color );
+//        }
+//    }
 }
-

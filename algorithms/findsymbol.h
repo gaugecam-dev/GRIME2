@@ -14,37 +14,6 @@ static const int SYMBOL_SEARCH_IMAGE_WIDTH_START = 640;
 static const int SYMBOL_SEARCH_IMAGE_WIDTH_END = 1024;
 static const int SYMBOL_SEARCH_IMAGE_WIDTH_INC = 32;
 
-class SymbolMatch
-{
-public:
-    SymbolMatch() :
-        pt( cv::Point( -1, -1 ) ),
-        score( -1.0 ),
-        width( -1 ),
-        angleIdx( -1 )
-    {}
-
-    SymbolMatch( cv::Point point, double matchScore, int matchWidth, int matchAngleIdx ) :
-        pt( point ),
-        score( matchScore ),
-        width( matchWidth ),
-        angleIdx( matchAngleIdx )
-    {}
-
-    void clear()
-    {
-        pt = cv::Point( -1, -1 );
-        score = -1.0;
-        width = -1;
-        angleIdx = -1;
-    }
-
-    cv::Point pt;
-    double score;
-    int width;
-    int angleIdx;
-};
-
 class SymbolCandidate
 {
 public:
@@ -124,21 +93,22 @@ class FindSymbol
 {
 public:
     FindSymbol();
-    GC_STATUS Calibrate( const cv::Mat &img, const double octoSideLength );
+    GC_STATUS Load( const std::string jsonCalFilepath );
+    GC_STATUS Save( const std::string jsonCalFilepath );
+    GC_STATUS Calibrate( const cv::Mat &img, const double octoSideLength, const cv::Point searchLftTopPt,
+                         const cv::Point searchRgtTopPt, const cv::Point searchLftBotPt, const cv::Point searchRgtBotPt );
     GC_STATUS PixelToWorld( const cv::Point2d ptPixel, cv::Point2d &ptWorld );
     GC_STATUS WorldToPixel( const cv::Point2d ptWorld, cv::Point2d &ptPixel );
     GC_STATUS DrawCalibration( const cv::Mat &img, cv::Mat &result );
     void clear();
 
 private:
-    std::vector< cv::Mat > symbolTemplates;
     cv::Mat matHomogPixToWorld;
     cv::Mat matHomogWorldToPix;
+    SymbolCalibModel model;
 
     GC_STATUS FindRed( const cv::Mat &img, cv::Mat1b &redMask, std::vector< SymbolCandidate > &symbolCandidates );
     GC_STATUS RotateImage( const cv::Mat &src, cv::Mat &dst, const double angle );
-    GC_STATUS FindCenter( const cv::Mat &img, SymbolMatch &matchResult );
-    GC_STATUS CreateSymbolTemplates( const cv::Mat &refTemplate );
     GC_STATUS GetNonZeroPoints( cv::Mat &img, std::vector< cv::Point > &pts );
     GC_STATUS GetLineEndPoints( cv::Mat &mask, const cv::Rect rect, cv::Point2d &pt1, cv::Point2d &pt2 );
     GC_STATUS LineIntersection( const SymbolLine line1, const SymbolLine line2, cv::Point2d &r );
