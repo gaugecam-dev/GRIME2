@@ -68,7 +68,7 @@ GC_STATUS CalibExecutive::Calibrate( const std::string calibTargetImagePath, con
 }
 GC_STATUS CalibExecutive::Calibrate( const cv::Mat &calibTargetImage, const std::string jsonParams )
 {
-
+    return GC_OK;
 }
 GC_STATUS CalibExecutive::Load( const string jsonFilepath )
 {

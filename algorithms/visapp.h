@@ -110,6 +110,9 @@ public:
                          const string calibJson, cv::Mat &imgOut,
                          const bool drawCalib = false, const bool drawMoveROIs = false );
 
+    // TODO: Add doxygen here
+    GC_STATUS Calibrate( const string imgFilepath, const string jsonControl );
+
     /**
      * @brief Set the current calibration from a calibration model json file
      * @param calibJson The filepath of the calibration model json file

@@ -1078,7 +1078,6 @@ void MainWindow::on_toolButton_imageFolder_browse_clicked()
         return;
     }
 
-
     QDir dirInfo( strFullPath );
     m_folderLoadImages = dirInfo.absolutePath();
     ui->lineEdit_imageFolder->setText( strFullPath );
@@ -1087,6 +1086,54 @@ void MainWindow::on_toolButton_imageFolder_browse_clicked()
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // vision calibration
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+int MainWindow::FormCalibJsonString( string &json )
+{
+    int ret = 0;
+
+    QString strFolder = ui->lineEdit_imageFolder->text();
+    if ( !strFolder.endsWith( '/') )
+        strFolder += '/';
+
+    QString strFilepath = strFolder + ui->listWidget_imageFolder->currentItem()->text();
+    json.clear();
+
+    if ( ui->radioButton_calibBowtie->isChecked() )
+    {
+        json = "{\"calibType\": \"BowTie\", ";
+        json += "{\"calibWorldPt_csv\": \"" + ui->lineEdit_calibVisionTarget_csv->text().toStdString() + "\", ";
+        json += "{\"stopSignFacetLength\": -1.0,";
+        json += "{\"calibResult_json\": \"" + ui->lineEdit_calibVisionResult_json->text().toStdString() + "\"}";
+    }
+    else if ( ui->radioButton_calibStopSign->isChecked() )
+    {
+        json = "{\"calibType\": \"StopSign\", ";
+        if ( ui->radioButton_stopsignFromFile->isChecked() )
+        {
+            json += "{\"calibWorldPt_csv\": \"" + ui->lineEdit_calibVisionTarget_csv->text().toStdString() + "\", ";
+            json += "{\"stopSignFacetLength\": -1.0, }";
+            json += "{\"calibResult_json\": \"" + ui->lineEdit_calibVisionResult_json->text().toStdString() + "\"}";
+        }
+        else if ( ui->radioButton_stopsignFacetLength->isChecked() )
+        {
+            json += "{\"calibWorldPt_csv\": \"" + ui->lineEdit_calibVisionTarget_csv->text().toStdString() + "\", ";
+            json += "{\"stopSignFacetLength\": " + to_string( ui->doubleSpinBox_stopSignFacetLength->value() ) + ",";
+            json += "{\"calibResult_json\": \"" + ui->lineEdit_calibVisionResult_json->text().toStdString() + "\"}";
+        }
+        else
+        {
+            json.clear();
+            ui->statusBar->showMessage( "No valid stop sign calibration method" );
+            ret = -1;
+        }
+    }
+    else
+    {
+        ui->statusBar->showMessage( "No calibration type selected" );
+        ret = -1;
+    }
+
+    return ret;
+}
 void MainWindow::on_pushButton_visionCalibrate_clicked()
 {
     QString strFolder = ui->lineEdit_imageFolder->text();
@@ -1098,9 +1145,13 @@ void MainWindow::on_pushButton_visionCalibrate_clicked()
     ui->textEdit_msgs->update();
     ui->statusBar->showMessage( "calibrating..." );
     ui->statusBar->update();
+#if 1
+    GC_STATUS retVal = GC_ERR;
+#else
     GC_STATUS retVal = m_visApp.Calibrate( strFilepath.toStdString(),
                                            ui->lineEdit_calibVisionTarget_csv->text().toStdString(),
                                            ui->lineEdit_calibVisionResult_json->text().toStdString() );
+#endif
     ui->checkBox_showCalib->setChecked( true );
     m_pComboBoxImageToView->setCurrentText( "Overlay" );
     UpdatePixmapTarget();

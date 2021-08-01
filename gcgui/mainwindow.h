@@ -157,6 +157,7 @@ private:
     void ClearTable();
     int InitTable( const vector< string > headings );
     int AddRow( const string row_string );
+    int FormCalibJsonString( string &json );
 };
 
 #endif // MAINWINDOW_H

@@ -113,6 +113,11 @@ GC_STATUS VisApp::Calibrate( const string imgFilepath, const string worldCoordsC
 
     return retVal;
 }
+// TODO: Handle different calibration types and methods here
+GC_STATUS VisApp::Calibrate( const string imgFilepath, const string jsonControl )
+{
+
+}
 GC_STATUS VisApp::Calibrate( const string imgFilepath, const string worldCoordsCsv, const string calibJson,
                              Mat &imgOut, const bool drawCalib, const bool drawMoveROIs )
 {
