@@ -15,6 +15,7 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include "guivisapp.h"
+#include <mutex>
 #include <string>
 #include <cstdlib>
 #include <fstream>

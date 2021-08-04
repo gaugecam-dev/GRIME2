@@ -68,6 +68,7 @@ static const double MIN_DEFAULT_DBL = -std::numeric_limits< double >::max();    
 static const int GC_BOWTIE_TEMPLATE_DIM = 56;                                   ///< Default bowtie template size
 static const int GC_IMAGE_SIZE_WIDTH = 800;                                     ///< Default image width
 static const int GC_IMAGE_SIZE_HEIGHT = 600;                                    ///< Default image height
+static const double MIN_BOWTIE_FIND_SCORE = 0.55;                               ///< Minimum bow tie sccore
 
 /**
  * @brief Data class to define a line to search an image for a water edge

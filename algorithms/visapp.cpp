@@ -18,12 +18,13 @@
 #include "visapp.h"
 #include <cstdio>
 #include <fstream>
-#include <mutex>
+#include <sstream>
 #include <algorithm>
 #include <opencv2/imgcodecs.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/algorithm.hpp>
+#include <boost/property_tree/json_parser.hpp>
 #include <boost/exception/diagnostic_information.hpp>
 #include "animate.h"
 #include "timestampconvert.h"
@@ -32,8 +33,7 @@ using namespace cv;
 using namespace std;
 using namespace boost;
 namespace fs = filesystem;
-
-static const double MIN_BOWTIE_FIND_SCORE = 0.55;
+namespace pt = property_tree;
 
 #ifdef DEBUG_BOWTIE_FIND
 #undef DEBUG_BOWTIE_FIND
@@ -100,7 +100,7 @@ GC_STATUS VisApp::Calibrate( const string imgFilepath, const string worldCoordsC
             bool bRet = imwrite( resultImagepath, matOut );
             if ( !bRet )
             {
-                FILE_LOG( logERROR ) << "Could not write image overlay to file " << resultImagepath;
+                FILE_LOG( logWARNING ) << "Could not write image overlay to file " << resultImagepath;
             }
         }
     }
@@ -114,12 +114,13 @@ GC_STATUS VisApp::Calibrate( const string imgFilepath, const string worldCoordsC
     return retVal;
 }
 // TODO: Handle different calibration types and methods here
-GC_STATUS VisApp::Calibrate( const string imgFilepath, const string jsonControl )
+GC_STATUS VisApp::Calibrate( const string imgFilepath, const string jsonControl, Mat &imgOut )
 {
-
+    GC_STATUS retVal = m_calibExec.Calibrate( imgFilepath, jsonControl, imgOut );
+    return retVal;
 }
 GC_STATUS VisApp::Calibrate( const string imgFilepath, const string worldCoordsCsv, const string calibJson,
-                             Mat &imgOut, const bool drawCalib, const bool drawMoveROIs )
+                             Mat &imgOut, const bool drawCalib, const bool drawMoveROIs, const bool drawSearchROI )
 {
     GC_STATUS retVal = GC_OK;
 

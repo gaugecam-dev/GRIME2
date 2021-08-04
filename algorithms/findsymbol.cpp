@@ -38,8 +38,7 @@ void FindSymbol::clear()
     model.clear();
 }
 // symbolPoints are clockwise ordered with 0 being the topmost left point
-GC_STATUS FindSymbol::Calibrate( const cv::Mat &img, const double octoSideLength, const Point searchLftTopPt,
-                                 const Point searchRgtTopPt, const Point searchLftBotPt, const Point searchRgtBotPt )
+GC_STATUS FindSymbol::Calibrate( const cv::Mat &img, const double octoSideLength )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -249,7 +248,12 @@ GC_STATUS FindSymbol::FindRed( const cv::Mat &img, cv::Mat1b &redMask, std::vect
 
     try
     {
-        if ( img.type() != CV_8UC3 )
+        if ( img.empty() )
+        {
+            FILE_LOG( logERROR ) << "[FindSymbol::FindRed] Cannot find red in an empty image";
+            retVal = GC_ERR;
+        }
+        else if ( img.type() != CV_8UC3 )
         {
             FILE_LOG( logERROR ) << "[FindSymbol::FindRed] Image must be an 8-bit BGR image to find red";
             retVal = GC_ERR;

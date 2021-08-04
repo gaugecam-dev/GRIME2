@@ -1100,9 +1100,12 @@ int MainWindow::FormCalibJsonString( string &json )
     if ( ui->radioButton_calibBowtie->isChecked() )
     {
         json = "{\"calibType\": \"BowTie\", ";
-        json += "{\"calibWorldPt_csv\": \"" + ui->lineEdit_calibVisionTarget_csv->text().toStdString() + "\", ";
-        json += "{\"stopSignFacetLength\": -1.0,";
-        json += "{\"calibResult_json\": \"" + ui->lineEdit_calibVisionResult_json->text().toStdString() + "\"}";
+        json += "\"calibWorldPt_csv\": \"" + ui->lineEdit_calibVisionTarget_csv->text().toStdString() + "\", ";
+        json += "\"stopSignFacetLength\": -1.0, ";
+        json += "\"drawCalib\": 0, ",
+        json += "\"drawMoveSearchROIs\": 0, ",
+        json += "\"drawWaterLineSearchROI\": 0, ",
+        json += "\"calibResult_json\": \"" + ui->lineEdit_calibVisionResult_json->text().toStdString() + "\"}";
     }
     else if ( ui->radioButton_calibStopSign->isChecked() )
     {
@@ -1110,14 +1113,20 @@ int MainWindow::FormCalibJsonString( string &json )
         if ( ui->radioButton_stopsignFromFile->isChecked() )
         {
             json += "{\"calibWorldPt_csv\": \"" + ui->lineEdit_calibVisionTarget_csv->text().toStdString() + "\", ";
-            json += "{\"stopSignFacetLength\": -1.0, }";
+            json += "\"stopSignFacetLength\": -1.0, }";
+            json += "\"drawCalib\": 0, ",
+            json += "\"drawMoveSearchROIs\": 0, ",
+            json += "\"drawWaterLineSearchROI\": 0, ",
             json += "{\"calibResult_json\": \"" + ui->lineEdit_calibVisionResult_json->text().toStdString() + "\"}";
         }
         else if ( ui->radioButton_stopsignFacetLength->isChecked() )
         {
             json += "{\"calibWorldPt_csv\": \"" + ui->lineEdit_calibVisionTarget_csv->text().toStdString() + "\", ";
-            json += "{\"stopSignFacetLength\": " + to_string( ui->doubleSpinBox_stopSignFacetLength->value() ) + ",";
-            json += "{\"calibResult_json\": \"" + ui->lineEdit_calibVisionResult_json->text().toStdString() + "\"}";
+            json += "\"stopSignFacetLength\": " + to_string( ui->doubleSpinBox_stopSignFacetLength->value() ) + ", ";
+            json += "\"drawCalib\": 0, ",
+            json += "\"drawMoveSearchROIs\": 0, ",
+            json += "\"drawWaterLineSearchROI\": 0, ",
+            json += "\"calibResult_json\": \"" + ui->lineEdit_calibVisionResult_json->text().toStdString() + "\"}";
         }
         else
         {

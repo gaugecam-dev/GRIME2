@@ -108,10 +108,11 @@ public:
     */
     GC_STATUS Calibrate( const string imgFilepath, const string worldCoordsCsv,
                          const string calibJson, cv::Mat &imgOut,
-                         const bool drawCalib = false, const bool drawMoveROIs = false );
+                         const bool drawCalib = false, const bool drawMoveROIs = false,
+                         const bool drawSearchROI = false);
 
     // TODO: Add doxygen here
-    GC_STATUS Calibrate( const string imgFilepath, const string jsonControl );
+    GC_STATUS Calibrate( const string imgFilepath, const string jsonControl, cv::Mat &imgOut );
 
     /**
      * @brief Set the current calibration from a calibration model json file

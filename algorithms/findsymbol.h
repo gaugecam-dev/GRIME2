@@ -95,8 +95,7 @@ public:
     FindSymbol();
     GC_STATUS Load( const std::string jsonCalFilepath );
     GC_STATUS Save( const std::string jsonCalFilepath );
-    GC_STATUS Calibrate( const cv::Mat &img, const double octoSideLength, const cv::Point searchLftTopPt,
-                         const cv::Point searchRgtTopPt, const cv::Point searchLftBotPt, const cv::Point searchRgtBotPt );
+    GC_STATUS Calibrate( const cv::Mat &img, const double octoSideLength );
     GC_STATUS PixelToWorld( const cv::Point2d ptPixel, cv::Point2d &ptWorld );
     GC_STATUS WorldToPixel( const cv::Point2d ptWorld, cv::Point2d &ptPixel );
     GC_STATUS DrawCalibration( const cv::Mat &img, cv::Mat &result );
