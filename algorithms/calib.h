@@ -67,6 +67,9 @@ public:
      */
     ~Calib() {}
 
+    // TODO: Add doxygen comments here
+    void clear();
+
     /**
      * @brief Create a calibration model from a set of associated pixel and world coordinate points
      * @param pixelPts A vector holding the pixel coordinate points (ordered to match the world points)

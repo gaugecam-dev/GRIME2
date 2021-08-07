@@ -8,13 +8,45 @@
 namespace gc
 {
 
+class CalibExecParams
+{
+public:
+    CalibExecParams() :
+        stopSignFacetLength( -1.0 ),
+        drawCalib( false ),
+        drawMoveSearchROIs( false ),
+        drawWaterLineSearchROI( false )
+    {}
+
+    void clear()
+    {
+        calibType.clear();
+        worldPtCSVFilepath.clear();
+        stopSignFacetLength = -1.0;
+        calibResultJsonFilepath.clear();
+        drawCalib = false;
+        drawMoveSearchROIs = false;
+        drawWaterLineSearchROI = false;
+    }
+
+    string calibType;
+    string worldPtCSVFilepath;
+    double stopSignFacetLength;
+    string calibResultJsonFilepath;
+    bool drawCalib;
+    bool drawMoveSearchROIs;
+    bool drawWaterLineSearchROI;
+
+    friend std::ostream &operator<<( std::ostream &out, const CalibExecParams &params ) ;
+};
+
 class CalibExecutive
 {
 public:
     CalibExecutive();
 
+    void clear();
     GC_STATUS Load( const std::string jsonFilepath );
-    GC_STATUS Save( const std::string jsonFilepath );
     GC_STATUS Calibrate( const std::string calibTargetImagePath, const std::string jsonParams, cv::Mat &imgResult );
     GC_STATUS PixelToWorld( const cv::Point2d pixelPt, cv::Point2d &worldPt );
     GC_STATUS WorldToPixel( const cv::Point2d worldPt, cv::Point2d &pixelPt );
@@ -22,16 +54,17 @@ public:
     GC_STATUS DetectMove( std::vector< cv::Point2d > &origPos, std::vector< cv::Point2d > &newPos );
     GC_STATUS DrawOverlay( const cv::Mat matIn, cv::Mat &imgMatOut,
                            const bool drawCalib, const bool drawMoveROIs, const bool drawSearchROI );
+    std::vector< LineEnds > &SearchLines();
+
 private:
-    GcCalibType calibType;
     Calib bowTie;
     FindSymbol stopSign;
-    FindCalibGrid m_findCalibGrid;
+    FindCalibGrid findCalibGrid;
+    CalibExecParams paramsCurrent;
+    std::vector< LineEnds > nullSearchLines;    ///< Empty vector of search lines to be searched for the water line
 
-    GC_STATUS CalibrateBowTie( const string imgFilepath, const string worldCoordsCsv, const string calibJson,
-                               cv::Mat &imgOut, const bool drawCalib, const bool drawMoveROIs, const bool drawMoveSearchROIs );
-    GC_STATUS CalibrateStopSign( const string imgFilepath, const double facetLength, cv::Mat &imgOut,
-                                 const bool drawCalib, const bool drawMoveROIs, const bool drawMoveSearchROIs );
+    GC_STATUS CalibrateBowTie( const string imgFilepath, cv::Mat &imgOut );
+    GC_STATUS CalibrateStopSign( const string imgFilepath, cv::Mat &imgOut );
     GC_STATUS ReadWorldCoordsFromCSVBowTie( const string csvFilepath, vector< vector< cv::Point2d > > &worldCoords );
 };
 

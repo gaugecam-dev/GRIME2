@@ -1154,13 +1154,16 @@ void MainWindow::on_pushButton_visionCalibrate_clicked()
     ui->textEdit_msgs->update();
     ui->statusBar->showMessage( "calibrating..." );
     ui->statusBar->update();
-#if 1
-    GC_STATUS retVal = GC_ERR;
-#else
-    GC_STATUS retVal = m_visApp.Calibrate( strFilepath.toStdString(),
-                                           ui->lineEdit_calibVisionTarget_csv->text().toStdString(),
-                                           ui->lineEdit_calibVisionResult_json->text().toStdString() );
-#endif
+
+    Mat imgOut;
+    string jsonControlStr;
+    GC_STATUS retVal = GC_OK;
+    int ret = FormCalibJsonString( jsonControlStr );
+    if ( 0 == ret )
+    {
+        retVal = m_visApp.Calibrate( strFilepath.toStdString(), jsonControlStr, imgOut );
+    }
+
     ui->checkBox_showCalib->setChecked( true );
     m_pComboBoxImageToView->setCurrentText( "Overlay" );
     UpdatePixmapTarget();

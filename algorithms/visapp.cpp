@@ -68,128 +68,16 @@ VisApp::VisApp() :
     {
         FILE_LOG( logERROR ) << "[VisApp::VisApp] Creating debug folder" << diagnostic_information( e );
     }
-    GC_STATUS retVal = m_findLine.InitBowtieSearch( GC_BOWTIE_TEMPLATE_DIM, Size( GC_IMAGE_SIZE_WIDTH, GC_IMAGE_SIZE_HEIGHT ) );
-    if ( GC_OK != retVal )
-    {
-        FILE_LOG( logERROR ) << "[VisApp::VisApp] Could not initialize bowtie templates for move detection";
-    }
-    else
-    {
-        GC_STATUS retVal = m_findCalibGrid.InitBowtieTemplate( GC_BOWTIE_TEMPLATE_DIM, Size( GC_IMAGE_SIZE_WIDTH, GC_IMAGE_SIZE_HEIGHT ) );
-        if ( GC_OK != retVal )
-        {
-            FILE_LOG( logERROR ) << "[VisApp::VisApp] Could not initialize bowtie templates for calibration";
-        }
-    }
 }
 GC_STATUS VisApp::LoadCalib( const std::string calibJson )
 {
     GC_STATUS retVal = m_calibExec.Load( calibJson );
     return retVal;
 }
-GC_STATUS VisApp::Calibrate( const string imgFilepath, const string worldCoordsCsv, const string calibJson, const string resultImagepath )
-{
-    GC_STATUS retVal = GC_OK;
-
-    try
-    {
-        Mat matOut;
-        retVal = Calibrate( imgFilepath, worldCoordsCsv, calibJson, matOut, !resultImagepath.empty() );
-        if ( GC_OK == retVal && !resultImagepath.empty() )
-        {
-            bool bRet = imwrite( resultImagepath, matOut );
-            if ( !bRet )
-            {
-                FILE_LOG( logWARNING ) << "Could not write image overlay to file " << resultImagepath;
-            }
-        }
-    }
-    catch( Exception &e )
-    {
-        FILE_LOG( logERROR ) << "[VisApp::Calibrate] " << e.what();
-        FILE_LOG( logERROR ) << "Image=" << imgFilepath << " world coords csv=" << worldCoordsCsv;
-        retVal = GC_EXCEPT;
-    }
-
-    return retVal;
-}
 // TODO: Handle different calibration types and methods here
 GC_STATUS VisApp::Calibrate( const string imgFilepath, const string jsonControl, Mat &imgOut )
 {
     GC_STATUS retVal = m_calibExec.Calibrate( imgFilepath, jsonControl, imgOut );
-    return retVal;
-}
-GC_STATUS VisApp::Calibrate( const string imgFilepath, const string worldCoordsCsv, const string calibJson,
-                             Mat &imgOut, const bool drawCalib, const bool drawMoveROIs, const bool drawSearchROI )
-{
-    GC_STATUS retVal = GC_OK;
-
-    try
-    {
-        Mat img = imread( imgFilepath, IMREAD_GRAYSCALE );
-        if ( img.empty() )
-        {
-            FILE_LOG( logERROR ) << "[VisApp::Calibrate] Could not open image file " << imgFilepath;
-            retVal = GC_ERR;
-        }
-        else
-        {
-            vector< vector< Point2d > > worldCoords;
-            retVal = ReadWorldCoordsFromCSV( worldCoordsCsv, worldCoords );
-            if ( GC_OK == retVal )
-            {
-#ifdef DEBUG_BOWTIE_FIND
-                retVal = m_findCalibGrid.FindTargets( img, MIN_BOWTIE_FIND_SCORE, DEBUG_FOLDER + "bowtie_find.png" );
-#else
-                retVal = m_findCalibGrid.FindTargets( img, MIN_BOWTIE_FIND_SCORE );
-#endif
-                if ( GC_OK == retVal )
-                {
-                    vector< vector< Point2d > > pixelCoords;
-                    retVal = m_findCalibGrid.GetFoundPoints( pixelCoords );
-                    if ( GC_OK == retVal )
-                    {
-                        if ( pixelCoords.size() != worldCoords.size() )
-                        {
-                            FILE_LOG( logERROR ) << "[VisApp::Calibrate] Found pixel array row count does not equal world array count";
-                            retVal = GC_ERR;
-                        }
-                        else
-                        {
-                            vector< Point2d > pixPtArray;
-                            vector< Point2d > worldPtArray;
-                            for ( size_t i = 0; i < pixelCoords.size(); ++i )
-                            {
-                                if ( pixelCoords[ i ].size() != worldCoords[ i ].size() )
-                                {
-                                    FILE_LOG( logERROR ) << "[VisApp::Calibrate] Found pixel array column count does not equal world array count";
-                                    retVal = GC_ERR;
-                                    break;
-                                }
-                                for ( size_t j = 0; j < pixelCoords[ i ].size(); ++j )
-                                {
-                                    pixPtArray.push_back( pixelCoords[ i ][ j ] );
-                                    worldPtArray.push_back( worldCoords[ i ][ j ] );
-                                }
-                            }
-                            retVal = m_calib.Calibrate( pixPtArray, worldPtArray, Size( 2, 4 ), img.size(), img, imgOut, drawCalib, drawMoveROIs );
-                            if ( GC_OK == retVal )
-                            {
-                                retVal = m_calib.Save( calibJson );
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-    catch( Exception &e )
-    {
-        FILE_LOG( logERROR ) << "[VisApp::Calibrate] " << e.what();
-        FILE_LOG( logERROR ) << "Image=" << imgFilepath << " world coords csv=" << worldCoordsCsv;
-        retVal = GC_EXCEPT;
-    }
-
     return retVal;
 }
 GC_STATUS VisApp::GetImageTimestamp( const std::string filepath, std::string &timestamp )
@@ -635,23 +523,23 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result 
 }
 GC_STATUS VisApp::WorldToPixel( const Point2d worldPt, Point2d &pixelPt )
 {
-    GC_STATUS retVal = m_calib.WorldToPixel( worldPt, pixelPt );
+    GC_STATUS retVal = m_calibExec.WorldToPixel( worldPt, pixelPt );
     return retVal;
 }
 GC_STATUS VisApp::PixelToWorld( const Point2d pixelPt, Point2d &worldPt )
 {
-    GC_STATUS retVal = m_calib.PixelToWorld( pixelPt, worldPt );
+    GC_STATUS retVal = m_calibExec.PixelToWorld( pixelPt, worldPt );
     return retVal;
 }
 GC_STATUS VisApp::PixelToWorld( FindPointSet &ptSet )
 {
-    GC_STATUS retVal = m_calib.PixelToWorld( ptSet.ctrPixel, ptSet.ctrWorld );
+    GC_STATUS retVal = m_calibExec.PixelToWorld( ptSet.ctrPixel, ptSet.ctrWorld );
     if ( GC_OK == retVal )
     {
-        retVal = m_calib.PixelToWorld( ptSet.lftPixel, ptSet.lftWorld );
+        retVal = m_calibExec.PixelToWorld( ptSet.lftPixel, ptSet.lftWorld );
         if ( GC_OK == retVal )
         {
-            retVal = m_calib.PixelToWorld( ptSet.rgtPixel, ptSet.rgtWorld );
+            retVal = m_calibExec.PixelToWorld( ptSet.rgtPixel, ptSet.rgtWorld );
         }
     }
     return retVal;

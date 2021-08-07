@@ -101,6 +101,13 @@ public:
     GC_STATUS DrawCalibration( const cv::Mat &img, cv::Mat &result );
     void clear();
 
+    /**
+     * @brief Returns a vector of search lines along which an image is search for a water level line.
+     * @return A vector of LineEnds that represent search lines
+     */
+    std::vector< LineEnds > &SearchLines() { return model.searchLines; }
+
+
 private:
     cv::Mat matHomogPixToWorld;
     cv::Mat matHomogWorldToPix;

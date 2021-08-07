@@ -71,46 +71,6 @@ public:
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // Calibration methods
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    /**
-    * @brief Create a calibration model and write it to a calibration file
-    *
-    * Creates a calibration from an image of a calibration target and a csv file that holds the
-    * the world coordinates of the center of the bowties in the calibration target. The results
-    * are written to a json file. Optionally, a result overlay of the calibration model on the
-    * input image can be created.
-    *
-    * It should be noted that all the calibration target bowties should be out of the water
-    * (the water level must be low) to calibrate properly.
-    *
-    * @param imgFilepath Filepath of the input image with the calibration target
-    * @param worldCoordsCsv Filepath of a csv file that holds the world coordinate
-    *                       positions of the centers of the calibration target bowties
-    * @param calibJson Filepath of the output json file to which the calibration model is written
-    * @param resultImagepath Optional filepath for an image that shows the calibration result
-    *                        as an overlay on the input image
-    * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
-    */
-    GC_STATUS Calibrate( const std::string imgFilepath, const std::string worldCoordsCsv,
-                         const std::string calibJson, const std::string resultImagepath = "" );
-
-    /**
-    * @brief Create a calibration model and write it to a calibration file
-    *
-    * @param imgFilepath Filepath of the input image with the calibration target
-    * @param worldCoordsCsv Filepath of a csv file that holds the world coordinate
-    *                       positions of the centers of the calibration target bowties
-    * @param calibJson Filepath of the output json file to which the calibration model is written
-    * @param imgOut OpenCV Mat (image) that holds the input image with a calibration overlay
-    *               if createOverlay is true
-    * @param resultImagepath Optional filepath for an image that shows the calibration result
-    *                        as an overlay on the input image
-    * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
-    */
-    GC_STATUS Calibrate( const string imgFilepath, const string worldCoordsCsv,
-                         const string calibJson, cv::Mat &imgOut,
-                         const bool drawCalib = false, const bool drawMoveROIs = false,
-                         const bool drawSearchROI = false);
-
     // TODO: Add doxygen here
     GC_STATUS Calibrate( const string imgFilepath, const string jsonControl, cv::Mat &imgOut );
 
@@ -120,6 +80,22 @@ public:
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
     GC_STATUS LoadCalib( const std::string calibJson );
+
+    /**
+     * @brief Convert world coordinates to pixel coordinates using the currently set calibration
+     * @param worldPt World coordinate xy position
+     * @param pixelPt Point to hold the converted pixel coordinate position
+     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
+     */
+    GC_STATUS WorldToPixel( const cv::Point2d worldPt, cv::Point2d &pixelPt );
+
+    /**
+     * @brief Convert pixel coordinates to world coordinates using the currently set calibration
+     * @param pixelPt Pixel coordinate xy position
+     * @param worldPt Point to hold the converted world coordinate position
+     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
+     */
+    GC_STATUS PixelToWorld( const cv::Point2d pixelPt, cv::Point2d &worldPt );
 
     /**
      * @brief Draw the currently loaded calibration onto an overlay image
@@ -134,7 +110,8 @@ public:
     // Findline methods
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     /**
-     * @brief Find the water level in an image specified in the FindLineParams
+     * @brief Find the water level in an image specified in the FindLineParams (results to member result
+     *        object and to provided result object)
      * @param params Holds the filepaths and all other parameters need to perform a line find calculation
      * @param timestamp Image capture time
      * @param result Holds the results of the line find calculation
@@ -143,7 +120,7 @@ public:
     GC_STATUS CalcLine( const FindLineParams params, FindLineResult &result );
 
     /**
-     * @brief Find the water level in an image specified in the FindLineParams
+     * @brief Find the water level in an image specified in the FindLineParams (results to member result object)
      * @param params Holds the filepaths and all other parameters need to perform a line find calculation
      *        class member object holds results of the line find calculation
      * @param timestamp Image capture time
@@ -203,22 +180,6 @@ public:
                                const double fps, const double scale );
 
     /**
-     * @brief Convert world coordinates to pixel coordinates using the currently set calibration
-     * @param worldPt World coordinate xy position
-     * @param pixelPt Point to hold the converted pixel coordinate position
-     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
-     */
-    GC_STATUS WorldToPixel( const cv::Point2d worldPt, cv::Point2d &pixelPt );
-
-    /**
-     * @brief Convert pixel coordinates to world coordinates using the currently set calibration
-     * @param pixelPt Pixel coordinate xy position
-     * @param worldPt Point to hold the converted world coordinate position
-     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
-     */
-    GC_STATUS PixelToWorld( const cv::Point2d pixelPt, cv::Point2d &worldPt );
-
-    /**
      * @brief Create an overlay image with the current found water line
      * @param img Source OpenCV Mat image that was searched for a water line
      * @param imgOut Destination OpenCV Mat image holding the source image with find line overlay
@@ -276,8 +237,8 @@ public:
 private:
     std::string m_calibFilepath;
 
-    FindCalibGrid m_findCalibGrid;   // TODO: to be replace with m_calibExec
-    Calib m_calib;                   // TODO: to be replace with m_calibExec
+    // FindCalibGrid m_findCalibGrid;   // TODO: to be replace with m_calibExec
+    // Calib m_calib;                   // TODO: to be replace with m_calibExec
     CalibExecutive m_calibExec;
     FindLine m_findLine;
     FindLineResult m_findLineResult;

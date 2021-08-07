@@ -50,14 +50,6 @@ enum GC_TIMESTAMP_TYPE
     FROM_EXTERNAL       ///< Pass filename to algorithm using YYYY-MM-DDThh:mm::ss format (ISO)
 };
 
-/// enum for namespace gc calibration types
-typedef enum CALIB_TYPE
-{
-    BOWTIE,
-    STOPSIGN,
-    NOT_SET
-} GcCalibType;
-
 static const double DEFAULT_MIN_LINE_ANGLE = -10.0;                             ///< Default minimum line find angle
 static const double DEFAULT_MAX_LINE_ANGLE = 10.0;                              ///< Default maximum line find angle
 static const int FIT_LINE_RANSAC_TRIES_TOTAL = 100;                             ///< Fit line RANSAC total tries

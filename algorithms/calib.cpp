@@ -56,6 +56,12 @@ enum PIX_POS_INDEX
     PIX_POS_Y = 1
 };
 
+void Calib::clear()
+{
+    m_model.clear();
+    m_matHomogPixToWorld = Mat();
+    m_matHomogWorldToPix = Mat();
+}
 GC_STATUS Calib::Calibrate( const vector< Point2d > pixelPts, const vector< Point2d > worldPts,
                             const Size gridSize, const Size imgSize, const Mat &img, Mat &imgOut,
                             const bool drawCalib, const bool drawMoveROIs, const bool drawSearchROI )
