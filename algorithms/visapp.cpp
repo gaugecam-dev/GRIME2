@@ -137,7 +137,7 @@ GC_STATUS VisApp::CalcLine( const Mat &img, const string timestamp )
         }
         else
         {
-            retVal = m_findLine.Find( img, m_calib.SearchLines(), result );
+            retVal = m_findLine.Find( img, m_calibExec.SearchLines(), result );
             if ( GC_OK != retVal )
             {
                 FILE_LOG( logERROR ) << "[VisApp::CalcLine] Could not calc line in image";
@@ -391,7 +391,7 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result 
                 }
                 if ( params.calibFilepath != m_calibFilepath && GC_OK == retVal )
                 {
-                    retVal = m_calib.Load( params.calibFilepath );
+                    retVal = m_calibExec.Load( params.calibFilepath );
                     if ( GC_OK != retVal )
                     {
                         result.msgs.push_back( "Could not load calibration" );
@@ -403,7 +403,7 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result 
                 {
                     m_calibFilepath = params.calibFilepath;
 
-                    retVal = m_findLine.Find( img, m_calib.SearchLines(), result );
+                    retVal = m_findLine.Find( img, m_calibExec.SearchLines(), result );
                     if ( GC_OK != retVal )
                     {
                         m_findLineResult = result;

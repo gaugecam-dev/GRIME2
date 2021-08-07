@@ -1459,18 +1459,18 @@ void MainWindow::on_pushButton_createAnimation_clicked()
 void MainWindow::on_pushButton_test_clicked()
 {
 
-    Mat searchImg = imread( "/media/kchapman/Elements/data/stop_signs/stop_sign_on_street_corner.jpg", IMREAD_ANYCOLOR );
+    Mat searchImg = imread( "/media/kchapman/Elements/unl/article_repo/trunk/unl_third_paper/color_h2octagons/IMG_20210807_160339.jpg", IMREAD_ANYCOLOR );
 
-//    FindSymbol findSym;
-//    double facetLength = 10.0;
-//    GC_STATUS retVal = findSym.Calibrate( searchImg, facetLength );
-//    if ( GC_OK == retVal )
-//    {
-//        Mat color;
-//        retVal = findSym.DrawCalibration( searchImg, color );
-//        if ( GC_OK == retVal )
-//        {
-//            imwrite( "/var/tmp/water/calibration_01.png", color );
-//        }
-//    }
+    FindSymbol findSym;
+    double facetLength = 10.0;
+    GC_STATUS retVal = findSym.Calibrate( searchImg, facetLength );
+    if ( GC_OK == retVal )
+    {
+        Mat color;
+        retVal = findSym.DrawCalibration( searchImg, color );
+        if ( GC_OK == retVal )
+        {
+            imwrite( "/var/tmp/water/calibration_01.png", color );
+        }
+    }
 }
