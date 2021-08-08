@@ -106,7 +106,11 @@ public:
      * @param ptsFound The found position of the move targets
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
-    GC_STATUS FindMoveTargets( const cv::Mat &img, FindPointSet &ptsFound );
+    GC_STATUS FindMoveTargetsBowTie( const cv::Mat &img, FindPointSet &ptsFound );
+
+    // TODO: Write doxygen comments
+    GC_STATUS FindMoveTargetsStopSign( const cv::Mat &img, FindPointSet &ptsFound );
+    GC_STATUS FindMoveTargets( const cv::Mat &img, FindPointSet &ptsFound, const std::string calibType );
 
     /**
      * @brief Method to draw the found water line on an image as an overlay
@@ -122,11 +126,11 @@ public:
     /**
      * @brief Method to set the move target search regions
      * @param img Image within which to search for the targets to assure regions are valid
-     * @param rect cv::Rect that holds the search region
-     * @param isLeft true=Set the left region, false=Set the right region
+     * @param rectLeft cv::Rect that holds the left search region
+     * @param rectRight cv::Rect that holds the right search region
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
-    GC_STATUS SetMoveTargetROI( const cv::Mat &img, const cv::Rect rect, const bool isLeft );
+    GC_STATUS SetMoveTargetROI( const cv::Mat &img, const cv::Rect rectLeft, const cv::Rect rectRight );
 
 private:
     FindCalibGrid m_findGrid;

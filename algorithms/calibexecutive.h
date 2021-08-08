@@ -55,6 +55,7 @@ public:
     GC_STATUS DrawOverlay( const cv::Mat matIn, cv::Mat &imgMatOut,
                            const bool drawCalib, const bool drawMoveROIs, const bool drawSearchROI );
     std::vector< LineEnds > &SearchLines();
+    std::string &GetCalibType() { return paramsCurrent.calibType; }
 
 private:
     Calib bowTie;

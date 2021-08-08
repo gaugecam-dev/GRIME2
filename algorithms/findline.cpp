@@ -84,23 +84,41 @@ GC_STATUS FindLine::InitBowtieSearch( const int bowTieTemplateDim, const cv::Siz
     }
     return retVal;
 }
-GC_STATUS FindLine::FindMoveTargets( const Mat &img, FindPointSet &ptsFound )
+GC_STATUS FindLine::FindMoveTargets( const Mat &img, FindPointSet &ptsFound, const std::string calibType )
+{
+    GC_STATUS retVal = GC_OK;
+
+    if ( "BowTie" == calibType )
+    {
+        retVal = FindMoveTargetsBowTie( img, ptsFound );
+    }
+    else if ( "StopSign" == calibType )
+    {
+        retVal = FindMoveTargetsStopSign( img, ptsFound );
+    }
+    else
+    {
+        FILE_LOG( logERROR ) << "[FindLine::FindMoveTargets] No valid calibration type currently set";
+        retVal = GC_ERR;
+    }
+
+    return retVal;
+}
+// TODO: Fill in FindMoveTargetsStopSign()
+GC_STATUS FindLine::FindMoveTargetsStopSign( const Mat &img, FindPointSet &ptsFound )
 {
     // TODO: This method currently only handles translation and not rotation
     GC_STATUS retVal = GC_OK;
-    try
+    return retVal;
+}
+GC_STATUS FindLine::FindMoveTargetsBowTie( const Mat &img, FindPointSet &ptsFound )
+{
+    // TODO: This method currently only handles translation and not rotation
+    GC_STATUS retVal = m_findGrid.FindMoveTargetsBowTie( img, ptsFound.lftPixel, ptsFound.rgtPixel );
+    if ( GC_OK == retVal )
     {
-        retVal = m_findGrid.FindMoveTargets( img, ptsFound.lftPixel, ptsFound.rgtPixel );
-        if ( GC_OK == retVal )
-        {
-            ptsFound.ctrPixel.x = ( ptsFound.lftPixel.x + ptsFound.rgtPixel.x ) / 2.0;
-            ptsFound.ctrPixel.y = ( ptsFound.lftPixel.y + ptsFound.rgtPixel.y ) / 2.0;
-        }
-    }
-    catch( cv::Exception &e )
-    {
-        FILE_LOG( logERROR ) << "[FindLine::FindMoveTargets] " << e.what();
-        retVal = GC_EXCEPT;
+        ptsFound.ctrPixel.x = ( ptsFound.lftPixel.x + ptsFound.rgtPixel.x ) / 2.0;
+        ptsFound.ctrPixel.y = ( ptsFound.lftPixel.y + ptsFound.rgtPixel.y ) / 2.0;
     }
     return retVal;
 }
@@ -383,9 +401,9 @@ GC_STATUS FindLine::GetRandomNumbers( const int low_bound, const int high_bound,
     }
     return retVal;
 }
-GC_STATUS FindLine::SetMoveTargetROI( const cv::Mat &img, const cv::Rect rect, const bool isLeft )
+GC_STATUS FindLine::SetMoveTargetROI( const cv::Mat &img, const cv::Rect rectLeft, const cv::Rect rectRight )
 {
-    return m_findGrid.SetMoveTargetROI( img, rect, isLeft );
+    return m_findGrid.SetMoveTargetROI( img, rectLeft, rectRight );
 }
 GC_STATUS FindLine::DrawResult( const Mat &img, Mat &imgOut, const FindLineResult &result,
                                 const LineDrawType overlayTypes )

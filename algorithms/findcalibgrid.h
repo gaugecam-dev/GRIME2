@@ -123,12 +123,12 @@ public:
     /**
      * @brief Set a specified region of interest within which to search for move targeets (bowties)
      * @param img Image within which to search
-     * @param rect Rectanle that defines the search region
-     * @param isLeft true=Set left search area, false=Set right search area
+     * @param rectLeft Rectangle that defines the left search region
+     * @param rectRight Rectangle that defines the right search region
      * @see FindMoveTargets(), DrawMoveROIs(), GetMoveTargetROIs()
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
-    GC_STATUS SetMoveTargetROI( const cv::Mat &img, const cv::Rect rect, const bool isLeft );
+    GC_STATUS SetMoveTargetROI( const cv::Mat &img, const cv::Rect rectLeft, const cv::Rect rectRight );
 
     /**
      * @brief Search for the move targets in the provided image
@@ -138,7 +138,11 @@ public:
      * @see SetMoveTargetROI(), DrawMoveROIs(), GetMoveTargetROIs()
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
-    GC_STATUS FindMoveTargets( const cv::Mat &img, cv::Point2d &ptLeft, cv::Point2d &ptRight );
+    GC_STATUS FindMoveTargetsBowTie( const cv::Mat &img, cv::Point2d &ptLeft, cv::Point2d &ptRight );
+
+    // TODO: Write doxygen comments
+    GC_STATUS FindMoveTargetsStopSign( const cv::Mat &img, cv::Point2d &ptLeft, cv::Point2d &ptRight );
+    GC_STATUS FindMoveTargets( const cv::Mat &img, cv::Point2d &ptLeft, cv::Point2d &ptRight, const std::string calibType );
 
     /**
      * @brief Draw the current move regions on the specified image

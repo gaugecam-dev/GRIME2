@@ -74,7 +74,6 @@ GC_STATUS VisApp::LoadCalib( const std::string calibJson )
     GC_STATUS retVal = m_calibExec.Load( calibJson );
     return retVal;
 }
-// TODO: Handle different calibration types and methods here
 GC_STATUS VisApp::Calibrate( const string imgFilepath, const string jsonControl, Mat &imgOut )
 {
     GC_STATUS retVal = m_calibExec.Calibrate( imgFilepath, jsonControl, imgOut );
@@ -158,14 +157,18 @@ GC_STATUS VisApp::CalcLine( const Mat &img, const string timestamp )
                 }
                 else
                 {
+#if 0 // TODO -- Cut back in
                     retVal = m_findLine.SetMoveTargetROI( img, m_calib.MoveSearchROI( true ), true );
+#endif
                     if ( GC_OK != retVal )
                     {
                         result.msgs.push_back( "Could not set left move target search region" );
                     }
                     else
                     {
+#if 0 // TODO -- Cut back in
                         retVal = m_findLine.SetMoveTargetROI( img, m_calib.MoveSearchROI( false ), false );
+#endif
                         if ( GC_OK != retVal )
                         {
                             result.msgs.push_back( "Could not set right move target search region" );
@@ -173,8 +176,10 @@ GC_STATUS VisApp::CalcLine( const Mat &img, const string timestamp )
                         else
                         {
                             FindPointSet offsetPts;
+#if 0 // TODO -- Cut back in
                             result.refMovePts.lftPixel = m_calib.MoveRefPoint( true );
                             result.refMovePts.rgtPixel = m_calib.MoveRefPoint( false );
+#endif
                             result.refMovePts.ctrPixel = Point2d( ( result.refMovePts.lftPixel.x + result.refMovePts.rgtPixel.x ) / 2.0,
                                                                   ( result.refMovePts.lftPixel.y + result.refMovePts.rgtPixel.y ) / 2.0 );
                             retVal = PixelToWorld( result.refMovePts );
@@ -186,7 +191,7 @@ GC_STATUS VisApp::CalcLine( const Mat &img, const string timestamp )
                             {
                                 snprintf( buffer, 256, "Level: %.3f", result.calcLinePts.ctrWorld.y );
                                 result.msgs.push_back( buffer );
-                                retVal = m_findLine.FindMoveTargets( img, result.foundMovePts );
+                                retVal = m_findLine.FindMoveTargets( img, result.foundMovePts, m_calibExec.GetCalibType() );
                                 if ( GC_OK != retVal )
                                 {
                                     result.msgs.push_back( "Could not calculate move offsets" );
@@ -419,14 +424,18 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result 
                         }
                         else
                         {
+#if 0 // TODO -- Cut back in
                             retVal = m_findLine.SetMoveTargetROI( img, m_calib.MoveSearchROI( true ), true );
+#endif
                             if ( GC_OK != retVal )
                             {
                                 result.msgs.push_back( "Could not set left move target search region" );
                             }
                             else
                             {
+#if 0 // TODO -- Cut back in
                                 retVal = m_findLine.SetMoveTargetROI( img, m_calib.MoveSearchROI( false ), false );
+#endif
                                 if ( GC_OK != retVal )
                                 {
                                     result.msgs.push_back( "Could not set right move target search region" );
@@ -434,8 +443,10 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result 
                                 else
                                 {
                                     FindPointSet offsetPts;
+#if 0 // TODO -- Cut back in
                                     result.refMovePts.lftPixel = m_calib.MoveRefPoint( true );
                                     result.refMovePts.rgtPixel = m_calib.MoveRefPoint( false );
+#endif
                                     result.refMovePts.ctrPixel = Point2d( ( result.refMovePts.lftPixel.x + result.refMovePts.rgtPixel.x ) / 2.0,
                                                                           ( result.refMovePts.lftPixel.y + result.refMovePts.rgtPixel.y ) / 2.0 );
                                     retVal = PixelToWorld( result.refMovePts );
@@ -449,7 +460,7 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result 
                                         char buffer[ 256 ];
                                         snprintf( buffer, 256, "Level: %.3f", result.calcLinePts.ctrWorld.y );
                                         result.msgs.push_back( buffer );
-                                        retVal = m_findLine.FindMoveTargets( img, result.foundMovePts );
+                                        retVal = m_findLine.FindMoveTargets( img, result.foundMovePts, m_calibExec.GetCalibType() );
                                         if ( GC_OK != retVal )
                                         {
                                             result.msgs.push_back( "Could not calculate move offsets" );
@@ -593,9 +604,11 @@ GC_STATUS VisApp::DrawCalibOverlay( const cv::Mat matIn, cv::Mat &imgMatOut,
     GC_STATUS retVal = GC_OK;
     try
     {
+#if 0 // TODO -- Cut back in
         CalibModel model = m_calib.GetModel();
         retVal = m_calib.Calibrate( model.pixelPoints, model.worldPoints, model.gridSize, matIn.size(),
                                     matIn, imgMatOut, drawCalib, drawMoveROIs, drawSearchROI );
+#endif
     }
     catch( Exception &e )
     {

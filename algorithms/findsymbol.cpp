@@ -838,8 +838,27 @@ GC_STATUS FindSymbol::DrawCalibration( const cv::Mat &img, cv::Mat &result )
                 retVal = GC_ERR;
             }
 
-            if ( GC_OK == retVal )
+            if ( model.pixelPoints.empty() )
             {
+                FILE_LOG( logERROR ) << "[FindSymbol::DrawCalibration] No symbol points to draw";
+                retVal = GC_ERR;
+            }
+            else if ( GC_OK == retVal )
+            {
+                line( result, Point( model.pixelPoints[ 0 ].x - 29, model.pixelPoints[ 0 ].y ),
+                              Point( model.pixelPoints[ 0 ].x + 29, model.pixelPoints[ 0 ].y ), Scalar( 0, 255, 0 ), 5 );
+                line( result, Point( model.pixelPoints[ 0 ].x, model.pixelPoints[ 0 ].y - 29 ),
+                              Point( model.pixelPoints[ 0 ].x, model.pixelPoints[ 0 ].y + 29 ), Scalar( 0, 255, 0 ), 5 );
+                for ( size_t i = 1; i < model.pixelPoints.size(); ++i )
+                {
+                    line( result, model.pixelPoints[ i - 1 ], model.pixelPoints[ i ], Scalar( 255, 0, 0 ), 5 );
+                    line( result, Point( model.pixelPoints[ i ].x - 29, model.pixelPoints[ i ].y ),
+                                  Point( model.pixelPoints[ i ].x + 29, model.pixelPoints[ i ].y ), Scalar( 0, 255, 0 ), 3 );
+                    line( result, Point( model.pixelPoints[ i ].x, model.pixelPoints[ i ].y - 29 ),
+                                  Point( model.pixelPoints[ i ].x, model.pixelPoints[ i ].y + 29 ), Scalar( 0, 255, 0 ), 3 );
+                }
+                line( result, model.pixelPoints[ 0 ], model.pixelPoints[ model.pixelPoints.size() - 1 ], Scalar( 255, 0, 0 ), 5 );
+
                 Point2d ptLftTopPix( 0.0, 0.0 );
                 Point2d ptRgtTopPix( static_cast< double >( result.cols - 1 ), 0.0 );
                 Point2d ptLftBotPix( 0.0, static_cast< double >( result.rows - 1 ) );
@@ -880,7 +899,7 @@ GC_STATUS FindSymbol::DrawCalibration( const cv::Mat &img, cv::Mat &result )
                                             if ( isFirst )
                                             {
                                                 isFirst = false;
-                                                sprintf( msg, "%.1f", r );
+                                                sprintf( msg, "%.1f cm", r );
                                                 putText( result, msg, Point( 10, pt1.y - 10 ), FONT_HERSHEY_PLAIN, 5.0, Scalar( 0, 0, 255 ), 5 );
                                             }
                                             retVal = WorldToPixel( Point2d( c + incX, r ), pt2 );
