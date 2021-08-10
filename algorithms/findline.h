@@ -101,18 +101,6 @@ public:
     GC_STATUS FitLineRANSAC( const std::vector< cv::Point2d > &pts, FindPointSet &findPtSet, const double xCenter, const cv::Mat &img );
 
     /**
-     * @brief Method to search for the move targets using an instance of the FindCalibGrid class
-     * @param img The image for which to search for the bowtie targets
-     * @param ptsFound The found position of the move targets
-     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
-     */
-    GC_STATUS FindMoveTargetsBowTie( const cv::Mat &img, FindPointSet &ptsFound );
-
-    // TODO: Write doxygen comments
-    GC_STATUS FindMoveTargetsStopSign( const cv::Mat &img, FindPointSet &ptsFound );
-    GC_STATUS FindMoveTargets( const cv::Mat &img, FindPointSet &ptsFound, const std::string calibType );
-
-    /**
      * @brief Method to draw the found water line on an image as an overlay
      * @param img The image within which the water line was measured
      * @param imgOut New image of the input image with an overlay of the found water line
@@ -133,7 +121,6 @@ public:
     GC_STATUS SetMoveTargetROI( const cv::Mat &img, const cv::Rect rectLeft, const cv::Rect rectRight );
 
 private:
-    FindCalibGrid m_findGrid;
     double m_minLineFindAngle;
     double m_maxLineFindAngle;
     std::default_random_engine m_randomEngine;

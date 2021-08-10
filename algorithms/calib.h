@@ -183,7 +183,7 @@ public:
      * @param isLeft true=Return the left point, false=Return the right point
      * @return A cv::Point2d object that holds the specified move reference point
      */
-    cv::Point2d MoveRefPoint( const bool isLeft );
+    GC_STATUS MoveRefPoint( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt );
 
     /**
      * @brief Returns a vector of search lines along which an image is search for a water level line.

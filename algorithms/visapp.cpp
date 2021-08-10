@@ -157,75 +157,55 @@ GC_STATUS VisApp::CalcLine( const Mat &img, const string timestamp )
                 }
                 else
                 {
-#if 0 // TODO -- Cut back in
-                    retVal = m_findLine.SetMoveTargetROI( img, m_calib.MoveSearchROI( true ), true );
-#endif
-                    if ( GC_OK != retVal )
+                    retVal = m_calibExec.MoveRefPoint( result.refMovePts.lftPixel, result.refMovePts.rgtPixel );
+                    if ( GC_OK == retVal )
                     {
-                        result.msgs.push_back( "Could not set left move target search region" );
-                    }
-                    else
-                    {
-#if 0 // TODO -- Cut back in
-                        retVal = m_findLine.SetMoveTargetROI( img, m_calib.MoveSearchROI( false ), false );
-#endif
+                        result.refMovePts.ctrPixel = Point2d( ( result.refMovePts.lftPixel.x + result.refMovePts.rgtPixel.x ) / 2.0,
+                                                              ( result.refMovePts.lftPixel.y + result.refMovePts.rgtPixel.y ) / 2.0 );
+                        FindPointSet offsetPts;
+                        retVal = PixelToWorld( result.refMovePts );
                         if ( GC_OK != retVal )
                         {
-                            result.msgs.push_back( "Could not set right move target search region" );
+                            result.msgs.push_back( "Could not calculate world coordinates for move reference points" );
                         }
                         else
                         {
-                            FindPointSet offsetPts;
-#if 0 // TODO -- Cut back in
-                            result.refMovePts.lftPixel = m_calib.MoveRefPoint( true );
-                            result.refMovePts.rgtPixel = m_calib.MoveRefPoint( false );
-#endif
-                            result.refMovePts.ctrPixel = Point2d( ( result.refMovePts.lftPixel.x + result.refMovePts.rgtPixel.x ) / 2.0,
-                                                                  ( result.refMovePts.lftPixel.y + result.refMovePts.rgtPixel.y ) / 2.0 );
-                            retVal = PixelToWorld( result.refMovePts );
+                            snprintf( buffer, 256, "Level: %.3f", result.calcLinePts.ctrWorld.y );
+                            result.msgs.push_back( buffer );
+                            retVal = m_calibExec.FindMoveTargets( img, result.foundMovePts );
                             if ( GC_OK != retVal )
                             {
-                                result.msgs.push_back( "Could not calculate world coordinates for move reference points" );
+                                result.msgs.push_back( "Could not calculate move offsets" );
                             }
                             else
                             {
-                                snprintf( buffer, 256, "Level: %.3f", result.calcLinePts.ctrWorld.y );
-                                result.msgs.push_back( buffer );
-                                retVal = m_findLine.FindMoveTargets( img, result.foundMovePts, m_calibExec.GetCalibType() );
+                                retVal = PixelToWorld( result.foundMovePts );
                                 if ( GC_OK != retVal )
                                 {
-                                    result.msgs.push_back( "Could not calculate move offsets" );
+                                    result.msgs.push_back( "Could not calculate world coordinates for found move points" );
                                 }
                                 else
                                 {
-                                    retVal = PixelToWorld( result.foundMovePts );
-                                    if ( GC_OK != retVal )
-                                    {
-                                        result.msgs.push_back( "Could not calculate world coordinates for found move points" );
-                                    }
-                                    else
-                                    {
-                                        result.offsetMovePts.lftPixel.x = result.foundMovePts.lftPixel.x - result.refMovePts.lftPixel.x;
-                                        result.offsetMovePts.lftPixel.y = result.foundMovePts.lftPixel.y - result.refMovePts.lftPixel.y;
-                                        result.offsetMovePts.ctrPixel.x = result.foundMovePts.ctrPixel.x - result.refMovePts.ctrPixel.x;
-                                        result.offsetMovePts.ctrPixel.y = result.foundMovePts.ctrPixel.y - result.refMovePts.ctrPixel.y;
-                                        result.offsetMovePts.rgtPixel.x = result.foundMovePts.rgtPixel.x - result.refMovePts.rgtPixel.x;
-                                        result.offsetMovePts.rgtPixel.y = result.foundMovePts.rgtPixel.y - result.refMovePts.rgtPixel.y;
+                                    result.offsetMovePts.lftPixel.x = result.foundMovePts.lftPixel.x - result.refMovePts.lftPixel.x;
+                                    result.offsetMovePts.lftPixel.y = result.foundMovePts.lftPixel.y - result.refMovePts.lftPixel.y;
+                                    result.offsetMovePts.ctrPixel.x = result.foundMovePts.ctrPixel.x - result.refMovePts.ctrPixel.x;
+                                    result.offsetMovePts.ctrPixel.y = result.foundMovePts.ctrPixel.y - result.refMovePts.ctrPixel.y;
+                                    result.offsetMovePts.rgtPixel.x = result.foundMovePts.rgtPixel.x - result.refMovePts.rgtPixel.x;
+                                    result.offsetMovePts.rgtPixel.y = result.foundMovePts.rgtPixel.y - result.refMovePts.rgtPixel.y;
 
-                                        result.offsetMovePts.lftWorld.x = result.foundMovePts.lftWorld.x - result.refMovePts.lftWorld.x;
-                                        result.offsetMovePts.lftWorld.y = result.foundMovePts.lftWorld.y - result.refMovePts.lftWorld.y;
-                                        result.offsetMovePts.ctrWorld.x = result.foundMovePts.ctrWorld.x - result.refMovePts.ctrWorld.x;
-                                        result.offsetMovePts.ctrWorld.y = result.foundMovePts.ctrWorld.y - result.refMovePts.ctrWorld.y;
-                                        result.offsetMovePts.rgtWorld.x = result.foundMovePts.rgtWorld.x - result.refMovePts.rgtWorld.x;
-                                        result.offsetMovePts.rgtWorld.y = result.foundMovePts.rgtWorld.y - result.refMovePts.rgtWorld.y;
+                                    result.offsetMovePts.lftWorld.x = result.foundMovePts.lftWorld.x - result.refMovePts.lftWorld.x;
+                                    result.offsetMovePts.lftWorld.y = result.foundMovePts.lftWorld.y - result.refMovePts.lftWorld.y;
+                                    result.offsetMovePts.ctrWorld.x = result.foundMovePts.ctrWorld.x - result.refMovePts.ctrWorld.x;
+                                    result.offsetMovePts.ctrWorld.y = result.foundMovePts.ctrWorld.y - result.refMovePts.ctrWorld.y;
+                                    result.offsetMovePts.rgtWorld.x = result.foundMovePts.rgtWorld.x - result.refMovePts.rgtWorld.x;
+                                    result.offsetMovePts.rgtWorld.y = result.foundMovePts.rgtWorld.y - result.refMovePts.rgtWorld.y;
 
-                                        snprintf( buffer, 256, "Adjust: %.3f", result.offsetMovePts.ctrWorld.y );
-                                        result.msgs.push_back( buffer );
-                                        result.waterLevelAdjusted.x = result.calcLinePts.ctrWorld.x - result.offsetMovePts.ctrWorld.x;
-                                        result.waterLevelAdjusted.y = result.calcLinePts.ctrWorld.y - result.offsetMovePts.ctrWorld.y;
-                                        snprintf( buffer, 256, "Level (adj): %.3f", result.waterLevelAdjusted.y );
-                                        result.msgs.push_back( buffer );
-                                    }
+                                    snprintf( buffer, 256, "Adjust: %.3f", result.offsetMovePts.ctrWorld.y );
+                                    result.msgs.push_back( buffer );
+                                    result.waterLevelAdjusted.x = result.calcLinePts.ctrWorld.x - result.offsetMovePts.ctrWorld.x;
+                                    result.waterLevelAdjusted.y = result.calcLinePts.ctrWorld.y - result.offsetMovePts.ctrWorld.y;
+                                    snprintf( buffer, 256, "Level (adj): %.3f", result.waterLevelAdjusted.y );
+                                    result.msgs.push_back( buffer );
                                 }
                             }
                         }
@@ -424,76 +404,56 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result 
                         }
                         else
                         {
-#if 0 // TODO -- Cut back in
-                            retVal = m_findLine.SetMoveTargetROI( img, m_calib.MoveSearchROI( true ), true );
-#endif
-                            if ( GC_OK != retVal )
+                            retVal = m_calibExec.MoveRefPoint( result.refMovePts.lftPixel, result.refMovePts.rgtPixel );
+                            if ( GC_OK == retVal )
                             {
-                                result.msgs.push_back( "Could not set left move target search region" );
-                            }
-                            else
-                            {
-#if 0 // TODO -- Cut back in
-                                retVal = m_findLine.SetMoveTargetROI( img, m_calib.MoveSearchROI( false ), false );
-#endif
+                                FindPointSet offsetPts;
+                                result.refMovePts.ctrPixel = Point2d( ( result.refMovePts.lftPixel.x + result.refMovePts.rgtPixel.x ) / 2.0,
+                                                                      ( result.refMovePts.lftPixel.y + result.refMovePts.rgtPixel.y ) / 2.0 );
+                                retVal = PixelToWorld( result.refMovePts );
                                 if ( GC_OK != retVal )
                                 {
-                                    result.msgs.push_back( "Could not set right move target search region" );
+                                    result.msgs.push_back( "Could not calculate world coordinates for move reference points" );
                                 }
                                 else
                                 {
-                                    FindPointSet offsetPts;
-#if 0 // TODO -- Cut back in
-                                    result.refMovePts.lftPixel = m_calib.MoveRefPoint( true );
-                                    result.refMovePts.rgtPixel = m_calib.MoveRefPoint( false );
-#endif
-                                    result.refMovePts.ctrPixel = Point2d( ( result.refMovePts.lftPixel.x + result.refMovePts.rgtPixel.x ) / 2.0,
-                                                                          ( result.refMovePts.lftPixel.y + result.refMovePts.rgtPixel.y ) / 2.0 );
-                                    retVal = PixelToWorld( result.refMovePts );
+                                    result.msgs.push_back( "FindStatus: " + string( GC_OK == retVal ? "SUCCESS" : "FAIL" ) );
+                                    char buffer[ 256 ];
+                                    snprintf( buffer, 256, "Level: %.3f", result.calcLinePts.ctrWorld.y );
+                                    result.msgs.push_back( buffer );
+                                    retVal = m_calibExec.FindMoveTargets( img, result.foundMovePts );
                                     if ( GC_OK != retVal )
                                     {
-                                        result.msgs.push_back( "Could not calculate world coordinates for move reference points" );
+                                        result.msgs.push_back( "Could not calculate move offsets" );
                                     }
                                     else
                                     {
-                                        result.msgs.push_back( "FindStatus: " + string( GC_OK == retVal ? "SUCCESS" : "FAIL" ) );
-                                        char buffer[ 256 ];
-                                        snprintf( buffer, 256, "Level: %.3f", result.calcLinePts.ctrWorld.y );
-                                        result.msgs.push_back( buffer );
-                                        retVal = m_findLine.FindMoveTargets( img, result.foundMovePts, m_calibExec.GetCalibType() );
+                                        retVal = PixelToWorld( result.foundMovePts );
                                         if ( GC_OK != retVal )
                                         {
-                                            result.msgs.push_back( "Could not calculate move offsets" );
+                                            result.msgs.push_back( "Could not calculate world coordinates for found move points" );
                                         }
                                         else
                                         {
-                                            retVal = PixelToWorld( result.foundMovePts );
-                                            if ( GC_OK != retVal )
-                                            {
-                                                result.msgs.push_back( "Could not calculate world coordinates for found move points" );
-                                            }
-                                            else
-                                            {
-                                                result.offsetMovePts.lftPixel.x = result.foundMovePts.lftPixel.x - result.refMovePts.lftPixel.x;
-                                                result.offsetMovePts.lftPixel.y = result.foundMovePts.lftPixel.y - result.refMovePts.lftPixel.y;
-                                                result.offsetMovePts.ctrPixel.x = result.foundMovePts.ctrPixel.x - result.refMovePts.ctrPixel.x;
-                                                result.offsetMovePts.ctrPixel.y = result.foundMovePts.ctrPixel.y - result.refMovePts.ctrPixel.y;
-                                                result.offsetMovePts.rgtPixel.x = result.foundMovePts.rgtPixel.x - result.refMovePts.rgtPixel.x;
-                                                result.offsetMovePts.rgtPixel.y = result.foundMovePts.rgtPixel.y - result.refMovePts.rgtPixel.y;
+                                            result.offsetMovePts.lftPixel.x = result.foundMovePts.lftPixel.x - result.refMovePts.lftPixel.x;
+                                            result.offsetMovePts.lftPixel.y = result.foundMovePts.lftPixel.y - result.refMovePts.lftPixel.y;
+                                            result.offsetMovePts.ctrPixel.x = result.foundMovePts.ctrPixel.x - result.refMovePts.ctrPixel.x;
+                                            result.offsetMovePts.ctrPixel.y = result.foundMovePts.ctrPixel.y - result.refMovePts.ctrPixel.y;
+                                            result.offsetMovePts.rgtPixel.x = result.foundMovePts.rgtPixel.x - result.refMovePts.rgtPixel.x;
+                                            result.offsetMovePts.rgtPixel.y = result.foundMovePts.rgtPixel.y - result.refMovePts.rgtPixel.y;
 
-                                                result.offsetMovePts.lftWorld.x = result.foundMovePts.lftWorld.x - result.refMovePts.lftWorld.x;
-                                                result.offsetMovePts.lftWorld.y = result.foundMovePts.lftWorld.y - result.refMovePts.lftWorld.y;
-                                                result.offsetMovePts.ctrWorld.x = result.foundMovePts.ctrWorld.x - result.refMovePts.ctrWorld.x;
-                                                result.offsetMovePts.ctrWorld.y = result.foundMovePts.ctrWorld.y - result.refMovePts.ctrWorld.y;
-                                                result.offsetMovePts.rgtWorld.x = result.foundMovePts.rgtWorld.x - result.refMovePts.rgtWorld.x;
-                                                result.offsetMovePts.rgtWorld.y = result.foundMovePts.rgtWorld.y - result.refMovePts.rgtWorld.y;
+                                            result.offsetMovePts.lftWorld.x = result.foundMovePts.lftWorld.x - result.refMovePts.lftWorld.x;
+                                            result.offsetMovePts.lftWorld.y = result.foundMovePts.lftWorld.y - result.refMovePts.lftWorld.y;
+                                            result.offsetMovePts.ctrWorld.x = result.foundMovePts.ctrWorld.x - result.refMovePts.ctrWorld.x;
+                                            result.offsetMovePts.ctrWorld.y = result.foundMovePts.ctrWorld.y - result.refMovePts.ctrWorld.y;
+                                            result.offsetMovePts.rgtWorld.x = result.foundMovePts.rgtWorld.x - result.refMovePts.rgtWorld.x;
+                                            result.offsetMovePts.rgtWorld.y = result.foundMovePts.rgtWorld.y - result.refMovePts.rgtWorld.y;
 
-                                                sprintf( buffer, "Adjust: %.3f", result.offsetMovePts.ctrWorld.y );
-                                                result.msgs.push_back( buffer );
-                                                result.waterLevelAdjusted.y = result.calcLinePts.ctrWorld.y - result.offsetMovePts.ctrWorld.y;
-                                                snprintf( buffer, 256, "Level (adj): %.3f", result.waterLevelAdjusted.y );
-                                                result.msgs.push_back( buffer );
-                                            }
+                                            sprintf( buffer, "Adjust: %.3f", result.offsetMovePts.ctrWorld.y );
+                                            result.msgs.push_back( buffer );
+                                            result.waterLevelAdjusted.y = result.calcLinePts.ctrWorld.y - result.offsetMovePts.ctrWorld.y;
+                                            snprintf( buffer, 256, "Level (adj): %.3f", result.waterLevelAdjusted.y );
+                                            result.msgs.push_back( buffer );
                                         }
                                     }
                                 }
@@ -532,14 +492,14 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result 
 
     return retVal;
 }
-GC_STATUS VisApp::WorldToPixel( const Point2d worldPt, Point2d &pixelPt )
-{
-    GC_STATUS retVal = m_calibExec.WorldToPixel( worldPt, pixelPt );
-    return retVal;
-}
-GC_STATUS VisApp::PixelToWorld( const Point2d pixelPt, Point2d &worldPt )
+GC_STATUS VisApp::PixelToWorld( const cv::Point2d pixelPt, cv::Point2d &worldPt )
 {
     GC_STATUS retVal = m_calibExec.PixelToWorld( pixelPt, worldPt );
+    return retVal;
+}
+GC_STATUS VisApp::WorldToPixel(const cv::Point2d worldPt, cv::Point2d &pixelPt )
+{
+    GC_STATUS retVal = m_calibExec.WorldToPixel( worldPt, pixelPt );
     return retVal;
 }
 GC_STATUS VisApp::PixelToWorld( FindPointSet &ptSet )
@@ -555,67 +515,10 @@ GC_STATUS VisApp::PixelToWorld( FindPointSet &ptSet )
     }
     return retVal;
 }
-GC_STATUS VisApp::ReadWorldCoordsFromCSV( const string csvFilepath, vector< vector< Point2d > > &worldCoords )
-{
-    GC_STATUS retVal = GC_OK;
-
-    try
-    {
-        ifstream file( csvFilepath );
-        if ( !file.is_open() )
-        {
-            FILE_LOG( logERROR ) << "Could not open CSV filepath=" << csvFilepath;
-            retVal = GC_ERR;
-        }
-        else
-        {
-            worldCoords.clear();
-
-            string line;
-            vector< string > vec;
-            vector< Point2d > rowPts;
-
-            getline( file, line );
-            while ( getline( file, line ) )
-            {
-                rowPts.clear();
-                algorithm::split( vec, line, is_any_of( "," ) );
-                for ( size_t i = 0; i < vec.size(); i += 2 )
-                {
-                    rowPts.push_back( Point2d( atof( vec[ i ].c_str() ), atof( vec[ i + 1 ].c_str() ) ) );
-                }
-                worldCoords.push_back( rowPts );
-            }
-            file.close();
-        }
-    }
-    catch( boost::exception &e )
-    {
-        FILE_LOG( logERROR ) << "[VisApp::ReadWorldCoordsFromCSV] " << diagnostic_information( e );
-        FILE_LOG( logERROR ) << "Could not read CSV filepath=" << csvFilepath;
-        retVal = GC_EXCEPT;
-    }
-
-    return retVal;
-}
 GC_STATUS VisApp::DrawCalibOverlay( const cv::Mat matIn, cv::Mat &imgMatOut,
                                     const bool drawCalib, const bool drawMoveROIs, const bool drawSearchROI )
 {
-    GC_STATUS retVal = GC_OK;
-    try
-    {
-#if 0 // TODO -- Cut back in
-        CalibModel model = m_calib.GetModel();
-        retVal = m_calib.Calibrate( model.pixelPoints, model.worldPoints, model.gridSize, matIn.size(),
-                                    matIn, imgMatOut, drawCalib, drawMoveROIs, drawSearchROI );
-#endif
-    }
-    catch( Exception &e )
-    {
-        FILE_LOG( logERROR ) << "[VisApp::CreateCalibOverlayImage] " << e.what();
-        retVal = GC_EXCEPT;
-    }
-
+    GC_STATUS retVal = m_calibExec.DrawOverlay( matIn, imgMatOut, drawCalib, drawMoveROIs, drawSearchROI );
     return retVal;
 }
 GC_STATUS VisApp::DrawLineFindOverlay( const cv::Mat &img, cv::Mat &imgOut, const LineDrawType overlayTypes )

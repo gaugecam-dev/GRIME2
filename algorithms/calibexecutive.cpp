@@ -96,8 +96,7 @@ GC_STATUS CalibExecutive::DrawOverlay( const cv::Mat matIn, cv::Mat &imgMatOut,
     }
     else if ( "StopSign" == paramsCurrent.calibType )
     {
-        FILE_LOG( logERROR ) << "[CalibExecutive::DrawOverlay] Not yet implemented for stop sign calibration";
-        retVal = GC_ERR;
+        retVal = stopSign.DrawCalibration( matIn, imgMatOut );
     }
     else
     {
@@ -115,8 +114,7 @@ GC_STATUS CalibExecutive::PixelToWorld( const cv::Point2d pixelPt, cv::Point2d &
     }
     else if ( "StopSign" == paramsCurrent.calibType )
     {
-        FILE_LOG( logERROR ) << "[CalibExecutive::PixelToWorld] Not yet implemented for stop sign calibration";
-        retVal = GC_ERR;
+        retVal = stopSign.PixelToWorld( pixelPt, worldPt );
     }
     else
     {
@@ -134,8 +132,7 @@ GC_STATUS CalibExecutive::WorldToPixel( const cv::Point2d worldPt, cv::Point2d &
     }
     else if ( "StopSign" == paramsCurrent.calibType )
     {
-        FILE_LOG( logERROR ) << "[CalibExecutive::WorldToPixel] Not yet implemented for stop sign calibration";
-        retVal = GC_ERR;
+        retVal = stopSign.WorldToPixel( worldPt, pixelPt );
     }
     else
     {
@@ -201,11 +198,17 @@ GC_STATUS CalibExecutive::CalibrateStopSign( const string imgFilepath, cv::Mat &
             retVal = GC_ERR;
         }
         else if ( CV_8UC3 != searchImg.type() )
-
-        retVal = stopSign.Calibrate( searchImg, paramsCurrent.stopSignFacetLength );
-        if ( GC_OK == retVal )
         {
-            retVal = stopSign.DrawCalibration( searchImg, imgOut );
+            FILE_LOG( logERROR ) << "[VisApp::CalibrateStopSign] A color image (RGB) is required for stop sign calibration";
+            retVal = GC_ERR;
+        }
+        else
+        {
+            retVal = stopSign.Calibrate( searchImg, paramsCurrent.stopSignFacetLength );
+            if ( GC_OK == retVal )
+            {
+                retVal = stopSign.DrawCalibration( searchImg, imgOut );
+            }
         }
     }
     catch( Exception &e )
@@ -223,7 +226,6 @@ GC_STATUS CalibExecutive::CalibrateBowTie( const string imgFilepath, Mat &imgOut
 
     try
     {
-        clear();
         Mat img = imread( imgFilepath, IMREAD_GRAYSCALE );
         if ( img.empty() )
         {
@@ -361,6 +363,82 @@ std::vector< LineEnds > &CalibExecutive::SearchLines()
     }
     FILE_LOG( logERROR ) << "[CalibExecutive::SearchLines] No calibration type currently set";
     return nullSearchLines;
+}
+GC_STATUS CalibExecutive::GetMoveSearchROIs( Rect &rectLeft , Rect &rectRight )
+{
+
+}
+GC_STATUS CalibExecutive::SetMoveSearchROIs( const cv::Mat img, const cv::Rect rectLeft, const cv::Rect rectRight )
+{
+    return findCalibGrid.SetMoveTargetROI( img, rectLeft, rectRight );
+}
+GC_STATUS CalibExecutive::FindMoveTargets( const Mat &img, FindPointSet &ptsFound )
+{
+    GC_STATUS retVal = GC_OK;
+
+    if ( "BowTie" == paramsCurrent.calibType )
+    {
+        retVal = FindMoveTargetsBowTie( img, ptsFound );
+    }
+    else if ( "StopSign" == paramsCurrent.calibType )
+    {
+        retVal = FindMoveTargetsStopSign( img, ptsFound );
+    }
+    else
+    {
+        FILE_LOG( logERROR ) << "[FindLine::FindMoveTargets] No valid calibration type currently set";
+        retVal = GC_ERR;
+    }
+
+    return retVal;
+}
+// TODO: Fill in FindMoveTargetsStopSign()
+GC_STATUS CalibExecutive::FindMoveTargetsStopSign( const Mat &img, FindPointSet &ptsFound )
+{
+    // TODO: This method currently only handles translation and not rotation
+    GC_STATUS retVal = GC_OK;
+    return retVal;
+}
+GC_STATUS CalibExecutive::FindMoveTargetsBowTie( const Mat &img, FindPointSet &ptsFound )
+{
+    // TODO: This method currently only handles translation and not rotation
+    GC_STATUS retVal = findCalibGrid.FindMoveTargetsBowTie( img, ptsFound.lftPixel, ptsFound.rgtPixel );
+    if ( GC_OK == retVal )
+    {
+        ptsFound.ctrPixel.x = ( ptsFound.lftPixel.x + ptsFound.rgtPixel.x ) / 2.0;
+        ptsFound.ctrPixel.y = ( ptsFound.lftPixel.y + ptsFound.rgtPixel.y ) / 2.0;
+    }
+    return retVal;
+}
+GC_STATUS CalibExecutive::MoveRefPoint( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt )
+{
+    GC_STATUS retVal = GC_OK;
+
+    if ( "BowTie" == paramsCurrent.calibType )
+    {
+        retVal = MoveRefPointBowTie( lftRefPt, rgtRefPt );
+    }
+    else if ( "StopSign" == paramsCurrent.calibType )
+    {
+        retVal = MoveRefPointStopSign( lftRefPt, rgtRefPt );
+    }
+    else
+    {
+        FILE_LOG( logERROR ) << "[FindLine::FindMoveTargets] No valid calibration type currently set";
+        retVal = GC_ERR;
+    }
+
+    return retVal;
+}
+GC_STATUS CalibExecutive::MoveRefPointBowTie( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt )
+{
+    GC_STATUS retVal = bowTie.MoveRefPoint( lftRefPt, rgtRefPt );
+}
+GC_STATUS CalibExecutive::MoveRefPointStopSign( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt )
+{
+    // TODO: This method currently only handles translation and not rotation
+    GC_STATUS retVal = GC_OK;
+    return retVal;
 }
 
 } // namespace gc

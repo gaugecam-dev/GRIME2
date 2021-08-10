@@ -50,10 +50,13 @@ public:
     GC_STATUS Calibrate( const std::string calibTargetImagePath, const std::string jsonParams, cv::Mat &imgResult );
     GC_STATUS PixelToWorld( const cv::Point2d pixelPt, cv::Point2d &worldPt );
     GC_STATUS WorldToPixel( const cv::Point2d worldPt, cv::Point2d &pixelPt );
-    GC_STATUS GetMoveSearchROIs( std::vector< cv::Rect > &rois );
+    GC_STATUS GetMoveSearchROIs( cv::Rect &rectLeft, cv::Rect &rectRight );
+    GC_STATUS SetMoveSearchROIs( const cv::Mat img, const cv::Rect rectLeft, const cv::Rect rectRight );
     GC_STATUS DetectMove( std::vector< cv::Point2d > &origPos, std::vector< cv::Point2d > &newPos );
     GC_STATUS DrawOverlay( const cv::Mat matIn, cv::Mat &imgMatOut,
                            const bool drawCalib, const bool drawMoveROIs, const bool drawSearchROI );
+    GC_STATUS FindMoveTargets( const cv::Mat &img, FindPointSet &ptsFound );
+    GC_STATUS MoveRefPoint( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt );
     std::vector< LineEnds > &SearchLines();
     std::string &GetCalibType() { return paramsCurrent.calibType; }
 
@@ -66,6 +69,10 @@ private:
 
     GC_STATUS CalibrateBowTie( const string imgFilepath, cv::Mat &imgOut );
     GC_STATUS CalibrateStopSign( const string imgFilepath, cv::Mat &imgOut );
+    GC_STATUS FindMoveTargetsBowTie( const cv::Mat &img, FindPointSet &ptsFound );
+    GC_STATUS FindMoveTargetsStopSign( const cv::Mat &img, FindPointSet &ptsFound );
+    GC_STATUS MoveRefPointBowTie( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt );
+    GC_STATUS MoveRefPointStopSign( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt );
     GC_STATUS ReadWorldCoordsFromCSVBowTie( const string csvFilepath, vector< vector< cv::Point2d > > &worldCoords );
 };
 

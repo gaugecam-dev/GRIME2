@@ -302,27 +302,26 @@ cv::Rect Calib::MoveSearchROI( const bool isLeft )
     return isLeft ? m_model.moveSearchRegionLft :
                     m_model.moveSearchRegionRgt;
 }
-cv::Point2d Calib::MoveRefPoint( const bool isLeft )
+GC_STATUS Calib::MoveRefPoint( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt )
 {
+    GC_STATUS retVal = GC_OK;
     Point2d pt( numeric_limits< double >::min(), numeric_limits< double >::min() );
     if ( m_model.pixelPoints.empty() )
     {
-        FILE_LOG( logERROR ) << "[Calib::MoveRefPoint]"
-                                "Cannot retrieve move reference point from an uncalibrated system: " << \
-                                ( isLeft ? "Left point" : "Right point");
+        FILE_LOG( logERROR ) << "[Calib::MoveRefPoint] Cannot retrieve move reference point from an uncalibrated system";
+        retVal = GC_ERR;
     }
     else if ( static_cast< size_t >( m_model.gridSize.width * m_model.gridSize.height ) != m_model.pixelPoints.size() )
     {
-        FILE_LOG( logERROR ) << "[Calib::MoveRefPoint]"
-                                "Cannot retrieve move reference point with invalid calibration: " << \
-                                ( isLeft ? "Left point" : "Right point");
+        FILE_LOG( logERROR ) << "[Calib::MoveRefPoint] Cannot retrieve move reference point with invalid calibration";
+        retVal = GC_ERR;
     }
     else
     {
-        pt = isLeft ? m_model.pixelPoints[ 0 ] :
-                m_model.pixelPoints[ static_cast< size_t >( m_model.gridSize.width - 1 ) ];
+        lftRefPt = m_model.pixelPoints[ 0 ];
+        rgtRefPt = m_model.pixelPoints[ static_cast< size_t >( m_model.gridSize.width - 1 ) ];
     }
-    return pt;
+    return retVal;
 }
 GC_STATUS Calib::Load( const string &jsonCalibString )
 {
@@ -330,7 +329,7 @@ GC_STATUS Calib::Load( const string &jsonCalibString )
 
     try
     {
-        if ( !fs::exists( jsonCalibString ) )
+        if ( jsonCalibString.empty() )
         {
             FILE_LOG( logERROR ) << "[Calib::Load] Bow tie calibration string is empty";
             retVal = GC_ERR;

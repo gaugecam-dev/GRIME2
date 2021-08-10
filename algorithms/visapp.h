@@ -245,7 +245,6 @@ private:
     MetaData m_metaData;
 
     GC_STATUS PixelToWorld( FindPointSet &ptSet );
-    GC_STATUS ReadWorldCoordsFromCSV( const std::string csvFilepath, std::vector< std::vector< cv::Point2d > > &worldCoords );
     GC_STATUS FindPtSet2JsonString( const FindPointSet set, const string set_type, string &json );
 };
 
