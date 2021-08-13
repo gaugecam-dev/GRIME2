@@ -335,6 +335,8 @@ int MainWindow::ReadSettings( const QString filepath )
         pSettings->beginGroup( "Vision" );
         ui->lineEdit_calibVisionTarget_csv->setText( pSettings->value( "calibCSVFileIn", __CONFIGURATION_FOLDER + "calibration_target_world_coordinates.csv" ).toString() );
         ui->lineEdit_calibVisionResult_json->setText( pSettings->value( "calibJsonFileOut", __CONFIGURATION_FOLDER + "calib.json" ).toString() );
+        pSettings->value( "calibTypeIsBowtie", true ).toBool() ? ui->radioButton_calibBowtie->setChecked( true ) : ui->radioButton_calibStopSign->setChecked( true );
+
         ui->lineEdit_findLineTopFolder->setText( pSettings->value( "findLineFolder", __CONFIGURATION_FOLDER ).toString() );
         ui->lineEdit_findLine_resultCSVFile->setText( pSettings->value( "findLineCSVOutPath", __CONFIGURATION_FOLDER + "waterlevel.csv" ).toString() );
 
@@ -406,6 +408,7 @@ int MainWindow::WriteSettings( const QString filepath )
     pSettings->beginGroup( "Vision" );
     pSettings->setValue( "calibCSVFileIn", ui->lineEdit_calibVisionTarget_csv->text() );
     pSettings->setValue( "calibJsonFileOut", ui->lineEdit_calibVisionResult_json->text() );
+    pSettings->setValue( "calibTypeIsBowtie", ui->radioButton_calibBowtie->isChecked() );
     pSettings->setValue( "findLineFolder", ui->lineEdit_findLineTopFolder->text() );
     pSettings->setValue( "findLineCSVOutPath", ui->lineEdit_findLine_resultCSVFile->text() );
     pSettings->setValue( "folderOfImages", ui->radioButton_folderOfImages->isChecked() );
@@ -1112,16 +1115,16 @@ int MainWindow::FormCalibJsonString( string &json )
         json = "{\"calibType\": \"StopSign\", ";
         if ( ui->radioButton_stopsignFromFile->isChecked() )
         {
-            json += "{\"calibWorldPt_csv\": \"" + ui->lineEdit_calibVisionTarget_csv->text().toStdString() + "\", ";
+            json += "\"calibWorldPt_csv\": \"" + ui->lineEdit_calibVisionTarget_csv->text().toStdString() + "\", ";
             json += "\"stopSignFacetLength\": -1.0, }";
             json += "\"drawCalib\": 0, ",
             json += "\"drawMoveSearchROIs\": 0, ",
             json += "\"drawWaterLineSearchROI\": 0, ",
-            json += "{\"calibResult_json\": \"" + ui->lineEdit_calibVisionResult_json->text().toStdString() + "\"}";
+            json += "\"calibResult_json\": \"" + ui->lineEdit_calibVisionResult_json->text().toStdString() + "\"}";
         }
         else if ( ui->radioButton_stopsignFacetLength->isChecked() )
         {
-            json += "{\"calibWorldPt_csv\": \"" + ui->lineEdit_calibVisionTarget_csv->text().toStdString() + "\", ";
+            json += "\"calibWorldPt_csv\": \"" + ui->lineEdit_calibVisionTarget_csv->text().toStdString() + "\", ";
             json += "\"stopSignFacetLength\": " + to_string( ui->doubleSpinBox_stopSignFacetLength->value() ) + ", ";
             json += "\"drawCalib\": 0, ",
             json += "\"drawMoveSearchROIs\": 0, ",
@@ -1468,7 +1471,7 @@ void MainWindow::on_pushButton_test_clicked()
     if ( GC_OK == retVal )
     {
         Mat color;
-        retVal = findSym.DrawCalibration( searchImg, color );
+        retVal = findSym.DrawCalibration( searchImg, color, true, true, true );
         if ( GC_OK == retVal )
         {
             imwrite( "/var/tmp/water/calibration_red_h2octagon.png", color );

@@ -39,7 +39,6 @@ void CalibExecutive::clear()
 {
     bowTie.clear();
     stopSign.clear();
-    paramsCurrent.clear();
 }
 GC_STATUS CalibExecutive::Calibrate( const std::string calibTargetImagePath, const std::string jsonParams, cv::Mat &imgResult )
 {
@@ -50,6 +49,7 @@ GC_STATUS CalibExecutive::Calibrate( const std::string calibTargetImagePath, con
 
         stringstream ss;
         ss << jsonParams;
+        cout << ss.str() << endl;
 
         pt::ptree top_level;
         pt::json_parser::read_json( ss, top_level );
@@ -96,7 +96,7 @@ GC_STATUS CalibExecutive::DrawOverlay( const cv::Mat matIn, cv::Mat &imgMatOut,
     }
     else if ( "StopSign" == paramsCurrent.calibType )
     {
-        retVal = stopSign.DrawCalibration( matIn, imgMatOut );
+        retVal = stopSign.DrawCalibration( matIn, imgMatOut, drawCalib, drawMoveROIs, drawSearchROI );
     }
     else
     {
@@ -205,10 +205,6 @@ GC_STATUS CalibExecutive::CalibrateStopSign( const string imgFilepath, cv::Mat &
         else
         {
             retVal = stopSign.Calibrate( searchImg, paramsCurrent.stopSignFacetLength );
-            if ( GC_OK == retVal )
-            {
-                retVal = stopSign.DrawCalibration( searchImg, imgOut );
-            }
         }
     }
     catch( Exception &e )

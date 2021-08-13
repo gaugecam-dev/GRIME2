@@ -98,7 +98,7 @@ public:
     GC_STATUS Calibrate( const cv::Mat &img, const double octoSideLength );
     GC_STATUS PixelToWorld( const cv::Point2d ptPixel, cv::Point2d &ptWorld );
     GC_STATUS WorldToPixel( const cv::Point2d ptWorld, cv::Point2d &ptPixel );
-    GC_STATUS DrawCalibration( const cv::Mat &img, cv::Mat &result );
+    GC_STATUS DrawCalibration( const cv::Mat &img, cv::Mat &result, const bool drawCalib, const bool drawMoveROIs, const bool drawSearchROI );
     void clear();
 
     /**
