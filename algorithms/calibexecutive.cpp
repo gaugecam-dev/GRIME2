@@ -328,14 +328,23 @@ GC_STATUS CalibExecutive::Load( const string jsonFilepath )
             {
                 stopSign.clear();
                 paramsCurrent.calibType = "BowTie";
-                retVal = bowTie.Load( ss.str() );
+                retVal = findCalibGrid.InitBowtieTemplate( GC_BOWTIE_TEMPLATE_DIM, Size( GC_IMAGE_SIZE_WIDTH, GC_IMAGE_SIZE_HEIGHT ) );
+                if ( GC_OK == retVal )
+                {
+                    retVal = bowTie.Load( ss.str() );
+                    if ( GC_OK == retVal )
+                    {
+                        Mat scratch( bowTie.GetModel().imgSize, CV_8UC1 );
+                        retVal = findCalibGrid.SetMoveTargetROI( scratch, bowTie.MoveSearchROI( true ), bowTie.MoveSearchROI( false ) );
+                    }
+                }
             }
             else if ( calibTypeString == "StopSign" )
             {
                 bowTie.clear();
+                findCalibGrid.clear();
                 paramsCurrent.calibType = "StopSign";
                 retVal = stopSign.Load( ss.str() );
-
             }
             else if ( "NotSet" == calibTypeString )
             {

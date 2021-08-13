@@ -22,9 +22,9 @@
 #include "opencv2/imgcodecs.hpp"
 #include <exception>
 
-#ifdef DEBUG_FIND_CALIB_GRID
-#undef DEBUG_FIND_CALIB_GRID
-static const std::string DEBUG_RESULT_FOLDER = "/var/tmp/gaugecam/";
+#ifndef DEBUG_FIND_CALIB_GRID
+#define DEBUG_FIND_CALIB_GRID
+static const std::string DEBUG_RESULT_FOLDER = "/var/tmp/water/";
 #endif
 
 using namespace cv;
@@ -37,6 +37,16 @@ FindCalibGrid::FindCalibGrid() :
     m_rectLeftMoveSearch( Rect( 0, 0, 5, 5 ) ),
     m_rectRightMoveSearch( Rect( 10, 0, 5, 5 ) )
 {
+}
+void FindCalibGrid::clear()
+{
+    m_templates.clear();
+    m_matchSpace = Mat();
+    m_matchSpaceSmall = Mat();
+    m_matchItems.clear();
+    m_itemArray.clear();
+    m_rectLeftMoveSearch = Rect( -1, -1, -1, -1 );
+    m_rectRightMoveSearch = Rect( -1, -1, -1, -1 );
 }
 GC_STATUS FindCalibGrid::InitBowtieTemplate( const int templateDim, const Size searchImgSize )
 {
@@ -379,9 +389,11 @@ GC_STATUS FindCalibGrid::MatchTemplate( const int index, const Mat &img, const d
             m_matchItems.clear();
             matchTemplate( img, m_templates[ static_cast< size_t >( index ) ], m_matchSpace, cv::TM_CCOEFF_NORMED );
 
+            // TODO: Debug here for find move target FAIL
 #ifdef DEBUG_FIND_CALIB_GRID
             Mat matTemp;
             normalize( m_matchSpace, matTemp, 255.0 );
+            imwrite( DEBUG_RESULT_FOLDER + "bowtie_match_original.png", img );
             imwrite( DEBUG_RESULT_FOLDER + "bowtie_match_coarse.png", matTemp );
             imwrite( DEBUG_RESULT_FOLDER + "bowtie_match_coarse_double.tiff", m_matchSpace );
 #endif
@@ -647,6 +659,7 @@ GC_STATUS FindCalibGrid::FindMoveTargetsBowTie( const Mat &img, Point2d &ptLeft,
             matMoveSearch.copyTo( matMoveSearchScratch );
 
 #ifdef DEBUG_FIND_CALIB_GRID
+            imwrite( DEBUG_RESULT_FOLDER + "move_search_image_original.png", img );
             imwrite( DEBUG_RESULT_FOLDER + "move_search_image.png", scratch );
 #endif
 

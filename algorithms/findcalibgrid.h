@@ -105,6 +105,9 @@ public:
      */
     GC_STATUS InitBowtieTemplate( const int templateDim , const cv::Size searchImgSize );
 
+    // TODO: Add doxygen comments
+    void clear();
+
     /**
      * @brief Search the image for eight calibration targets
      * @param img Image to search
