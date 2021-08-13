@@ -122,6 +122,7 @@ private:
     GC_STATUS FindDiagonals( const cv::Mat &mask, const std::vector< cv::Point > &contour, SymbolOctagonLines &octoLines );
     GC_STATUS CalcCorners( const SymbolOctagonLines octoLines, std::vector< cv::Point2d > &symbolCorners );
     GC_STATUS CalcOctoWorldPoints( const double sideLength, std::vector< cv::Point2d > &pts );
+    GC_STATUS CalcMoveSearchROI( const cv::Size imgSz, const std::vector< cv::Point2d > symbolCorners, cv::Rect &rect );
 };
 
 } // namespace gc

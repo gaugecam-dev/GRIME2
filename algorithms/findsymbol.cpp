@@ -96,6 +96,10 @@ GC_STATUS FindSymbol::Calibrate( const cv::Mat &img, const double octoSideLength
                                         FILE_LOG( logERROR ) << "[FindSymbol::Calibrate] Could not find world to pixel coordinate homography";
                                         retVal = GC_ERR;
                                     }
+                                    else
+                                    {
+                                        retVal = CalcMoveSearchROI( img.size(), model.pixelPoints, model.moveSearchRegion );
+                                    }
                                 }
                             }
                         }
@@ -237,6 +241,88 @@ GC_STATUS FindSymbol::CalcOctoWorldPoints( const double sideLength, std::vector<
     catch( exception &e )
     {
         FILE_LOG( logERROR ) << "[FindSymbol::CalcWorldPoints] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+
+    return retVal;
+}
+GC_STATUS FindSymbol::CalcMoveSearchROI( const cv::Size imgSz, const std::vector< Point2d > symbolCorners, cv::Rect &rect )
+{
+    GC_STATUS retVal = GC_OK;
+
+    try
+    {
+        if ( 4 > symbolCorners.size() )
+        {
+            FILE_LOG( logERROR ) << "[FindSymbol::CalcMoveSearchROI] Not enough symbol corners=" << symbolCorners.size();
+            retVal = GC_ERR;
+        }
+        else
+        {
+            double minX = std::numeric_limits< double >::max();
+            double minY = std::numeric_limits< double >::max();
+            double maxX = -std::numeric_limits< double >::max();
+            double maxY = -std::numeric_limits< double >::max();
+            for ( size_t i = 0; i < symbolCorners.size(); ++i )
+            {
+                if ( symbolCorners[ i ].x < minX )
+                    minX = symbolCorners[ i ].x;
+                if ( symbolCorners[ i ].y < minY )
+                    minY = symbolCorners[ i ].y;
+                if ( symbolCorners[ i ].x > maxX )
+                    maxX = symbolCorners[ i ].x;
+                if ( symbolCorners[ i ].y > maxY )
+                    maxY = symbolCorners[ i ].y;
+            }
+
+            int x = cvRound( minX );
+            int y = cvRound( minY );
+            int xMax = cvRound( maxX );
+            int yMax = cvRound( maxY );
+            if ( 0 > x )
+                x = 0;
+            if ( 0 > y )
+                y = 0;
+            if ( imgSz.width <= xMax )
+                xMax = imgSz.width - 1;
+            if ( imgSz.height <= yMax )
+                yMax = imgSz.height - 1;
+
+            int wide = xMax - x;
+            int high = yMax - y;
+
+            xMax = xMax + wide / 2;
+            yMax = yMax + high / 2;
+            x -= wide / 2;
+            y -= high / 2;
+
+            if ( 0 > x )
+                x = 0;
+            if ( 0 > y )
+                y = 0;
+            if ( imgSz.width <= xMax )
+                xMax = imgSz.width - 1;
+            if ( imgSz.height <= yMax )
+                yMax = imgSz.height - 1;
+
+            wide = xMax - x;
+            high = yMax - y;
+
+            if ( 30 > wide || 30 > high )
+            {
+                FILE_LOG( logERROR ) << "[FindSymbol::CalcMoveSearchROI] Move ROI invalid. x=" <<
+                                        x << " y=" << " w=" << wide << " h=" << high;
+                retVal = GC_ERR;
+            }
+            else
+            {
+                rect = Rect( x, y, wide, high );
+            }
+        }
+    }
+    catch( cv::Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[FindSymbol::CalcMoveSearchROI] " << e.what();
         retVal = GC_EXCEPT;
     }
 
@@ -928,7 +1014,7 @@ GC_STATUS FindSymbol::DrawCalibration( const cv::Mat &img, cv::Mat &result,
                 }
                 if ( drawMoveROIs )
                 {
-
+                    rectangle( result, model.moveSearchRegion, Scalar( 0, 0, 255 ), lineWidth );
                 }
                 if ( drawSearchROI )
                 {
