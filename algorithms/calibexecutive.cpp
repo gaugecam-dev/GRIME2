@@ -68,14 +68,14 @@ GC_STATUS CalibExecutive::Calibrate( const std::string calibTargetImagePath, con
         }
         else if ( "StopSign" == paramsCurrent.calibType )
         {
-            retVal = CalibrateStopSign( calibTargetImagePath, imgResult );
+            retVal = CalibrateStopSign( calibTargetImagePath );
         }
         else
         {
-            FILE_LOG( logERROR ) << "[CalibExecutive::Calibrate] Invalid calibration type=" << ( paramsCurrent.calibType.empty() ? "empty()" : paramsCurrent.calibType );
+            FILE_LOG( logERROR ) << "[CalibExecutive::Calibrate] Invalid calibration type=" <<
+                                    ( paramsCurrent.calibType.empty() ? "empty()" : paramsCurrent.calibType );
             retVal = GC_ERR;
         }
-
     }
     catch( boost::exception &e )
     {
@@ -184,7 +184,7 @@ GC_STATUS CalibExecutive::ReadWorldCoordsFromCSVBowTie( const string csvFilepath
 
     return retVal;
 }
-GC_STATUS CalibExecutive::CalibrateStopSign( const string imgFilepath, cv::Mat &imgOut )
+GC_STATUS CalibExecutive::CalibrateStopSign( const string imgFilepath )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -205,6 +205,10 @@ GC_STATUS CalibExecutive::CalibrateStopSign( const string imgFilepath, cv::Mat &
         else
         {
             retVal = stopSign.Calibrate( searchImg, paramsCurrent.stopSignFacetLength );
+            if ( GC_OK == retVal )
+            {
+                retVal = stopSign.Save( paramsCurrent.calibResultJsonFilepath );
+            }
         }
     }
     catch( Exception &e )

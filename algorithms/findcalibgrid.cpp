@@ -484,20 +484,14 @@ GC_STATUS FindCalibGrid::SortPoints( const Size sizeSearchImage )
                 tempItems.push_back( m_matchItems[ i ] );
 
             // sort by score (high scores at the top)
-            sort( tempItems.begin(), tempItems.end(), []( TemplateBowtieItem const &a, TemplateBowtieItem const &b )
-            {
-                return ( a.score > b.score );
-            } );
+            sort( tempItems.begin(), tempItems.end(), []( TemplateBowtieItem const &a, TemplateBowtieItem const &b ) { return ( a.score > b.score ); } );
 
             m_matchItems.clear();
             for ( size_t i = 0; i < bowtieCount; ++i )
                 m_matchItems.push_back( tempItems[ i ] );
 
             // sort by y
-            sort( m_matchItems.begin(), m_matchItems.end(), []( TemplateBowtieItem const &a, TemplateBowtieItem const &b )
-            {
-                return ( a.pt.y < b.pt.y );
-            } );
+            sort( m_matchItems.begin(), m_matchItems.end(), []( TemplateBowtieItem const &a, TemplateBowtieItem const &b ) { return ( a.pt.y < b.pt.y ); } );
 
             m_itemArray.clear();
             for( size_t i = 0; i < CALIB_POINT_ROW_COUNT; ++i )
@@ -507,10 +501,7 @@ GC_STATUS FindCalibGrid::SortPoints( const Size sizeSearchImage )
                 {
                     tempItems.push_back( m_matchItems[ i * CALIB_POINT_COL_COUNT + j ] );
                 }
-                sort( tempItems.begin(), tempItems.end(), []( TemplateBowtieItem const &a, TemplateBowtieItem const &b )
-                {
-                    return ( a.pt.x < b.pt.x );
-                } );
+                sort( tempItems.begin(), tempItems.end(), []( TemplateBowtieItem const &a, TemplateBowtieItem const &b ) { return ( a.pt.x < b.pt.x ); } );
                 m_itemArray.push_back( tempItems );
             }
 

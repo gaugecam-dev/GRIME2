@@ -123,6 +123,8 @@ private:
     GC_STATUS CalcCorners( const SymbolOctagonLines octoLines, std::vector< cv::Point2d > &symbolCorners );
     GC_STATUS CalcOctoWorldPoints( const double sideLength, std::vector< cv::Point2d > &pts );
     GC_STATUS CalcMoveSearchROI( const cv::Size imgSz, const std::vector< cv::Point2d > symbolCorners, cv::Rect &rect );
+    GC_STATUS CalcSearchLines( const cv::Size imgSz, const std::vector< cv::Point2d > symbolCorners, std::vector< LineEnds > &searchLines );
+    GC_STATUS Calibrate( const std::vector< cv::Point2d > &pixelPts, const std::vector< cv::Point2d > &worldPts );
 };
 
 } // namespace gc

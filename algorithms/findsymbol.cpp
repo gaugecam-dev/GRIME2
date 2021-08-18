@@ -2,13 +2,19 @@
 #include "findsymbol.h"
 #include <opencv2/imgproc.hpp>
 #include <opencv2/calib3d.hpp>
+#include <boost/foreach.hpp>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
+#include <boost/exception/exception.hpp>
+#include <boost/exception/diagnostic_information.hpp>
 #include <limits>
 #include <fstream>
 #include <iomanip>
-#include <iostream>
+#include <algorithm>
+#include <iterator>
 
-#ifdef DEBUG_FIND_CALIB_SYMBOL
-#undef DEBUG_FIND_CALIB_SYMBOL
+#ifndef DEBUG_FIND_CALIB_SYMBOL
+#define DEBUG_FIND_CALIB_SYMBOL
 #include <iostream>
 #include <opencv2/imgcodecs.hpp>
 static const std::string DEBUG_RESULT_FOLDER = "/var/tmp/water/";
@@ -20,6 +26,7 @@ static const int MIN_SYMBOL_CONTOUR_LENGTH = 7;
 static const double MAX_SYMBOL_CONTOUR_ELONG = 1.5;
 using namespace cv;
 using namespace std;
+using namespace boost;
 
 namespace gc
 {
@@ -82,23 +89,13 @@ GC_STATUS FindSymbol::Calibrate( const cv::Mat &img, const double octoSideLength
                             retVal = CalcOctoWorldPoints( octoSideLength, model.worldPoints );
                             if ( GC_OK == retVal )
                             {
-                                matHomogPixToWorld = findHomography( model.pixelPoints, model.worldPoints );
-                                if ( matHomogPixToWorld.empty() )
+                                retVal = Calibrate( model.pixelPoints, model.worldPoints );
+                                if ( GC_OK == retVal )
                                 {
-                                    FILE_LOG( logERROR ) << "[FindSymbol::Calibrate] Could not find pixel to world coordinate homography";
-                                    retVal = GC_ERR;
-                                }
-                                else
-                                {
-                                    matHomogWorldToPix = findHomography( model.worldPoints, model.pixelPoints );
-                                    if ( matHomogPixToWorld.empty() )
+                                    retVal = CalcMoveSearchROI( img.size(), model.pixelPoints, model.moveSearchRegion );
+                                    if ( GC_OK == retVal )
                                     {
-                                        FILE_LOG( logERROR ) << "[FindSymbol::Calibrate] Could not find world to pixel coordinate homography";
-                                        retVal = GC_ERR;
-                                    }
-                                    else
-                                    {
-                                        retVal = CalcMoveSearchROI( img.size(), model.pixelPoints, model.moveSearchRegion );
+                                        // retVal = CalcLineSearchROI( img.size(), model.pixelPoints, )
                                     }
                                 }
                             }
@@ -116,25 +113,194 @@ GC_STATUS FindSymbol::Calibrate( const cv::Mat &img, const double octoSideLength
 
     return retVal;
 }
+GC_STATUS FindSymbol::Calibrate( const std::vector< cv::Point2d > &pixelPts, const std::vector< cv::Point2d > &worldPts )
+{
+    GC_STATUS retVal = GC_OK;
+
+    try
+    {
+        if ( pixelPts.empty() || worldPts.empty() || pixelPts.size() != worldPts.size() )
+        {
+            FILE_LOG( logERROR ) << "[FindSymbol::Calibrate] Invalid world and/or pixel point sets";
+            retVal = GC_ERR;
+        }
+        else
+        {
+            matHomogPixToWorld = findHomography( pixelPts, worldPts );
+            if ( matHomogPixToWorld.empty() )
+            {
+                FILE_LOG( logERROR ) << "[FindSymbol::Calibrate] Could not find pixel to world coordinate homography";
+                retVal = GC_ERR;
+            }
+            else
+            {
+                matHomogWorldToPix = findHomography( worldPts, pixelPts );
+                if ( matHomogPixToWorld.empty() )
+                {
+                    FILE_LOG( logERROR ) << "[FindSymbol::Calibrate] Could not find world to pixel coordinate homography";
+                    retVal = GC_ERR;
+                }
+            }
+        }
+    }
+    catch( Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[FindSymbol::Calibrate] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+
+    return retVal;
+}
+
+GC_STATUS FindSymbol::CalcSearchLines( const cv::Size imgSz, const std::vector< cv::Point2d > symbolCorners, std::vector< LineEnds > &searchLines )
+{
+    GC_STATUS retVal = GC_OK;
+
+    try
+    {
+        if ( 8 != symbolCorners.size() )
+        {
+            FILE_LOG( logERROR ) << "[FindSymbol::CalcSearchLines] Symbol corners count wrong";
+            retVal = GC_ERR;
+        }
+        else
+        {
+            // find top left and top right points
+            vector< Point2d > vecSortCorners = symbolCorners;
+            std::sort( vecSortCorners.begin(), vecSortCorners.end(), []( const Point2d &a, const Point2d &b ) { return a.y < b.y; } );
+
+            Point2d lftTop, rgtTop;
+            if ( vecSortCorners[ 0 ].x > vecSortCorners[ 1 ].x )
+            {
+                lftTop = vecSortCorners[ 1 ];
+                rgtTop = vecSortCorners[ 0 ];
+            }
+            else
+            {
+                rgtTop = vecSortCorners[ 1 ];
+                lftTop = vecSortCorners[ 0 ];
+            }
+
+            Point2d lftBot, rgtBot;
+            if ( vecSortCorners[ 7 ].x > vecSortCorners[ 8 ].x )
+            {
+                lftBot = vecSortCorners[ 8 ];
+                rgtBot = vecSortCorners[ 7 ];
+            }
+            else
+            {
+                rgtBot = vecSortCorners[ 8 ];
+                lftBot = vecSortCorners[ 7 ];
+            }
+#ifdef DEBUG_FIND_CALIB_SYMBOL
+#endif
+        }
+    }
+    catch( Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[FindSymbol::CalcSearchLines] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+
+    return retVal;
+}
 GC_STATUS FindSymbol::Load( const std::string jsonCalFilepath )
 {
     GC_STATUS retVal = GC_OK;
 
-    if ( jsonCalFilepath.empty() )
+    try
     {
-        FILE_LOG( logERROR ) << "[FindSymbol::Load] Calibration filepath is empty";
-        retVal = GC_ERR;
+        if ( jsonCalFilepath.empty() )
+        {
+            FILE_LOG( logERROR ) << "[FindSymbol::Load] Bow tie calibration string is empty";
+            retVal = GC_ERR;
+        }
+        else
+        {
+            stringstream ss;
+            ss << jsonCalFilepath;
+            property_tree::ptree ptreeTop;
+            property_tree::json_parser::read_json( ss, ptreeTop );
+
+            model.imgSize.width = ptreeTop.get< int >( "imageWidth", 0 );
+            model.imgSize.height = ptreeTop.get< int >( "imageHeight", 0 );
+            property_tree::ptree ptreeCalib = ptreeTop.get_child( "PixelToWorld" );
+
+            Point2d ptTemp;
+            size_t cols = ptreeCalib.get< size_t >( "columns", 2 );
+            size_t rows = ptreeCalib.get< size_t >( "rows", 4 );
+            model.pixelPoints.clear();
+            model.worldPoints.clear();
+
+            BOOST_FOREACH( property_tree::ptree::value_type &node, ptreeCalib.get_child( "points" ) )
+            {
+                ptTemp.x = node.second.get< double >( "pixelX", 0.0 );
+                ptTemp.y = node.second.get< double >( "pixelY", 0.0 );
+                model.pixelPoints.push_back( ptTemp );
+                ptTemp.x = node.second.get< double >( "worldX", 0.0 );
+                ptTemp.y = node.second.get< double >( "worldY", 0.0 );
+                model.worldPoints.push_back( ptTemp );
+            }
+
+            const property_tree::ptree &ptreeMoveSearch = ptreeTop.get_child( "MoveSearchRegions" );
+            model.moveSearchRegion.x =      ptreeMoveSearch.get< int >( "x", 0 );
+            model.moveSearchRegion.y =      ptreeMoveSearch.get< int >( "y", 0 );
+            model.moveSearchRegion.width =  ptreeMoveSearch.get< int >( "width", 0 );
+            model.moveSearchRegion.height = ptreeMoveSearch.get< int >( "height", 0 );
+
+            Point ptTop, ptBot;
+            model.searchLines.clear();
+            BOOST_FOREACH( property_tree::ptree::value_type &node, ptreeTop.get_child( "SearchLines" ) )
+            {
+                ptTop.x = node.second.get< int >( "topX", std::numeric_limits< int >::min() );
+                ptTop.y = node.second.get< int >( "topY", std::numeric_limits< int >::min() );
+                ptBot.x = node.second.get< int >( "botX", std::numeric_limits< int >::min() );
+                ptBot.y = node.second.get< int >( "botY", std::numeric_limits< int >::min() );
+                model.searchLines.push_back( LineEnds( ptTop, ptBot ) );
+            }
+
+#ifdef LOG_CALIB_VALUES
+            FILE_LOG( logINFO ) << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~";
+            FILE_LOG( logINFO ) << "Camera calibration association points";
+            FILE_LOG( logINFO ) << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~";
+            FILE_LOG( logINFO ) << "Columns=" << cols << " Rows=" << rows;
+            FILE_LOG( logINFO ) << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~";
+#endif
+            if ( cols * rows != model.pixelPoints.size() )
+            {
+                FILE_LOG( logERROR ) << "[FindSymbol::Load] Invalid association point count";
+                retVal = GC_ERR;
+            }
+            else
+            {
+#ifdef LOG_CALIB_VALUES
+                for ( size_t i = 0; i < m_settings.pixelPoints.size(); ++i )
+                {
+                    FILE_LOG( logINFO ) << "[r=" << i / cols << " c=" << i % cols << "] " << \
+                                           " pixelX=" << m_settings.pixelPoints[ i ].x << " pixelY=" << m_settings.pixelPoints[ i ].y << \
+                                           " worldX=" << m_settings.worldPoints[ i ].x << " worldY=" << m_settings.worldPoints[ i ].y;
+                }
+#endif
+                Mat matIn, matOut;
+                retVal = Calibrate( model.pixelPoints, model.worldPoints );
+            }
+#ifdef LOG_CALIB_VALUES
+            FILE_LOG( logINFO ) << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
+            FILE_LOG( logINFO ) << "Search lines";
+            FILE_LOG( logINFO ) << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~";
+            for ( size_t i = 0; i < m_settings.searchLines.size(); ++i )
+            {
+                FILE_LOG( logINFO ) << "[index=" << i << "] " << \
+                                       " topX=" << m_settings.searchLines[ i ].top.x << " topY=" << m_settings.searchLines[ i ].top.y << \
+                                       " botX=" << m_settings.searchLines[ i ].bot.x << " botY=" << m_settings.searchLines[ i ].bot.y;
+            }
+#endif
+        }
     }
-    else
+    catch( boost::exception &e )
     {
-        try
-        {
-        }
-        catch( exception &e )
-        {
-            FILE_LOG( logERROR ) << "[FindSymbol::Load] " << e.what();
-            retVal = GC_EXCEPT;
-        }
+        FILE_LOG( logERROR ) << "[FindSymbol::Load] " << diagnostic_information( e );
+        retVal = GC_EXCEPT;
     }
 
     return retVal;
@@ -213,7 +379,7 @@ GC_STATUS FindSymbol::Save( const std::string jsonCalFilepath )
                 retVal = GC_ERR;
             }
         }
-        catch( exception &e )
+        catch( std::exception &e )
         {
             FILE_LOG( logERROR ) << "[FindSymbol::Save] " << e.what();
             retVal = GC_EXCEPT;
@@ -238,7 +404,7 @@ GC_STATUS FindSymbol::CalcOctoWorldPoints( const double sideLength, std::vector<
         pts.push_back( Point2d( 0.0, cornerLength + sideLength ) );
         pts.push_back( Point2d( 0.0, cornerLength ) );
     }
-    catch( exception &e )
+    catch( std::exception &e )
     {
         FILE_LOG( logERROR ) << "[FindSymbol::CalcWorldPoints] " << e.what();
         retVal = GC_EXCEPT;
@@ -845,7 +1011,7 @@ GC_STATUS FindSymbol::PixelToWorld( const Point2d ptPixel, Point2d &ptWorld )
     {
         if ( matHomogPixToWorld.empty() )
         {
-            FILE_LOG( logERROR ) << "[Calib::PixelToWorld] No calibration for pixel to world conversion";
+            FILE_LOG( logERROR ) << "[FindSymbol::PixelToWorld] No calibration for pixel to world conversion";
             retVal = GC_ERR;
         }
         else
@@ -872,7 +1038,7 @@ GC_STATUS FindSymbol::WorldToPixel( const Point2d ptWorld, Point2d &ptPixel )
     {
         if ( matHomogWorldToPix.empty() )
         {
-            FILE_LOG( logERROR ) << "[Calib::WorldToPixel]"
+            FILE_LOG( logERROR ) << "[FindSymbol::WorldToPixel]"
                                     "No calibration for world to pixel conversion";
             retVal = GC_ERR;
         }

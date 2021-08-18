@@ -68,7 +68,7 @@ private:
     std::vector< LineEnds > nullSearchLines;    ///< Empty vector of search lines to be searched for the water line
 
     GC_STATUS CalibrateBowTie( const string imgFilepath, cv::Mat &imgOut );
-    GC_STATUS CalibrateStopSign( const string imgFilepath, cv::Mat &imgOut );
+    GC_STATUS CalibrateStopSign( const string imgFilepath );
     GC_STATUS FindMoveTargetsBowTie( const cv::Mat &img, FindPointSet &ptsFound );
     GC_STATUS FindMoveTargetsStopSign( const cv::Mat &img, FindPointSet &ptsFound );
     GC_STATUS MoveRefPointBowTie( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt );
