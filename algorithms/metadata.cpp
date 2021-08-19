@@ -228,6 +228,7 @@ GC_STATUS MetaData::GetImageData( const string filepath, string &data )
 }
 GC_STATUS MetaData::GetImageData( const string filepath, ExifFeatures &exifFeat )
 {
+    bool allThere = true;
     GC_STATUS retVal = GC_OK;
     try
     {
@@ -249,6 +250,10 @@ GC_STATUS MetaData::GetImageData( const string filepath, ExifFeatures &exifFeat 
                 {
                     exifFeat.imageDims.height = stoi( data );
                 }
+                else
+                {
+                    allThere = false;
+                }
                 retVal = GetExifData( filepath, "DateTimeOriginal", data );
                 if ( GC_OK == retVal )
                 {
@@ -256,6 +261,7 @@ GC_STATUS MetaData::GetImageData( const string filepath, ExifFeatures &exifFeat 
                 }
                 else
                 {
+                    allThere = false;
                     exifFeat.captureTime = "N/A";
                 }
                 retVal = GetExifData( filepath, "FNumber", data );
@@ -263,20 +269,36 @@ GC_STATUS MetaData::GetImageData( const string filepath, ExifFeatures &exifFeat 
                 {
                     exifFeat.fNumber = stod( data );
                 }
+                else
+                {
+                    allThere = false;
+                }
                 retVal = GetExifData( filepath, "ExposureTime", data );
                 if ( GC_OK == retVal )
                 {
                     exifFeat.exposureTime = stod( data );
+                }
+                else
+                {
+                    allThere = false;
                 }
                 retVal = GetExifData( filepath, "ShutterSpeed", data );
                 if ( GC_OK == retVal )
                 {
                     exifFeat.shutterSpeed = stod( data );
                 }
+                else
+                {
+                    allThere = false;
+                }
                 retVal = GetExifData( filepath, "ISO", data );
                 if ( GC_OK == retVal )
                 {
                     exifFeat.isoSpeedRating = stoi( data );
+                }
+                else
+                {
+                    allThere = false;
                 }
             }
         }
@@ -285,6 +307,12 @@ GC_STATUS MetaData::GetImageData( const string filepath, ExifFeatures &exifFeat 
     {
         FILE_LOG( logERROR ) << "[ExifMetadata::GetExifImageData] " << e.what();
         retVal = GC_EXCEPT;
+    }
+
+    if ( GC_OK == retVal && !allThere )
+    {
+        FILE_LOG( logWARNING ) << "[ExifMetadata::GetExifImageData] ";
+        retVal = GC_WARN;
     }
 
     return retVal;
