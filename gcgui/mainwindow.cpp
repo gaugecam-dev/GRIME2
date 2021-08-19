@@ -1365,7 +1365,7 @@ void MainWindow::on_pushButton_showImageMetadata_clicked()
             std::string data;
             GC_STATUS retVal = m_visApp.GetMetadata( strFullPath.toStdString(), data );
             ui->textEdit_msgs->setText( data.c_str() );
-            ui->textEdit_msgs->append( "All data retrieved: " + QString( GC_OK == retVal ? "SUCCESS" : "FAILURE" ) );
+            ui->textEdit_msgs->append( QString( GC_OK == retVal ? "SUCCESS" : "SOME OR ALL METADATA NOT AVAILABLE" ) );
         }
     }
 }

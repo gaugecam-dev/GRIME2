@@ -68,15 +68,23 @@ GC_STATUS MetaData::GetExifData( const string filepath, const string tag, string
         }
         else
         {
-            size_t pos = strBuf.find( ":" );
-            if ( string::npos == pos )
+            if ( strBuf.empty() )
             {
-                FILE_LOG( logERROR ) << "[MetaData::GetExifData] Invalid exif data (no \":\" found: " << strBuf;
+                FILE_LOG( logERROR ) << "[MetaData::GetExifData] Field not found: " << tag;
                 retVal = GC_ERR;
             }
             else
             {
-                data = trim_copy( strBuf.substr( pos + 1 ) );
+                size_t pos = strBuf.find( ":" );
+                if ( string::npos == pos )
+                {
+                    FILE_LOG( logERROR ) << "[MetaData::GetExifData] Invalid exif data (no \":\" found: " << strBuf;
+                    retVal = GC_ERR;
+                }
+                else
+                {
+                    data = trim_copy( strBuf.substr( pos + 1 ) );
+                }
             }
         }
 
@@ -126,15 +134,23 @@ GC_STATUS MetaData::GetExifData( const string filepath, const string tag, string
 #else
             pclose( cmd );
 #endif
-            size_t pos = strBuf.find( ":" );
-            if ( string::npos == pos )
+            if ( strBuf.empty() )
             {
-                FILE_LOG( logERROR ) << "[MetaData::GetExifData] Invalid exif data (no \":\" found: " << strBuf;
+                FILE_LOG( logERROR ) << "[MetaData::GetExifData] Field not found: " << tag;
                 retVal = GC_ERR;
             }
             else
             {
-                data = trim_copy( strBuf.substr( pos + 1 ) );
+                size_t pos = strBuf.find( ":" );
+                if ( string::npos == pos )
+                {
+                    FILE_LOG( logERROR ) << "[MetaData::GetExifData] Invalid exif data (no \":\" found): " << strBuf;
+                    retVal = GC_ERR;
+                }
+                else
+                {
+                    data = trim_copy( strBuf.substr( pos + 1 ) );
+                }
             }
         }
 
@@ -237,6 +253,10 @@ GC_STATUS MetaData::GetImageData( const string filepath, ExifFeatures &exifFeat 
                 if ( GC_OK == retVal )
                 {
                     exifFeat.captureTime = ConvertToLocalTimestamp( data );
+                }
+                else
+                {
+                    exifFeat.captureTime = "N/A";
                 }
                 retVal = GetExifData( filepath, "FNumber", data );
                 if ( GC_OK == retVal )
