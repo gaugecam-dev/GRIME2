@@ -167,6 +167,10 @@ MainWindow::MainWindow(QWidget *parent) :
     createActions();
     createConnections();
 
+    QPalette pal = ui->progressBar_imageLoad->palette();
+    pal.setColor( QPalette::Normal, QPalette::Base, QColor( "green" ) );
+    ui->progressBar_imageLoad->setPalette( pal );
+
     on_lineEdit_imageFolder_textEdited( ui->lineEdit_imageFolder->text() );
     on_actionZoom100_triggered();
     ui->widget_overlayCheckboxes->hide();

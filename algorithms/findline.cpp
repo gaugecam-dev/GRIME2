@@ -571,22 +571,6 @@ GC_STATUS FindLine::CalcSwathPoint( const vector< LineEnds > &swath, const vecto
     }
     return retVal;
 }
-GC_STATUS FindLine::CalcSubpixel( const double y, const double deltaY_n, const double deltaY_n1, double &y_subpixel )
-{
-    GC_STATUS retVal = GC_OK;
-
-    try
-    {
-        y_subpixel = y + deltaY_n / ( deltaY_n + deltaY_n1 );
-    }
-    catch( cv::Exception &e )
-    {
-        FILE_LOG( logERROR ) << "[FindLine::CalcSubpixel] " << e.what();
-        retVal = GC_EXCEPT;
-    }
-
-    return retVal;
-}
 GC_STATUS FindLine::CalcRowSums( const Mat &img, const vector< LineEnds > &lines, vector< uint > &rowSums )
 {
     GC_STATUS retVal = lines.empty() || img.empty() ? GC_ERR : GC_OK;
