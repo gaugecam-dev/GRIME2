@@ -32,7 +32,7 @@ namespace gc
 {
 
 static double elongation( Moments m );
-static double EuclidianDistance( Point a, Point b );
+static double EuclidianDistance( Point2d a, Point2d b );
 
 FindSymbol::FindSymbol()
 {
@@ -151,7 +151,43 @@ GC_STATUS FindSymbol::Calibrate( const std::vector< cv::Point2d > &pixelPts, con
 
     return retVal;
 }
+GC_STATUS FindSymbol::CalcPointOnLine( const SymbolLine linePts, const double dist, cv::Point2d &pt )
+{
+    GC_STATUS retVal = GC_OK;
 
+    try
+    {
+        double deltaX = linePts.pt2.x - linePts.pt1.x;
+        double deltaY = linePts.pt2.y - linePts.pt1.y;
+        if ( numeric_limits< double >::epsilon() > deltaX )
+        {
+            pt.x = linePts.pt1.x;
+            pt.y = linePts.pt1.y + dist;
+        }
+        else if ( numeric_limits< double >::epsilon() > deltaY )
+        {
+            pt.x = linePts.pt1.x + dist;
+            pt.y = linePts.pt1.y;
+        }
+        else
+        {
+            double m = deltaY / deltaX;
+            double b = linePts.pt1.y - m * linePts.pt2.x;
+            double xPlus = linePts.pt1.x + ( dist / ( 1.0 + m * m ) );
+            double yPlus = pt.y = m * pt.x + b;
+            double xMinus = linePts.pt1.x - ( dist / ( 1.0 + m * m ) );
+            double yMinus = pt.y = m * pt.x + b;
+            pt = ( yPlus > yMinus ) ?  Point2d( xPlus, yPlus ) : Point2d( xMinus, yMinus );
+        }
+    }
+    catch( std::exception &e )
+    {
+        FILE_LOG( logERROR ) << "[FindSymbol::CalcPointOnLine] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+
+    return retVal;
+}
 GC_STATUS FindSymbol::CalcSearchLines( const cv::Size imgSz, const std::vector< cv::Point2d > symbolCorners, std::vector< LineEnds > &searchLines )
 {
     GC_STATUS retVal = GC_OK;
@@ -192,6 +228,18 @@ GC_STATUS FindSymbol::CalcSearchLines( const cv::Size imgSz, const std::vector< 
                 rgtBot = vecSortCorners[ 8 ];
                 lftBot = vecSortCorners[ 7 ];
             }
+
+            SymbolLine lftLine( lftTop, lftBot );
+            SymbolLine rgtLine( rgtTop, rgtBot );
+
+            double topLineLength = EuclidianDistance( lftTop, rgtTop );
+            double distToLftTopLinePt = topLineLength / 3.0;
+            double distToRgtTopLinePt = distToLftTopLinePt * 2.0;
+
+            double botLineLength = EuclidianDistance( lftBot, rgtBot );
+            double distToLftBotLinePt = botLineLength / 3.0;
+            double distToRgtBotLinePt = distToLftBotLinePt * 2.0;
+
 #ifdef DEBUG_FIND_CALIB_SYMBOL
 #endif
         }
@@ -1199,7 +1247,7 @@ GC_STATUS FindSymbol::DrawCalibration( const cv::Mat &img, cv::Mat &result,
 }
 
 // helper functions
-static double EuclidianDistance( Point a, Point b )
+static double EuclidianDistance( Point2d a, Point2d b )
 {
     return sqrt( ( b.x - a.x ) * ( b.x - a.x ) + ( b.y - a.y ) * ( b.y - a.y ) );
 }

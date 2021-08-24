@@ -136,6 +136,7 @@ private:
     GC_STATUS GetSlopeIntercept( const cv::Point2d one, const cv::Point2d two, double &slope, double &intercept );
     GC_STATUS CalculateRowSumsLines( const vector< uint > rowSums, const vector< LineEnds > lines, vector< vector< cv::Point > > &rowSumsLines,
                                      vector< vector< cv::Point > > &deriveOneLines,  vector< vector< cv::Point > > &deriveTwoLines );
+    GC_STATUS CalcSubpixel( const double y, const double deltaY_n, const double deltaY_n1, double &y_subpixel );
 };
 
 } // namespace gc

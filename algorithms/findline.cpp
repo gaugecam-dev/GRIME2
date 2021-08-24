@@ -105,7 +105,6 @@ GC_STATUS FindLine::Find( const Mat &img, const vector< LineEnds > &lines, FindL
                 retVal = GC_ERR;
             }
 #endif
-
             size_t start;
             Point2d linePt;
             vector< uint > rowSums;
@@ -435,7 +434,11 @@ GC_STATUS FindLine::DrawResult( const Mat &img, Mat &imgOut, const FindLineResul
                 {
                     line( imgOut, Point2d( 0.0, 0.0 ), Point2d( img.cols - 1, img.rows - 1 ), Scalar( 0, 0, 255 ), 3 );
                     line( imgOut, Point2d( 0.0, img.rows - 1 ), Point2d( img.cols - 1, 0.0 ), Scalar( 0, 0, 255 ), 3 );
-                    putText( imgOut, "BAD FIND", Point( 5, textRowSpacing * 2 ), FONT_HERSHEY_PLAIN, fontScale, Scalar( 0, 255, 255 ), textStroke );
+                    putText( imgOut, "BAD FIND", Point( 5, textRowSpacing * 2 ), FONT_HERSHEY_PLAIN, fontScale, Scalar( 0, 0, 255 ), textStroke );
+                    for ( size_t i = 0; i < result.foundPoints.size(); ++i )
+                    {
+                        circle( imgOut, result.foundPoints[ i ], max( 3, circleSize >> 1 ), Scalar( 0, 255, 255 ), FILLED );
+                    }
                 }
                 else
                 {
@@ -551,12 +554,13 @@ GC_STATUS FindLine::CalcSwathPoint( const vector< LineEnds > &swath, const vecto
             else
             {
                 resultPt.x = static_cast< double >( swath[ 0 ].top.x + swath[ swath.size() - 1 ].top.x ) / 2.0;
-                double total = static_cast< double >( rowSums[ static_cast< size_t >( index - 1 ) ] * static_cast< uint >( ( index - 1 ) ) +
-                                                      rowSums[ static_cast< size_t >( index ) ] * static_cast< uint >( index ) +
-                                                      rowSums[ static_cast< size_t >( index + 1 ) ] * static_cast< uint >( index + 1 ) );
-                double denom = ( rowSums[ static_cast< size_t >( index - 1 ) ] + rowSums[ static_cast< size_t >( index ) ] + rowSums[ static_cast< size_t >( index + 1 ) ] );
-                resultPt.y = ( total / denom ) + static_cast< double >( swath[ 0 ].top.y + swath[ swath.size() - 1 ].top.y ) / 2.0;
-
+                double d0 = rowSums[ static_cast< size_t >( index - 1 ) ] - rowSums[ static_cast< size_t >( index - 2 ) ];
+                double d1 = rowSums[ static_cast< size_t >( index ) ] - rowSums[ static_cast< size_t >( index - 1 ) ];
+                double d2 = rowSums[ static_cast< size_t >( index + 1 ) ] - rowSums[ static_cast< size_t >( index ) ];
+                double dd1 = d1 - d0;
+                double dd2 = d2 - d1;
+                resultPt.y = static_cast< double >( index ) + fabs( dd1 ) / ( fabs( dd1 * dd1 ) + ( dd2 * dd2 ) ) +
+                        static_cast< double >( swath[ 0 ].top.y + swath[ swath.size() - 1 ].top.y ) / 2.0;
             }
         }
         catch( cv::Exception &e )
@@ -565,6 +569,22 @@ GC_STATUS FindLine::CalcSwathPoint( const vector< LineEnds > &swath, const vecto
             retVal = GC_EXCEPT;
         }
     }
+    return retVal;
+}
+GC_STATUS FindLine::CalcSubpixel( const double y, const double deltaY_n, const double deltaY_n1, double &y_subpixel )
+{
+    GC_STATUS retVal = GC_OK;
+
+    try
+    {
+        y_subpixel = y + deltaY_n / ( deltaY_n + deltaY_n1 );
+    }
+    catch( cv::Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[FindLine::CalcSubpixel] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+
     return retVal;
 }
 GC_STATUS FindLine::CalcRowSums( const Mat &img, const vector< LineEnds > &lines, vector< uint > &rowSums )

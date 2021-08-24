@@ -295,7 +295,8 @@ public:
 
     /**
      * @brief Constructor to set the object to a valid state
-     * @param lineAngle     Angle of the found line
+     * @param anglePixel    Angle of the found line (pixels)
+     * @param angleWorld    Angle of the found line (world)
      * @param leftPixel     Left most pixel coordinate position of the found line
      * @param leftWorld     Left most world coordinate position of the found line
      * @param centerPixel   Center pixel coordinate position of the found line

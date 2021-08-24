@@ -125,6 +125,7 @@ private:
     GC_STATUS CalcMoveSearchROI( const cv::Size imgSz, const std::vector< cv::Point2d > symbolCorners, cv::Rect &rect );
     GC_STATUS CalcSearchLines( const cv::Size imgSz, const std::vector< cv::Point2d > symbolCorners, std::vector< LineEnds > &searchLines );
     GC_STATUS Calibrate( const std::vector< cv::Point2d > &pixelPts, const std::vector< cv::Point2d > &worldPts );
+    GC_STATUS CalcPointOnLine( const SymbolLine linePts, const double dist, cv::Point2d &pt );
 };
 
 } // namespace gc

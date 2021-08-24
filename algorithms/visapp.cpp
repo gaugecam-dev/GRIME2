@@ -200,10 +200,17 @@ GC_STATUS VisApp::CalcLine( const Mat &img, const string timestamp )
                                     result.offsetMovePts.rgtWorld.x = result.foundMovePts.rgtWorld.x - result.refMovePts.rgtWorld.x;
                                     result.offsetMovePts.rgtWorld.y = result.foundMovePts.rgtWorld.y - result.refMovePts.rgtWorld.y;
 
+                                    result.msgs.push_back( buffer );
                                     snprintf( buffer, 256, "Adjust: %.3f", result.offsetMovePts.ctrWorld.y );
                                     result.msgs.push_back( buffer );
                                     result.waterLevelAdjusted.x = result.calcLinePts.ctrWorld.x - result.offsetMovePts.ctrWorld.x;
                                     result.waterLevelAdjusted.y = result.calcLinePts.ctrWorld.y - result.offsetMovePts.ctrWorld.y;
+
+                                    result.calcLinePts.angleWorld = atan( ( result.offsetMovePts.rgtWorld.y - result.offsetMovePts.lftWorld.y ) /
+                                                                          ( result.offsetMovePts.rgtWorld.x - result.offsetMovePts.lftWorld.x ) );
+                                    snprintf( buffer, 256, "Angle: %.3f", result.calcLinePts.angleWorld );
+                                    result.msgs.push_back( buffer );
+
                                     snprintf( buffer, 256, "Level (adj): %.3f", result.waterLevelAdjusted.y );
                                     result.msgs.push_back( buffer );
                                 }
@@ -275,7 +282,7 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result,
             ss << "\"status\":  \"" << ( result.findSuccess ? "SUCCESS" : "FAIL" ) << "\",";
             ss << "\"timestamp\": \"" << result.timestamp << "\",";
             ss << "\"waterLevelAdjusted_x\": " << result.waterLevelAdjusted.x << ",";
-            ss << "\"waterLevelAdjusted_y\": " << result.waterLevelAdjusted.x << ",";
+            ss << "\"waterLevelAdjusted_y\": " << result.waterLevelAdjusted.y << ",";
 
             string json;
             retVal = FindPtSet2JsonString( result.calcLinePts, "calc_line_pts", json );
@@ -421,6 +428,7 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result 
                                     char buffer[ 256 ];
                                     snprintf( buffer, 256, "Level: %.3f", result.calcLinePts.ctrWorld.y );
                                     result.msgs.push_back( buffer );
+
                                     retVal = m_calibExec.FindMoveTargets( img, result.foundMovePts );
                                     if ( GC_OK != retVal )
                                     {
@@ -451,6 +459,12 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result 
 
                                             sprintf( buffer, "Adjust: %.3f", result.offsetMovePts.ctrWorld.y );
                                             result.msgs.push_back( buffer );
+
+                                            result.calcLinePts.angleWorld = atan( ( result.offsetMovePts.rgtWorld.y - result.offsetMovePts.lftWorld.y ) /
+                                                                                  ( result.offsetMovePts.rgtWorld.x - result.offsetMovePts.lftWorld.x ) );
+                                            snprintf( buffer, 256, "Angle: %.3f", result.calcLinePts.angleWorld );
+                                            result.msgs.push_back( buffer );
+
                                             result.waterLevelAdjusted.y = result.calcLinePts.ctrWorld.y - result.offsetMovePts.ctrWorld.y;
                                             snprintf( buffer, 256, "Level (adj): %.3f", result.waterLevelAdjusted.y );
                                             result.msgs.push_back( buffer );
@@ -675,7 +689,8 @@ GC_STATUS VisApp::CreateAnimation( const std::string imageFolder, const std::str
             for ( auto& p: fs::recursive_directory_iterator( imageFolder ) )
             {
                 ext = p.path().extension().string();
-                if ( ext == ".png" || ext == ".jpg" )
+                if ( ext == ".png" || ext == ".jpg" ||
+                     ext == ".PNG" || ext == ".JPG" )
                 {
                     images.push_back( p.path().string() );
                 }
