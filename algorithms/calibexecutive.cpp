@@ -280,7 +280,7 @@ GC_STATUS CalibExecutive::CalibrateBowTie( const string imgFilepath, Mat &imgOut
                                     }
                                 }
                                 retVal = bowTie.Calibrate( pixPtArray, worldPtArray, Size( 2, 4 ), img.size(), img, imgOut,
-                                                           paramsCurrent.drawCalib, paramsCurrent.drawMoveSearchROIs );
+                                                           paramsCurrent.drawCalib, paramsCurrent.drawMoveSearchROIs, paramsCurrent.drawMoveSearchROIs );
                                 if ( GC_OK == retVal )
                                 {
                                     retVal = bowTie.Save( paramsCurrent.calibResultJsonFilepath );

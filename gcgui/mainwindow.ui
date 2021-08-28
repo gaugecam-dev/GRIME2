@@ -23,7 +23,7 @@
    </size>
   </property>
   <property name="windowTitle">
-   <string>GaugeCam GRIME2 v0.1.0.0 -- New calib type infrasturcure and bug fixes</string>
+   <string>GaugeCam GRIME2 v0.1.0.0 Beta -- New calib type infrasturcure and bug fixes</string>
   </property>
   <property name="windowIcon">
    <iconset>
@@ -461,7 +461,7 @@ metadata</string>
                <enum>QTabWidget::South</enum>
               </property>
               <property name="currentIndex">
-               <number>1</number>
+               <number>2</number>
               </property>
               <widget class="QWidget" name="tab_mainRunFolder">
                <attribute name="title">
@@ -1108,6 +1108,9 @@ metadata</string>
                   <layout class="QHBoxLayout" name="horizontalLayout_23">
                    <item>
                     <widget class="QRadioButton" name="radioButton_stopsignFromFile">
+                     <property name="enabled">
+                      <bool>false</bool>
+                     </property>
                      <property name="text">
                       <string>World coord. file</string>
                      </property>

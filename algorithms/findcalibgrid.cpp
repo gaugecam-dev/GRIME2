@@ -22,8 +22,8 @@
 #include "opencv2/imgcodecs.hpp"
 #include <exception>
 
-#ifndef DEBUG_FIND_CALIB_GRID
-#define DEBUG_FIND_CALIB_GRID
+#ifdef DEBUG_FIND_CALIB_GRID
+#undef DEBUG_FIND_CALIB_GRID
 static const std::string DEBUG_RESULT_FOLDER = "/var/tmp/water/";
 #endif
 
@@ -53,8 +53,7 @@ GC_STATUS FindCalibGrid::InitBowtieTemplate( const int templateDim, const Size s
     GC_STATUS retVal = GC_OK;
     if ( 20 > templateDim || 1000 < templateDim )
     {
-        FILE_LOG( logERROR ) << "[FindCalibGrid::InitBowtieTemplate]"
-                                                   " Invalid template dimension " << templateDim;
+        FILE_LOG( logERROR ) << "[FindCalibGrid::InitBowtieTemplate] Invalid template dimension " << templateDim;
         retVal = GC_ERR;
     }
     else
@@ -288,8 +287,7 @@ GC_STATUS FindCalibGrid::MatchRefine( const int index, const Mat &img, const dou
     }
     else if ( 0.05 > minScore || 1.0 < minScore )
     {
-        FILE_LOG( logERROR ) << "[FindCalibGrid::MatchRefine]"
-                                                   " Min score %.3f must be in range 0.05-1.0" << minScore;
+        FILE_LOG( logERROR ) << "[FindCalibGrid::MatchRefine]  Min score %.3f must be in range 0.05-1.0" << minScore;
         retVal = GC_ERR;
     }
     else if ( 1 > numToFind || 1000 < numToFind )
@@ -340,6 +338,13 @@ GC_STATUS FindCalibGrid::MatchRefine( const int index, const Mat &img, const dou
                     item.score = maxScore;
                     item.pt.x = static_cast< double >( rect.x ) + ptFinal.x + static_cast< double >( m_templates[ 0 ].cols ) / 2.0;
                     item.pt.y = static_cast< double >( rect.y ) + ptFinal.y + static_cast< double >( m_templates[ 0 ].rows ) / 2.0;
+                }
+                else
+                {
+                    item.score = 0.0;
+                    item.pt.x = static_cast< double >( rect.x ) + ptMax.x + static_cast< double >( m_templates[ 0 ].cols ) / 2.0;
+                    item.pt.y = static_cast< double >( rect.y ) + ptMax.y + static_cast< double >( m_templates[ 0 ].rows ) / 2.0;
+                    retVal = GC_OK;
                 }
             }
         }
@@ -530,14 +535,14 @@ GC_STATUS FindCalibGrid::SubpixelPointRefine( const Mat &matchSpace, const Point
     GC_STATUS retVal = GC_OK;
     if ( 1 > ptMax.x || 1 > ptMax.y || matchSpace.cols - 2 < ptMax.x || matchSpace.rows - 2 < ptMax.y )
     {
-        FILE_LOG( logERROR ) << "[FindCalibGrid::SubpixelPointRefine]"
-                                " Invalid point (not on image) for subpixel refinement";
-        retVal = GC_ERR;
+#ifdef DEBUG_FIND_CALIB_GRID
+        FILE_LOG( logWARNING ) << "[FindCalibGrid::SubpixelPointRefine] Invalid point (not on image) for subpixel refinement";
+#endif
+        retVal = GC_WARN;
     }
     else if ( CV_32FC1 != matchSpace.type() )
     {
-        FILE_LOG( logERROR ) << "[FindCalibGrid::SubpixelPointRefine]"
-                                " Invalid image format for subpixel refinement";
+        FILE_LOG( logERROR ) << "[FindCalibGrid::SubpixelPointRefine] Invalid image format for subpixel refinement";
         retVal = GC_ERR;
     }
     else

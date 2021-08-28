@@ -15,6 +15,7 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 #include <string>
 #include <iostream>
+#include <opencv2/imgcodecs.hpp>
 #include "arghandler.h"
 #include "../algorithms/visapp.h"
 
@@ -24,7 +25,7 @@ using namespace gc;
 // example command lines
 // --version
 // --show_help
-// --calibrate "/home/kchapman/repos/GRIME2/gcgui/config/2012_demo/06/NRmarshDN-12-06-45-10-30.jpg" --csv_file "/home/kchapman/repos/GRIME2/gcgui/config/calibration_target_world_coordinates.csv" --result_image "/home/kchapman/Desktop/calib/calib_result.png"
+// --calibrate "/media/kchapman/Elements/Projects/GRIME2/build-grime2cli-Desktop_Qt_5_15_2_GCC_64bit-Debug/config/2012_demo/06/NRmarshDN-12-06-30-10-30.jpg" --calib_json "/media/kchapman/Elements/Projects/GRIME2/build-grime2cli-Desktop_Qt_5_15_2_GCC_64bit-Debug/config/calib.json" --csv_file "/media/kchapman/Elements/Projects/GRIME2/build-grime2cli-Desktop_Qt_5_15_2_GCC_64bit-Debug/config/calibration_target_world_coordinates.csv" --result_image "/var/tmp/water/calib_result.png"
 // --show_metadata "/home/kchapman/data/idaho_power/bad_cal_bad_line_find/TREK0003.jpg"
 // --find_line --timestamp_from_filename --timestamp_start_pos 10 --timestamp_length 14 --timestamp_format "yy-mm-dd-HH-MM" "/home/kchapman/repos/GRIME2/gcgui/config/2012_demo/06/NRmarshDN-12-06-30-10-45.jpg" --calib_json "/home/kchapman/Desktop/calib/calib.json" --result_image "/home/kchapman/Desktop/calib/find_line_result.png"
 // --run_folder --timestamp_from_filename --timestamp_start_pos 10 --timestamp_length 14 --timestamp_format "yy-mm-dd-HH-MM" "/home/kchapman/repos/GRIME2/gcgui/config/2012_demo/06/" --calib_json "/home/kchapman/Desktop/calib/calib.json" --csv_file "/home/kchapman/Desktop/calib/" --result_folder "/home/kchapman/Desktop/calib/find_line_folder.csv"
@@ -33,6 +34,7 @@ using namespace gc;
 void ShowVersion();
 GC_STATUS FindWaterLevel( const Grime2CLIParams cliParams );
 GC_STATUS RunFolder( const Grime2CLIParams cliParams );
+GC_STATUS FormCalibJsonString( const Grime2CLIParams cliParams, string &json );
 
 /** \file main.cpp
  * @brief Holds the main() function for command line use of the h2o_cli libraries.
@@ -63,7 +65,21 @@ int main( int argc, char *argv[] )
             if ( CALIBRATE == params.opToPerform )
             {
                 VisApp vis;
-                retVal = vis.Calibrate( params.src_imagePath, params.csvPath, params.calib_jsonPath, params.result_imagePath );
+                string jsonString;
+                retVal = FormCalibJsonString( params, jsonString );
+                if ( GC_OK == retVal )
+                {
+                    cv::Mat imgOut;
+                    retVal = vis.Calibrate( params.src_imagePath, jsonString, imgOut );
+                    if ( GC_OK == retVal && !params.result_imagePath.empty() )
+                    {
+                        bool bRet = cv::imwrite( params.result_imagePath, imgOut );
+                        if ( !bRet )
+                        {
+                            FILE_LOG( logWARNING ) << "Could not save calibration result image " << params.result_imagePath;
+                        }
+                    }
+                }
             }
             else if ( FIND_LINE == params.opToPerform )
             {
@@ -197,6 +213,56 @@ GC_STATUS FindWaterLevel( const Grime2CLIParams cliParams )
     FindLineResult result;
     GC_STATUS retVal = visApp.CalcLine( params, result, resultJson );
     cout << ( GC_OK == retVal ? resultJson : "ERROR" ) << endl;
+    return retVal;
+}
+GC_STATUS FormCalibJsonString( const Grime2CLIParams cliParams, string &json )
+{
+    GC_STATUS retVal = GC_OK;
+
+    if ( true ) // bow tie calibration
+    {
+        json = "{\"calibType\": \"BowTie\", ";
+        json += "\"calibWorldPt_csv\": \"" + cliParams.csvPath + "\", ";
+        json += "\"stopSignFacetLength\": -1.0, ";
+        json += "\"drawCalib\": 1, ",
+        json += "\"drawMoveSearchROIs\": 1, ",
+        json += "\"drawWaterLineSearchROI\": 1, ",
+        json += "\"calibResult_json\": \"" + cliParams.calib_jsonPath + "\"}";
+    }
+    else if ( false ) // stop sign calibration
+    {
+        json = "{\"calibType\": \"StopSign\", ";
+        if ( false ) // from file with world coords
+        {
+            json += "\"calibWorldPt_csv\": \"" + cliParams.csvPath + "\", ";
+            json += "\"stopSignFacetLength\": -1.0, }";
+            json += "\"drawCalib\": 1, ",
+            json += "\"drawMoveSearchROIs\": 1, ",
+            json += "\"drawWaterLineSearchROI\": 1, ",
+            json += "\"calibResult_json\": \"" + cliParams.calib_jsonPath + "\"}";
+        }
+        else if ( false ) // from facet length
+        {
+            json += "\"calibWorldPt_csv\": \"\", ";
+            json += "\"stopSignFacetLength\": " + to_string( 10.0 ) + ", ";
+            json += "\"drawCalib\": 1, ",
+            json += "\"drawMoveSearchROIs\": 1, ",
+            json += "\"drawWaterLineSearchROI\": 1, ",
+            json += "\"calibResult_json\": \"" + cliParams.calib_jsonPath + "\"}";
+        }
+        else
+        {
+            json.clear();
+            FILE_LOG( logERROR ) << "No valid stop sign calibration method";
+            retVal = GC_ERR;
+        }
+    }
+    else
+    {
+        FILE_LOG( logERROR ) << "No calibration type selected";
+        retVal = GC_ERR;
+    }
+
     return retVal;
 }
 
