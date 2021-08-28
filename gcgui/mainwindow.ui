@@ -23,7 +23,7 @@
    </size>
   </property>
   <property name="windowTitle">
-   <string>GaugeCam GRIME2 v0.0.1.8 -- Bug fixes (csv date, cli command line cleanup)</string>
+   <string>GaugeCam GRIME2 v0.1.0.0 -- New calib type infrasturcure and bug fixes</string>
   </property>
   <property name="windowIcon">
    <iconset>
@@ -1078,31 +1078,25 @@ metadata</string>
                      <item>
                       <widget class="QRadioButton" name="radioButton_calibStopSign">
                        <property name="enabled">
-                        <bool>true</bool>
+                        <bool>false</bool>
                        </property>
                        <property name="text">
                         <string>Stop sign</string>
                        </property>
                       </widget>
                      </item>
+                     <item>
+                      <widget class="QRadioButton" name="radioButton_calibStaffGauge">
+                       <property name="enabled">
+                        <bool>false</bool>
+                       </property>
+                       <property name="text">
+                        <string>Staff gauge</string>
+                       </property>
+                      </widget>
+                     </item>
                     </layout>
                    </widget>
-                  </item>
-                  <item>
-                   <spacer name="horizontalSpacer_9">
-                    <property name="orientation">
-                     <enum>Qt::Horizontal</enum>
-                    </property>
-                    <property name="sizeType">
-                     <enum>QSizePolicy::Expanding</enum>
-                    </property>
-                    <property name="sizeHint" stdset="0">
-                     <size>
-                      <width>20</width>
-                      <height>20</height>
-                     </size>
-                    </property>
-                   </spacer>
                   </item>
                  </layout>
                 </item>
@@ -1117,12 +1111,18 @@ metadata</string>
                      <property name="text">
                       <string>World coord. file</string>
                      </property>
+                     <property name="checked">
+                      <bool>true</bool>
+                     </property>
                     </widget>
                    </item>
                    <item>
                     <spacer name="horizontalSpacer_6">
                      <property name="orientation">
                       <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="sizeType">
+                      <enum>QSizePolicy::Preferred</enum>
                      </property>
                      <property name="sizeHint" stdset="0">
                       <size>
@@ -1134,16 +1134,22 @@ metadata</string>
                    </item>
                    <item>
                     <widget class="QRadioButton" name="radioButton_stopsignFacetLength">
+                     <property name="enabled">
+                      <bool>false</bool>
+                     </property>
                      <property name="text">
                       <string>Facet length</string>
                      </property>
                      <property name="checked">
-                      <bool>true</bool>
+                      <bool>false</bool>
                      </property>
                     </widget>
                    </item>
                    <item>
                     <widget class="QDoubleSpinBox" name="doubleSpinBox_stopSignFacetLength">
+                     <property name="enabled">
+                      <bool>false</bool>
+                     </property>
                      <property name="minimum">
                       <double>0.000000000000000</double>
                      </property>

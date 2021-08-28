@@ -249,50 +249,53 @@ GC_STATUS Calib::Calibrate( const vector< Point2d > pixelPts, const vector< Poin
 }
 GC_STATUS Calib::PixelToWorld( const Point2d ptPixel, Point2d &ptWorld )
 {
+    GC_STATUS retVal = GC_OK;
+
     if ( m_matHomogPixToWorld.empty() )
     {
         FILE_LOG( logERROR ) << "[Calib::PixelToWorld] No calibration for pixel to world conversion";
-        return GC_ERR;
+        retVal = GC_ERR;
     }
-
-    GC_STATUS retVal = GC_OK;
-
-    try
+    else
     {
-        vector< Point2d > vecIn, vecOut;
-        vecIn.push_back( ptPixel );
-        perspectiveTransform( vecIn, vecOut, m_matHomogPixToWorld );
-        ptWorld = vecOut[ 0 ];
-    }
-    catch( Exception &e )
-    {
-        FILE_LOG( logERROR ) << "[Calib::PixelToWorld] " << e.what();
-        return GC_EXCEPT;
+        try
+        {
+            vector< Point2d > vecIn, vecOut;
+            vecIn.push_back( ptPixel );
+            perspectiveTransform( vecIn, vecOut, m_matHomogPixToWorld );
+            ptWorld = vecOut[ 0 ];
+        }
+        catch( Exception &e )
+        {
+            FILE_LOG( logERROR ) << "[Calib::PixelToWorld] " << e.what();
+            retVal = GC_EXCEPT;
+        }
     }
 
     return retVal;
 }
 GC_STATUS Calib::WorldToPixel( const Point2d ptWorld, Point2d &ptPixel )
 {
+    GC_STATUS retVal = GC_OK;
     if ( m_matHomogWorldToPix.empty() )
     {
         FILE_LOG( logERROR ) << "[Calib::WorldToPixel] No calibration for world to pixel conversion";
-        return GC_ERR;
+        retVal = GC_ERR;
     }
-
-    GC_STATUS retVal = GC_OK;
-
-    try
+    else
     {
-        vector< Point2d > vecIn, vecOut;
-        vecIn.push_back( ptWorld );
-        perspectiveTransform( vecIn, vecOut, m_matHomogWorldToPix );
-        ptPixel = vecOut[ 0 ];
-    }
-    catch( Exception &e )
-    {
-        FILE_LOG( logERROR ) << "[Calib::WorldToPixel] " << e.what();
-        return GC_EXCEPT;
+        try
+        {
+            vector< Point2d > vecIn, vecOut;
+            vecIn.push_back( ptWorld );
+            perspectiveTransform( vecIn, vecOut, m_matHomogWorldToPix );
+            ptPixel = vecOut[ 0 ];
+        }
+        catch( Exception &e )
+        {
+            FILE_LOG( logERROR ) << "[Calib::WorldToPixel] " << e.what();
+            retVal = GC_EXCEPT;
+        }
     }
 
     return retVal;

@@ -339,7 +339,9 @@ int MainWindow::ReadSettings( const QString filepath )
         pSettings->beginGroup( "Vision" );
         ui->lineEdit_calibVisionTarget_csv->setText( pSettings->value( "calibCSVFileIn", __CONFIGURATION_FOLDER + "calibration_target_world_coordinates.csv" ).toString() );
         ui->lineEdit_calibVisionResult_json->setText( pSettings->value( "calibJsonFileOut", __CONFIGURATION_FOLDER + "calib.json" ).toString() );
-        pSettings->value( "calibTypeIsBowtie", true ).toBool() ? ui->radioButton_calibBowtie->setChecked( true ) : ui->radioButton_calibStopSign->setChecked( true );
+        // TODO: Replace hard set to bow tie when other methods are implemented
+        ui->radioButton_calibBowtie->setChecked( true );
+        // pSettings->value( "calibTypeIsBowtie", true ).toBool() ? ui->radioButton_calibBowtie->setChecked( true ) : ui->radioButton_calibStopSign->setChecked( true );
 
         ui->lineEdit_findLineTopFolder->setText( pSettings->value( "findLineFolder", __CONFIGURATION_FOLDER ).toString() );
         ui->lineEdit_findLine_resultCSVFile->setText( pSettings->value( "findLineCSVOutPath", __CONFIGURATION_FOLDER + "waterlevel.csv" ).toString() );

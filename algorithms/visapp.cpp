@@ -144,11 +144,12 @@ GC_STATUS VisApp::CalcLine( const Mat &img, const string timestamp )
             }
             else
             {
-                result.timestamp = timestamp;
-                result.msgs.push_back( "FindStatus: " + string( GC_OK == retVal ? "SUCCESS" : "FAIL" ) );
                 char buffer[ 256 ];
+                result.timestamp = timestamp;
                 snprintf( buffer, 256, "Timestamp: %s", result.timestamp.c_str() );
                 result.msgs.push_back( buffer );
+
+                result.msgs.push_back( "FindStatus: " + string( GC_OK == retVal ? "SUCCESS" : "FAIL" ) );
 
                 retVal = PixelToWorld( result.calcLinePts );
                 if ( GC_OK != retVal )
@@ -200,7 +201,6 @@ GC_STATUS VisApp::CalcLine( const Mat &img, const string timestamp )
                                     result.offsetMovePts.rgtWorld.x = result.foundMovePts.rgtWorld.x - result.refMovePts.rgtWorld.x;
                                     result.offsetMovePts.rgtWorld.y = result.foundMovePts.rgtWorld.y - result.refMovePts.rgtWorld.y;
 
-                                    result.msgs.push_back( buffer );
                                     snprintf( buffer, 256, "Adjust: %.3f", result.offsetMovePts.ctrWorld.y );
                                     result.msgs.push_back( buffer );
                                     result.waterLevelAdjusted.x = result.calcLinePts.ctrWorld.x - result.offsetMovePts.ctrWorld.x;
@@ -424,8 +424,12 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result 
                                 }
                                 else
                                 {
-                                    result.msgs.push_back( "FindStatus: " + string( GC_OK == retVal ? "SUCCESS" : "FAIL" ) );
                                     char buffer[ 256 ];
+                                    snprintf( buffer, 256, "Timestamp: %s", result.timestamp.c_str() );
+                                    result.msgs.push_back( buffer );
+
+                                    result.msgs.push_back( "FindStatus: " + string( GC_OK == retVal ? "SUCCESS" : "FAIL" ) );
+
                                     snprintf( buffer, 256, "Level: %.3f", result.calcLinePts.ctrWorld.y );
                                     result.msgs.push_back( buffer );
 

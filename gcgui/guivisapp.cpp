@@ -853,7 +853,7 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                 }
                 else
                 {
-                    csvOut << "filename, timestamp, water level" << endl;
+                    csvOut << "filename, timestamp, status, water level, line angle, level adjustment" << endl;
                 }
             }
             if ( !params.resultImagePath.empty() )
@@ -953,8 +953,11 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                             findData.findlineResult.timestamp = timestamp;
                             if ( !params.resultCSVPath.empty() )
                             {
-                                csvOut << filename << "," << timestamp << "," <<
-                                          findData.findlineResult.waterLevelAdjusted.y << endl;
+                                csvOut << std::setprecision( 3 ) << std::fixed << filename << "," << timestamp << "," <<
+                                          ( findData.findlineResult.findSuccess ? "SUCCESS" : "FAIL" ) << "," <<
+                                          findData.findlineResult.waterLevelAdjusted.y << "," <<
+                                          findData.findlineResult.calcLinePts.angleWorld << "," <<
+                                          findData.findlineResult.offsetMovePts.ctrWorld.y << endl;
                             }
                             if ( !params.resultImagePath.empty() )
                             {
