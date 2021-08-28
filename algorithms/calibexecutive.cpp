@@ -375,7 +375,8 @@ std::vector< LineEnds > &CalibExecutive::SearchLines()
 }
 GC_STATUS CalibExecutive::GetMoveSearchROIs( Rect &rectLeft , Rect &rectRight )
 {
-
+    // TODO: Not yet implemented
+    return GC_ERR;
 }
 GC_STATUS CalibExecutive::SetMoveSearchROIs( const cv::Mat img, const cv::Rect rectLeft, const cv::Rect rectRight )
 {
@@ -442,6 +443,7 @@ GC_STATUS CalibExecutive::MoveRefPoint( cv::Point2d &lftRefPt, cv::Point2d &rgtR
 GC_STATUS CalibExecutive::MoveRefPointBowTie( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt )
 {
     GC_STATUS retVal = bowTie.MoveRefPoint( lftRefPt, rgtRefPt );
+    return retVal;
 }
 GC_STATUS CalibExecutive::MoveRefPointStopSign( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt )
 {
