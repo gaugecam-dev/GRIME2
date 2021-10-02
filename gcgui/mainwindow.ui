@@ -1078,7 +1078,7 @@ metadata</string>
                      <item>
                       <widget class="QRadioButton" name="radioButton_calibStopSign">
                        <property name="enabled">
-                        <bool>false</bool>
+                        <bool>true</bool>
                        </property>
                        <property name="text">
                         <string>Stop sign</string>
@@ -1109,7 +1109,7 @@ metadata</string>
                    <item>
                     <widget class="QRadioButton" name="radioButton_stopsignFromFile">
                      <property name="enabled">
-                      <bool>false</bool>
+                      <bool>true</bool>
                      </property>
                      <property name="text">
                       <string>World coord. file</string>
@@ -1138,7 +1138,7 @@ metadata</string>
                    <item>
                     <widget class="QRadioButton" name="radioButton_stopsignFacetLength">
                      <property name="enabled">
-                      <bool>false</bool>
+                      <bool>true</bool>
                      </property>
                      <property name="text">
                       <string>Facet length</string>
@@ -1151,7 +1151,7 @@ metadata</string>
                    <item>
                     <widget class="QDoubleSpinBox" name="doubleSpinBox_stopSignFacetLength">
                      <property name="enabled">
-                      <bool>false</bool>
+                      <bool>true</bool>
                      </property>
                      <property name="minimum">
                       <double>0.000000000000000</double>

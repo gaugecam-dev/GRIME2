@@ -24,6 +24,7 @@
 #include <QPainter>
 #include <QCursor>
 #include <QColor>
+#include <QGlobalStatic>
 #include <QtWidgets/QScrollBar>
 #include <QtWidgets/QFileDialog>
 #include <QtWidgets/QInputDialog>
@@ -44,8 +45,8 @@ namespace fs = boost::filesystem;
 static const QString __CONFIGURATION_FOLDER = "c:/gaugecam/config/";
 static const QString __SETTINGS_FILEPATH = "c:/gaugecam/config/settingsWin.cfg";
 #else
-static const QString __CONFIGURATION_FOLDER = "./config/";
-static const QString __SETTINGS_FILEPATH = "./config/settings.cfg";
+const static string __CONFIGURATION_FOLDER = "./config/";
+const static string __SETTINGS_FILEPATH = "./config/settings.cfg";
 #endif
 
 static double DistToLine( const double dX, const double dY,
@@ -146,14 +147,14 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->scrollArea_ImgDisplay->setWidgetResizable( false );
     ui->scrollArea_ImgDisplay->setWidget( m_pLabelImgDisplay );
 
-    int ret = ReadSettings( __SETTINGS_FILEPATH );
+    int ret = ReadSettings( __SETTINGS_FILEPATH.c_str() );
     if ( 0 != ret )
     {
         QMessageBox::warning( this, "Read settings warning", "FAIL:  No settings found, using defaults" );
     }
 
     cv::Size sizeImg = cv::Size( m_imgWidth, m_imgHeight );
-    ret = m_visApp.Init( __CONFIGURATION_FOLDER.toStdString(), sizeImg );
+    ret = m_visApp.Init( __CONFIGURATION_FOLDER, sizeImg );
     ui->textEdit_msgs->append( 0 == ret ? "Settings load succeeded" : "Settings load failed" );
 
     ui->actionSaveVideo->setEnabled( false );
@@ -184,7 +185,7 @@ MainWindow::~MainWindow()
         QMessageBox::warning( this, "App write settings warning",
                               "FAIL:  Could not write application settings properly on program exit" );
 
-    ret = WriteSettings( __SETTINGS_FILEPATH );
+    ret = WriteSettings( QString( __SETTINGS_FILEPATH.c_str() ) );
     if ( 0 != ret )
         QMessageBox::warning( this, "GUI write settings warning",
                               "FAIL:  Could not write GUI settings properly on program exit" );
@@ -337,14 +338,14 @@ int MainWindow::ReadSettings( const QString filepath )
 
         // vision stuff
         pSettings->beginGroup( "Vision" );
-        ui->lineEdit_calibVisionTarget_csv->setText( pSettings->value( "calibCSVFileIn", __CONFIGURATION_FOLDER + "calibration_target_world_coordinates.csv" ).toString() );
-        ui->lineEdit_calibVisionResult_json->setText( pSettings->value( "calibJsonFileOut", __CONFIGURATION_FOLDER + "calib.json" ).toString() );
+        ui->lineEdit_calibVisionTarget_csv->setText( pSettings->value( "calibCSVFileIn", QString( __CONFIGURATION_FOLDER.c_str() ) + "calibration_target_world_coordinates.csv" ).toString() );
+        ui->lineEdit_calibVisionResult_json->setText( pSettings->value( "calibJsonFileOut", QString( __CONFIGURATION_FOLDER.c_str() ) + "calib.json" ).toString() );
         // TODO: Replace hard set to bow tie when other methods are implemented
         ui->radioButton_calibBowtie->setChecked( true );
         // pSettings->value( "calibTypeIsBowtie", true ).toBool() ? ui->radioButton_calibBowtie->setChecked( true ) : ui->radioButton_calibStopSign->setChecked( true );
 
-        ui->lineEdit_findLineTopFolder->setText( pSettings->value( "findLineFolder", __CONFIGURATION_FOLDER ).toString() );
-        ui->lineEdit_findLine_resultCSVFile->setText( pSettings->value( "findLineCSVOutPath", __CONFIGURATION_FOLDER + "waterlevel.csv" ).toString() );
+        ui->lineEdit_findLineTopFolder->setText( pSettings->value( "findLineFolder", QString( __CONFIGURATION_FOLDER.c_str() ) ).toString() );
+        ui->lineEdit_findLine_resultCSVFile->setText( pSettings->value( "findLineCSVOutPath", QString( __CONFIGURATION_FOLDER.c_str() ) + "waterlevel.csv" ).toString() );
 
         bool isFolderOfImages = pSettings->value( "folderOfImages", true ).toBool();
         ui->radioButton_folderOfImages->setChecked( isFolderOfImages );
@@ -353,7 +354,7 @@ int MainWindow::ReadSettings( const QString filepath )
         bool createCSV = pSettings->value( "createCSVCheckbox", true ).toBool();
         ui->checkBox_createFindLine_csvResultsFile->setChecked( createCSV );
 
-        ui->lineEdit_findLine_annotatedResultFolder->setText( pSettings->value( "findLineAnnotatedOutFolder", __CONFIGURATION_FOLDER ).toString() );
+        ui->lineEdit_findLine_annotatedResultFolder->setText( pSettings->value( "findLineAnnotatedOutFolder", QString( __CONFIGURATION_FOLDER.c_str() ) ).toString() );
         ui->checkBox_createFindLine_annotatedResults->setChecked( pSettings->value( "createAnnotationCheckbox", false ).toBool() );
         ui->spinBox_timeStringPosZero->setValue( pSettings->value( "timestampStringStartPos", 10 ).toInt() );
         ui->radioButton_dateTimeInFilename->setChecked( pSettings->value( "timestampFromFilename", true ).toBool() );

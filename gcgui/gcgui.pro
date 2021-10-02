@@ -49,10 +49,11 @@ win32 {
 SOURCES += \
         ../algorithms/animate.cpp \
         ../algorithms/calib.cpp \
-    ../algorithms/calibexecutive.cpp \
+	../algorithms/calibexecutive.cpp \
         ../algorithms/findcalibgrid.cpp \
         ../algorithms/findline.cpp \
 	../algorithms/findsymbol.cpp \
+	../algorithms/findstaffgauge.cpp \
 	../algorithms/metadata.cpp \
         ../algorithms/visapp.cpp \
         guivisapp.cpp \
@@ -63,11 +64,12 @@ HEADERS += \
         ../algorithms/animate.h \
         ../algorithms/bresenham.h \
         ../algorithms/calib.h \
-    ../algorithms/calibexecutive.h \
+	../algorithms/calibexecutive.h \
         ../algorithms/csvreader.h \
         ../algorithms/findcalibgrid.h \
         ../algorithms/findline.h \
 	../algorithms/findsymbol.h \
+	../algorithms/findstaffgauge.h \
 	../algorithms/gc_types.h \
         ../algorithms/log.h \
         ../algorithms/metadata.h \
