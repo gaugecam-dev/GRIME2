@@ -17,13 +17,10 @@
 #include "mainwindow.h"
 #include <QtWidgets/QApplication>
 
-#ifdef TEST_JUNK
-#undef TEST_JUNK
+#ifndef TEST_JUNK
+#define TEST_JUNK
 #include <opencv2/imgcodecs.hpp>
-#include "../algorithms/csvreader.h"
-#include "../algorithms/timestampconvert.h"
-#include "../algorithms/findanchor.h"
-#include "../algorithms/metadata.h"
+#include "../algorithms/findstaffgauge.h"
 #endif
 
 int main(int argc, char *argv[])
@@ -40,10 +37,10 @@ int main(int argc, char *argv[])
 
     return a.exec();
 #else
-    MetaData meta;
-    FindData data;
-//    meta.WriteLineFindResult( "/media/kchapman/ThriveArchive/archive/utmb-feb/2021-02-01_17-35-23.304960_14d0fb24-0ae0-48ff-83af-8c06c76dc4d0/B6_0a83c097-4a48-4a99-8999-d8c9db382d0a/2021-02-01_17-38-07.739042_c9577d59-ee56-4ff1-a541-07a76e1abe27.png", data );
-    GC_STATUS retVal = meta.WriteLineFindResult( "/home/kchapman/Projects/gaugecam/trunk/gcgui/config/2012_demo/05/NRmarshDN-12-05-31-23-00.jpg", data );
+    FindStaffGauge find;
+    cv::Mat img = imread( "/media/kchapman/Elements/unl/article_repo/trunk/unl_third_paper/StaffGaugeWithSymbol.png" );
+    std::vector< double > tickLengths = { 35.0, 54.0, 65.0 };
+    GC_STATUS retVal = find.Find( img, Point2d( 0.0, 24.0 ), -1.0, tickLengths );
     return GC_OK == retVal ? 0 : 1;
 #endif
 }

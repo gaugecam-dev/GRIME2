@@ -189,7 +189,7 @@ GC_STATUS FindCalibGrid::FindTargets( const Mat &img, const double minScore, con
     {
         if ( m_templates.empty() )
         {
-            FILE_LOG( logERROR ) << "[FindCalibGrid::FindTargets] Templates not devined";
+            FILE_LOG( logERROR ) << "[FindCalibGrid::FindTargets] Templates not defined";
             retVal = GC_ERR;
         }
         else if ( img.empty() )
