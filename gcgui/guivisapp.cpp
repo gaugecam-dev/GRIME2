@@ -739,6 +739,8 @@ GC_STATUS GuiVisApp::CalcLinesInFolder( const std::string folder, const FindLine
                 for ( auto& p: fs::recursive_directory_iterator( folder ) )
                 {
                     ext = p.path().extension().string();
+                    std::transform( ext.begin(), ext.end(), ext.begin(),
+                                       []( unsigned char c ){ return std::tolower( c ); } );
                     if ( ext == ".png" || ext == ".jpg" )
                     {
                         images.push_back( p.path().string() );

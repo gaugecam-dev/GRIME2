@@ -49,7 +49,7 @@ GC_STATUS CalibExecutive::Calibrate( const std::string calibTargetImagePath, con
 
         stringstream ss;
         ss << jsonParams;
-        cout << ss.str() << endl;
+        // cout << ss.str() << endl;
 
         pt::ptree top_level;
         pt::json_parser::read_json( ss, top_level );

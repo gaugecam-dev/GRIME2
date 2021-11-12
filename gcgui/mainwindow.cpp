@@ -1367,7 +1367,8 @@ void MainWindow::on_pushButton_showImageMetadata_clicked()
     }
     else
     {
-        if ( strFullPath.endsWith( ".jpg" ) || strFullPath.endsWith( ".png" ) )
+        QString lower = strFullPath.toLower();
+        if ( lower.endsWith( ".jpg" ) || lower.endsWith( ".png" ) )
         {
             std::string data;
             GC_STATUS retVal = m_visApp.GetMetadata( strFullPath.toStdString(), data );

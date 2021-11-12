@@ -1,6 +1,7 @@
 #include "log.h"
 #include "findstaffgauge.h"
 #include <opencv2/imgproc.hpp>
+#include <opencv2/calib3d.hpp>
 
 using namespace cv;
 using namespace std;
@@ -54,7 +55,7 @@ GC_STATUS FindStaffGauge::FindTicks( const cv::Mat &img, StaffGaugeTickType tick
     GC_STATUS retVal = GC_OK;
     try
     {
-        retVal = CreateTemplates( img, tickType );
+        retVal = CreateTemplates( tickType );
         if ( GC_OK == retVal )
         {
             int numToFind = -1;
@@ -89,6 +90,86 @@ GC_STATUS FindStaffGauge::Find( const cv::Mat &img, cv::Point2d ptTopTickPos, co
         if ( GC_OK == retVal )
         {
             retVal = CalcWorldPts( img8u, ptTopTickPos, distTickToTick, tickLengths );
+#if 1 // test the calibration
+            vector< Point2d > worldPts;
+            worldPts.push_back( Point2d( 1.428571429, 24.0 ) );
+            worldPts.push_back( Point2d( 0.0, 23.0 ) );
+            worldPts.push_back( Point2d( 0.0, 22.0 ) );
+            worldPts.push_back( Point2d( 0.0, 21.0 ) );
+            worldPts.push_back( Point2d( 0.0, 20.0 ) );
+            worldPts.push_back( Point2d( 0.0, 19.0 ) );
+            worldPts.push_back( Point2d( 1.428571429, 18.0 ) );
+            worldPts.push_back( Point2d( 0.0, 17.0 ) );
+            worldPts.push_back( Point2d( 0.0, 16.0 ) );
+            worldPts.push_back( Point2d( 0.0, 15.0 ) );
+            worldPts.push_back( Point2d( 0.0, 14.0 ) );
+            worldPts.push_back( Point2d( 0.0, 13.0 ) );
+            worldPts.push_back( Point2d( 0.0, 11.0 ) );
+            worldPts.push_back( Point2d( 0.0, 10.0 ) );
+            worldPts.push_back( Point2d( 0.0, 9.0 ) );
+            worldPts.push_back( Point2d( 0.0, 8.0 ) );
+            worldPts.push_back( Point2d( 0.0, 7.0 ) );
+            worldPts.push_back( Point2d( 1.428571429, 6.0 ) );
+            worldPts.push_back( Point2d( 0.0, 5.0 ) );
+            worldPts.push_back( Point2d( 0.0, 4.0 ) );
+            worldPts.push_back( Point2d( 0.0, 3.0 ) );
+            worldPts.push_back( Point2d( 0.0, 2.0 ) );
+            worldPts.push_back( Point2d( 0.0, 1.0 ) );
+            worldPts.push_back( Point2d( 1.2, 0.0 ) );
+            worldPts.push_back( Point2d( 0.0, -3.0 ) );
+            worldPts.push_back( Point2d( 0.0, -4.0 ) );
+            Mat homogPixToWorld = findHomography( pixelPts, worldPts );
+            Mat homogWorldToPix = findHomography( worldPts, pixelPts );
+
+            Mat color;
+            if ( img.type() == CV_8UC3 )
+                img.copyTo( color );
+            else
+                cvtColor( img, color, COLOR_GRAY2BGR );
+
+//            retVal = FindTicks( img8u, BLACK_BOTTOM_LEFT_CORNER );
+//            if ( GC_OK == retVal )
+//            {
+
+//            }
+            Point2d pt1, pt2;
+            vector< Point2d > vecIn, vecOut;
+            double y_pos = 24.0;
+            for ( size_t i = 0; i < 25; ++i )
+            {
+                vecIn.clear();
+                vecIn.push_back( Point2d( -1.428571429 * 2.0, y_pos ) );
+                perspectiveTransform( vecIn, vecOut, homogWorldToPix );
+                pt1 = vecOut[ 0 ];
+                vecIn.clear();
+                vecIn.push_back( Point2d( 1.428571429 * 2.0, y_pos ) );
+                perspectiveTransform( vecIn, vecOut, homogWorldToPix );
+                pt2 = vecOut[ 0 ];
+
+                line( color, pt1, pt2, Scalar( 0, 255, 255 ), 1 );
+
+                y_pos -= 1.0;
+            }
+
+            double x_pos = -1.428571429 * 2.0;
+            for ( size_t i = 0; i < 5; ++i )
+            {
+                vecIn.clear();
+                vecIn.push_back( Point2d( x_pos, 24.0 ) );
+                perspectiveTransform( vecIn, vecOut, homogWorldToPix );
+                pt1 = vecOut[ 0 ];
+                vecIn.clear();
+                vecIn.push_back( Point2d( x_pos, 0.0 ) );
+                perspectiveTransform( vecIn, vecOut, homogWorldToPix );
+                pt2 = vecOut[ 0 ];
+
+                line( color, pt1, pt2, Scalar( 0, 255, 255 ), 1 );
+
+                x_pos += 1.428571429;
+            }
+
+            imwrite( "/var/tmp/water/staffgauge_calib.png", color );
+#endif
         }
     }
     catch( const Exception &e )
@@ -128,7 +209,7 @@ GC_STATUS FindStaffGauge::CalcWorldPts( const cv::Mat &img, cv::Point2d ptTopTic
 
     return retVal;
 }
-GC_STATUS FindStaffGauge::CreateTemplates( const cv::Mat &img, const StaffGaugeTickType tickType )
+GC_STATUS FindStaffGauge::CreateTemplates( const StaffGaugeTickType tickType )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -137,18 +218,23 @@ GC_STATUS FindStaffGauge::CreateTemplates( const cv::Mat &img, const StaffGaugeT
         int tempDim, templateDimEven, templateDim = -1;
         if ( BLACK_BOTTOM_LEFT_CORNER == tickType )
         {
-            templateDim = 20;
+            templateDim = 14;
             templateDimEven = templateDim + ( templateDim % 2 );
             tempDim = templateDimEven << 1;
             matTemp = Mat::zeros( Size( tempDim, tempDim ), CV_8UC1 );
-            matTemp( Rect( tempDim >> 1, tempDim >> 1, tempDim >> 1, tempDim >> 1 ) ).setTo( 255 );
+            imwrite( "/var/tmp/water/corner_template_000.png", matTemp );
+            matTemp( Rect( 0, 0, ( tempDim >> 1 ), tempDim ) ).setTo( 255 );
+            imwrite( "/var/tmp/water/corner_template_001.png", matTemp );
+            matTemp( Rect( 0, ( tempDim >> 1 ), tempDim, ( tempDim >> 1 ) ) ).setTo( 255 );
+            matTemp = ~matTemp;
+            imwrite( "/var/tmp/water/corner_template.png", matTemp );
         }
         else if ( BLACK_TOP_RIGHT_POINT == tickType )
         {
-            templateDim = 20;
+            templateDim = 14;
             templateDimEven = templateDim + ( templateDim % 2 );
             tempDim = templateDimEven << 1;
-            matTemp = Mat::zeros( Size( tempDim, tempDim ), CV_8UC1 );
+            matTemp = Mat::ones( Size( tempDim, tempDim ), CV_8UC1 );
             Mat matDraw = matTemp( Rect( tempDim >> 2, tempDim >> 2, tempDim >> 1, tempDim >> 1 ) );
             vector< Point > contour = { Point( 0, matDraw.rows >> 1 ),
                                         Point( matDraw.cols >> 1, matDraw.rows >> 1 ),

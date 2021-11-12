@@ -68,7 +68,7 @@ private:
     std::vector< cv::Point2d > pixelPts;
     std::vector< cv::Point2d > worldPts;
 
-    GC_STATUS CreateTemplates( const cv::Mat &img, const StaffGaugeTickType tickType );
+    GC_STATUS CreateTemplates( const StaffGaugeTickType tickType );
     GC_STATUS RotateImage( const cv::Mat &src, cv::Mat &dst, const double angle );
     GC_STATUS FindTicks( const cv::Mat &img, StaffGaugeTickType lftTickType );
     GC_STATUS FindTemplates( const cv::Mat &img, const double minScore, const int targetCount, const std::string resultFilepath = "/var/tmp/water/find.png" );
