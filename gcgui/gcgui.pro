@@ -53,7 +53,6 @@ SOURCES += \
         ../algorithms/findcalibgrid.cpp \
         ../algorithms/findline.cpp \
 	../algorithms/findsymbol.cpp \
-	../algorithms/findstaffgauge.cpp \
 	../algorithms/metadata.cpp \
         ../algorithms/visapp.cpp \
         guivisapp.cpp \
@@ -69,7 +68,6 @@ HEADERS += \
         ../algorithms/findcalibgrid.h \
         ../algorithms/findline.h \
 	../algorithms/findsymbol.h \
-	../algorithms/findstaffgauge.h \
 	../algorithms/gc_types.h \
         ../algorithms/log.h \
         ../algorithms/metadata.h \
