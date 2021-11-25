@@ -15,7 +15,8 @@ public:
         stopSignFacetLength( -1.0 ),
         drawCalib( false ),
         drawMoveSearchROIs( false ),
-        drawWaterLineSearchROI( false )
+        drawWaterLineSearchROI( false ),
+        targetSearchROI( cv::Rect( -1, -1, -1, -1 ) )
     {}
 
     void clear()
@@ -27,6 +28,7 @@ public:
         drawCalib = false;
         drawMoveSearchROIs = false;
         drawWaterLineSearchROI = false;
+        targetSearchROI = cv::Rect( -1, -1, -1, -1 );
     }
 
     string calibType;
@@ -36,6 +38,7 @@ public:
     bool drawCalib;
     bool drawMoveSearchROIs;
     bool drawWaterLineSearchROI;
+    cv::Rect targetSearchROI;
 
     friend std::ostream &operator<<( std::ostream &out, const CalibExecParams &params ) ;
 };

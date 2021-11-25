@@ -238,6 +238,7 @@ void MainWindow::createConnections()
     connect( ui->actionToggleControls, &QAction::toggled, this, &MainWindow::UpdateGUIEnables );
     connect( ui->radioButton_calibBowtie, &QRadioButton::toggled, this, &MainWindow::UpdateCalibType );
     connect( ui->radioButton_stopsignFromFile, &QRadioButton::toggled, this, &MainWindow::UpdateCalibType );
+    connect( ui->checkBox_calibSearchROI, &QRadioButton::toggled, this, &MainWindow::UpdateCalibSearchRegion );
 
     connect( this, SIGNAL( sig_visAppMessage(QString) ), this, SLOT( do_visAppMessage(QString) ) );
     connect( this, SIGNAL( sig_updateProgess(int) ),     this, SLOT( do_updateProgress(int) ) );
@@ -523,6 +524,20 @@ void MainWindow::AdjustPointRubberBand()
             m_rectRubberBand.setBottom( m_pLabelImgDisplay->height() - 1 );
     if ( 5 > m_rectRubberBand.width() ) m_rectRubberBand.setLeft( m_rectRubberBand.right() - 5 );
     if ( 5 > m_rectRubberBand.height() ) m_rectRubberBand.setTop( m_rectRubberBand.bottom() - 5 );
+}
+void MainWindow::UpdateCalibSearchRegion()
+{
+    if ( ui->checkBox_calibSearchROI->isChecked() )
+    {
+        QString msg;
+        ui->label_calibCurrentROI->setText(
+                    msg.asprintf( "x=%d y=%d w=%d h=%d", m_rectROI.x(), m_rectROI.y(),
+                                 m_rectROI.width(), m_rectROI.height() ) );
+    }
+    else
+    {
+        ui->label_calibCurrentROI->setText( "Whole image" );
+    }
 }
 void MainWindow::UpdateCalibType()
 {
@@ -1112,9 +1127,24 @@ int MainWindow::FormCalibJsonString( string &json )
         json = "{\"calibType\": \"BowTie\", ";
         json += "\"calibWorldPt_csv\": \"" + ui->lineEdit_calibVisionTarget_csv->text().toStdString() + "\", ";
         json += "\"stopSignFacetLength\": -1.0, ";
-        json += "\"drawCalib\": 0, ",
-        json += "\"drawMoveSearchROIs\": 0, ",
-        json += "\"drawWaterLineSearchROI\": 0, ",
+        json += "\"drawCalib\": 0, ";
+        json += "\"drawMoveSearchROIs\": 0, ";
+        json += "\"drawWaterLineSearchROI\": 0, ";
+        json += "\"calibResult_json\": \"" + ui->lineEdit_calibVisionResult_json->text().toStdString() + "\", ";
+        if ( ui->checkBox_calibSearchROI->isChecked() )
+        {
+            json += "\"targetRoi_x\": " + to_string( m_rectROI.x() ) + ", ";
+            json += "\"targetRoi_y\": " + to_string( m_rectROI.y() ) + ", ";
+            json += "\"targetRoi_width\": " + to_string( m_rectROI.width() ) + ", ";
+            json += "\"targetRoi_height\": " + to_string( m_rectROI.height() ) + ", ";
+        }
+        else
+        {
+            json += "\"targetRoi_x\": -1, ";
+            json += "\"targetRoi_y\": -1, ";
+            json += "\"targetRoi_width\": -1, ";
+            json += "\"targetRoi_height\": -1, ";
+        }
         json += "\"calibResult_json\": \"" + ui->lineEdit_calibVisionResult_json->text().toStdString() + "\"}";
     }
     else if ( ui->radioButton_calibStopSign->isChecked() )

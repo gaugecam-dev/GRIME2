@@ -27,7 +27,11 @@ ostream &operator<<( ostream &out, CalibExecParams &params )
     out << "\"calibResult_json\": \"" << params.calibResultJsonFilepath << "\", ";
     out << "\"drawCalib\": " << ( params.drawCalib ? 1 : 0 ) << ", ";
     out << "\"drawMoveSearchROIs\": " << ( params.drawMoveSearchROIs ? 1 : 0 ) << ", ";
-    out << "\"drawWaterLineSearchROI\": " << ( params.drawWaterLineSearchROI ? 1 : 0 ) << " }";
+    out << "\"drawWaterLineSearchROI\": " << ( params.drawWaterLineSearchROI ? 1 : 0 ) << ", ";
+    out << "\"targetRoi_x\": " << ( params.targetSearchROI.x ) << ", ";
+    out << "\"targetRoi_y\": " << ( params.targetSearchROI.y ) << ", ";
+    out << "\"targetRoi_width\": " << ( params.targetSearchROI.width ) << ", ";
+    out << "\"targetRoi_height\": " << ( params.targetSearchROI.height ) << " }";
     return out;
 }
 
@@ -61,6 +65,10 @@ GC_STATUS CalibExecutive::Calibrate( const std::string calibTargetImagePath, con
         paramsCurrent.drawCalib = 1 == top_level.get< int >( "drawCalib", 0 );
         paramsCurrent.drawMoveSearchROIs = 1 == top_level.get< int >( "drawMoveSearchROIs", 0 );
         paramsCurrent.drawWaterLineSearchROI = 1 == top_level.get< int >( "drawWaterLineSearchROI", 0 );
+        paramsCurrent.targetSearchROI.x = top_level.get< int >( "targetRoi_x", -1 );
+        paramsCurrent.targetSearchROI.y = top_level.get< int >( "targetRoi_y", -1 );
+        paramsCurrent.targetSearchROI.width = top_level.get< int >( "targetRoi_width", -1 );
+        paramsCurrent.targetSearchROI.height = top_level.get< int >( "targetRoi_height", -1 );
 
         if ( "BowTie" == paramsCurrent.calibType )
         {
@@ -248,7 +256,11 @@ GC_STATUS CalibExecutive::CalibrateBowTie( const string imgFilepath, Mat &imgOut
 #ifdef DEBUG_BOWTIE_FIND
                     retVal = m_findCalibGrid.FindTargets( img, MIN_BOWTIE_FIND_SCORE, DEBUG_FOLDER + "bowtie_find.png" );
 #else
-                    retVal = findCalibGrid.FindTargets( img, Rect( 0, 0, img.cols, img.rows ), MIN_BOWTIE_FIND_SCORE );
+                    Rect rect = ( -1 == paramsCurrent.targetSearchROI.x ||
+                                  -1 == paramsCurrent.targetSearchROI.y ||
+                                  -1 == paramsCurrent.targetSearchROI.width ||
+                                  -1 == paramsCurrent.targetSearchROI.height ) ? Rect( 0, 0, img.cols, img.rows ) : paramsCurrent.targetSearchROI;
+                    retVal = findCalibGrid.FindTargets( img, rect, MIN_BOWTIE_FIND_SCORE );
 #endif
                     if ( GC_OK == retVal )
                     {
