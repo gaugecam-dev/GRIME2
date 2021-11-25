@@ -248,7 +248,7 @@ GC_STATUS CalibExecutive::CalibrateBowTie( const string imgFilepath, Mat &imgOut
 #ifdef DEBUG_BOWTIE_FIND
                     retVal = m_findCalibGrid.FindTargets( img, MIN_BOWTIE_FIND_SCORE, DEBUG_FOLDER + "bowtie_find.png" );
 #else
-                    retVal = findCalibGrid.FindTargets( img, MIN_BOWTIE_FIND_SCORE );
+                    retVal = findCalibGrid.FindTargets( img, Rect( 0, 0, img.cols, img.rows ), MIN_BOWTIE_FIND_SCORE );
 #endif
                     if ( GC_OK == retVal )
                     {
@@ -360,6 +360,19 @@ GC_STATUS CalibExecutive::Load( const string jsonFilepath )
     }
     return retVal;
 }
+cv::Rect &CalibExecutive::TargetRoi()
+{
+    if ( "BowTie" == paramsCurrent.calibType )
+    {
+        return bowTie.TargetRoi();
+    }
+    else if ( "StopSign" == paramsCurrent.calibType )
+    {
+        return stopSign.TargetRoi();
+    }
+    FILE_LOG( logERROR ) << "[CalibExecutive::TargetRoi] No calibration type currently set";
+    return nullRect;
+}
 std::vector< LineEnds > &CalibExecutive::SearchLines()
 {
     if ( "BowTie" == paramsCurrent.calibType )
@@ -412,7 +425,7 @@ GC_STATUS CalibExecutive::FindMoveTargetsStopSign( const Mat &img, FindPointSet 
 GC_STATUS CalibExecutive::FindMoveTargetsBowTie( const Mat &img, FindPointSet &ptsFound )
 {
     // TODO: This method currently only handles translation and not rotation
-    GC_STATUS retVal = findCalibGrid.FindMoveTargetsBowTie( img, ptsFound.lftPixel, ptsFound.rgtPixel );
+    GC_STATUS retVal = findCalibGrid.FindMoveTargetsBowTie( img, bowTie.TargetRoi(), ptsFound.lftPixel, ptsFound.rgtPixel );
     if ( GC_OK == retVal )
     {
         ptsFound.ctrPixel.x = ( ptsFound.lftPixel.x + ptsFound.rgtPixel.x ) / 2.0;

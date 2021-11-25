@@ -57,7 +57,9 @@ public:
                            const bool drawCalib, const bool drawMoveROIs, const bool drawSearchROI );
     GC_STATUS FindMoveTargets( const cv::Mat &img, FindPointSet &ptsFound );
     GC_STATUS MoveRefPoint( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt );
+
     std::vector< LineEnds > &SearchLines();
+    cv::Rect &TargetRoi();
     std::string &GetCalibType() { return paramsCurrent.calibType; }
 
 private:
@@ -66,6 +68,7 @@ private:
     FindCalibGrid findCalibGrid;
     CalibExecParams paramsCurrent;
     std::vector< LineEnds > nullSearchLines;    ///< Empty vector of search lines to be searched for the water line
+    cv::Rect nullRect = cv::Rect( -1, -1, -1, -1 );
 
     GC_STATUS CalibrateBowTie( const string imgFilepath, cv::Mat &imgOut );
     GC_STATUS CalibrateStopSign( const string imgFilepath );

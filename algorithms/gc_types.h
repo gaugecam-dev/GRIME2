@@ -100,7 +100,8 @@ public:
         imgSize( cv::Size( -1, -1 ) ),
         gridSize( cv::Size( -1, -1 ) ),
         moveSearchRegionLft( cv::Rect( -1, -1, -1, -1 ) ),
-        moveSearchRegionRgt( cv::Rect( -1, -1, -1, -1 ) )
+        moveSearchRegionRgt( cv::Rect( -1, -1, -1, -1 ) ),
+        wholeTargetRegion( cv::Rect( -1, -1, -1, -1 ) )
     {}
 
     /**
@@ -125,7 +126,8 @@ public:
         worldPoints( worldPts ),
         searchLines( lineEndPts ),
         moveSearchRegionLft( mvSrchROILft ),
-        moveSearchRegionRgt( mvSrchROIRgt )
+        moveSearchRegionRgt( mvSrchROIRgt ),
+        wholeTargetRegion( cv::Rect( -1, -1, -1, -1 ) )
     {}
 
     /**
@@ -140,6 +142,7 @@ public:
         searchLines.clear();
         moveSearchRegionLft = cv::Rect( -1, -1, -1, -1 );
         moveSearchRegionRgt = cv::Rect( -1, -1, -1, -1 );
+        wholeTargetRegion = cv::Rect( -1, -1, -1, -1 );
     }
 
     cv::Size imgSize;                       ///< Dimensions of the calibration image
@@ -149,6 +152,7 @@ public:
     std::vector< LineEnds > searchLines;    ///< Vector of search lines to be searched for the water line
     cv::Rect moveSearchRegionLft;           ///< Left move search region (to search for top-left bowtie)
     cv::Rect moveSearchRegionRgt;           ///< Right move search region (to search for top-right bowtie)
+    cv::Rect wholeTargetRegion;             ///< Region within which to perform line and move search
 };
 
 class SymbolCalibModel
@@ -159,7 +163,8 @@ public:
      */
     SymbolCalibModel() :
         imgSize( cv::Size( -1, -1 ) ),
-        moveSearchRegion( cv::Rect( -1, -1, -1, -1 ) )
+        moveSearchRegion( cv::Rect( -1, -1, -1, -1 ) ),
+        wholeTargetRegion( cv::Rect( -1, -1, -1, -1 ) )
     {}
 
     /**
@@ -180,7 +185,8 @@ public:
         pixelPoints( pixelPts ),
         worldPoints( worldPts ),
         searchLines( lineEndPts ),
-        moveSearchRegion( moveSrchROI )
+        moveSearchRegion( moveSrchROI ),
+        wholeTargetRegion( cv::Rect( -1, -1, -1, -1 ) )
     {}
 
     /**
@@ -193,6 +199,7 @@ public:
         worldPoints.clear();
         searchLines.clear();
         moveSearchRegion = cv::Rect( -1, -1, -1, -1 );
+        wholeTargetRegion = cv::Rect( -1, -1, -1, -1 );
     }
 
     cv::Size imgSize;                       ///< Dimensions of the calibration image
@@ -200,6 +207,7 @@ public:
     std::vector< cv::Point2d > worldPoints; ///< Vector of world points ordered to match the pixel point vector
     std::vector< LineEnds > searchLines;    ///< Vector of search lines to be searched for the water line
     cv::Rect moveSearchRegion;              ///< Left move search region (to search for top-left bowtie)
+    cv::Rect wholeTargetRegion;             ///< Region within which to perform line and move search
 };
 
 /**

@@ -96,7 +96,7 @@ public:
     GC_STATUS GetMetadata( const std::string imgFilepath, std::string &data );
     GC_STATUS CreateAnimation( const std::string imageFolder, const std::string animationFilepath, const double fps , const double scale );
     GC_STATUS CalcLine( const FindLineParams params, FindLineResult &result );
-    GC_STATUS CalcLinesInFolder( const std::string folder, const FindLineParams params, const bool isFolderOfImages );
+    GC_STATUS CalcLinesInFolder( const std::string folder, const FindLineParams params, const bool isFolderOfImages , const LineDrawType drawTypes );
     GC_STATUS CalcLinesThreadFinish();
     bool isRunningFindLine();
 
@@ -132,7 +132,7 @@ private:
     GC_STATUS InitBuffers( const cv::Size sizeImg );
     GC_STATUS AdjustImageSize( const cv::Mat &matSrc, cv::Mat &matDst );
     GC_STATUS RemoveAllFilesInFolder( const std::string folderpath );
-    GC_STATUS CalcLinesThreadFunc( const std::vector< std::string > &images, const FindLineParams params );
+    GC_STATUS CalcLinesThreadFunc( const std::vector< std::string > &images, const FindLineParams params, const LineDrawType drawTypes );
 };
 
 } // namespace gc

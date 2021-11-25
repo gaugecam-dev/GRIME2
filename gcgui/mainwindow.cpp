@@ -1314,7 +1314,15 @@ void MainWindow::on_pushButton_findLine_processFolder_clicked()
 
     vector< string > headings = { "filename", "timestamp", "water level" };
     InitTable( headings );
-    GC_STATUS retVal = m_visApp.CalcLinesInFolder( folder, params, ui->radioButton_folderOfImages->isChecked() );
+
+    int drawTypes = ui->checkBox_showFindLine->isChecked() ? FOUND_LINE : 0;
+    drawTypes += ui->checkBox_showRowSums->isChecked() ? ROW_SUMS : 0;
+    drawTypes += ui->checkBox_showDerivOne->isChecked() ? FIRST_DERIVE : 0;
+    drawTypes += ui->checkBox_showDerivTwo->isChecked() ? SECOND_DERIVE : 0;
+    drawTypes += ui->checkBox_showRANSAC->isChecked() ? RANSAC_POINTS : 0;
+    drawTypes += ui->checkBox_showMoveFind->isChecked() ? MOVE_FIND_RESULT : 0;
+
+    GC_STATUS retVal = m_visApp.CalcLinesInFolder( folder, params, ui->radioButton_folderOfImages->isChecked(), static_cast< LineDrawType >( drawTypes ) );
 
     ui->textEdit_msgs->clear();
     ui->textEdit_msgs->append( GC_OK == retVal ? "Folder run started" : "Folder run failed to start" );

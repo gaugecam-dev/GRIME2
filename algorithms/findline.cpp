@@ -75,7 +75,7 @@ GC_STATUS FindLine::SetLineFindAngleBounds( const double minAngle, const double 
     }
     return retVal;
 }
-GC_STATUS FindLine::Find( const Mat &img, const vector< LineEnds > &lines, FindLineResult &result )
+GC_STATUS FindLine::Find( const Mat &img, const vector< LineEnds > &lines, const Rect targetRoi, FindLineResult &result )
 {
     result.findSuccess = false;
     GC_STATUS retVal = lines.empty() || img.empty() ? GC_ERR : GC_OK;
@@ -88,10 +88,11 @@ GC_STATUS FindLine::Find( const Mat &img, const vector< LineEnds > &lines, FindL
         try
         {
             // clean-up a little
-            Mat scratch;
+            Mat scratch = Mat::zeros( img.size(), CV_8UC1 );
+            Mat scratchROI = scratch( targetRoi );
             Mat kern = getStructuringElement( MORPH_RECT, Size( 1, 9 ) );
-            dilate( img, scratch, kern, Point( -1, -1 ), 3 );
-            erode( scratch, scratch, kern, Point( -1, -1 ), 3 );
+            dilate( img( targetRoi ), scratchROI, kern, Point( -1, -1 ), 3 );
+            erode( scratchROI, scratchROI, kern, Point( -1, -1 ), 3 );
 
             Mat outImg;
 #ifdef DEBUG_FIND_LINE

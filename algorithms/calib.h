@@ -191,6 +191,9 @@ public:
      */
     std::vector< LineEnds > &SearchLines() { return m_model.searchLines; }
 
+    // TODO -- add doxygen comments KWC
+    cv::Rect &TargetRoi() { return m_model.wholeTargetRegion; }
+
 private:
     cv::Mat m_matHomogPixToWorld;
     cv::Mat m_matHomogWorldToPix;

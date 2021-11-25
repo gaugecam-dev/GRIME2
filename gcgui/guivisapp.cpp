@@ -42,9 +42,9 @@ using namespace boost;
 namespace fs = boost::filesystem;
 
 #ifdef _WIN32
-static const string LOG_FILE_FOLDER = "c:/temp/";
+static const string LOG_FILE_FOLDER = "c:/temp/gaugecam/";
 #else
-static const string LOG_FILE_FOLDER = "/var/tmp/";
+static const string LOG_FILE_FOLDER = "/var/tmp/gaugecam/";
 #endif
 
 using namespace cv;
@@ -62,15 +62,13 @@ GuiVisApp::GuiVisApp() :
     m_strCurrentImageFilepath( "" ),
     m_pFileLog( nullptr )
 {
-    bool graphServerOk = true;
-
     fs::path p( LOG_FILE_FOLDER );
     bool folderExists = fs::exists( p );
     if ( !folderExists )
         folderExists = fs::create_directories( p );
 
     char buf[ 256 ];
-    sprintf( buf, "%svisapp.log", folderExists ? LOG_FILE_FOLDER.c_str() : "" );
+    sprintf( buf, "%sgrime.log", folderExists ? LOG_FILE_FOLDER.c_str() : "" );
 
 #if WIN32
     fopen_s( &m_pFileLog, buf, "w" );
@@ -80,10 +78,6 @@ GuiVisApp::GuiVisApp() :
     Output2FILE::Stream() = m_pFileLog;
     // Output2FILE::Stream() = stdout;
 
-    if ( !graphServerOk )
-    {
-        FILE_LOG( logWARNING ) << "[GuiVisApp()] Could not start graph server";
-    }
 }
 GuiVisApp::~GuiVisApp() { Destroy(); }
 GC_STATUS GuiVisApp::Init( const string strConfigFolder, Size &sizeImg )
@@ -719,7 +713,7 @@ GC_STATUS GuiVisApp::CalcLine( const FindLineParams params, FindLineResult &resu
     }
     return retVal;
 }
-GC_STATUS GuiVisApp::CalcLinesInFolder( const std::string folder, const FindLineParams params, const bool isFolderOfImages )
+GC_STATUS GuiVisApp::CalcLinesInFolder( const std::string folder, const FindLineParams params, const bool isFolderOfImages, const LineDrawType drawTypes )
 {
     GC_STATUS retVal = GC_OK;
     if ( m_isRunning )
@@ -775,7 +769,7 @@ GC_STATUS GuiVisApp::CalcLinesInFolder( const std::string folder, const FindLine
                 sort( images.begin(), images.end() );
 
                 m_isRunning = true;
-                m_folderFuture = std::async( std::launch::async, &GuiVisApp::CalcLinesThreadFunc, this, images, params );
+                m_folderFuture = std::async( std::launch::async, &GuiVisApp::CalcLinesThreadFunc, this, images, params, drawTypes );
             }
         }
         catch( std::exception &e )
@@ -818,7 +812,7 @@ bool GuiVisApp::isRunningFindLine()
 {
     return m_isRunning;
 }
-GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &images,  const FindLineParams params )
+GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &images,  const FindLineParams params, const LineDrawType drawTypes )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -964,7 +958,7 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                             if ( !params.resultImagePath.empty() )
                             {
                                 Mat color;
-                                retVal = m_visApp.DrawLineFindOverlay( img, color, findData.findlineResult );
+                                retVal = m_visApp.DrawLineFindOverlay( img, color, findData.findlineResult, drawTypes );
                                 if ( GC_OK == retVal )
                                 {
                                     string resultFilepath = resultFolderAdj + fs::path( images[ i ] ).stem().string() + "_overlay.png";

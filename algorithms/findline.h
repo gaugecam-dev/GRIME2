@@ -88,6 +88,7 @@ public:
      */
     GC_STATUS InitBowtieSearch( const int bowTieTemplateDim, const cv::Size imageSize );
 
+    // TODO: Adjust doxygen comments -- KWC
     /**
      * @brief Given an image with a calibration target find the water level in the image
      * @param img The image to be searched
@@ -95,7 +96,8 @@ public:
      * @param result The result of the line search
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
-    GC_STATUS Find( const cv::Mat &img, const std::vector< LineEnds > &lines, FindLineResult &result );
+    GC_STATUS Find( const cv::Mat &img, const std::vector< LineEnds > &lines,
+                    const cv::Rect targetRoi, FindLineResult &result );
 
     // TODO: Add doxygen comments -- KWC
     GC_STATUS FitLineRANSAC( const std::vector< cv::Point2d > &pts, FindPointSet &findPtSet, const double xCenter, const cv::Mat &img );

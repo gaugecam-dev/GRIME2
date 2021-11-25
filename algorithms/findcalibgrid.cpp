@@ -18,6 +18,7 @@
 #include "findcalibgrid.h"
 #include <cstdio>
 #include <cmath>
+#include <iostream>
 #include "opencv2/imgproc.hpp"
 #include "opencv2/imgcodecs.hpp"
 #include <exception>
@@ -182,7 +183,7 @@ GC_STATUS FindCalibGrid::RotateImage( const Mat &src, Mat &dst, const double ang
     }
     return retVal;
 }
-GC_STATUS FindCalibGrid::FindTargets( const Mat &img, const double minScore, const string resultFilepath )
+GC_STATUS FindCalibGrid::FindTargets( const Mat &img, const cv::Rect targetRoi, const double minScore, const string resultFilepath )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -204,7 +205,7 @@ GC_STATUS FindCalibGrid::FindTargets( const Mat &img, const double minScore, con
         }
         else
         {
-            retVal = MatchTemplate( TEMPLATE_COUNT >> 1, img, minScore, TARGET_COUNT * 2 );
+            retVal = MatchTemplate( TEMPLATE_COUNT >> 1, img, targetRoi, minScore, TARGET_COUNT * 2 );
             if ( GC_OK == retVal )
             {
                 vector< TemplateBowtieItem > itemsTemp;
@@ -216,7 +217,7 @@ GC_STATUS FindCalibGrid::FindTargets( const Mat &img, const double minScore, con
                 {
                     for ( size_t j = 0; j < TEMPLATE_COUNT; ++j )
                     {
-                        retVal = MatchRefine( static_cast< int >( j ), img, minScore, 1, itemsTemp[ i ] );
+                        retVal = MatchRefine( static_cast< int >( j ), img, targetRoi, minScore, 1, itemsTemp[ i ] );
                         if ( GC_OK != retVal )
                             break;
                     }
@@ -273,43 +274,44 @@ GC_STATUS FindCalibGrid::FindTargets( const Mat &img, const double minScore, con
     }
     return retVal;
 }
-GC_STATUS FindCalibGrid::MatchRefine( const int index, const Mat &img, const double minScore,
-                                      const int numToFind, TemplateBowtieItem &item )
+GC_STATUS FindCalibGrid::MatchRefine( const int index, const Mat &img, const Rect targetRoi,
+                                      const double minScore, const int numToFind, TemplateBowtieItem &item )
 {
     GC_STATUS retVal = GC_OK;
-
-    if ( 0 > index || TEMPLATE_COUNT <= index )
+    try
     {
-        FILE_LOG( logERROR ) << "[FindCalibGrid::MatchRefine]"
-                                                   " Attempted to find template index=" << index << \
-                                                   " Must be in range 0-" << TEMPLATE_COUNT - 1;
-        retVal = GC_ERR;
-    }
-    else if ( 0.05 > minScore || 1.0 < minScore )
-    {
-        FILE_LOG( logERROR ) << "[FindCalibGrid::MatchRefine]  Min score %.3f must be in range 0.05-1.0" << minScore;
-        retVal = GC_ERR;
-    }
-    else if ( 1 > numToFind || 1000 < numToFind )
-    {
-        FILE_LOG( logERROR ) << "[FindCalibGrid::MatchRefine]"
-                                                   " Attempted to find " << numToFind << \
-                                                   " matches.  Must be in range 1-1000";
-        retVal = GC_ERR;
-    }
-    else
-    {
-        try
+        if ( 0 > index || TEMPLATE_COUNT <= index )
+        {
+            FILE_LOG( logERROR ) << "[FindCalibGrid::MatchRefine]"
+                                                       " Attempted to find template index=" << index << \
+                                                       " Must be in range 0-" << TEMPLATE_COUNT - 1;
+            retVal = GC_ERR;
+        }
+        else if ( 0.05 > minScore || 1.0 < minScore )
+        {
+            FILE_LOG( logERROR ) << "[FindCalibGrid::MatchRefine]  Min score %.3f must be in range 0.05-1.0" << minScore;
+            retVal = GC_ERR;
+        }
+        else if ( 1 > numToFind || 1000 < numToFind )
+        {
+            FILE_LOG( logERROR ) << "[FindCalibGrid::MatchRefine]"
+                                                       " Attempted to find " << numToFind << \
+                                                       " matches.  Must be in range 1-1000";
+            retVal = GC_ERR;
+        }
+        else
         {
             Rect rect;
-            double minScore, maxScore;
-            Point ptMin, ptMax;
             Point2d ptFinal;
-
-            m_matchSpace = 0;
+            Point ptMin, ptMax;
+            double minScore, maxScore;
             TemplateBowtieItem itemTemp;
 
-            matchTemplate( img, m_templates[ static_cast< size_t >( index ) ], m_matchSpace, TM_CCOEFF_NORMED );
+            Mat targetMat = img( targetRoi );
+
+            m_matchSpace = Mat();
+
+            matchTemplate( targetMat, m_templates[ static_cast< size_t >( index ) ], m_matchSpace, TM_CCOEFF_NORMED );
 #ifdef DEBUG_FIND_CALIB_GRID
             Mat matTemp;
             normalize( m_matchSpace, matTemp, 255.0 );
@@ -319,12 +321,12 @@ GC_STATUS FindCalibGrid::MatchRefine( const int index, const Mat &img, const dou
             rect.y = std::max( 0, cvRound( item.pt.y ) - ( m_templates[ 0 ].rows >> 1 ) - ( m_templates[ 0 ].rows >> 2 ) );
             rect.width = m_templates[ 0 ].cols + ( m_templates[ 0 ].cols >> 1 );
             rect.height = m_templates[ 0 ].rows + ( m_templates[ 0 ].rows >> 1 );
-            if ( rect.x + rect.width >= img.cols )
-                rect.x = img.cols - rect.width;
-            if ( rect.y + rect.height >= img.rows )
-                rect.y = img.rows - rect.height;
+            if ( rect.x + rect.width >= targetMat.cols )
+                rect.x = targetMat.cols - rect.width;
+            if ( rect.y + rect.height >= targetMat.rows )
+                rect.y = targetMat.rows - rect.height;
 
-            Mat matROI = img( rect );
+            Mat matROI = targetMat( rect );
             m_matchSpaceSmall = 0;
 
             matchTemplate( matROI, m_templates[ static_cast< size_t >( index ) ], m_matchSpaceSmall, TM_CCOEFF_NORMED );
@@ -336,27 +338,27 @@ GC_STATUS FindCalibGrid::MatchRefine( const int index, const Mat &img, const dou
                 {
                     // ptFinal = Point2d( static_cast< double >( ptMax.x ), static_cast< double >( ptMax.y ) );
                     item.score = maxScore;
-                    item.pt.x = static_cast< double >( rect.x ) + ptFinal.x + static_cast< double >( m_templates[ 0 ].cols ) / 2.0;
-                    item.pt.y = static_cast< double >( rect.y ) + ptFinal.y + static_cast< double >( m_templates[ 0 ].rows ) / 2.0;
+                    item.pt.x = static_cast< double >( rect.x + targetRoi.x ) + ptFinal.x + static_cast< double >( m_templates[ 0 ].cols ) / 2.0;
+                    item.pt.y = static_cast< double >( rect.y + targetRoi.y ) + ptFinal.y + static_cast< double >( m_templates[ 0 ].rows ) / 2.0;
                 }
                 else
                 {
                     item.score = 0.0;
-                    item.pt.x = static_cast< double >( rect.x ) + ptMax.x + static_cast< double >( m_templates[ 0 ].cols ) / 2.0;
-                    item.pt.y = static_cast< double >( rect.y ) + ptMax.y + static_cast< double >( m_templates[ 0 ].rows ) / 2.0;
+                    item.pt.x = static_cast< double >( rect.x + targetRoi.x ) + ptMax.x + static_cast< double >( m_templates[ 0 ].cols ) / 2.0;
+                    item.pt.y = static_cast< double >( rect.y + targetRoi.y ) + ptMax.y + static_cast< double >( m_templates[ 0 ].rows ) / 2.0;
                     retVal = GC_OK;
                 }
             }
         }
-        catch( exception &e )
-        {
-            FILE_LOG( logERROR ) << "[FindCalibGrid::MatchRefine] " << e.what();
-            retVal = GC_EXCEPT;
-        }
+    }
+    catch( Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[FindCalibGrid::MatchRefine] " << e.what();
+        retVal = GC_EXCEPT;
     }
     return retVal;
 }
-GC_STATUS FindCalibGrid::MatchTemplate( const int index, const Mat &img, const double minScore, const int numToFind )
+GC_STATUS FindCalibGrid::MatchTemplate( const int index, const Mat &img, const Rect targetRoi, const double minScore, const int numToFind )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -390,9 +392,11 @@ GC_STATUS FindCalibGrid::MatchTemplate( const int index, const Mat &img, const d
             Point2d ptFinal;
             TemplateBowtieItem itemTemp;
 
-            m_matchSpace = 0.0;
+//            m_matchSpace = 0.0;
+//            Mat matchSpaceROI = m_matchSpace( targetRoi );
+
             m_matchItems.clear();
-            matchTemplate( img, m_templates[ static_cast< size_t >( index ) ], m_matchSpace, cv::TM_CCOEFF_NORMED );
+            matchTemplate( img( targetRoi ), m_templates[ static_cast< size_t >( index ) ], m_matchSpace, cv::TM_CCOEFF_NORMED );
 
             // TODO: Debug here for find move target FAIL
 #ifdef DEBUG_FIND_CALIB_GRID
@@ -411,8 +415,8 @@ GC_STATUS FindCalibGrid::MatchTemplate( const int index, const Mat &img, const d
                     if ( dMax >= minScore )
                     {
                         itemTemp.score = dMax;
-                        itemTemp.pt.x = static_cast< double >( ptMax.x ) + static_cast< double >( m_templates[ 0 ].cols ) / 2.0;
-                        itemTemp.pt.y = static_cast< double >( ptMax.y ) + static_cast< double >( m_templates[ 0 ].rows ) / 2.0;
+                        itemTemp.pt.x = static_cast< double >( ptMax.x + targetRoi.x ) + static_cast< double >( m_templates[ 0 ].cols ) / 2.0;
+                        itemTemp.pt.y = static_cast< double >( ptMax.y + targetRoi.y ) + static_cast< double >( m_templates[ 0 ].rows ) / 2.0;
                         m_matchItems.push_back( itemTemp );
                     }
                     else
@@ -599,17 +603,17 @@ void FindCalibGrid::GetMoveTargetROIs( Rect &rectLeft, Rect &rectRight )
     rectLeft = m_rectLeftMoveSearch;
     rectRight = m_rectRightMoveSearch;
 }
-GC_STATUS FindCalibGrid::FindMoveTargets( const Mat &img, Point2d &ptLeft, Point2d &ptRight, const string calibType )
+GC_STATUS FindCalibGrid::FindMoveTargets( const Mat &img, const Rect targetRoi, Point2d &ptLeft, Point2d &ptRight, const string calibType )
 {
     GC_STATUS retVal = GC_OK;
 
     if ( "BowTie" == calibType )
     {
-        retVal = FindMoveTargetsBowTie( img, ptLeft, ptRight );
+        retVal = FindMoveTargetsBowTie( img, targetRoi, ptLeft, ptRight );
     }
     else if ( "StopSign" == calibType )
     {
-        retVal = FindMoveTargetsStopSign( img, ptLeft, ptRight );
+        retVal = FindMoveTargetsStopSign( img, targetRoi, ptLeft, ptRight );
     }
     else
     {
@@ -620,13 +624,13 @@ GC_STATUS FindCalibGrid::FindMoveTargets( const Mat &img, Point2d &ptLeft, Point
     return retVal;
 }
 // TODO: Fill in FindMoveTargetsStopSign()
-GC_STATUS FindCalibGrid::FindMoveTargetsStopSign( const cv::Mat &img, cv::Point2d &ptLeft, cv::Point2d &ptRight )
+GC_STATUS FindCalibGrid::FindMoveTargetsStopSign( const cv::Mat &img, const cv::Rect targetRoi, cv::Point2d &ptLeft, cv::Point2d &ptRight )
 {
     GC_STATUS retVal = GC_OK;
 
     return retVal;
 }
-GC_STATUS FindCalibGrid::FindMoveTargetsBowTie( const Mat &img, Point2d &ptLeft, Point2d &ptRight )
+GC_STATUS FindCalibGrid::FindMoveTargetsBowTie( const Mat &img, const Rect targetRoi, Point2d &ptLeft, Point2d &ptRight )
 {
     GC_STATUS retVal = GC_OK;
     if ( m_templates.empty() )
@@ -643,8 +647,7 @@ GC_STATUS FindCalibGrid::FindMoveTargetsBowTie( const Mat &img, Point2d &ptLeft,
     {
         try
         {
-            Mat scratch( img.size(), CV_8UC1 );
-            scratch = 0;
+            Mat scratch = Mat::zeros( img.size(), CV_8UC1 );
 
             Mat matMoveSearch = img( m_rectLeftMoveSearch );
             Mat matMoveSearchScratch = scratch( m_rectLeftMoveSearch );
@@ -661,7 +664,7 @@ GC_STATUS FindCalibGrid::FindMoveTargetsBowTie( const Mat &img, Point2d &ptLeft,
 
             m_matchItems.clear();
 
-            retVal = MatchTemplate( TEMPLATE_COUNT >> 1, scratch, TEMPLATE_MATCH_MIN_SCORE, 2 );
+            retVal = MatchTemplate( TEMPLATE_COUNT >> 1, scratch, targetRoi, TEMPLATE_MATCH_MIN_SCORE, 2 );
             if ( GC_OK == retVal )
             {
                 vector< TemplateBowtieItem > tempItems;
@@ -673,7 +676,7 @@ GC_STATUS FindCalibGrid::FindMoveTargetsBowTie( const Mat &img, Point2d &ptLeft,
                 {
                     for ( int j = 0; j < TEMPLATE_COUNT; ++j )
                     {
-                        retVal = MatchRefine( j, scratch, 0.5, 1, tempItems[ i ] );
+                        retVal = MatchRefine( j, scratch, targetRoi, 0.5, 1, tempItems[ i ] );
                         if ( GC_OK != retVal )
                             break;
                     }

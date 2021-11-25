@@ -190,8 +190,8 @@
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>948</width>
-                 <height>559</height>
+                 <width>839</width>
+                 <height>519</height>
                 </rect>
                </property>
               </widget>
@@ -461,7 +461,7 @@ metadata</string>
                <enum>QTabWidget::South</enum>
               </property>
               <property name="currentIndex">
-               <number>2</number>
+               <number>0</number>
               </property>
               <widget class="QWidget" name="tab_mainRunFolder">
                <attribute name="title">

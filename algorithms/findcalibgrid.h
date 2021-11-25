@@ -108,6 +108,7 @@ public:
     // TODO: Add doxygen comments
     void clear();
 
+    // TODO: Adjust doxygen comments
     /**
      * @brief Search the image for eight calibration targets
      * @param img Image to search
@@ -115,7 +116,7 @@ public:
      * @param resultFilepath Optional filepath to save found target positions and scores
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
-    GC_STATUS FindTargets( const cv::Mat &img, const double minScore, const string resultFilepath = "" );
+    GC_STATUS FindTargets( const cv::Mat &img, const cv::Rect targetRoi, const double minScore, const string resultFilepath = "" );
 
     /**
      * @brief Get the number of valid points found
@@ -141,11 +142,11 @@ public:
      * @see SetMoveTargetROI(), DrawMoveROIs(), GetMoveTargetROIs()
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
-    GC_STATUS FindMoveTargetsBowTie( const cv::Mat &img, cv::Point2d &ptLeft, cv::Point2d &ptRight );
+    GC_STATUS FindMoveTargetsBowTie( const cv::Mat &img, const cv::Rect targetRoi, cv::Point2d &ptLeft, cv::Point2d &ptRight );
 
     // TODO: Write doxygen comments
-    GC_STATUS FindMoveTargetsStopSign( const cv::Mat &img, cv::Point2d &ptLeft, cv::Point2d &ptRight );
-    GC_STATUS FindMoveTargets( const cv::Mat &img, cv::Point2d &ptLeft, cv::Point2d &ptRight, const std::string calibType );
+    GC_STATUS FindMoveTargetsStopSign( const cv::Mat &img, const cv::Rect targetRoi, cv::Point2d &ptLeft, cv::Point2d &ptRight );
+    GC_STATUS FindMoveTargets( const cv::Mat &img, const cv::Rect targetRoi, cv::Point2d &ptLeft, cv::Point2d &ptRight, const std::string calibType );
 
     /**
      * @brief Draw the current move regions on the specified image
@@ -180,9 +181,10 @@ private:
     cv::Rect m_rectRightMoveSearch;
 
     GC_STATUS RotateImage( const cv::Mat &src, cv::Mat &dst, const double angle );
-    GC_STATUS MatchTemplate( const int index, const cv::Mat &img, const double minScore, const int numToFind );
-    GC_STATUS MatchRefine( const int index, const cv::Mat &img, const double minScore,
-                           const int numToFind, TemplateBowtieItem &item );
+    GC_STATUS MatchTemplate( const int index, const cv::Mat &img, const cv::Rect targetRoi,
+                             const double minScore, const int numToFind );
+    GC_STATUS MatchRefine( const int index, const cv::Mat &img, const cv::Rect targetRoi,
+                           const double minScore, const int numToFind, TemplateBowtieItem &item );
 
     GC_STATUS SubpixelPointRefine( const cv::Mat &matchSpace, const cv::Point ptMax, cv::Point2d &ptResult );
     GC_STATUS SortPoints( const cv::Size sizeSearchImage );
