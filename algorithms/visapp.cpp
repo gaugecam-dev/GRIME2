@@ -118,6 +118,139 @@ void VisApp::SetFindLineResult( const FindLineResult result )
 {
     m_findLineResult = result;
 }
+GC_STATUS VisApp::AdjustSearchAreaForMovement( const std::vector< LineEnds > &searchLines,
+                                               std::vector< LineEnds > &searchLinesAdj, const cv::Point offsets )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        if ( searchLines.empty() )
+        {
+            FILE_LOG( logERROR ) << "[VisApp::AdjustSearchAreaForMovement] No lines in search line vector";
+            retVal = GC_ERR;
+        }
+        else
+        {
+            searchLinesAdj.clear();
+            for ( size_t i = 0; i < searchLines.size(); ++i )
+            {
+                searchLinesAdj.push_back( LineEnds( searchLines[ i ].top + offsets, searchLines[ i ].bot + offsets ) );
+            }
+        }
+    }
+    catch( Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[VisApp::AdjustSearchAreaForMovement] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+
+    return retVal;
+}
+GC_STATUS VisApp::CalcFindLine( const Mat &img, FindLineResult &result )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        retVal = m_calibExec.MoveRefPoint( result.refMovePts.lftPixel, result.refMovePts.rgtPixel );
+        if ( GC_OK == retVal )
+        {
+            FindPointSet offsetPts;
+            result.refMovePts.ctrPixel = Point2d( ( result.refMovePts.lftPixel.x + result.refMovePts.rgtPixel.x ) / 2.0,
+                                                  ( result.refMovePts.lftPixel.y + result.refMovePts.rgtPixel.y ) / 2.0 );
+            retVal = PixelToWorld( result.refMovePts );
+            if ( GC_OK != retVal )
+            {
+                result.msgs.push_back( "Could not calculate world coordinates for move reference points" );
+            }
+            else
+            {
+                char buffer[ 256 ];
+                snprintf( buffer, 256, "Timestamp: %s", result.timestamp.c_str() );
+                result.msgs.push_back( buffer );
+
+                result.msgs.push_back( "FindStatus: " + string( GC_OK == retVal ? "SUCCESS" : "FAIL" ) );
+
+                snprintf( buffer, 256, "Level: %.3f", result.calcLinePts.ctrWorld.y );
+                result.msgs.push_back( buffer );
+
+                retVal = m_calibExec.FindMoveTargets( img, result.foundMovePts );
+                if ( GC_OK != retVal )
+                {
+                    result.msgs.push_back( "Could not calculate move offsets" );
+                }
+                else
+                {
+                    retVal = PixelToWorld( result.foundMovePts );
+                    if ( GC_OK != retVal )
+                    {
+                        result.msgs.push_back( "Could not calculate world coordinates for found move points" );
+                    }
+                    else
+                    {
+                        result.offsetMovePts.lftPixel.x = result.foundMovePts.lftPixel.x - result.refMovePts.lftPixel.x;
+                        result.offsetMovePts.lftPixel.y = result.foundMovePts.lftPixel.y - result.refMovePts.lftPixel.y;
+                        result.offsetMovePts.ctrPixel.x = result.foundMovePts.ctrPixel.x - result.refMovePts.ctrPixel.x;
+                        result.offsetMovePts.ctrPixel.y = result.foundMovePts.ctrPixel.y - result.refMovePts.ctrPixel.y;
+                        result.offsetMovePts.rgtPixel.x = result.foundMovePts.rgtPixel.x - result.refMovePts.rgtPixel.x;
+                        result.offsetMovePts.rgtPixel.y = result.foundMovePts.rgtPixel.y - result.refMovePts.rgtPixel.y;
+
+                        result.offsetMovePts.lftWorld.x = result.foundMovePts.lftWorld.x - result.refMovePts.lftWorld.x;
+                        result.offsetMovePts.lftWorld.y = result.foundMovePts.lftWorld.y - result.refMovePts.lftWorld.y;
+                        result.offsetMovePts.ctrWorld.x = result.foundMovePts.ctrWorld.x - result.refMovePts.ctrWorld.x;
+                        result.offsetMovePts.ctrWorld.y = result.foundMovePts.ctrWorld.y - result.refMovePts.ctrWorld.y;
+                        result.offsetMovePts.rgtWorld.x = result.foundMovePts.rgtWorld.x - result.refMovePts.rgtWorld.x;
+                        result.offsetMovePts.rgtWorld.y = result.foundMovePts.rgtWorld.y - result.refMovePts.rgtWorld.y;
+
+                        sprintf( buffer, "Adjust: %.3f", result.offsetMovePts.ctrWorld.y );
+                        result.msgs.push_back( buffer );
+
+
+
+                        vector< LineEnds > searchLinesAdj;
+                        retVal = AdjustSearchAreaForMovement( m_calibExec.SearchLines(), searchLinesAdj, result.offsetMovePts.ctrWorld );
+                        if ( GC_OK == retVal )
+                        {
+                            retVal = m_findLine.Find( img, searchLinesAdj, m_calibExec.TargetRoi(), result );
+                            if ( GC_OK != retVal )
+                            {
+                                m_findLineResult = result;
+                                FILE_LOG( logERROR ) << "[VisApp::CalcLine] Could not calc line in image";
+                                retVal = GC_ERR;
+                            }
+                            else
+                            {
+                                retVal = PixelToWorld( result.calcLinePts );
+                                if ( GC_OK != retVal )
+                                {
+                                    result.msgs.push_back( "Could not calculate world coordinates for found line points" );
+                                }
+                                else
+                                {
+                                    result.calcLinePts.angleWorld = atan( ( result.offsetMovePts.rgtWorld.y - result.offsetMovePts.lftWorld.y ) /
+                                                                          ( result.offsetMovePts.rgtWorld.x - result.offsetMovePts.lftWorld.x ) );
+                                    snprintf( buffer, 256, "Angle: %.3f", result.calcLinePts.angleWorld );
+                                    result.msgs.push_back( buffer );
+
+                                    result.waterLevelAdjusted.y = result.calcLinePts.ctrWorld.y;
+                                    result.calcLinePts.ctrWorld.y -= result.offsetMovePts.ctrWorld.y;
+                                    snprintf( buffer, 256, "Level (adj): %.3f", result.waterLevelAdjusted.y );
+                                    result.msgs.push_back( buffer );
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    catch( Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[VisApp::FindLine] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+
+    return retVal;
+}
 GC_STATUS VisApp::CalcLine( const FindLineParams params )
 {
     GC_STATUS retVal = CalcLine( params, m_findLineResult );
@@ -131,11 +264,26 @@ GC_STATUS VisApp::CalcLine( const Mat &img, const string timestamp )
         FindLineResult result;
         if ( img.empty() )
         {
+            result.findSuccess = false;
             FILE_LOG( logERROR ) << "[VisApp::CalcLine] Empty image";
             retVal = GC_ERR;
         }
         else
         {
+#if 1
+            char buffer[ 256 ];
+            result.timestamp = timestamp;
+            snprintf( buffer, 256, "Timestamp: %s", result.timestamp.c_str() );
+            result.msgs.push_back( buffer );
+
+            retVal = CalcFindLine( img, result );
+            if ( GC_OK != retVal )
+            {
+                result.findSuccess = false;
+                FILE_LOG( logERROR ) << "[VisApp::CalcLine] Could not calc line in image";
+                retVal = GC_ERR;
+            }
+#else
             retVal = m_findLine.Find( img, m_calibExec.SearchLines(), m_calibExec.TargetRoi(), result );
             if ( GC_OK != retVal )
             {
@@ -219,44 +367,13 @@ GC_STATUS VisApp::CalcLine( const Mat &img, const string timestamp )
                     }
                 }
             }
+#endif
         }
         m_findLineResult = result;
     }
     catch( Exception &e )
     {
         FILE_LOG( logERROR ) << "[VisApp::CalcLine] " << e.what();
-        retVal = GC_EXCEPT;
-    }
-
-    return retVal;
-}
-GC_STATUS VisApp::FindPtSet2JsonString( const FindPointSet set, const string set_type, string &json )
-{
-    GC_STATUS retVal = GC_OK;
-    try
-    {
-        json.clear();
-        stringstream ss;
-        ss << "\"set_type\": \"" << set_type << "\",";
-        ss << "\"anglePixel\":" << set.anglePixel << ",";
-        ss << "\"angleWorld\":" << set.angleWorld << ",";
-        ss << "\"lftPixel_x\":" << set.lftPixel.x << ",";
-        ss << "\"lftPixel_y\":" << set.lftPixel.y << ",";
-        ss << "\"lftWorld_x\":" << set.lftWorld.x << ",";
-        ss << "\"lftWorld_y\":" << set.lftWorld.y << ",";
-        ss << "\"ctrPixel_x\":" << set.ctrPixel.x << ",";
-        ss << "\"ctrPixel_y\":" << set.ctrPixel.y << ",";
-        ss << "\"ctrWorld_x\":" << set.ctrWorld.x << ",";
-        ss << "\"ctrWorld_y\":" << set.ctrWorld.y << ",";
-        ss << "\"rgtPixel_x\":" << set.rgtPixel.x << ",";
-        ss << "\"rgtPixel_y\":" << set.rgtPixel.y << ",";
-        ss << "\"rgtWorld_x\":" << set.rgtWorld.x << ",";
-        ss << "\"rgtWorld_y\":" << set.rgtWorld.y;
-        json = ss.str();
-    }
-    catch( std::exception &e )
-    {
-        FILE_LOG( logERROR ) << "[VisApp::FindPtSet2JsonString] " << e.what();
         retVal = GC_EXCEPT;
     }
 
@@ -395,6 +512,19 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result 
                 {
                     m_calibFilepath = params.calibFilepath;
 
+#if 1
+                    char buffer[ 256 ];
+                    snprintf( buffer, 256, "Timestamp: %s", result.timestamp.c_str() );
+                    result.msgs.push_back( buffer );
+
+                    retVal = CalcFindLine( img, result );
+                    if ( GC_OK != retVal )
+                    {
+                        result.findSuccess = false;
+                        FILE_LOG( logERROR ) << "[VisApp::CalcLine] Could not calc line in image";
+                        retVal = GC_ERR;
+                    }
+#else
                     retVal = m_findLine.Find( img, m_calibExec.SearchLines(), m_calibExec.TargetRoi(), result );
                     if ( GC_OK != retVal )
                     {
@@ -478,6 +608,7 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result 
                             }
                         }
                     }
+#endif
                     m_findLineResult = result;
                     if ( !params.resultCSVPath.empty() )
                     {
@@ -548,6 +679,38 @@ GC_STATUS VisApp::DrawLineFindOverlay( const cv::Mat &img, cv::Mat &imgOut, cons
                                        const LineDrawType overlayTypes )
 {
     GC_STATUS retVal = m_findLine.DrawResult( img, imgOut, findLineResult, overlayTypes );
+    return retVal;
+}
+GC_STATUS VisApp::FindPtSet2JsonString( const FindPointSet set, const string set_type, string &json )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        json.clear();
+        stringstream ss;
+        ss << "\"set_type\": \"" << set_type << "\",";
+        ss << "\"anglePixel\":" << set.anglePixel << ",";
+        ss << "\"angleWorld\":" << set.angleWorld << ",";
+        ss << "\"lftPixel_x\":" << set.lftPixel.x << ",";
+        ss << "\"lftPixel_y\":" << set.lftPixel.y << ",";
+        ss << "\"lftWorld_x\":" << set.lftWorld.x << ",";
+        ss << "\"lftWorld_y\":" << set.lftWorld.y << ",";
+        ss << "\"ctrPixel_x\":" << set.ctrPixel.x << ",";
+        ss << "\"ctrPixel_y\":" << set.ctrPixel.y << ",";
+        ss << "\"ctrWorld_x\":" << set.ctrWorld.x << ",";
+        ss << "\"ctrWorld_y\":" << set.ctrWorld.y << ",";
+        ss << "\"rgtPixel_x\":" << set.rgtPixel.x << ",";
+        ss << "\"rgtPixel_y\":" << set.rgtPixel.y << ",";
+        ss << "\"rgtWorld_x\":" << set.rgtWorld.x << ",";
+        ss << "\"rgtWorld_y\":" << set.rgtWorld.y;
+        json = ss.str();
+    }
+    catch( std::exception &e )
+    {
+        FILE_LOG( logERROR ) << "[VisApp::FindPtSet2JsonString] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+
     return retVal;
 }
 GC_STATUS VisApp::WriteFindlineResultToCSV( const std::string resultCSV, const string imgPath,
