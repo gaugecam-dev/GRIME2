@@ -246,7 +246,7 @@ private:
 
     GC_STATUS CalcFindLine( const cv::Mat &img, FindLineResult &result );
     GC_STATUS AdjustSearchAreaForMovement( const std::vector< LineEnds > &searchLines,
-                                           std::vector< LineEnds > &searchLinesAdj, const cv::Point offsets );
+                                           std::vector< LineEnds > &searchLinesAdj, const cv::Point2d offsets );
     GC_STATUS PixelToWorld( FindPointSet &ptSet );
     GC_STATUS FindPtSet2JsonString( const FindPointSet set, const string set_type, string &json );
 };

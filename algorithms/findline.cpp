@@ -110,7 +110,6 @@ GC_STATUS FindLine::Find( const Mat &img, const vector< LineEnds > &lines, const
             Point2d linePt;
             vector< uint > rowSums;
             string timestamp = result.timestamp;
-            result.clear();
             result.timestamp = timestamp;
             size_t linesPerSwath = lines.size() / 10;
             for ( size_t i = 0; i < 10; ++i )

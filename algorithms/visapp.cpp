@@ -119,7 +119,7 @@ void VisApp::SetFindLineResult( const FindLineResult result )
     m_findLineResult = result;
 }
 GC_STATUS VisApp::AdjustSearchAreaForMovement( const std::vector< LineEnds > &searchLines,
-                                               std::vector< LineEnds > &searchLinesAdj, const cv::Point offsets )
+                                               std::vector< LineEnds > &searchLinesAdj, const cv::Point2d offsets )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -134,7 +134,8 @@ GC_STATUS VisApp::AdjustSearchAreaForMovement( const std::vector< LineEnds > &se
             searchLinesAdj.clear();
             for ( size_t i = 0; i < searchLines.size(); ++i )
             {
-                searchLinesAdj.push_back( LineEnds( searchLines[ i ].top + offsets, searchLines[ i ].bot + offsets ) );
+                searchLinesAdj.push_back( LineEnds( searchLines[ i ].top + Point( cvRound( offsets.x ), cvRound( offsets.y ) ),
+                                                    searchLines[ i ].bot + Point( cvRound( offsets.x ), cvRound( offsets.y ) ) ) );
             }
         }
     }
@@ -170,9 +171,6 @@ GC_STATUS VisApp::CalcFindLine( const Mat &img, FindLineResult &result )
 
                 result.msgs.push_back( "FindStatus: " + string( GC_OK == retVal ? "SUCCESS" : "FAIL" ) );
 
-                snprintf( buffer, 256, "Level: %.3f", result.calcLinePts.ctrWorld.y );
-                result.msgs.push_back( buffer );
-
                 retVal = m_calibExec.FindMoveTargets( img, result.foundMovePts );
                 if ( GC_OK != retVal )
                 {
@@ -204,8 +202,6 @@ GC_STATUS VisApp::CalcFindLine( const Mat &img, FindLineResult &result )
                         sprintf( buffer, "Adjust: %.3f", result.offsetMovePts.ctrWorld.y );
                         result.msgs.push_back( buffer );
 
-
-
                         vector< LineEnds > searchLinesAdj;
                         retVal = AdjustSearchAreaForMovement( m_calibExec.SearchLines(), searchLinesAdj, result.offsetMovePts.ctrWorld );
                         if ( GC_OK == retVal )
@@ -226,13 +222,16 @@ GC_STATUS VisApp::CalcFindLine( const Mat &img, FindLineResult &result )
                                 }
                                 else
                                 {
-                                    result.calcLinePts.angleWorld = atan( ( result.offsetMovePts.rgtWorld.y - result.offsetMovePts.lftWorld.y ) /
-                                                                          ( result.offsetMovePts.rgtWorld.x - result.offsetMovePts.lftWorld.x ) );
+                                    double denom = result.offsetMovePts.rgtWorld.x == result.offsetMovePts.lftWorld.x ?
+                                                std::numeric_limits< double >::epsilon() : result.offsetMovePts.rgtWorld.x - result.offsetMovePts.lftWorld.x;
+                                    result.calcLinePts.angleWorld = atan( ( result.offsetMovePts.rgtWorld.y - result.offsetMovePts.lftWorld.y ) / denom );
                                     snprintf( buffer, 256, "Angle: %.3f", result.calcLinePts.angleWorld );
                                     result.msgs.push_back( buffer );
 
                                     result.waterLevelAdjusted.y = result.calcLinePts.ctrWorld.y;
                                     result.calcLinePts.ctrWorld.y -= result.offsetMovePts.ctrWorld.y;
+                                    snprintf( buffer, 256, "Level: %.3f", result.calcLinePts.ctrWorld.y );
+                                    result.msgs.push_back( buffer );
                                     snprintf( buffer, 256, "Level (adj): %.3f", result.waterLevelAdjusted.y );
                                     result.msgs.push_back( buffer );
                                 }
