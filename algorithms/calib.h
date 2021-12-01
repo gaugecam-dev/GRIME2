@@ -67,7 +67,10 @@ public:
      */
     ~Calib() {}
 
-    // TODO: Add doxygen comments here
+    /**
+     * @brief Clears the calibration object and sets it to an uninitialized state
+     * @return None (void)
+     */
     void clear();
 
     /**
@@ -191,7 +194,12 @@ public:
      */
     std::vector< LineEnds > &SearchLines() { return m_model.searchLines; }
 
-    // TODO -- add doxygen comments KWC
+    /**
+     * @brief Returns the current "whole target region" within which the calibration takes place.
+     *        All values are set to -1 for the whole image. If the resion is set, the whole
+     *        calibration target should fall within the Rect that defines the region.
+     * @return A Rect holding the left, top, width, and height of the whole target region
+     */
     cv::Rect &TargetRoi() { return m_model.wholeTargetRegion; }
 
 private:

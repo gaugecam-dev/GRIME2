@@ -72,7 +72,13 @@ public:
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // Calibration methods
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    // TODO: Add doxygen here
+    /**
+     * @brief Set the current calibration from a calibration model json file
+     * @param imgFilepath The filepath of the image with the calibration target
+     * @param jsonControl Json string that controls the calibration
+     * @param imgOut Image where the calibration result will be shown as on overlay
+     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
+     */
     GC_STATUS Calibrate( const string imgFilepath, const string jsonControl, cv::Mat &imgOut );
 
     /**
@@ -169,9 +175,30 @@ public:
      */
     GC_STATUS GetImageTimestamp( const std::string filepath, std::string &timestamp );
 
-    // TODO: Adjust doxygen -- KWC
+    /**
+     * @brief Sets the GIF output filepath and other initializations
+     * @param imgSize Expected image size for all frames
+     * @param imgCount Count of expected images in the GIF to assure there are enough resources to write the GIF
+     * @param gifFilepath Sets the GIF output filepath
+     * @param delay_ms Delay in milliseconds between image frames
+     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
+     * @see AddImageToGIF(), EndGIF()
+     */
     GC_STATUS BeginGIF( const cv::Size imgSize, const int imgCount, const std::string gifFilepath, const int delay_ms );
+
+    /**
+     * @brief Adds an image to the GIF initalized by a call to BeginGIF()
+     * @param img The image to be added to the GIF
+     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
+     * @see BeginGIF(), EndGIF()
+     */
     GC_STATUS AddImageToGIF( const cv::Mat &img );
+
+    /**
+     * @brief Closes the GIF file initialized by BeginGIF() and frees resources
+     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
+     * @see BeginGIF(), AddImageToGIF()
+     */
     GC_STATUS EndGIF();
 
     /**
@@ -232,8 +259,6 @@ public:
 private:
     std::string m_calibFilepath;
 
-    // FindCalibGrid m_findCalibGrid;   // TODO: to be replace with m_calibExec
-    // Calib m_calib;                   // TODO: to be replace with m_calibExec
     CalibExecutive m_calibExec;
     FindLine m_findLine;
     FindLineResult m_findLineResult;

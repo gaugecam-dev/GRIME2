@@ -4,6 +4,7 @@
 #include "gc_types.h"
 #include <opencv2/core.hpp>
 
+// TODO -- add doxygen comments KWC
 namespace gc
 {
 
@@ -107,7 +108,6 @@ public:
      */
     std::vector< LineEnds > &SearchLines() { return model.searchLines; }
 
-    // TODO -- add doxygen comments KWC
     cv::Rect &TargetRoi() { return model.wholeTargetRegion; }
 
 private:

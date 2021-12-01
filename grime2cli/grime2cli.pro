@@ -21,10 +21,11 @@ win32 {
 SOURCES += \
         ../algorithms/animate.cpp \
         ../algorithms/calib.cpp \
-    ../algorithms/calibexecutive.cpp \
+	../algorithms/calibexecutive.cpp \
         ../algorithms/findcalibgrid.cpp \
         ../algorithms/findline.cpp \
 	../algorithms/findsymbol.cpp \
+	../algorithms/gifanim/gifanim.cpp \
 	../algorithms/metadata.cpp \
         ../algorithms/visapp.cpp \
         main.cpp
@@ -38,6 +39,7 @@ HEADERS += \
     ../algorithms/findcalibgrid.h \
     ../algorithms/findline.h \
     ../algorithms/findsymbol.cpp \
+    ../algorithms/gifanim/gifanim.h \
     ../algorithms/gc_types.h \
     ../algorithms/log.h \
     ../algorithms/metadata.h \

@@ -398,7 +398,6 @@ GC_STATUS FindCalibGrid::MatchTemplate( const int index, const Mat &img, const R
             m_matchItems.clear();
             matchTemplate( img( targetRoi ), m_templates[ static_cast< size_t >( index ) ], m_matchSpace, cv::TM_CCOEFF_NORMED );
 
-            // TODO: Debug here for find move target FAIL
 #ifdef DEBUG_FIND_CALIB_GRID
             Mat matTemp;
             normalize( m_matchSpace, matTemp, 255.0 );
@@ -611,10 +610,13 @@ GC_STATUS FindCalibGrid::FindMoveTargets( const Mat &img, const Rect targetRoi, 
     {
         retVal = FindMoveTargetsBowTie( img, targetRoi, ptLeft, ptRight );
     }
+    // TODO: StopSign placeholder (pull it back in)
+#if 0
     else if ( "StopSign" == calibType )
     {
         retVal = FindMoveTargetsStopSign( img, targetRoi, ptLeft, ptRight );
     }
+#endif
     else
     {
         FILE_LOG( logERROR ) << "[FindCalibGrid::FindMoveTargets] No valid calibration type currently set";
@@ -624,12 +626,15 @@ GC_STATUS FindCalibGrid::FindMoveTargets( const Mat &img, const Rect targetRoi, 
     return retVal;
 }
 // TODO: Fill in FindMoveTargetsStopSign()
+#if 0
 GC_STATUS FindCalibGrid::FindMoveTargetsStopSign( const cv::Mat &img, const cv::Rect targetRoi, cv::Point2d &ptLeft, cv::Point2d &ptRight )
 {
     GC_STATUS retVal = GC_OK;
 
     return retVal;
 }
+#endif
+
 GC_STATUS FindCalibGrid::FindMoveTargetsBowTie( const Mat &img, const Rect targetRoi, Point2d &ptLeft, Point2d &ptRight )
 {
     GC_STATUS retVal = GC_OK;

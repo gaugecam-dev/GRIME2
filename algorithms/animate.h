@@ -27,15 +27,12 @@ static const std::string TEMPORARY_CACHE_FOLDER = "/var/tmp/gaugecam/animate_cac
 namespace gc
 {
 
-// TODO: Modify Doxygen comments -- KWC
 /**
  * @brief Class to create animations from individual images. The process is as follows:
  *
- * -# Call the CreateCacheFolder() method to ensure a temporary folder is available to add frames.
- * -# Call the ClearCache() method to assure the cache folder is empty.
- * -# Call the AddFrame() method as many times as is required.
- * -# Call the Create() method to create the animation.
- * -# Call the RemoveCacheFolder() to remove the temporary cache folder
+ * -# Call the BeginGIF() Sets GIF filepath and other parameter initializations.
+ * -# Call the AddImageToGIF() Scales the image and adds it to the GIF.
+ * -# Call the EndGIF() Cleans up after GIF has been written
  */
 class Animate
 {
@@ -45,9 +42,30 @@ public:
      */
     Animate();
 
-    // TODO: Add Doxygen comments -- KWC
+    /**
+     * @brief Sets the GIF output filepath and other initializations
+     * @param imgSize Expected image size for all frames
+     * @param imgCount Count of expected images in the GIF to assure there are enough resources to write the GIF
+     * @param gifFilepath Sets the GIF output filepath
+     * @param delay_ms Delay in milliseconds between image frames
+     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
+     * @see AddImageToGIF(), EndGIF()
+     */
     GC_STATUS BeginGIF( const cv::Size imgSize, const int imgCount, const std::string gifFilepath, const int delay_ms );
+
+    /**
+     * @brief Adds an image to the GIF initalized by a call to BeginGIF()
+     * @param img The image to be added to the GIF
+     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
+     * @see BeginGIF(), EndGIF()
+     */
     GC_STATUS AddImageToGIF( const cv::Mat &img );
+
+    /**
+     * @brief Closes the GIF file initialized by BeginGIF() and frees resources
+     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
+     * @see BeginGIF(), AddImageToGIF()
+     */
     GC_STATUS EndGIF();
 
 private:

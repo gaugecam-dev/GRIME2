@@ -15,6 +15,7 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 #include <string>
 #include <iostream>
+#include <opencv2/imgproc.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include "arghandler.h"
 #include "../algorithms/visapp.h"
@@ -34,6 +35,7 @@ using namespace gc;
 void ShowVersion();
 GC_STATUS FindWaterLevel( const Grime2CLIParams cliParams );
 GC_STATUS RunFolder( const Grime2CLIParams cliParams );
+GC_STATUS CreateGIF( const Grime2CLIParams cliParams );
 GC_STATUS FormCalibJsonString( const Grime2CLIParams cliParams, string &json );
 
 /** \file main.cpp
@@ -91,8 +93,7 @@ int main( int argc, char *argv[] )
             }
             else if ( MAKE_GIF == params.opToPerform )
             {
-                VisApp vis;
-                retVal = vis.CreateAnimation( params.src_imagePath, params.result_imagePath, params.fps, params.scale );
+                retVal = CreateGIF( params );
             }
             else if ( SHOW_METADATA == params.opToPerform )
             {
@@ -273,6 +274,80 @@ GC_STATUS FormCalibJsonString( const Grime2CLIParams cliParams, string &json )
     {
         FILE_LOG( logERROR ) << "No calibration type selected";
         retVal = GC_ERR;
+    }
+
+    return retVal;
+}
+GC_STATUS CreateGIF( const Grime2CLIParams cliParams )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        VisApp vis;
+        string ext;
+        vector< std::string > images;
+        for ( auto& p: fs::directory_iterator( cliParams.src_imagePath ) )
+        {
+            ext = p.path().extension().string();
+            std::transform( ext.begin(), ext.end(), ext.begin(),
+                               []( unsigned char c ){ return std::tolower( c ); } );
+            if ( ext == ".png" || ext == ".jpg" ||
+                 ext == ".PNG" || ext == ".JPG" )
+            {
+                images.push_back( p.path().string() );
+            }
+        }
+        if ( images.empty() )
+        {
+            FILE_LOG( logERROR ) << "[CreateGIF] No images found in specified folder";
+            retVal = GC_ERR;
+        }
+        else
+        {
+            sort( images.begin(), images.end() );
+
+            cv::Mat img = imread( images[ 0 ], cv::IMREAD_COLOR );
+            if ( img.empty() )
+            {
+                FILE_LOG( logERROR ) << "[CreateGIF] Could not read first image " << images[ 0 ];
+                retVal = GC_ERR;
+            }
+            else
+            {
+                resize( img, img, cv::Size(), cliParams.scale, cliParams.scale, cv::INTER_CUBIC );
+                retVal = vis.BeginGIF( img.size(), images.size(), cliParams.result_imagePath, cliParams.delay_ms );
+                if ( GC_OK == retVal )
+                {
+                    retVal = vis.AddImageToGIF( img );
+                    if ( GC_OK == retVal )
+                    {
+                        for ( size_t i = 1; i < images.size(); ++i )
+                        {
+                            img = imread( images[ i ], cv::IMREAD_COLOR );
+                            if ( img.empty() )
+                            {
+                                FILE_LOG( logWARNING ) << "[CreateGIF] Could not read image " << images[ i ];
+                            }
+                            else
+                            {
+                                resize( img, img, cv::Size(), cliParams.scale, cliParams.scale, cv::INTER_CUBIC );
+                                retVal = vis.AddImageToGIF( img );
+                                if ( GC_OK != retVal )
+                                {
+                                    FILE_LOG( logWARNING ) << "[CreateGIF] Could not add image " << images[ i ];
+                                }
+                            }
+                        }
+                    }
+                    retVal = vis.EndGIF();
+                }
+            }
+        }
+    }
+    catch( const cv::Exception &e )
+    {
+        FILE_LOG( logERROR ) << e.what();
+        retVal = GC_EXCEPT;
     }
 
     return retVal;

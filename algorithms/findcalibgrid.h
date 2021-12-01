@@ -105,13 +105,16 @@ public:
      */
     GC_STATUS InitBowtieTemplate( const int templateDim , const cv::Size searchImgSize );
 
-    // TODO: Add doxygen comments
+    /**
+     * @brief Clears the bowtie find object and sets it to an uninitialized state
+     * @return None (void)
+     */
     void clear();
 
-    // TODO: Adjust doxygen comments
     /**
      * @brief Search the image for eight calibration targets
      * @param img Image to search
+     * @param targetRoi region within which to search for the bow ties
      * @param minScore Minimal acceptable score to accept a "find"
      * @param resultFilepath Optional filepath to save found target positions and scores
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
@@ -144,8 +147,21 @@ public:
      */
     GC_STATUS FindMoveTargetsBowTie( const cv::Mat &img, const cv::Rect targetRoi, cv::Point2d &ptLeft, cv::Point2d &ptRight );
 
-    // TODO: Write doxygen comments
+    // TODO: Fill in FindMoveTargetsStopSign()
+    // TODO: This method currently only handles translation and not rotation
+#if 0
     GC_STATUS FindMoveTargetsStopSign( const cv::Mat &img, const cv::Rect targetRoi, cv::Point2d &ptLeft, cv::Point2d &ptRight );
+#endif
+
+    /**
+     * @brief Search for the move targets in the provided image
+     * @param img Image within which to search
+     * @param targetRoi region within which to search for the bow ties
+     * @param ptLeft The found position of the left region
+     * @param ptRight The found position of the right region
+     * @see SetMoveTargetROI(), DrawMoveROIs(), GetMoveTargetROIs()
+     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
+     */
     GC_STATUS FindMoveTargets( const cv::Mat &img, const cv::Rect targetRoi, cv::Point2d &ptLeft, cv::Point2d &ptRight, const std::string calibType );
 
     /**

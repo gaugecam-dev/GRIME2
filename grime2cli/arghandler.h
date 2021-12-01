@@ -32,8 +32,8 @@ public:
         opToPerform( SHOW_HELP ),
         timestamp_startPos( -1 ),
         timeStamp_length( -1 ),
-        fps( 0.5 ),
-        scale( 1.0 ),
+        delay_ms( 250 ),
+        scale( 0.2 ),
         targetRoi_x( -1 ),
         targetRoi_y( -1 ),
         targetRoi_width( -1 ),
@@ -51,8 +51,8 @@ public:
         timestamp_type.clear();
         timestamp_startPos = -1;
         timeStamp_length = -1;
-        fps = 0.5;
-        scale = 1.0;
+        delay_ms = 250;
+        scale = 0.2;
         targetRoi_x = -1;
         targetRoi_y = -1;
         targetRoi_width = -1;
@@ -68,7 +68,7 @@ public:
     string timestamp_type;
     int timestamp_startPos;
     int timeStamp_length;
-    double fps;
+    double delay_ms;
     double scale;
     int targetRoi_x;
     int targetRoi_y;
@@ -160,7 +160,7 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                 {
                     if ( i + 1 < argc )
                     {
-                        params.fps = stod( argv[ ++i ] );
+                        params.delay_ms = stod( argv[ ++i ] );
                     }
                     else
                     {

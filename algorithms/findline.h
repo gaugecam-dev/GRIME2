@@ -77,7 +77,12 @@ public:
      */
     ~FindLine() {}
 
-    // TODO: Add doxygen comments -- KWC
+    /**
+     * @brief Sets the angle bounds for the found line to be defined as a successful find
+     * @param minAngle Minimum angle for a successful line find
+     * @param maxAngle Maximum angle for a successful line find
+     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
+     */
     GC_STATUS SetLineFindAngleBounds( const double minAngle, const double maxAngle );
 
     /**
@@ -88,7 +93,6 @@ public:
      */
     GC_STATUS InitBowtieSearch( const int bowTieTemplateDim, const cv::Size imageSize );
 
-    // TODO: Adjust doxygen comments -- KWC
     /**
      * @brief Given an image with a calibration target find the water level in the image
      * @param img The image to be searched
@@ -98,7 +102,15 @@ public:
      */
     GC_STATUS Find( const cv::Mat &img, const std::vector< LineEnds > &lines, FindLineResult &result );
 
-    // TODO: Add doxygen comments -- KWC
+
+    /**
+     * @brief Perform a RANSAC line fit to
+     * @param pts Candidate points for RANSAC line fit
+     * @param findPtSet Object that holds line ends, center, and angle
+     * @param xCenter Search roi vertical center
+     * @param img Image in which the line fit occurred
+     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
+     */
     GC_STATUS FitLineRANSAC( const std::vector< cv::Point2d > &pts, FindPointSet &findPtSet, const double xCenter, const cv::Mat &img );
 
     /**

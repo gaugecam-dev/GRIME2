@@ -23,7 +23,7 @@
    </size>
   </property>
   <property name="windowTitle">
-   <string>GaugeCam GRIME2 v0.1.0.1 Beta -- Line find/calib in ROI (faster) and adjust of line search ROI based on move calc</string>
+   <string>GaugeCam GRIME2 v0.1.0.1 Beta -- Line find/calib in ROI (faster). Adjust line search ROI based on move calc. Threaded GIF.</string>
   </property>
   <property name="windowIcon">
    <iconset>
