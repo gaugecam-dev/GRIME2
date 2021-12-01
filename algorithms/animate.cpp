@@ -1,167 +1,148 @@
 #include "log.h"
 #include "animate.h"
 #include <iostream>
-#include <boost/filesystem.hpp>
-#include <boost/exception/diagnostic_information.hpp>
+#include <opencv2/imgproc.hpp>
 #include <opencv2/imgcodecs.hpp>
 
 using namespace cv;
 using namespace std;
-using namespace boost;
-namespace fs = filesystem;
+
+static const long MAX_GIF_SIZE = 99999999;
 
 namespace gc
 {
 
 Animate::Animate() :
-    frameSize( 0, 0 )
+    delay_cs( -1 ),
+    image_size( -1, -1 )
 {
 }
-GC_STATUS Animate::RemoveCacheFolder()
+GC_STATUS Animate::BeginGIF( const cv::Size imgSize, const int imgCount, const std::string gifFilepath, const int delay_ms )
 {
     GC_STATUS retVal = GC_OK;
     try
     {
-        if ( fs::exists( TEMPORARY_CACHE_FOLDER ) )
-            fs::remove_all( TEMPORARY_CACHE_FOLDER );
-    }
-    catch( const boost::exception &e )
-    {
-        FILE_LOG( logERROR ) << "[Annotate::~Annotate::] " << diagnostic_information( e );
-    }
-    return retVal;
-}
-
-GC_STATUS Animate::CreateCacheFolder()
-{
-    GC_STATUS retVal = GC_OK;
-    try
-    {
-        bool cacheFolderExists = true;
-        if ( !fs::exists( TEMPORARY_CACHE_FOLDER ) )
-            cacheFolderExists = fs::create_directories( TEMPORARY_CACHE_FOLDER );
-
-        if ( !cacheFolderExists )
+        if ( 20 > imgSize.width || 7000 < imgSize.width ||
+             20 > imgSize.height || 7000 < imgSize.height )
         {
-            FILE_LOG( logERROR ) << "[Annotate::Annotate] Could not create animation creation cache folder";
+            FILE_LOG( logERROR ) << "[Animate::BeginGIF] Invalid image width must be in range 20x20 to 7000x7000. w=" <<
+                                    imgSize.width << " h=" << imgSize.height;
+            retVal = GC_ERR;
         }
-        else
+        else if ( 0 > delay_ms || 10000 < delay_ms )
         {
-            FILE_LOG( logINFO ) << "Cache file create or already existed";
+            FILE_LOG( logERROR ) << "[Animate::BeginGIF] Invalid delay must be in range 0-10000. delay=" << delay_ms;
+            retVal = GC_ERR;
         }
-    }
-    catch( const boost::exception &e )
-    {
-        FILE_LOG( logERROR ) << "[Annotate::Annotate::] " << diagnostic_information( e );
-    }
-    return retVal;
-}
-GC_STATUS Animate::Create( const std::string animationFilepath, const double fps, const double scale )
-{
-    GC_STATUS retVal = GC_OK;
-    try
-    {
-        cout << "Creating animation: " << fs::path( animationFilepath ).filename().string() << " ... ";
-        string inputImages = TEMPORARY_CACHE_FOLDER + "image%03d.png";
-        string palette = TEMPORARY_CACHE_FOLDER + "palette.png";
-        string cmd = "ffmpeg -f image2 -i " + inputImages + " -hide_banner -loglevel error -vf scale=1296:-1,palettegen -y " + palette;
-#ifdef WIN32
-        string cmdResult;
-        int ret = WinRunCmd::runCmd( cmd.c_str(), cmdResult );
-#else
-        int ret = std::system( cmd.c_str() );
-#endif
-        if ( 0 != ret )
+
+        // ulong memSize = img.cols * img.rows * imgPaths.size();
+        if ( MAX_GIF_SIZE < imgSize.width * imgSize.height * imgCount )
         {
-            FILE_LOG( logERROR ) << "[Annotate::Create] Failed to create color palette for animation";
+            FILE_LOG( logERROR ) << "[Animate::BeginGIF] GIF too large (" << imgSize.width * imgSize.height * imgCount <<
+                                    "). w * h * count must be less than " << MAX_GIF_SIZE;
             retVal = GC_ERR;
         }
         else
         {
-            cmd = "ffmpeg -f image2 -framerate " + to_string( fps ) + " -i " + inputImages +
-                    " -c:v libx264 -crf 0 -preset veryslow -c:a libmp3lame -b:v 320k -hide_banner -loglevel error " + TEMPORARY_CACHE_FOLDER + "video.mp4 -y";
-#ifdef WIN32
-            int ret = WinRunCmd::runCmd( cmd.c_str(), cmdResult );
-#else
-            int ret = std::system( cmd.c_str() );
-#endif
-            if ( 0 != ret )
+            // Set up filename,
+            // xw=N, yw=N,
+            // framedelay=1...1000 or so,
+            // loopcount =0 means infinite, otherwise as specified
+            // bitdepth=8,
+            // dither=false (most likely, but you pick)
+            // each image is an array of bytes 0-255, in order ((R G B A) x xw) x yw)
+            // ----------------------------------------------------------------------
+
+            // and then:
+            // ---------
+            image_size = imgSize;
+            delay_cs = delay_ms / 10;
+            bool bRet = ganim.GifBegin( &g, gifFilepath.c_str(), image_size.width, image_size.height, delay_cs, 0, 8, false );
+            if ( !bRet )
             {
-                FILE_LOG( logERROR ) << "[Annotate::Create] Could not create intermediate video for animation";
+                FILE_LOG( logERROR ) << "[Animate::BeginGIF] Could not initialize gif writer for " << gifFilepath;
                 retVal = GC_ERR;
+            }
+        }
+    }
+    catch( const Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[Animate::BeginGIF] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+
+    return retVal;
+}
+GC_STATUS Animate::AddImageToGIF( const cv::Mat &img )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        if ( 0 > delay_cs || 1000 < delay_cs ||
+             0 > image_size.width || 7000 < image_size.width ||
+             0 > image_size.height || 7000 < image_size.height )
+        {
+            FILE_LOG( logERROR ) << "[Animate::AddImageToGIF] Gif creation parameters not initialized properly";
+            retVal = GC_ERR;
+        }
+        else if ( img.size() != image_size )
+        {
+            FILE_LOG( logERROR ) << "[Animate::AddImageToGIF] Invalid image size. Expected: w=" << image_size.width <<
+                                    "h=" << image_size.height << " Actual: w=" << img.cols << " h=" << img.rows;
+            retVal = GC_ERR;
+        }
+        else
+        {
+            Mat rgba;
+            if ( CV_8UC1 == img.type() )
+            {
+                cvtColor( img, rgba, COLOR_GRAY2RGBA );
+            }
+            else if ( CV_8UC3 == img.type() )
+            {
+                cvtColor( img, rgba, COLOR_BGR2RGBA );
             }
             else
             {
-                char buf[ 256 ];
-                sprintf( buf, "%d", cvRound( static_cast< double >( frameSize.width ) * scale ) );
-                cmd = "ffmpeg -y -i " + TEMPORARY_CACHE_FOLDER + "video.mp4 -i " + palette + " -filter_complex \"";
-                cmd += "scale=" + string( buf );
-                cmd += ":-1:flags=lanczos[x];[x][1:v]paletteuse\" -hide_banner -loglevel error " + animationFilepath;
-#ifdef WIN32
-               int ret = WinRunCmd::runCmd( cmd.c_str(), cmdResult );
-#else
-                int ret = std::system( cmd.c_str() );
-#endif
-                if ( 0 != ret )
+                FILE_LOG( logERROR ) << "[Animate::AddImageToGIF] Invalid image type. Must be 8-bit gray or bgr image";
+                retVal = GC_ERR;
+            }
+            if ( GC_OK == retVal )
+            {
+                // For each frame of the animation, set up RGBA-formatted image, then:
+                // -------------------------------------------------------------------
+                bool bRet = ganim.GifWriteFrame( &g, rgba.data, img.cols, img.rows, delay_cs, 8, false, nullptr );
+                if ( !bRet )
                 {
-                    FILE_LOG( logERROR ) << "[Annotate::Create] Could not create animation";
+                    FILE_LOG( logERROR ) << "[Animate::AddImageToGIF] Could not write image";
                     retVal = GC_ERR;
                 }
-                cout << "done" << endl;
             }
         }
     }
-    catch( const boost::exception &e )
+    catch( const Exception &e )
     {
-        FILE_LOG( logERROR ) << "[Annotate::Create] " << diagnostic_information( e );
+        FILE_LOG( logERROR ) << "[Animate::AddImageToGIF] " << e.what();
         retVal = GC_EXCEPT;
     }
 
     return retVal;
 }
-GC_STATUS Animate::AddFrame( std::string filename, cv::Mat frame )
+GC_STATUS Animate::EndGIF()
 {
     GC_STATUS retVal = GC_OK;
     try
     {
-        frameSize = frame.size();
-        string filepath = TEMPORARY_CACHE_FOLDER + filename;
-        bool bRet = imwrite( filepath, frame );
-        if ( !bRet )
-        {
-            FILE_LOG( logERROR ) << "[Annotate::AddFrame] Could not write annotated image to file: " << filepath;
-        }
-    }
-    catch( const boost::exception &e )
-    {
-        FILE_LOG( logERROR ) << "[Annotate::AddFrame] " << diagnostic_information( e );
-        retVal = GC_EXCEPT;
-    }
+        image_size = cv::Size( -1, -1 );
+        delay_cs = -1;
 
-    return retVal;
-}
-GC_STATUS Animate::ClearCache()
-{
-    GC_STATUS retVal = GC_OK;
-    try
-    {
-        frameSize = Size( 0, 0 );
-        fs::path p( TEMPORARY_CACHE_FOLDER );
-        if( fs::exists( p ) && fs::is_directory( p ) )
-        {
-            fs::directory_iterator end;
-            for ( fs::directory_iterator it( p ); it != end; ++it )
-            {
-                if ( fs::is_regular_file( it->status() ) )
-                {
-                    fs::remove( it->path() );
-                }
-            }
-        }
+        // After all frames, this:
+        // -----------------------
+        ganim.GifEnd( &g );
     }
-    catch( const boost::exception &e )
+    catch( const Exception &e )
     {
-        FILE_LOG( logERROR ) << "[Annotate::ClearCache] " << diagnostic_information( e );
+        FILE_LOG( logERROR ) << "[Animate::EndGIF] " << e.what();
         retVal = GC_EXCEPT;
     }
 

@@ -25,7 +25,7 @@ using namespace gc;
 // example command lines
 // --version
 // --show_help
-// --calibrate "/media/kchapman/Elements/Projects/GRIME2/build-grime2cli-Desktop_Qt_5_15_2_GCC_64bit-Debug/config/2012_demo/06/NRmarshDN-12-06-30-10-30.jpg" --calib_json "/media/kchapman/Elements/Projects/GRIME2/build-grime2cli-Desktop_Qt_5_15_2_GCC_64bit-Debug/config/calib.json" --csv_file "/media/kchapman/Elements/Projects/GRIME2/build-grime2cli-Desktop_Qt_5_15_2_GCC_64bit-Debug/config/calibration_target_world_coordinates.csv" --result_image "/var/tmp/water/calib_result.png"
+// --calibrate "/media/kchapman/Elements/Projects/GRIME2/build-grime2cli-Desktop_Qt_5_15_2_GCC_64bit-Debug/config/2012_demo/06/NRmarshDN-12-06-30-10-30.jpg" --target_roi 280 20 500 580 --calib_json "/media/kchapman/Elements/Projects/GRIME2/build-grime2cli-Desktop_Qt_5_15_2_GCC_64bit-Debug/config/calib.json" --csv_file "/media/kchapman/Elements/Projects/GRIME2/build-grime2cli-Desktop_Qt_5_15_2_GCC_64bit-Debug/config/calibration_target_world_coordinates.csv" --result_image "/var/tmp/water/calib_result.png"
 // --show_metadata "/home/kchapman/data/idaho_power/bad_cal_bad_line_find/TREK0003.jpg"
 // --find_line --timestamp_from_filename --timestamp_start_pos 10 --timestamp_format "yy-mm-dd-HH-MM" "/media/kchapman/Elements/Projects/GRIME2/build-grime2cli-Desktop_Qt_5_15_2_GCC_64bit-Debug/config/2012_demo/06/NRmarshDN-12-06-30-10-30.jpg" --calib_json "/media/kchapman/Elements/Projects/GRIME2/build-grime2cli-Desktop_Qt_5_15_2_GCC_64bit-Debug/config/calib.json" --result_image "/var/tmp/water/find_line_result.png"
 // --run_folder --timestamp_from_filename --timestamp_start_pos 10 --timestamp_format "yy-mm-dd-HH-MM" "/media/kchapman/Elements/Projects/GRIME2/build-grime2cli-Desktop_Qt_5_15_2_GCC_64bit-Debug/config/2012_demo/06/" --calib_json "/media/kchapman/Elements/Projects/GRIME2/build-grime2cli-Desktop_Qt_5_15_2_GCC_64bit-Debug/config/calib.json" --csv_file "/var/tmp/water/folder.csv" --result_folder "/var/tmp/water/"
@@ -224,9 +224,13 @@ GC_STATUS FormCalibJsonString( const Grime2CLIParams cliParams, string &json )
         json = "{\"calibType\": \"BowTie\", ";
         json += "\"calibWorldPt_csv\": \"" + cliParams.csvPath + "\", ";
         json += "\"stopSignFacetLength\": -1.0, ";
-        json += "\"drawCalib\": 1, ",
-        json += "\"drawMoveSearchROIs\": 1, ",
-        json += "\"drawWaterLineSearchROI\": 1, ",
+        json += "\"drawCalib\": 1, ";
+        json += "\"drawMoveSearchROIs\": 1, ";
+        json += "\"drawWaterLineSearchROI\": 1, ";
+        json += "\"targetRoi_x\": \"" + to_string( cliParams.targetRoi_x ) + "\", ";
+        json += "\"targetRoi_y\": \"" + to_string( cliParams.targetRoi_y ) + "\", ";
+        json += "\"targetRoi_width\": \"" + to_string( cliParams.targetRoi_width ) + "\", ";
+        json += "\"targetRoi_height\": \"" + to_string( cliParams.targetRoi_height ) + "\", ";
         json += "\"calibResult_json\": \"" + cliParams.calib_jsonPath + "\"}";
     }
     else if ( false ) // stop sign calibration
@@ -236,18 +240,26 @@ GC_STATUS FormCalibJsonString( const Grime2CLIParams cliParams, string &json )
         {
             json += "\"calibWorldPt_csv\": \"" + cliParams.csvPath + "\", ";
             json += "\"stopSignFacetLength\": -1.0, }";
-            json += "\"drawCalib\": 1, ",
-            json += "\"drawMoveSearchROIs\": 1, ",
-            json += "\"drawWaterLineSearchROI\": 1, ",
+            json += "\"drawCalib\": 1, ";
+            json += "\"drawMoveSearchROIs\": 1, ";
+            json += "\"drawWaterLineSearchROI\": 1, ";
+            json += "\"targetRoi_x\": \"" + to_string( cliParams.targetRoi_x ) + "\", ";
+            json += "\"targetRoi_y\": \"" + to_string( cliParams.targetRoi_y ) + "\", ";
+            json += "\"targetRoi_width\": \"" + to_string( cliParams.targetRoi_width ) + "\", ";
+            json += "\"targetRoi_height\": \"" + to_string( cliParams.targetRoi_height ) + "\", ";
             json += "\"calibResult_json\": \"" + cliParams.calib_jsonPath + "\"}";
         }
         else if ( false ) // from facet length
         {
             json += "\"calibWorldPt_csv\": \"\", ";
             json += "\"stopSignFacetLength\": " + to_string( 10.0 ) + ", ";
-            json += "\"drawCalib\": 1, ",
-            json += "\"drawMoveSearchROIs\": 1, ",
-            json += "\"drawWaterLineSearchROI\": 1, ",
+            json += "\"drawCalib\": 1, ";
+            json += "\"drawMoveSearchROIs\": 1, ";
+            json += "\"drawWaterLineSearchROI\": 1, ";
+            json += "\"targetRoi_x\": \"" + to_string( cliParams.targetRoi_x ) + "\", ";
+            json += "\"targetRoi_y\": \"" + to_string( cliParams.targetRoi_y ) + "\", ";
+            json += "\"targetRoi_width\": \"" + to_string( cliParams.targetRoi_width ) + "\", ";
+            json += "\"targetRoi_height\": \"" + to_string( cliParams.targetRoi_height ) + "\", ";
             json += "\"calibResult_json\": \"" + cliParams.calib_jsonPath + "\"}";
         }
         else

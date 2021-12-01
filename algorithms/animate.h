@@ -14,6 +14,7 @@
 
 #include "gc_types.h"
 #include <opencv2/core.hpp>
+#include "gifanim/gifanim.h"
 
 #ifdef WIN32
 #include "wincmd.h"
@@ -26,6 +27,7 @@ static const std::string TEMPORARY_CACHE_FOLDER = "/var/tmp/gaugecam/animate_cac
 namespace gc
 {
 
+// TODO: Modify Doxygen comments -- KWC
 /**
  * @brief Class to create animations from individual images. The process is as follows:
  *
@@ -43,47 +45,17 @@ public:
      */
     Animate();
 
-    /**
-    * @brief After frames have been added to a cache, create a GIF animation
-    *
-    * @param animationFilepath Filepath of the GIF animation to be created
-    * @param fps Frames per second of the animation to be created
-    * @param scale Scale of the animation to be created relative to the individual frames
-    * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
-    */
-    GC_STATUS Create( const std::string animationFilepath, const double fps = 2.0, const double scale = 1.0 );
-
-    /**
-    * @brief Add a frame (image) to the cache from which the animation is created. The order of the
-    *        frames in the animation is the same as the order in which they are added to the cache.
-    *
-    * @param filename Filepath of the GIF animation to be created
-    * @param fps Frames per second of the animation to be created
-    * @param scale Scale of the animation to be created relative to the individual frames
-    * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
-    */
-    GC_STATUS AddFrame( std::string filename, cv::Mat frame );
-
-    /**
-    * @brief Create the animation frame cache if it does not already exist.
-    * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
-    */
-    static GC_STATUS CreateCacheFolder();
-
-    /**
-    * @brief Delete the animation frame cache and all the frames in it if it exists.
-    * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
-    */
-    static GC_STATUS RemoveCacheFolder();
-
-    /**
-    * @brief Delete all the files in the animation frame cache.
-    * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
-    */
-    GC_STATUS ClearCache();
+    // TODO: Add Doxygen comments -- KWC
+    GC_STATUS BeginGIF( const cv::Size imgSize, const int imgCount, const std::string gifFilepath, const int delay_ms );
+    GC_STATUS AddImageToGIF( const cv::Mat &img );
+    GC_STATUS EndGIF();
 
 private:
-    cv::Size frameSize;
+    GifAnim ganim;
+    GifWriter g;
+
+    int delay_cs;
+    cv::Size image_size;
 };
 
 } // namespace gc

@@ -32,12 +32,13 @@
 #include "calibexecutive.h"
 #include "findline.h"
 #include "metadata.h"
+#include "animate.h"
 
 //! GaugeCam classes, functions and variables
 namespace gc
 {
 
-static const std::string GAUGECAM_VISAPP_VERSION = "0.0.0.3";           ///< GaugeCam executive logic (VisApp) software version
+static const std::string GAUGECAM_VISAPP_VERSION = "0.0.0.4";           ///< GaugeCam executive logic (VisApp) software version
 
 /**
  * @brief Business logic that instantiates objects of the GaugeCam classes and provides methods
@@ -168,16 +169,10 @@ public:
      */
     GC_STATUS GetImageTimestamp( const std::string filepath, std::string &timestamp );
 
-    /**
-     * @brief Create a GIF animation from the images in a specified folder
-     * @param imageFolder Folder that holds the images to be used as GIF frames
-     * @param animationFilepath Filepath of the GIF to be created
-     * @param fps Desired GIF frames per second
-     * @param scale Resize scale of original frames to created GIF
-     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
-     */
-    GC_STATUS CreateAnimation( const std::string imageFolder, const std::string animationFilepath,
-                               const double fps, const double scale );
+    // TODO: Adjust doxygen -- KWC
+    GC_STATUS BeginGIF( const cv::Size imgSize, const int imgCount, const std::string gifFilepath, const int delay_ms );
+    GC_STATUS AddImageToGIF( const cv::Mat &img );
+    GC_STATUS EndGIF();
 
     /**
      * @brief Create an overlay image with the current found water line
@@ -243,6 +238,7 @@ private:
     FindLine m_findLine;
     FindLineResult m_findLineResult;
     MetaData m_metaData;
+    Animate m_animate;
 
     GC_STATUS CalcFindLine( const cv::Mat &img, FindLineResult &result );
     GC_STATUS AdjustSearchAreaForMovement( const std::vector< LineEnds > &searchLines,

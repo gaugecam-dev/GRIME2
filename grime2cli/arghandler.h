@@ -33,7 +33,11 @@ public:
         timestamp_startPos( -1 ),
         timeStamp_length( -1 ),
         fps( 0.5 ),
-        scale( 1.0 )
+        scale( 1.0 ),
+        targetRoi_x( -1 ),
+        targetRoi_y( -1 ),
+        targetRoi_width( -1 ),
+        targetRoi_height( -1 )
     {}
     void clear()
     {
@@ -49,6 +53,10 @@ public:
         timeStamp_length = -1;
         fps = 0.5;
         scale = 1.0;
+        targetRoi_x = -1;
+        targetRoi_y = -1;
+        targetRoi_width = -1;
+        targetRoi_height = -1;
     }
     bool verbose;
     GRIME2_CLI_OP opToPerform;
@@ -62,6 +70,10 @@ public:
     int timeStamp_length;
     double fps;
     double scale;
+    int targetRoi_x;
+    int targetRoi_y;
+    int targetRoi_width;
+    int targetRoi_height;
 };
 int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
 {
@@ -251,6 +263,22 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                         break;
                     }
                 }
+                else if ( "target_roi" == string( argv[ i ] ).substr( 2 ) )
+                {
+                    if ( i + 4 < argc )
+                    {
+                        params.targetRoi_x = atoi( argv[ ++i ] );
+                        params.targetRoi_y = atoi( argv[ ++i ] );
+                        params.targetRoi_width = atoi( argv[ ++i ] );
+                        params.targetRoi_height = atoi( argv[ ++i ] );
+                    }
+                    else
+                    {
+                        FILE_LOG( logERROR ) << "[ArgHandler] Insufficient values supplied on --target_roi request";
+                        retVal = -1;
+                        break;
+                    }
+                }
                 else if ( "result_image" == string( argv[ i ] ).substr( 2 ) )
                 {
                     if ( i + 1 < argc )
@@ -386,48 +414,49 @@ bool IsExistingImagePath( const string imgPath )
 void PrintHelp()
 {
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    // --well_series_to_folder [top level folder path] [destination folder path] --stack_image_index [index OPTIONAL default=2] --well_id [well id]
+    // --well_series_to_folder <top level folder path> <destination folder path> --stack_image_index [index OPTIONAL default=2] --well_id <well id>
     // Creates folders for each tile position for the specified well and places
     // the images for each scan time and tile positions from the specified stack
     // index into the created folder to which it pertains
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    cout << "FORMAT: grime2cli --calibrate [Bowtie target image] " << endl <<
-            "                  --csv_file [CSV file with bow tie target xy positions]" << endl <<
-            "                  --calib_json [json filepath for created json file]" << endl <<
-            "                 [--result_image [Result overlay image] OPTIONAL]" << endl <<
+    cout << "FORMAT: grime2cli --calibrate <Bowtie target image> " << endl <<
+            "                  --csv_file <CSV file with bow tie target xy positions>" << endl <<
+            "                  --calib_json <json filepath for created json file>" << endl <<
+            "                 [--target_roi <Result overlay image> OPTIONAL]" << endl <<
+            "                 [--result_image <Result overlay image> OPTIONAL]" << endl <<
             "        Loads image with bow tie targets (all must be visible). Reads csv file" << endl <<
             "        that holds world coordinate positions of the centers of the bow ties," << endl <<
             "        calculates move target positions, creates calibration model, and creates" << endl <<
             "        calibration model, then stores it to the specified json file. An optional" << endl <<
             "        result image with the calibration result can be created." << endl;
     cout << "FORMAT: grime2cli --find_line --timestamp_from_filename or --timestamp_from_exif " << endl <<
-            "                  --timestamp_start_pos [position of the first timestamp char of source string]" << endl <<
-            "                  --timestamp_format [y-m-d H:M format string for timestamp, e.g., yyyy-mm-ddTMM:HH]" << endl <<
-            "                  [Image path to be analyzed] --calib_json [Calibration json file path]" << endl <<
-            "                  [--csv_file [Path of csv file to create or append with find line result] OPTIONAL]" << endl <<
-            "                  [--result_image [Path of result overlay image] OPTIONAL]" << endl <<
+            "                  --timestamp_start_pos <position of the first timestamp char of source string>" << endl <<
+            "                  --timestamp_format <y-m-d H:M format string for timestamp, e.g., yyyy-mm-ddTMM:HH>" << endl <<
+            "                  <Image path to be analyzed> --calib_json <Calibration json file path>" << endl <<
+            "                  [--csv_file <Path of csv file to create or append with find line result> OPTIONAL]" << endl <<
+            "                  [--result_image <Path of result overlay image> OPTIONAL]" << endl <<
             "        Loads the specified image and calibration file, extracts the image using the specified" << endl <<
             "        timestamp parameters, calculates the line position, returns a json string with the find line" << endl <<
             "        results to stdout, and creates the optional overlay result image if specified" << endl;
     cout << "FORMAT: grime2cli --run_folder --timestamp_from_filename or --timestamp_from_exif " << endl <<
-            "                   --timestamp_start_pos [position of the first timestamp char of source string]" << endl <<
-            "                   --timestamp_format [y-m-d H:M format string for timestamp, e.g., yyyy-mm-ddTMM:HH]" << endl <<
-            "                   [Folder path of images to be analyzed] --calib_json [Calibration json file path]" << endl <<
-            "                   [--csv_file [Path of csv file to create or append with find line results] OPTIONAL]" << endl <<
-            "                   [--result_folder [Path of folder to hold result overlay images] OPTIONAL]" << endl <<
+            "                   --timestamp_start_pos <position of the first timestamp char of source string>" << endl <<
+            "                   --timestamp_format <y-m-d H:M format string for timestamp, e.g., yyyy-mm-ddTMM:HH>" << endl <<
+            "                   <Folder path of images to be analyzed> --calib_json <Calibration json file path>" << endl <<
+            "                   [--csv_file <Path of csv file to create or append with find line results> OPTIONAL]" << endl <<
+            "                   [--result_folder <Path of folder to hold result overlay images> OPTIONAL]" << endl <<
             "        Loads the specified images and calibration file, extracts the timestamps using the specified" << endl <<
             "        timestamp parameters, calculates the line positions,  and creates the optional overlay result" << endl <<
             "        image if specified" << endl;
-    cout << "FORMAT: grime2cli --make_gif [Folder path of images] --result_image [File path of GIF to create]" << endl <<
-            "                   [--fps [Animation frames per second] OPTIONAL default=0.5]" << endl <<
-            "                   [--scale [Animation image scale from original] OPTIONAL default=1.0]" << endl <<
+    cout << "FORMAT: grime2cli --make_gif <Folder path of images> --result_image <File path of GIF to create>" << endl <<
+            "                   [--fps <Animation frames per second> OPTIONAL default=0.5]" << endl <<
+            "                   [--scale <Animation image scale from original> OPTIONAL default=1.0]" << endl <<
             "        Creates a gif animation with the images in the specifed folder at the specified scale and" << endl <<
             "        frame rate" << endl;
-    cout << "FORMAT: grime2cli --show_metadata [Image filepath]" << endl;
+    cout << "FORMAT: grime2cli --show_metadata <Image filepath>" << endl;
     cout << "     Returns metadata extracted from the image to stdout" << endl;
     cout << "--verbose" << endl;
     cout << "     Currently has no effect" << endl;
-    cout << "--logFile [filepath]" << endl;
+    cout << "--logFile <filepath>" << endl;
     cout << "     Logs message to specified file rather than stderr" << endl;
     cout << "--help" << endl;
     cout << "     Shows this help message" << endl;

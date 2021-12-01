@@ -26,7 +26,6 @@
 #include <boost/algorithm/algorithm.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/exception/diagnostic_information.hpp>
-#include "animate.h"
 #include "timestampconvert.h"
 
 using namespace cv;
@@ -206,7 +205,7 @@ GC_STATUS VisApp::CalcFindLine( const Mat &img, FindLineResult &result )
                         retVal = AdjustSearchAreaForMovement( m_calibExec.SearchLines(), searchLinesAdj, result.offsetMovePts.ctrWorld );
                         if ( GC_OK == retVal )
                         {
-                            retVal = m_findLine.Find( img, searchLinesAdj, m_calibExec.TargetRoi(), result );
+                            retVal = m_findLine.Find( img, searchLinesAdj, result );
                             if ( GC_OK != retVal )
                             {
                                 m_findLineResult = result;
@@ -838,71 +837,11 @@ GC_STATUS VisApp::WriteFindlineResultToCSV( const std::string resultCSV, const s
 
     return retVal;
 }
-GC_STATUS VisApp::CreateAnimation( const std::string imageFolder, const std::string animationFilepath, const double fps, const double scale )
+GC_STATUS VisApp::EndGIF() { return m_animate.EndGIF(); }
+GC_STATUS VisApp::AddImageToGIF( const cv::Mat &img ) { return m_animate.AddImageToGIF( img ); }
+GC_STATUS VisApp::BeginGIF( const Size imgSize, const int imgCount, const string gifFilepath, const int delay_ms )
 {
-    GC_STATUS retVal = GC_OK;
-    try
-    {
-        if ( !fs::is_directory( imageFolder ) )
-        {
-            FILE_LOG( logERROR ) << "[VisApp::CreateAnimation] Path specified is not a folder: " << imageFolder << endl;
-            retVal = GC_ERR;
-        }
-        else
-        {
-            string ext;
-            vector< string > images;
-            for ( auto& p: fs::recursive_directory_iterator( imageFolder ) )
-            {
-                ext = p.path().extension().string();
-                if ( ext == ".png" || ext == ".jpg" ||
-                     ext == ".PNG" || ext == ".JPG" )
-                {
-                    images.push_back( p.path().string() );
-                }
-            }
-
-            if ( images.empty() )
-            {
-                FILE_LOG( logERROR ) << "No images found in " << imageFolder << endl;
-                retVal = GC_ERR;
-            }
-            else
-            {
-                sort( images.begin(), images.end() );
-
-                Animate animate;
-                retVal = animate.CreateCacheFolder();
-                if ( GC_OK == retVal )
-                {
-                    Mat img;
-                    char buffer[ 512 ];
-                    for ( size_t i = 0; i < static_cast< size_t >( std::min( 1000, static_cast< int >( images.size() ) ) ); ++i )
-                    {
-                        img = imread( images[ i ], IMREAD_ANYCOLOR );
-                        if ( img.empty() )
-                        {
-                            FILE_LOG( logWARNING ) << "Could not read frame: " << images[ i ] << " for animation";
-                        }
-                        else
-                        {
-                            sprintf( buffer, "image%03d.png", static_cast< int >( i ) );
-                            retVal = animate.AddFrame( string( buffer ), img );
-                        }
-                    }
-                    retVal = animate.Create( animationFilepath, fps, scale );
-                    retVal = animate.RemoveCacheFolder();
-                }
-            }
-        }
-    }
-    catch( const boost::exception &e )
-    {
-        FILE_LOG( logERROR ) << "[VisApp::CreateAnimation] " <<diagnostic_information( e );
-        retVal = GC_EXCEPT;
-    }
-
-    return retVal;
+    return m_animate.BeginGIF( imgSize, imgCount, gifFilepath, delay_ms );
 }
 
 } // namespace gc

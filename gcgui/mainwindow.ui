@@ -190,7 +190,7 @@
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>839</width>
+                 <width>831</width>
                  <height>519</height>
                 </rect>
                </property>
@@ -461,7 +461,7 @@ metadata</string>
                <enum>QTabWidget::South</enum>
               </property>
               <property name="currentIndex">
-               <number>3</number>
+               <number>0</number>
               </property>
               <widget class="QWidget" name="tab_mainRunFolder">
                <attribute name="title">
@@ -525,7 +525,7 @@ metadata</string>
                      <enum>Qt::Horizontal</enum>
                     </property>
                     <property name="sizeType">
-                     <enum>QSizePolicy::Preferred</enum>
+                     <enum>QSizePolicy::MinimumExpanding</enum>
                     </property>
                     <property name="sizeHint" stdset="0">
                      <size>
@@ -538,7 +538,7 @@ metadata</string>
                   <item>
                    <widget class="QLabel" name="label_4">
                     <property name="text">
-                     <string>fps</string>
+                     <string>frame delay (ms)</string>
                     </property>
                     <property name="alignment">
                      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -546,18 +546,12 @@ metadata</string>
                    </widget>
                   </item>
                   <item>
-                   <widget class="QDoubleSpinBox" name="doubleSpinBox_animateFPS">
-                    <property name="decimals">
-                     <number>3</number>
-                    </property>
-                    <property name="minimum">
-                     <double>0.001000000000000</double>
-                    </property>
+                   <widget class="QSpinBox" name="spinBox_animateFPS">
                     <property name="maximum">
-                     <double>60.000000000000000</double>
+                     <number>10000</number>
                     </property>
                     <property name="value">
-                     <double>0.500000000000000</double>
+                     <number>500</number>
                     </property>
                    </widget>
                   </item>
@@ -577,7 +571,7 @@ metadata</string>
                      <number>3</number>
                     </property>
                     <property name="minimum">
-                     <double>0.100000000000000</double>
+                     <double>0.050000000000000</double>
                     </property>
                     <property name="maximum">
                      <double>2.000000000000000</double>
@@ -586,14 +580,24 @@ metadata</string>
                      <double>0.100000000000000</double>
                     </property>
                     <property name="value">
-                     <double>1.000000000000000</double>
+                     <double>0.200000000000000</double>
                     </property>
                    </widget>
                   </item>
                   <item>
                    <widget class="QPushButton" name="pushButton_createAnimation">
                     <property name="text">
-                     <string>Animate...</string>
+                     <string>Create GIF...</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="pushButton_animationStop">
+                    <property name="enabled">
+                     <bool>false</bool>
+                    </property>
+                    <property name="text">
+                     <string>Stop</string>
                     </property>
                    </widget>
                   </item>
@@ -1020,20 +1024,17 @@ metadata</string>
                 <item>
                  <layout class="QHBoxLayout" name="horizontalLayout_9">
                   <item>
-                   <widget class="QProgressBar" name="progressBar_imageLoad">
-                    <property name="enabled">
-                     <bool>false</bool>
+                   <spacer name="horizontalSpacer_4">
+                    <property name="orientation">
+                     <enum>Qt::Horizontal</enum>
                     </property>
-                    <property name="sizePolicy">
-                     <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-                      <horstretch>0</horstretch>
-                      <verstretch>0</verstretch>
-                     </sizepolicy>
+                    <property name="sizeHint" stdset="0">
+                     <size>
+                      <width>40</width>
+                      <height>20</height>
+                     </size>
                     </property>
-                    <property name="value">
-                     <number>0</number>
-                    </property>
-                   </widget>
+                   </spacer>
                   </item>
                   <item>
                    <widget class="QPushButton" name="pushButton_clearTable">
@@ -1301,17 +1302,53 @@ metadata</string>
                  </layout>
                 </item>
                 <item>
-                 <widget class="QPushButton" name="pushButton_visionCalibrate">
-                  <property name="sizePolicy">
-                   <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                    <horstretch>0</horstretch>
-                    <verstretch>0</verstretch>
-                   </sizepolicy>
-                  </property>
-                  <property name="text">
-                   <string>Calibrate</string>
-                  </property>
-                 </widget>
+                 <layout class="QHBoxLayout" name="horizontalLayout_12">
+                  <item>
+                   <spacer name="horizontalSpacer_9">
+                    <property name="orientation">
+                     <enum>Qt::Horizontal</enum>
+                    </property>
+                    <property name="sizeType">
+                     <enum>QSizePolicy::Preferred</enum>
+                    </property>
+                    <property name="sizeHint" stdset="0">
+                     <size>
+                      <width>40</width>
+                      <height>20</height>
+                     </size>
+                    </property>
+                   </spacer>
+                  </item>
+                  <item>
+                   <spacer name="horizontalSpacer_11">
+                    <property name="orientation">
+                     <enum>Qt::Horizontal</enum>
+                    </property>
+                    <property name="sizeType">
+                     <enum>QSizePolicy::Preferred</enum>
+                    </property>
+                    <property name="sizeHint" stdset="0">
+                     <size>
+                      <width>40</width>
+                      <height>20</height>
+                     </size>
+                    </property>
+                   </spacer>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="pushButton_visionCalibrate">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="text">
+                     <string>Calibrate</string>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
                 </item>
                 <item>
                  <spacer name="verticalSpacer_4">
@@ -1499,6 +1536,22 @@ p, li { white-space: pre-wrap; }
                 </item>
                </layout>
               </widget>
+             </widget>
+            </item>
+            <item>
+             <widget class="QProgressBar" name="progressBar_imageLoad">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="value">
+               <number>0</number>
+              </property>
              </widget>
             </item>
            </layout>

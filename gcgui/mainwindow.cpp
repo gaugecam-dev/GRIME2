@@ -204,6 +204,12 @@ void MainWindow::on_actionExit_triggered()
         QString msg = QString( "Stop running find line thread: " ) + ( GC_OK == retVal ? "SUCCESS" : "FAILURE" );
         ui->statusBar->showMessage( msg );
     }
+    if ( m_visApp.isRunningCreateGIF() )
+    {
+        GC_STATUS retVal = m_visApp.CreateGIFThreadFinish();
+        QString msg = QString( "Stop running create GIF thread: " ) + ( GC_OK == retVal ? "SUCCESS" : "FAILURE" );
+        ui->statusBar->showMessage( msg );
+    }
     close();
 }
 #ifndef QT_NO_CONTEXTMENU
@@ -711,6 +717,15 @@ void MainWindow::do_visAppMessage(QString msg)
     {
         if ( msg.contains( "Folder run complete" ) )
         {
+            ui->pushButton_findLine_processFolder->setEnabled( true );
+            ui->pushButton_findLine_stopFolderProcess->setEnabled( false );
+            ui->pushButton_createAnimation->setEnabled( true );
+            ui->pushButton_animationStop->setEnabled( false );
+        }
+        if ( msg.contains( "Create GIF complete" ) )
+        {
+            ui->pushButton_createAnimation->setEnabled( true );
+            ui->pushButton_animationStop->setEnabled( false );
             ui->pushButton_findLine_processFolder->setEnabled( true );
             ui->pushButton_findLine_stopFolderProcess->setEnabled( false );
         }
@@ -1492,17 +1507,45 @@ void MainWindow::on_pushButton_createAnimation_clicked()
     strFullPath = QFileDialog::getSaveFileName( this, "Select GIF filename", ui->lineEdit_imageFolder->text(), "Animations (*.gif *.GIF)" );
     if ( strFullPath.endsWith( ".gif" ) || strFullPath.endsWith( ".GIF" ) )
     {
-        std::string data;
+        ui->pushButton_createAnimation->setEnabled( false );
+        ui->pushButton_animationStop->setEnabled( true );
+        ui->pushButton_findLine_processFolder->setEnabled( false );
+        ui->pushButton_findLine_stopFolderProcess->setEnabled( false );
+
         GC_STATUS retVal = m_visApp.CreateAnimation( ui->lineEdit_imageFolder->text().toStdString(),
-                                                     strFullPath.toStdString(), ui->doubleSpinBox_animateFPS->value(),
+                                                     strFullPath.toStdString(), ui->spinBox_animateFPS->value(),
                                                      ui->doubleSpinBox_animateScale->value() );
-        ui->textEdit_msgs->append( "Animation creation: " + QString( GC_OK == retVal ? "SUCCESS" : "FAILURE" ) );
+        ui->textEdit_msgs->clear();
+        ui->textEdit_msgs->append( GC_OK == retVal ? "Create GIF started" : "Create GIF failed to start" );
     }
     else
     {
         ui->textEdit_msgs->append( "Animation creation: Invalid extension. Must be .gif" );
     }
 }
+void MainWindow::on_pushButton_animationStop_clicked()
+{
+    if ( m_visApp.isRunningCreateGIF() )
+    {
+        GC_STATUS retVal = m_visApp.CreateGIFThreadFinish();
+        if ( GC_OK == retVal )
+        {
+            ui->pushButton_createAnimation->setEnabled( true );
+            ui->pushButton_animationStop->setEnabled( false );
+            ui->pushButton_findLine_processFolder->setEnabled( true );
+            ui->pushButton_findLine_stopFolderProcess->setEnabled( false );
+        }
+        QString msg = QString( "Create GIF stop attempt:" ) + ( GC_OK == retVal ? "SUCCESS" : "FAILURE" );
+        ui->textEdit_msgs->clear();
+        ui->textEdit_msgs->append( msg );
+    }
+    else
+    {
+        ui->textEdit_msgs->append( "Tried to stop GIF create process when it was not running" );
+    }
+}
+
+
 #include "../algorithms/findsymbol.h"
 #include <opencv2/imgcodecs.hpp>
 void MainWindow::on_pushButton_test_clicked()

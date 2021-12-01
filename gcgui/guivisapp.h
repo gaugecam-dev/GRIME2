@@ -32,7 +32,7 @@ static const cv::Size MAX_IMAGE_SIZE = cv::Size( 1280, 1280 );
 namespace gc
 {
 
-static const std::string GAUGECAM_GUI_VISAPP_VERSION = "0.0.0.1";
+static const std::string GAUGECAM_GUI_VISAPP_VERSION = "0.0.0.2";
 
 enum IMG_BUFFERS
 {
@@ -54,6 +54,12 @@ enum IMG_DISPLAY_OVERLAYS
     DIAG_2ND_DERIV = 128,
     DIAG_RANSAC = 256,
     SEARCH_ROI = 512
+};
+enum GUIVISAPP_THREAD_TYPE
+{
+    FIND_LINES_THREAD,
+    CREATE_GIF_THREAD,
+    NONE_RUNNING
 };
 
 class GuiVisApp
@@ -94,11 +100,13 @@ public:
 
     // findline app methods
     GC_STATUS GetMetadata( const std::string imgFilepath, std::string &data );
-    GC_STATUS CreateAnimation( const std::string imageFolder, const std::string animationFilepath, const double fps , const double scale );
+    GC_STATUS CreateAnimation( const std::string imageFolder, const std::string animationFilepath, const int delay_ms , const double scale );
     GC_STATUS CalcLine( const FindLineParams params, FindLineResult &result );
     GC_STATUS CalcLinesInFolder( const std::string folder, const FindLineParams params, const bool isFolderOfImages , const LineDrawType drawTypes );
     GC_STATUS CalcLinesThreadFinish();
+    GC_STATUS CreateGIFThreadFinish();
     bool isRunningFindLine();
+    bool isRunningCreateGIF();
 
     // signals
     VisAppMsgSig sigMessage;
@@ -112,6 +120,7 @@ private:
     cv::Mat m_matDisplay;
 
     bool m_isRunning;
+    GUIVISAPP_THREAD_TYPE m_threadType;
     std::future< GC_STATUS > m_folderFuture;
 
     bool m_bShowRuler;
@@ -133,6 +142,7 @@ private:
     GC_STATUS AdjustImageSize( const cv::Mat &matSrc, cv::Mat &matDst );
     GC_STATUS RemoveAllFilesInFolder( const std::string folderpath );
     GC_STATUS CalcLinesThreadFunc( const std::vector< std::string > &images, const FindLineParams params, const LineDrawType drawTypes );
+    GC_STATUS CreateGIFThreadFunc( const std::string gifFilepath, const std::vector< std::string > &images, const int delay_ms, const double scale );
 };
 
 } // namespace gc

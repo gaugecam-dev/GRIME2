@@ -102,6 +102,7 @@ GC_STATUS Calib::Calibrate( const vector< Point2d > pixelPts, const vector< Poin
                                            std::max( 0, cvRound( m_model.pixelPoints[ idx ].y )- GC_BOWTIE_TEMPLATE_DIM ),
                                            std::min( imgSize.width - cvRound( m_model.pixelPoints[ idx ].x ), GC_BOWTIE_TEMPLATE_DIM * 2 ),
                                            std::min( imgSize.height - cvRound( m_model.pixelPoints[ idx ].y ), GC_BOWTIE_TEMPLATE_DIM * 2 ) );
+
                 int width = std::max( cvRound( m_model.pixelPoints[ idx ].x - m_model.pixelPoints[ 0 ].x ),
                                       cvRound( m_model.pixelPoints[ m_model.pixelPoints.size() - 1 ].x - m_model.pixelPoints[ m_model.pixelPoints.size() - 2 ].x ) );
                 int height = std::max( cvRound( m_model.pixelPoints[ m_model.pixelPoints.size() - 2 ].y - m_model.pixelPoints[ 0 ].y ),

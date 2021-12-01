@@ -57,6 +57,7 @@ namespace gc
 
 GuiVisApp::GuiVisApp() :
     m_isRunning( false ),
+    m_threadType( NONE_RUNNING ),
     m_bShowRuler( false ),
     m_strConfigFolder( "./config" ),
     m_strCurrentImageFilepath( "" ),
@@ -647,24 +648,55 @@ GC_STATUS GuiVisApp::GetMetadata( const std::string imgFilepath, std::string &da
     sigMessage( string( "Metadata retrieval: " ) + ( GC_OK == retVal ? "SUCCESS" : "FAILURE" ) );
     return retVal;
 }
-GC_STATUS GuiVisApp::CreateAnimation( const std::string imageFolder, const std::string animationFilepath, const double fps, const double scale )
+GC_STATUS GuiVisApp::CreateAnimation( const std::string imageFolder, const std::string animationFilepath, const int delay_ms, const double scale )
 {
-#if WIN32
-    string strBuf;
-    string cmdStr = "grime2cli --make_gif \"" + imageFolder + "\" ";
-    cmdStr += "--fps " + to_string( fps ) + " --scale " + to_string( scale );
-    cmdStr += " --result_image \"" + animationFilepath + "\"";
-    std::replace( cmdStr.begin(), cmdStr.end(), '/', '\\' );
-    int ret = WinRunCmd::runCmd( cmdStr.c_str(), strBuf );
-    if ( 0 != ret )
+    GC_STATUS retVal = GC_OK;
+    if ( m_isRunning )
     {
-        FILE_LOG( logERROR ) << "[MetaData::GetExifData] Could not run animate giff command: " << cmdStr;
+        sigMessage( "Tried to run thread when it is already running" );
+        FILE_LOG( logWARNING ) << "[GuiVisApp::CreateAnimation] Tried to run thread when it is already running";
+        retVal = GC_WARN;
     }
-    GC_STATUS retVal = 0 == ret ? GC_OK : GC_ERR;
-#else
-    GC_STATUS retVal = m_visApp.CreateAnimation( imageFolder, animationFilepath, fps, scale );
- #endif
-    sigMessage( string( "Create animation: " ) + ( GC_OK == retVal ? "SUCCESS" : "FAILURE" ) );
+    else
+    {
+        try
+        {
+            string ext;
+            vector< std::string > images;
+            for ( auto& p: fs::directory_iterator( imageFolder ) )
+            {
+                ext = p.path().extension().string();
+                std::transform( ext.begin(), ext.end(), ext.begin(),
+                                   []( unsigned char c ){ return std::tolower( c ); } );
+                if ( ext == ".png" || ext == ".jpg" ||
+                     ext == ".PNG" || ext == ".JPG" )
+                {
+                    images.push_back( p.path().string() );
+                }
+            }
+            if ( images.empty() )
+            {
+                sigMessage( "No images found in specified folder" );
+                FILE_LOG( logERROR ) << "[VGuiVisApp::CreateAnimation] No images found in specified folder";
+                retVal = GC_ERR;
+            }
+            else
+            {
+                sort( images.begin(), images.end() );
+
+                m_isRunning = true;
+                m_folderFuture = std::async( std::launch::async, &GuiVisApp::CreateGIFThreadFunc, this, animationFilepath, images, delay_ms, scale );
+            }
+        }
+        catch( std::exception &e )
+        {
+            FILE_LOG( logERROR ) << "[VisApp::CalcLinesFolder] " << e.what();
+            retVal = GC_EXCEPT;
+        }
+    }
+
+    //    GC_STATUS retVal = m_visApp.CreateAnimation( imageFolder, animationFilepath, delay_ms, scale );
+    //    sigMessage( string( "Create animation: " ) + ( GC_OK == retVal ? "SUCCESS" : "FAILURE" ) );
     return retVal;
 }
 GC_STATUS GuiVisApp::LoadCalib( const std::string calibJson )
@@ -719,7 +751,7 @@ GC_STATUS GuiVisApp::CalcLinesInFolder( const std::string folder, const FindLine
     if ( m_isRunning )
     {
         sigMessage( "Tried to run thread when it is already running" );
-        FILE_LOG( logWARNING ) << "[VisApp::CalcLinesThreadFinish] Tried to run thread when it is already running";
+        FILE_LOG( logWARNING ) << "[GuiVisApp::CalcLinesInFolder] Tried to run thread when it is already running";
         retVal = GC_WARN;
     }
     else
@@ -761,7 +793,7 @@ GC_STATUS GuiVisApp::CalcLinesInFolder( const std::string folder, const FindLine
             if ( images.empty() )
             {
                 sigMessage( "No images found in specified folder" );
-                FILE_LOG( logERROR ) << "[VisApp::CalcLinesThreadFinish] No images found in specified folder";
+                FILE_LOG( logERROR ) << "[GuiVisApp::CalcLinesInFolder] No images found in specified folder";
                 retVal = GC_ERR;
             }
             else
@@ -774,7 +806,34 @@ GC_STATUS GuiVisApp::CalcLinesInFolder( const std::string folder, const FindLine
         }
         catch( std::exception &e )
         {
-            FILE_LOG( logERROR ) << "[VisApp::CalcLinesFolder] " << e.what();
+            FILE_LOG( logERROR ) << "[GuiVisApp::CalcLinesInFolder] " << e.what();
+            retVal = GC_EXCEPT;
+        }
+    }
+
+    return retVal;
+}
+GC_STATUS GuiVisApp::CreateGIFThreadFinish()
+{
+    GC_STATUS retVal = GC_OK;
+
+    if ( !m_isRunning || ( m_isRunning && ( CREATE_GIF_THREAD != m_threadType ) ) )
+    {
+        sigMessage( "Tried to stop thread when it was not running" );
+        FILE_LOG( logWARNING ) << "[VisApp::CreateGIFThreadFinish] Tried to stop thread when it was not running";
+        retVal = GC_WARN;
+    }
+    else
+    {
+        try
+        {
+            m_isRunning = false;
+            m_folderFuture.wait();
+            retVal = m_folderFuture.get();
+        }
+        catch( std::exception &e )
+        {
+            FILE_LOG( logERROR ) << "[VisApp::CreateGIFThreadFinish] " << e.what();
             retVal = GC_EXCEPT;
         }
     }
@@ -785,7 +844,7 @@ GC_STATUS GuiVisApp::CalcLinesThreadFinish()
 {
     GC_STATUS retVal = GC_OK;
 
-    if ( !m_isRunning )
+    if ( !m_isRunning || ( m_isRunning && ( FIND_LINES_THREAD != m_threadType ) ) )
     {
         sigMessage( "Tried to stop thread when it was not running" );
         FILE_LOG( logWARNING ) << "[VisApp::CalcLinesThreadFinish] Tried to stop thread when it was not running";
@@ -808,13 +867,116 @@ GC_STATUS GuiVisApp::CalcLinesThreadFinish()
 
     return retVal;
 }
+bool GuiVisApp::isRunningCreateGIF()
+{
+    return m_threadType != CREATE_GIF_THREAD ? false : m_isRunning;
+}
+GC_STATUS GuiVisApp::CreateGIFThreadFunc( const string gifFilepath, const std::vector< std::string > &images,  const int delay_ms, const double scale )
+{
+    GC_STATUS retVal = GC_OK;
+    m_threadType = CREATE_GIF_THREAD;
+
+    try
+    {
+        double progressVal = 0.0;
+        sigProgress( progressVal );
+
+        if ( images.empty() )
+        {
+            m_isRunning = false;
+            sigMessage( "No images in vector" );
+            FILE_LOG( logERROR ) << "[VisApp::CreateGIFThreadFunc] No images in vector";
+            retVal = GC_ERR;
+        }
+        else
+        {
+            Mat img = imread( images[ 0 ], IMREAD_COLOR );
+            if ( img.empty() )
+            {
+                sigMessage( "Could not read first image " + images[ 0 ] );
+                FILE_LOG( logERROR ) << "[VisApp::CreateGIFThreadFunc] Could not read first image " << images[ 0 ];
+                retVal = GC_ERR;
+            }
+            else
+            {
+                resize( img, img, Size(), scale, scale, INTER_CUBIC );
+                retVal = m_visApp.BeginGIF( img.size(), images.size(), gifFilepath, delay_ms );
+                if ( GC_OK == retVal )
+                {
+                    retVal = m_visApp.AddImageToGIF( img );
+                    if ( GC_OK == retVal )
+                    {
+                        bool stopped = false;
+                        for ( size_t i = 1; i < images.size(); ++i )
+                        {
+                            if ( !m_isRunning )
+                            {
+                                stopped = true;
+                                break;
+                            }
+                            else
+                            {
+                                img = imread( images[ i ], IMREAD_COLOR );
+                                if ( img.empty() )
+                                {
+                                    sigMessage( "Could not read image " + images[ i ] );
+                                    FILE_LOG( logWARNING ) << "[VisApp::CreateGIFThreadFunc] Could not read image " << images[ i ];
+                                }
+                                else
+                                {
+                                    resize( img, img, Size(), scale, scale, INTER_CUBIC );
+                                    retVal = m_visApp.AddImageToGIF( img );
+                                    if ( GC_OK != retVal )
+                                    {
+                                        sigMessage( "Could not add image " + images[ i ] );
+                                        FILE_LOG( logWARNING ) << "[VisApp::CreateGIFThreadFunc] Could not add image " << images[ i ];
+                                    }
+                                    else
+                                    {
+                                        sigMessage( "Added " + images[ i ] );
+                                    }
+                                    progressVal = cvRound( 100.0 * static_cast< double >( i ) / static_cast< double >( images.size() ) ) + 1;
+                                    sigProgress( progressVal );
+                                }
+                            }
+                        }
+                        if ( !stopped )
+                        {
+                            sigMessage( "Create GIF complete" );
+                            sigProgress( 100 );
+                            m_isRunning = false;
+                        }
+                        else
+                        {
+                            sigMessage( "GIF stopped at " + to_string( progressVal ) + "%" );
+                        }
+                    }
+                    retVal = m_visApp.EndGIF();
+                    if ( GC_OK != retVal )
+                    {
+                        sigMessage( "End create GIF: FAIL" );
+                    }
+                }
+            }
+        }
+    }
+    catch( std::exception &e )
+    {
+        FILE_LOG( logERROR ) << "[VisApp::CreateGIFThreadFunc] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+    m_threadType = NONE_RUNNING;
+
+    return retVal;
+}
 bool GuiVisApp::isRunningFindLine()
 {
-    return m_isRunning;
+    return m_threadType != FIND_LINES_THREAD ? false : m_isRunning;
 }
 GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &images,  const FindLineParams params, const LineDrawType drawTypes )
 {
     GC_STATUS retVal = GC_OK;
+    m_threadType = FIND_LINES_THREAD;
 
     try
     {
@@ -993,9 +1155,10 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
     }
     catch( std::exception &e )
     {
-        FILE_LOG( logERROR ) << "[VisApp::CalcLinesFolder] " << e.what();
+        FILE_LOG( logERROR ) << "[VisApp::CalcLinesThreadFunc] " << e.what();
         retVal = GC_EXCEPT;
     }
+    m_threadType = NONE_RUNNING;
 
     return retVal;
 }

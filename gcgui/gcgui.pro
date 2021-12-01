@@ -53,6 +53,7 @@ SOURCES += \
         ../algorithms/findcalibgrid.cpp \
         ../algorithms/findline.cpp \
 	../algorithms/findsymbol.cpp \
+    ../algorithms/gifanim/gifanim.cpp \
 	../algorithms/metadata.cpp \
         ../algorithms/visapp.cpp \
         guivisapp.cpp \
@@ -69,6 +70,7 @@ HEADERS += \
         ../algorithms/findline.h \
 	../algorithms/findsymbol.h \
 	../algorithms/gc_types.h \
+    ../algorithms/gifanim/gifanim.h \
         ../algorithms/log.h \
         ../algorithms/metadata.h \
         ../algorithms/timestampconvert.h \
