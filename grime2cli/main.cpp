@@ -30,9 +30,11 @@ using namespace gc;
 // --show_metadata "/home/kchapman/data/idaho_power/bad_cal_bad_line_find/TREK0003.jpg"
 // --find_line --timestamp_from_filename --timestamp_start_pos 10 --timestamp_format "yy-mm-dd-HH-MM" "/media/kchapman/Elements/Projects/GRIME2/build-grime2cli-Desktop_Qt_5_15_2_GCC_64bit-Debug/config/2012_demo/06/NRmarshDN-12-06-30-10-30.jpg" --calib_json "/media/kchapman/Elements/Projects/GRIME2/build-grime2cli-Desktop_Qt_5_15_2_GCC_64bit-Debug/config/calib.json" --result_image "/var/tmp/water/find_line_result.png"
 // --run_folder --timestamp_from_filename --timestamp_start_pos 10 --timestamp_format "yy-mm-dd-HH-MM" "/media/kchapman/Elements/Projects/GRIME2/build-grime2cli-Desktop_Qt_5_15_2_GCC_64bit-Debug/config/2012_demo/06/" --calib_json "/media/kchapman/Elements/Projects/GRIME2/build-grime2cli-Desktop_Qt_5_15_2_GCC_64bit-Debug/config/calib.json" --csv_file "/var/tmp/water/folder.csv" --result_folder "/var/tmp/water/"
+// --make_gif "/media/kchapman/Elements/Projects/GRIME2/gcgui/config/2012_demo/06/" --result_image "/var/tmp/water/demo.gif" --scale 0.20 --delay_ms 1000
 
 // forward declarations
 void ShowVersion();
+GC_STATUS Calibrate( const Grime2CLIParams cliParams );
 GC_STATUS FindWaterLevel( const Grime2CLIParams cliParams );
 GC_STATUS RunFolder( const Grime2CLIParams cliParams );
 GC_STATUS CreateGIF( const Grime2CLIParams cliParams );
@@ -66,22 +68,7 @@ int main( int argc, char *argv[] )
         {
             if ( CALIBRATE == params.opToPerform )
             {
-                VisApp vis;
-                string jsonString;
-                retVal = FormCalibJsonString( params, jsonString );
-                if ( GC_OK == retVal )
-                {
-                    cv::Mat imgOut;
-                    retVal = vis.Calibrate( params.src_imagePath, jsonString, imgOut );
-                    if ( GC_OK == retVal && !params.result_imagePath.empty() )
-                    {
-                        bool bRet = cv::imwrite( params.result_imagePath, imgOut );
-                        if ( !bRet )
-                        {
-                            FILE_LOG( logWARNING ) << "Could not save calibration result image " << params.result_imagePath;
-                        }
-                    }
-                }
+                retVal = Calibrate( params );
             }
             else if ( FIND_LINE == params.opToPerform )
             {
@@ -125,6 +112,38 @@ int main( int argc, char *argv[] )
         }
     }
     return ret;
+}
+GC_STATUS Calibrate( const Grime2CLIParams cliParams )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        VisApp vis;
+        string jsonString;
+        retVal = FormCalibJsonString( cliParams, jsonString );
+        if ( GC_OK == retVal )
+        {
+            cv::Mat imgOut;
+            retVal = vis.Calibrate( cliParams.src_imagePath, jsonString, imgOut );
+            if ( GC_OK == retVal && !cliParams.result_imagePath.empty() )
+            {
+                bool bRet = cv::imwrite( cliParams.result_imagePath, imgOut );
+                if ( !bRet )
+                {
+                    FILE_LOG( logWARNING ) << "Could not save calibration result image " << cliParams.result_imagePath;
+                }
+            }
+        }
+    }
+    catch( const cv::Exception &e )
+    {
+        FILE_LOG( logERROR ) << e.what();
+        retVal = GC_EXCEPT;
+    }
+
+    cout << "Calibrate: " << ( GC_OK == retVal ? "SUCCESS" : "FAILURE" ) << endl;
+
+    return retVal;
 }
 GC_STATUS RunFolder( const Grime2CLIParams cliParams )
 {
@@ -306,6 +325,7 @@ GC_STATUS CreateGIF( const Grime2CLIParams cliParams )
         {
             sort( images.begin(), images.end() );
 
+            int percent = cvRound( 100.0 / static_cast< double >( images.size() ) );
             cv::Mat img = imread( images[ 0 ], cv::IMREAD_COLOR );
             if ( img.empty() )
             {
@@ -314,10 +334,12 @@ GC_STATUS CreateGIF( const Grime2CLIParams cliParams )
             }
             else
             {
+                cout << "Initialize GIF" << endl;
                 resize( img, img, cv::Size(), cliParams.scale, cliParams.scale, cv::INTER_CUBIC );
                 retVal = vis.BeginGIF( img.size(), images.size(), cliParams.result_imagePath, cliParams.delay_ms );
                 if ( GC_OK == retVal )
                 {
+                    cout << "Add GIF frame [" << percent << "%] " << fs::path( images[ 0 ] ).filename().string() << endl;
                     retVal = vis.AddImageToGIF( img );
                     if ( GC_OK == retVal )
                     {
@@ -330,6 +352,8 @@ GC_STATUS CreateGIF( const Grime2CLIParams cliParams )
                             }
                             else
                             {
+                                percent = cvRound( 100.0 * static_cast< double >( i + 1 ) / static_cast< double >( images.size() ) );
+                                cout << "Add GIF frame [" << percent << "%] " << fs::path( images[ 0 ] ).filename().string() << endl;
                                 resize( img, img, cv::Size(), cliParams.scale, cliParams.scale, cv::INTER_CUBIC );
                                 retVal = vis.AddImageToGIF( img );
                                 if ( GC_OK != retVal )
@@ -339,6 +363,7 @@ GC_STATUS CreateGIF( const Grime2CLIParams cliParams )
                             }
                         }
                     }
+                    cout << "Finish GIF" << endl;
                     retVal = vis.EndGIF();
                 }
             }
@@ -349,6 +374,8 @@ GC_STATUS CreateGIF( const Grime2CLIParams cliParams )
         FILE_LOG( logERROR ) << e.what();
         retVal = GC_EXCEPT;
     }
+
+    cout << "Create GIF " << ( GC_OK == retVal ? "SUCCESS: " : "FAILURE: " ) << cliParams.result_imagePath << endl;
 
     return retVal;
 }

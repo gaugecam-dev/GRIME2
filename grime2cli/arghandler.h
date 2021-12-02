@@ -156,7 +156,7 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                 {
                     params.opToPerform = SHOW_HELP;
                 }
-                else if ( "fps" == string( argv[ i ] ).substr( 2 ) )
+                else if ( "delay_ms" == string( argv[ i ] ).substr( 2 ) )
                 {
                     if ( i + 1 < argc )
                     {
@@ -422,7 +422,7 @@ void PrintHelp()
     cout << "FORMAT: grime2cli --calibrate <Bowtie target image> " << endl <<
             "                  --csv_file <CSV file with bow tie target xy positions>" << endl <<
             "                  --calib_json <json filepath for created json file>" << endl <<
-            "                 [--target_roi <Result overlay image> OPTIONAL]" << endl <<
+            "                 [--target_roi <left> <top> <width> <height> OPTIONAL]" << endl <<
             "                 [--result_image <Result overlay image> OPTIONAL]" << endl <<
             "        Loads image with bow tie targets (all must be visible). Reads csv file" << endl <<
             "        that holds world coordinate positions of the centers of the bow ties," << endl <<
@@ -448,8 +448,8 @@ void PrintHelp()
             "        timestamp parameters, calculates the line positions,  and creates the optional overlay result" << endl <<
             "        image if specified" << endl;
     cout << "FORMAT: grime2cli --make_gif <Folder path of images> --result_image <File path of GIF to create>" << endl <<
-            "                   [--fps <Animation frames per second> OPTIONAL default=0.5]" << endl <<
-            "                   [--scale <Animation image scale from original> OPTIONAL default=1.0]" << endl <<
+            "                   [--delay_ms <Animation frames per second> OPTIONAL default=250]" << endl <<
+            "                   [--scale <Animation image scale from original> OPTIONAL default=0.2]" << endl <<
             "        Creates a gif animation with the images in the specifed folder at the specified scale and" << endl <<
             "        frame rate" << endl;
     cout << "FORMAT: grime2cli --show_metadata <Image filepath>" << endl;
