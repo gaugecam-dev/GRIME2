@@ -68,7 +68,7 @@ public:
     string timestamp_type;
     int timestamp_startPos;
     int timeStamp_length;
-    double delay_ms;
+    int delay_ms;
     double scale;
     int targetRoi_x;
     int targetRoi_y;
@@ -160,7 +160,7 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                 {
                     if ( i + 1 < argc )
                     {
-                        params.delay_ms = stod( argv[ ++i ] );
+                        params.delay_ms = stoi( argv[ ++i ] );
                     }
                     else
                     {

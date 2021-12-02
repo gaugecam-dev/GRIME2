@@ -336,7 +336,7 @@ GC_STATUS CreateGIF( const Grime2CLIParams cliParams )
             {
                 cout << "Initialize GIF" << endl;
                 resize( img, img, cv::Size(), cliParams.scale, cliParams.scale, cv::INTER_CUBIC );
-                retVal = vis.BeginGIF( img.size(), images.size(), cliParams.result_imagePath, cliParams.delay_ms );
+                retVal = vis.BeginGIF( img.size(), static_cast< int >( images.size() ), cliParams.result_imagePath, cliParams.delay_ms );
                 if ( GC_OK == retVal )
                 {
                     cout << "Add GIF frame [" << percent << "%] " << fs::path( images[ 0 ] ).filename().string() << endl;

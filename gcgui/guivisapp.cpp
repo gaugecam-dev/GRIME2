@@ -879,7 +879,7 @@ GC_STATUS GuiVisApp::CreateGIFThreadFunc( const string gifFilepath, const std::v
     try
     {
         double progressVal = 0.0;
-        sigProgress( progressVal );
+        sigProgress( cvRound( progressVal ) );
 
         if ( images.empty() )
         {
@@ -900,7 +900,7 @@ GC_STATUS GuiVisApp::CreateGIFThreadFunc( const string gifFilepath, const std::v
             else
             {
                 resize( img, img, Size(), scale, scale, INTER_CUBIC );
-                retVal = m_visApp.BeginGIF( img.size(), images.size(), gifFilepath, delay_ms );
+                retVal = m_visApp.BeginGIF( img.size(), static_cast< int >( images.size() ), gifFilepath, delay_ms );
                 if ( GC_OK == retVal )
                 {
                     retVal = m_visApp.AddImageToGIF( img );
@@ -935,8 +935,8 @@ GC_STATUS GuiVisApp::CreateGIFThreadFunc( const string gifFilepath, const std::v
                                     {
                                         sigMessage( "Added " + images[ i ] );
                                     }
-                                    progressVal = cvRound( 100.0 * static_cast< double >( i ) / static_cast< double >( images.size() ) ) + 1;
-                                    sigProgress( progressVal );
+                                    progressVal = 100.0 * static_cast< double >( i ) / static_cast< double >( images.size() ) + 1;
+                                    sigProgress( cvRound( progressVal ) );
                                 }
                             }
                         }
