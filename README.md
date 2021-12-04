@@ -97,4 +97,4 @@ compliance with the Apache 2.0 license. Here are the libraries used by GRIME2:
 ## 4 Linux dev setup
 
 <a name="tutor"></a>
-## 5. Tutorials
+## 5. Tutorials -- Go to [GaugeCam.org](https://gaugecam.org) for video tutorials on installation and useage of GRIME2
