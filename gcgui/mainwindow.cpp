@@ -49,14 +49,6 @@ const static string __CONFIGURATION_FOLDER = "./config/";
 const static string __SETTINGS_FILEPATH = "./config/settings.cfg";
 #endif
 
-static double DistToLine( const double dX, const double dY,
-                          const double dX1, const double dY1,
-                          const double dX2, const double dY2 )
-{
-    double dNum = fabs( ( dX2 - dX1 ) * ( dY1 - dY ) - ( dX1 - dX ) * ( dY2 - dY1 ) );
-    double dDenom = sqrt( ( dX2 - dX1 ) * ( dX2 - dX1 ) + ( dY2 - dY1 ) * ( dY2 - dY1 ) );
-    return 0.0 == dDenom ? 0.0 : dNum / dDenom;
-}
 static double Distance( const double x1, const int y1, const int x2, const int y2 )
 {
     return sqrt( ( x2 - x1 ) * ( x2 - x1 ) + ( y2 - y1 ) * ( y2 - y1 ) );
@@ -456,81 +448,6 @@ void MainWindow::ZoomTo( const int width, const int height )
         ui->horizontalSlider_zoom->setValue( nScale );
     }
 }
-void MainWindow::TestAgainstFindLines( QPoint pt )
-{
-    QPoint ptTemp;
-    ptTemp.setX( qRound( ( static_cast< double >( pt.x() ) / m_scaleFactor + 0.5 ) ) );
-    ptTemp.setY( qRound( ( static_cast< double >( pt.y() ) / m_scaleFactor + 0.5 ) ) );
-    switch ( m_nCapturePos )
-    {
-        case 1: m_lineOne.setP1( ptTemp ); break;
-        case 2: m_lineOne.setP2( ptTemp ); break;
-        case 5:
-            m_lineOne.setP1( m_lineOne.p1() + ( ptTemp - m_ptCapture ) );
-            m_lineOne.setP2( m_lineOne.p2() + ( ptTemp - m_ptCapture ) );
-            break;
-        default: break;
-    }
-    AdjustPointFindLines();
-    m_ptCapture = ptTemp;
-}
-void MainWindow::TestAgainstRubberBands( QPoint pt )
-{
-    switch ( m_nCapturePos )
-    {
-        case 1:
-            m_rectRubberBand.setLeft( pt.x() );
-            m_rectRubberBand.setTop( pt.y() );
-            break;
-        case 2:
-            m_rectRubberBand.setTop( pt.y() );
-            break;
-        case 4:
-            m_rectRubberBand.setRight( pt.x() );
-            m_rectRubberBand.setTop( pt.y() );
-            break;
-        case 8: m_rectRubberBand.setLeft( pt.x() ); break;
-        case 16: m_rectRubberBand.setRight( pt.x() ); break;
-        case 32:
-            m_rectRubberBand.setLeft( pt.x() );
-            m_rectRubberBand.setBottom( pt.y() );
-            break;
-        case 64:
-            m_rectRubberBand.setBottom( pt.y() );
-            break;
-        case 128:
-            m_rectRubberBand.setRight( pt.x() );
-            m_rectRubberBand.setBottom( pt.y() );
-            break;
-        case 255: m_rectRubberBand.setCoords(
-            m_rectRubberBand.left() - m_ptCapture.x() + pt.x(),
-            m_rectRubberBand.top() - m_ptCapture.y() + pt.y(),
-            m_rectRubberBand.right() - m_ptCapture.x() + pt.x(),
-            m_rectRubberBand.bottom() - m_ptCapture.y() + pt.y() );
-            break;
-        default: break;
-    }
-    AdjustPointRubberBand();
-    m_pRubberBand->setGeometry( m_rectRubberBand );
-    m_rectROI.setLeft( qRound( static_cast< double >( m_rectRubberBand.left() ) / m_scaleFactor ) );
-    m_rectROI.setTop( qRound( static_cast< double >( m_rectRubberBand.top() ) / m_scaleFactor ) );
-    m_rectROI.setRight( qRound( static_cast< double >( m_rectRubberBand.right() ) / m_scaleFactor ) );
-    m_rectROI.setBottom( qRound( static_cast< double >( m_rectRubberBand.bottom() ) / m_scaleFactor ) );
-    m_ptCapture = pt;
-}
-void MainWindow::AdjustPointRubberBand()
-{
-    if ( 5 > m_rectRubberBand.width() ) m_rectRubberBand.setRight( m_rectRubberBand.x() + 5 );
-    if ( 5 > m_rectRubberBand.height() ) m_rectRubberBand.setBottom( m_rectRubberBand.y() + 5 );
-    if ( 0 > m_rectRubberBand.x() ) m_rectRubberBand.setLeft( 0 );
-    if ( 0 > m_rectRubberBand.y() ) m_rectRubberBand.setTop( 0 );
-    if ( m_pLabelImgDisplay->width() < m_rectRubberBand.left() + m_rectRubberBand.width() )
-            m_rectRubberBand.setRight( m_pLabelImgDisplay->width() - 1 );
-    if ( m_pLabelImgDisplay->height() < m_rectRubberBand.top() + m_rectRubberBand.height() )
-            m_rectRubberBand.setBottom( m_pLabelImgDisplay->height() - 1 );
-    if ( 5 > m_rectRubberBand.width() ) m_rectRubberBand.setLeft( m_rectRubberBand.right() - 5 );
-    if ( 5 > m_rectRubberBand.height() ) m_rectRubberBand.setTop( m_rectRubberBand.bottom() - 5 );
-}
 void MainWindow::UpdateCalibSearchRegion()
 {
     if ( ui->checkBox_calibSearchROI->isChecked() )
@@ -577,24 +494,6 @@ void MainWindow::UpdateGUIEnables()
     ui->lineEdit_findLine_annotatedResultFolder->setEnabled( ui->checkBox_createFindLine_annotatedResults->isChecked() );
     ui->toolButton_findLine_annotatedResultFolder_browse->setEnabled( ui->checkBox_createFindLine_annotatedResults->isChecked() );
     ui->widget_overlayCheckboxes->setHidden( !ui->actionToggleControls->isChecked() );
-}
-void MainWindow::AdjustPointFindLines()
-{
-    int nWidth = qRound( static_cast< double >( m_pLabelImgDisplay->width() ) / m_scaleFactor + 0.5 ) - 5;
-    int nHeight = qRound( static_cast< double >( m_pLabelImgDisplay->height() ) / m_scaleFactor + 0.5 ) - 5;
-    QPoint ptLine1Pt1( m_lineOne.p1().x(), m_lineOne.p1().y() );
-    QPoint ptLine1Pt2( m_lineOne.p2().x(), m_lineOne.p2().y() );
-    if ( 5 > ptLine1Pt1.x() ) ptLine1Pt1.setX( 5 );
-    if ( 5 > ptLine1Pt2.x() ) ptLine1Pt2.setX( 5 );
-    if ( 5 > ptLine1Pt1.y() ) ptLine1Pt1.setY( 5 );
-    if ( 5 > ptLine1Pt2.y() ) ptLine1Pt2.setY( 5 );
-    if ( nWidth <= ptLine1Pt1.x() ) ptLine1Pt1.setX( nWidth - 1 );
-    if ( nWidth <= ptLine1Pt2.x() ) ptLine1Pt2.setX( nWidth - 1 );
-    if ( nHeight <= ptLine1Pt1.y() ) ptLine1Pt1.setY( nHeight - 1 );
-    if ( nHeight <= ptLine1Pt2.y() ) ptLine1Pt2.setY( nHeight - 1 );
-    m_lineOne.setP1( ptLine1Pt1 );
-    m_lineOne.setP2( ptLine1Pt2 );
-    UpdatePixmap();
 }
 void MainWindow::UpdatePixmapTarget()
 {
@@ -740,56 +639,13 @@ void MainWindow::mousePressEvent( QMouseEvent *pEvent )
 
     if ( nullptr != m_pRubberBand && ui->actionSetROI->isChecked() )
     {
-        int nX = pt.x();
-        int nY = pt.y();
-        m_ptCapture.setX( nX );
-        m_ptCapture.setY( nY );
-        if ( abs( nX - m_rectRubberBand.left() ) < sensitivityRadius )
-        {
-            if ( abs( nY - m_rectRubberBand.top() ) < sensitivityRadius )               m_nCapturePos = 1;
-            else if ( abs( nY - m_rectRubberBand.bottom() ) < sensitivityRadius )       m_nCapturePos = 32;
-            else if ( nY > m_rectRubberBand.top() && nY < m_rectRubberBand.bottom() )   m_nCapturePos = 8;
-            else m_nCapturePos = 0;
-        }
-        else if ( abs( nX - m_rectRubberBand.right() ) < sensitivityRadius )
-        {
-            if ( abs( nY - m_rectRubberBand.top() ) < sensitivityRadius )               m_nCapturePos = 4;
-            else if ( abs( nY - m_rectRubberBand.bottom() ) < sensitivityRadius )       m_nCapturePos = 128;
-            else if ( nY > m_rectRubberBand.top() && nY < m_rectRubberBand.bottom() )   m_nCapturePos = 16;
-            else m_nCapturePos = 0;
-        }
-        else if ( nX > m_rectRubberBand.left() && nX < m_rectRubberBand.right() )
-        {
-            if ( abs ( nY - m_rectRubberBand.top() ) < sensitivityRadius )              m_nCapturePos = 2;
-            else if ( abs ( nY - m_rectRubberBand.bottom() ) < sensitivityRadius )      m_nCapturePos = 64;
-            else if ( nY > m_rectRubberBand.top() && nY < m_rectRubberBand.bottom() )   m_nCapturePos = 255;
-            else m_nCapturePos = 0;
-        }
-        m_bCaptured = 0 < m_nCapturePos ? true : false;
+        int ret = m_roiAdjust.EvalRectCapturePt( m_rectRubberBand, pt, sensitivityRadius, m_nCapturePos, m_ptCapture );
+        m_bCaptured = ( ( 0 >= m_nCapturePos ) || ( 0 != ret ) ) ? false : true;
     }
     else if ( ui->actionSetRuler->isChecked() )
     {
-        QPoint pt = m_pLabelImgDisplay->mapFrom( ui->centralWidget, pEvent->pos() );
-        pt.setY( pt.y() - ui->mainToolBar->height() );
-        m_nCapturePos = 0;
-        int nX = qRound( static_cast< double >( pt.x() ) / m_scaleFactor + 0.5 );
-        int nY = qRound( static_cast< double >( pt.y() ) / m_scaleFactor + 0.5 );
-        m_ptCapture.setX( nX );
-        m_ptCapture.setY( nY );
-        if ( abs( nX - m_lineOne.p1().x() ) < sensitivityRadius &&
-             abs( nY - m_lineOne.p1().y() ) < sensitivityRadius ) m_nCapturePos = 1;
-        else if ( abs( nX - m_lineOne.p2().x() ) < sensitivityRadius &&
-                  abs( nY - m_lineOne.p2().y() ) < sensitivityRadius ) m_nCapturePos = 2;
-        else
-        {
-            double dDist = DistToLine( static_cast< double >( nX ), static_cast< double >( nY ),
-                                       static_cast< double >( m_lineOne.p1().x() ),
-                                       static_cast< double >( m_lineOne.p1().y() ),
-                                       static_cast< double >( m_lineOne.p2().x() ),
-                                       static_cast< double >( m_lineOne.p2().y() ) );
-            if ( 10 > qRound( dDist + 0.5 ) ) m_nCapturePos = 5;
-        }
-        m_bCaptured = 0 < m_nCapturePos ? true : false;
+        int ret = m_roiAdjust.EvalRulerCapturePt( m_lineOne, pt, m_scaleFactor, sensitivityRadius, m_nCapturePos, m_ptCapture );
+        m_bCaptured = ( ( 0 >= m_nCapturePos ) || ( 0 != ret ) ) ? false : true;
     }
 }
 void MainWindow::mouseMoveEvent( QMouseEvent *pEvent )
@@ -824,11 +680,19 @@ void MainWindow::mouseMoveEvent( QMouseEvent *pEvent )
     {
         if ( nullptr != m_pRubberBand && ui->actionSetROI->isChecked() )
         {
-            TestAgainstRubberBands( pt );
+            int ret = m_roiAdjust.TestAgainstRubberBands( pt, m_pLabelImgDisplay->size(), m_rectRubberBand, m_rectROI, m_nCapturePos, m_scaleFactor, m_ptCapture );
+            if ( 0 == ret )
+            {
+                m_pRubberBand->setGeometry( m_rectRubberBand );
+            }
         }
         else if ( ui->actionSetRuler->isChecked() )
         {
-            TestAgainstFindLines( pt );
+            int ret = m_roiAdjust.TestAgainstFindLines( pt, m_pLabelImgDisplay->size(), m_nCapturePos, m_scaleFactor, m_ptCapture, m_lineOne );
+            if ( 0 == ret )
+            {
+                UpdatePixmap();
+            }
             int nXpix1 = qRound( ( static_cast< double >( m_lineOne.p1().x() ) / m_scaleFactor ) + 0.5 );
             int nYpix1 = qRound( ( static_cast< double >( m_lineOne.p1().y() ) / m_scaleFactor ) + 0.5 );
             int nXpix2 = qRound( ( static_cast< double >( m_lineOne.p2().x() ) / m_scaleFactor ) + 0.5 );
@@ -1126,78 +990,6 @@ void MainWindow::on_toolButton_imageFolder_browse_clicked()
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // vision calibration
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-int MainWindow::FormCalibJsonString( string &json )
-{
-    int ret = 0;
-
-    QString strFolder = ui->lineEdit_imageFolder->text();
-    if ( !strFolder.endsWith( '/') )
-        strFolder += '/';
-
-    QString strFilepath = strFolder + ui->listWidget_imageFolder->currentItem()->text();
-    json.clear();
-
-    if ( ui->radioButton_calibBowtie->isChecked() )
-    {
-        json = "{\"calibType\": \"BowTie\", ";
-        json += "\"calibWorldPt_csv\": \"" + ui->lineEdit_calibVisionTarget_csv->text().toStdString() + "\", ";
-        json += "\"stopSignFacetLength\": -1.0, ";
-        json += "\"drawCalib\": 0, ";
-        json += "\"drawMoveSearchROIs\": 0, ";
-        json += "\"drawWaterLineSearchROI\": 0, ";
-        json += "\"calibResult_json\": \"" + ui->lineEdit_calibVisionResult_json->text().toStdString() + "\", ";
-        if ( ui->checkBox_calibSearchROI->isChecked() )
-        {
-            json += "\"targetRoi_x\": " + to_string( m_rectROI.x() ) + ", ";
-            json += "\"targetRoi_y\": " + to_string( m_rectROI.y() ) + ", ";
-            json += "\"targetRoi_width\": " + to_string( m_rectROI.width() ) + ", ";
-            json += "\"targetRoi_height\": " + to_string( m_rectROI.height() ) + ", ";
-        }
-        else
-        {
-            json += "\"targetRoi_x\": -1, ";
-            json += "\"targetRoi_y\": -1, ";
-            json += "\"targetRoi_width\": -1, ";
-            json += "\"targetRoi_height\": -1, ";
-        }
-        json += "\"calibResult_json\": \"" + ui->lineEdit_calibVisionResult_json->text().toStdString() + "\"}";
-    }
-    else if ( ui->radioButton_calibStopSign->isChecked() )
-    {
-        json = "{\"calibType\": \"StopSign\", ";
-        if ( ui->radioButton_stopsignFromFile->isChecked() )
-        {
-            json += "\"calibWorldPt_csv\": \"" + ui->lineEdit_calibVisionTarget_csv->text().toStdString() + "\", ";
-            json += "\"stopSignFacetLength\": -1.0, }";
-            json += "\"drawCalib\": 0, ",
-            json += "\"drawMoveSearchROIs\": 0, ",
-            json += "\"drawWaterLineSearchROI\": 0, ",
-            json += "\"calibResult_json\": \"" + ui->lineEdit_calibVisionResult_json->text().toStdString() + "\"}";
-        }
-        else if ( ui->radioButton_stopsignFacetLength->isChecked() )
-        {
-            json += "\"calibWorldPt_csv\": \"" + ui->lineEdit_calibVisionTarget_csv->text().toStdString() + "\", ";
-            json += "\"stopSignFacetLength\": " + to_string( ui->doubleSpinBox_stopSignFacetLength->value() ) + ", ";
-            json += "\"drawCalib\": 0, ",
-            json += "\"drawMoveSearchROIs\": 0, ",
-            json += "\"drawWaterLineSearchROI\": 0, ",
-            json += "\"calibResult_json\": \"" + ui->lineEdit_calibVisionResult_json->text().toStdString() + "\"}";
-        }
-        else
-        {
-            json.clear();
-            ui->statusBar->showMessage( "No valid stop sign calibration method" );
-            ret = -1;
-        }
-    }
-    else
-    {
-        ui->statusBar->showMessage( "No calibration type selected" );
-        ret = -1;
-    }
-
-    return ret;
-}
 void MainWindow::on_pushButton_visionCalibrate_clicked()
 {
     QString strFolder = ui->lineEdit_imageFolder->text();
@@ -1213,15 +1005,34 @@ void MainWindow::on_pushButton_visionCalibrate_clicked()
     Mat imgOut;
     string jsonControlStr;
     GC_STATUS retVal = GC_OK;
-    int ret = FormCalibJsonString( jsonControlStr );
+    int ret = -1;
+    if ( ui->radioButton_calibBowtie->isChecked() )
+    {
+        ret = m_roiAdjust.FormBowtieCalibJsonString( ui->lineEdit_calibVisionTarget_csv->text().toStdString(),
+                                                     ui->lineEdit_calibVisionResult_json->text().toStdString(),
+                                                     ui->checkBox_calibSearchROI->isChecked(), m_rectROI, jsonControlStr );
+    }
+    else if ( ui->radioButton_calibStopSign->isChecked() )
+    {
+        ret = m_roiAdjust.FormStopsignCalibJsonString( ui->lineEdit_calibVisionTarget_csv->text().toStdString(),
+                                                       ui->lineEdit_calibVisionResult_json->text().toStdString(),
+                                                       ui->checkBox_calibSearchROI->isChecked(), m_rectROI,
+                                                       ui->radioButton_stopsignFacetLength->isChecked(),
+                                                       ui->doubleSpinBox_stopSignFacetLength->value(), jsonControlStr );
+    }
+    else
+    {
+        ui->textEdit_msgs->setText( "Invalid calibration type selected" );
+        retVal = GC_ERR;
+    }
+
     if ( 0 == ret )
     {
         retVal = m_visApp.Calibrate( strFilepath.toStdString(), jsonControlStr, imgOut );
+        ui->checkBox_showCalib->setChecked( true );
+        m_pComboBoxImageToView->setCurrentText( "Overlay" );
+        UpdatePixmapTarget();
     }
-
-    ui->checkBox_showCalib->setChecked( true );
-    m_pComboBoxImageToView->setCurrentText( "Overlay" );
-    UpdatePixmapTarget();
 
     ui->statusBar->showMessage( QString( "Calibration: " ) + ( GC_OK == retVal ? "SUCCESS" : "FAILURE" ) );
 }
@@ -1550,20 +1361,6 @@ void MainWindow::on_pushButton_animationStop_clicked()
 #include <opencv2/imgcodecs.hpp>
 void MainWindow::on_pushButton_test_clicked()
 {
-
-    Mat searchImg = imread( "/media/kchapman/Elements/unl/article_repo/trunk/unl_third_paper/color_h2octagons/MicrosoftTeams-image.png", IMREAD_ANYCOLOR );
-
-    FindSymbol findSym;
-    double facetLength = 10.0;
-    vector< Point > facetEnds;
-    GC_STATUS retVal = findSym.Calibrate( searchImg, facetLength );
-    if ( GC_OK == retVal )
-    {
-        Mat color;
-        retVal = findSym.DrawCalibration( searchImg, color, true, true, true );
-        if ( GC_OK == retVal )
-        {
-            imwrite( "/var/tmp/water/calibration_red_h2octagon.png", color );
-        }
-    }
+    ui->statusBar->showMessage( "Test not implemented" );
+    return;
 }

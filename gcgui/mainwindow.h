@@ -27,6 +27,7 @@
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QProgressDialog>
 #include <QtWidgets/QListWidget>
+#include "roiadjust.h"
 
 #ifdef QT_NO_CONTEXTMENU
 #undef QT_NO_CONTEXTMENU
@@ -116,6 +117,8 @@ private:
     QLabel *m_pLabelImgDisplay;
     double m_scaleFactor;
 
+    RoiAdjust m_roiAdjust;
+
     // region of interest code
     QLine m_lineOne;
     QRubberBand *m_pRubberBand;
@@ -148,10 +151,8 @@ private:
     void UpdatePixmapTarget();
     void UpdateCalibType();
     void UpdateCalibSearchRegion();
-    void TestAgainstFindLines( QPoint pt );
-    void TestAgainstRubberBands( QPoint pt );
-    void AdjustPointRubberBand();
-    void AdjustPointFindLines();
+//    void TestAgainstRubberBands( QPoint pt );
+//    void AdjustPointRubberBand();
     int ReadSettings( const QString filepath = "" );
     int WriteSettings(const QString filepath = "" );
     size_t GetImagesPathsFromFolder(  const QString strPath );
@@ -160,7 +161,7 @@ private:
     void ClearTable();
     int InitTable( const vector< string > headings );
     int AddRow( const string row_string );
-    int FormCalibJsonString( string &json );
+    // int FormCalibJsonString( string &json );
 };
 
 #endif // MAINWINDOW_H

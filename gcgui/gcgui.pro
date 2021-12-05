@@ -58,7 +58,8 @@ SOURCES += \
         ../algorithms/visapp.cpp \
         guivisapp.cpp \
         main.cpp \
-        mainwindow.cpp
+        mainwindow.cpp \
+    roiadjust.cpp
 
 HEADERS += \
         ../algorithms/animate.h \
@@ -77,7 +78,8 @@ HEADERS += \
         ../algorithms/visapp.h \
         ../algorithms/wincmd.h \
         guivisapp.h \
-        mainwindow.h
+        mainwindow.h \
+    roiadjust.h
 
 FORMS += \
         mainwindow.ui
