@@ -78,7 +78,7 @@ public:
 private:
     int AdjustPointFindLines( const QSize displaySize, const double scale, QLine &lineOne );
     int AdjustPointRubberBand( const QSize displaySize, QRect &rectRubberBand );
-    int AdjustPointPoly( const QSize displaySize, LineSearchPoly &guiPoly );
+    int AdjustPointPoly( const QSize displaySize, const double scale, LineSearchPoly &guiPoly );
 };
 
 #endif // ROIADJUST_H

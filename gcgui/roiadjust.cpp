@@ -52,8 +52,8 @@ int RoiAdjust::TestAgainstFindLines( const QPoint pt, const QSize displaySize, c
 }
 int RoiAdjust::AdjustPointFindLines( const QSize displaySize, const double scale, QLine &lineOne )
 {
-    int nWidth = qRound( static_cast< double >( displaySize.width() ) / scale + 0.5 ) - 5;
-    int nHeight = qRound( static_cast< double >( displaySize.height() ) / scale + 0.5 ) - 5;
+    int nWidth = qRound( static_cast< double >( displaySize.width() ) / scale ) - 5;
+    int nHeight = qRound( static_cast< double >( displaySize.height() ) / scale ) - 5;
     QPoint ptLine1Pt1( lineOne.p1().x(), lineOne.p1().y() );
     QPoint ptLine1Pt2( lineOne.p2().x(), lineOne.p2().y() );
     if ( 5 > ptLine1Pt1.x() ) ptLine1Pt1.setX( 5 );
@@ -248,7 +248,7 @@ int RoiAdjust::TestAgainstPoly( QPoint pt, const QSize displaySize, LineSearchPo
 
     if ( doAdjust )
     {
-        AdjustPointPoly( displaySize, guiPoly );
+        AdjustPointPoly( displaySize, scale, guiPoly );
 
         imgPoly.lftTop.setX( qRound( static_cast< double >( guiPoly.lftTop.x() ) / scale ) );
         imgPoly.lftTop.setY( qRound( static_cast< double >( guiPoly.lftTop.y() ) / scale ) );
@@ -264,12 +264,12 @@ int RoiAdjust::TestAgainstPoly( QPoint pt, const QSize displaySize, LineSearchPo
 
     return ret;
 }
-int RoiAdjust::AdjustPointPoly( const QSize displaySize, LineSearchPoly &guiPoly )
+int RoiAdjust::AdjustPointPoly( const QSize displaySize, double const scale, LineSearchPoly &guiPoly )
 {
     int ret = 0;
 
-    int nWidth = displaySize.width() - 5;
-    int nHeight = displaySize.height() - 5;
+    int nWidth = qRound( static_cast< double >( displaySize.width() ) / scale ) - 1;
+    int nHeight = qRound( static_cast< double >( displaySize.height() ) / scale ) - 1;
 
     if ( 0 > guiPoly.lftTop.x() ) guiPoly.lftTop.setX( 0 );
     if ( 0 > guiPoly.lftBot.x() ) guiPoly.lftBot.setX( 0 );
