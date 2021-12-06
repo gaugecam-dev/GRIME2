@@ -33,8 +33,8 @@ int RoiAdjust::TestAgainstFindLines( const QPoint pt, const QSize displaySize, c
                                      const double scale, QPoint &ptCapture, QLine &lineOne )
 {
     QPoint ptTemp;
-    ptTemp.setX( qRound( ( static_cast< double >( pt.x() ) / scale + 0.5 ) ) );
-    ptTemp.setY( qRound( ( static_cast< double >( pt.y() ) / scale + 0.5 ) ) );
+    ptTemp.setX( qRound( static_cast< double >( pt.x() ) / scale ) );
+    ptTemp.setY( qRound( static_cast< double >( pt.y() ) / scale ) );
     switch ( capturePos )
     {
         case 1: lineOne.setP1( ptTemp ); break;
@@ -188,8 +188,8 @@ int RoiAdjust::EvalPolyCapturePt( const LineSearchPoly guiPoly, const QPoint ptA
                                   const int captureRadius, int &capturePos, QPoint &ptCapture )
 {
     capturePos = 0;
-    int nX = qRound( static_cast< double >( ptAdj.x() ) / scale + 0.5 );
-    int nY = qRound( static_cast< double >( ptAdj.y() ) / scale + 0.5 );
+    int nX = qRound( static_cast< double >( ptAdj.x() ) / scale );
+    int nY = qRound( static_cast< double >( ptAdj.y() ) / scale );
     ptCapture.setX( nX );
     ptCapture.setY( nY );
 
@@ -212,9 +212,9 @@ int RoiAdjust::EvalPolyCapturePt( const LineSearchPoly guiPoly, const QPoint ptA
     else if ( nX > guiPoly.lftTop.x() && nX < guiPoly.rgtTop.x() &&
               nX > guiPoly.lftBot.x() && nX < guiPoly.rgtBot.x() &&
               nY > guiPoly.lftTop.y() && nY < guiPoly.lftBot.y() &&
-              nY > guiPoly.rgtBot.y() && nY < guiPoly.rgtBot.y() )
+              nY > guiPoly.rgtTop.y() && nY < guiPoly.rgtBot.y() )
     {
-        capturePos = 5;
+        capturePos = 255;
     }
      return 0;
 }
@@ -223,35 +223,44 @@ int RoiAdjust::TestAgainstPoly( QPoint pt, const QSize displaySize, LineSearchPo
 {
     int ret = 0;
 
+    bool doAdjust = true;
+
+    QPoint ptTemp;
+    ptTemp.setX( qRound( static_cast< double >( pt.x() ) / scale ) );
+    ptTemp.setY( qRound( static_cast< double >( pt.y() ) / scale ) );
+
     switch ( capturePos )
     {
-        case 1: guiPoly.lftTop = pt; break;
-        case 4: guiPoly.rgtTop = pt;  break;
-        case 32: guiPoly.lftBot = pt; break;
-        case 128:  guiPoly.rgtBot = pt; break;
+        case 1: guiPoly.lftTop = ptTemp; break;
+        case 4: guiPoly.rgtTop = ptTemp;  break;
+        case 32: guiPoly.lftBot = ptTemp; break;
+        case 128:  guiPoly.rgtBot = ptTemp; break;
         case 255:
-            guiPoly.lftTop.setX( ptCapture.x() + pt.x() );
-            guiPoly.lftTop.setY( ptCapture.y() + pt.y() );
-            guiPoly.rgtTop.setX( ptCapture.x() + pt.x() );
-            guiPoly.rgtTop.setY( ptCapture.y() + pt.y() );
-            guiPoly.lftBot.setX( ptCapture.x() + pt.x() );
-            guiPoly.lftBot.setY( ptCapture.y() + pt.y() );
-            guiPoly.rgtBot.setX( ptCapture.x() + pt.x() );
-            guiPoly.rgtBot.setY( ptCapture.y() + pt.y() );
+            guiPoly.lftTop = guiPoly.lftTop + ( ptTemp - ptCapture );
+            guiPoly.rgtTop = guiPoly.rgtTop + ( ptTemp - ptCapture );
+            guiPoly.lftBot = guiPoly.lftBot + ( ptTemp - ptCapture );
+            guiPoly.rgtBot = guiPoly.rgtBot + ( ptTemp - ptCapture );
             break;
-        default: break;
+        default:
+            doAdjust = false;
+            break;
     }
-    AdjustPointPoly( displaySize, guiPoly );
-    imgPoly.lftTop.setX( qRound( static_cast< double >( guiPoly.lftTop.x() ) / scale ) );
-    imgPoly.lftTop.setY( qRound( static_cast< double >( guiPoly.lftTop.y() ) / scale ) );
-    imgPoly.rgtTop.setX( qRound( static_cast< double >( guiPoly.lftTop.x() ) / scale ) );
-    imgPoly.rgtTop.setY( qRound( static_cast< double >( guiPoly.lftTop.y() ) / scale ) );
-    imgPoly.lftBot.setX( qRound( static_cast< double >( guiPoly.lftTop.x() ) / scale ) );
-    imgPoly.lftBot.setY( qRound( static_cast< double >( guiPoly.lftTop.y() ) / scale ) );
-    imgPoly.rgtBot.setX( qRound( static_cast< double >( guiPoly.lftTop.x() ) / scale ) );
-    imgPoly.rgtBot.setY( qRound( static_cast< double >( guiPoly.lftTop.y() ) / scale ) );
 
-    ptCapture = pt;
+    if ( doAdjust )
+    {
+        AdjustPointPoly( displaySize, guiPoly );
+
+        imgPoly.lftTop.setX( qRound( static_cast< double >( guiPoly.lftTop.x() ) / scale ) );
+        imgPoly.lftTop.setY( qRound( static_cast< double >( guiPoly.lftTop.y() ) / scale ) );
+        imgPoly.rgtTop.setX( qRound( static_cast< double >( guiPoly.rgtTop.x() ) / scale ) );
+        imgPoly.rgtTop.setY( qRound( static_cast< double >( guiPoly.rgtTop.y() ) / scale ) );
+        imgPoly.lftBot.setX( qRound( static_cast< double >( guiPoly.lftBot.x() ) / scale ) );
+        imgPoly.lftBot.setY( qRound( static_cast< double >( guiPoly.lftBot.y() ) / scale ) );
+        imgPoly.rgtBot.setX( qRound( static_cast< double >( guiPoly.rgtBot.x() ) / scale ) );
+        imgPoly.rgtBot.setY( qRound( static_cast< double >( guiPoly.rgtBot.y() ) / scale ) );
+    }
+
+    ptCapture = ptTemp;
 
     return ret;
 }
@@ -259,33 +268,26 @@ int RoiAdjust::AdjustPointPoly( const QSize displaySize, LineSearchPoly &guiPoly
 {
     int ret = 0;
 
-    if ( 50 > guiPoly.rgtTop.x() - guiPoly.lftTop.x() ) guiPoly.rgtTop.setX( guiPoly.lftTop.x() + 50 );
-    if ( 50 > guiPoly.rgtBot.x() - guiPoly.lftBot.x() ) guiPoly.rgtBot.setX( guiPoly.lftBot.x() + 50 );
-    if ( 50 > guiPoly.lftBot.y() - guiPoly.lftTop.y() ) guiPoly.lftBot.setY( guiPoly.lftTop.y() + 50 );
-    if ( 50 > guiPoly.rgtBot.y() - guiPoly.rgtTop.y() ) guiPoly.rgtBot.setY( guiPoly.rgtTop.y() + 50 );
+    int nWidth = displaySize.width() - 5;
+    int nHeight = displaySize.height() - 5;
 
     if ( 0 > guiPoly.lftTop.x() ) guiPoly.lftTop.setX( 0 );
     if ( 0 > guiPoly.lftBot.x() ) guiPoly.lftBot.setX( 0 );
     if ( 0 > guiPoly.rgtTop.x() ) guiPoly.rgtTop.setX( 0 );
     if ( 0 > guiPoly.rgtBot.x() ) guiPoly.rgtBot.setX( 0 );
-    if ( displaySize.width() < guiPoly.lftTop.x() ) guiPoly.lftTop.setX( displaySize.width() - 1 );
-    if ( displaySize.width() < guiPoly.lftBot.x() ) guiPoly.lftBot.setX( displaySize.width() - 1 );
-    if ( displaySize.width() < guiPoly.rgtTop.x() ) guiPoly.rgtTop.setX( displaySize.width() - 1 );
-    if ( displaySize.width() < guiPoly.rgtBot.x() ) guiPoly.rgtBot.setX( displaySize.width() - 1 );
+    if ( nWidth < guiPoly.lftTop.x() ) guiPoly.lftTop.setX( nWidth - 1 );
+    if ( nWidth < guiPoly.lftBot.x() ) guiPoly.lftBot.setX( nWidth - 1 );
+    if ( nWidth < guiPoly.rgtTop.x() ) guiPoly.rgtTop.setX( nWidth - 1 );
+    if ( nWidth < guiPoly.rgtBot.x() ) guiPoly.rgtBot.setX( nWidth - 1 );
 
     if ( 0 > guiPoly.lftTop.y() ) guiPoly.lftTop.setY( 0 );
     if ( 0 > guiPoly.lftBot.y() ) guiPoly.lftBot.setY( 0 );
     if ( 0 > guiPoly.rgtTop.y() ) guiPoly.rgtTop.setY( 0 );
     if ( 0 > guiPoly.rgtBot.y() ) guiPoly.rgtBot.setY( 0 );
-    if ( displaySize.height() < guiPoly.lftTop.y() ) guiPoly.lftTop.setX( displaySize.height() - 1 );
-    if ( displaySize.height() < guiPoly.lftBot.y() ) guiPoly.lftBot.setX( displaySize.height() - 1 );
-    if ( displaySize.height() < guiPoly.rgtTop.y() ) guiPoly.rgtTop.setX( displaySize.height() - 1 );
-    if ( displaySize.height() < guiPoly.rgtBot.y() ) guiPoly.rgtBot.setX( displaySize.height() - 1 );
-
-    if ( 50 > guiPoly.rgtTop.x() - guiPoly.lftTop.x() ) guiPoly.lftTop.setX( displaySize.width() - 50 );
-    if ( 50 > guiPoly.rgtBot.x() - guiPoly.lftBot.x() ) guiPoly.lftBot.setX( displaySize.width() - 50 );
-    if ( 50 > guiPoly.lftBot.y() - guiPoly.lftTop.y() ) guiPoly.lftTop.setY( displaySize.height() - 50 );
-    if ( 50 > guiPoly.rgtBot.y() - guiPoly.rgtTop.y() ) guiPoly.lftBot.setY( displaySize.height() - 50 );
+    if ( nHeight < guiPoly.lftTop.y() ) guiPoly.lftTop.setY( nHeight - 1 );
+    if ( nHeight < guiPoly.lftBot.y() ) guiPoly.lftBot.setY( nHeight - 1 );
+    if ( nHeight < guiPoly.rgtTop.y() ) guiPoly.rgtTop.setY( nHeight - 1 );
+    if ( nHeight < guiPoly.rgtBot.y() ) guiPoly.rgtBot.setY( nHeight - 1 );
 
     return ret;
 }

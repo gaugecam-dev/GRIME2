@@ -687,8 +687,8 @@ void MainWindow::mouseMoveEvent( QMouseEvent *pEvent )
 {
     QPoint pt = m_pLabelImgDisplay->mapFrom( ui->centralWidget, pEvent->pos() );
     pt.setY( pt.y() - ui->mainToolBar->height() );
-    int nX = qRound( ( static_cast< double >( pt.x() ) / m_scaleFactor ) + 0.5 );
-    int nY = qRound( ( static_cast< double >( pt.y() ) / m_scaleFactor ) + 0.5 );
+    int nX = qRound( static_cast< double >( pt.x() ) / m_scaleFactor );
+    int nY = qRound( static_cast< double >( pt.y() ) / m_scaleFactor );
     if ( 0 <= nX && m_imgWidth > nX && 0 <= nY && m_imgHeight > nY )
     {
         if ( !ui->actionSetRuler->isChecked() && !ui->actionSetSearchPoly->isChecked() )
@@ -709,7 +709,9 @@ void MainWindow::mouseMoveEvent( QMouseEvent *pEvent )
         }
     }
     else
+    {
         ui->textEdit_msgs->setText( "Off image" );
+    }
 
     if ( m_bCaptured )
     {
@@ -736,10 +738,10 @@ void MainWindow::mouseMoveEvent( QMouseEvent *pEvent )
             {
                 UpdatePixmap();
             }
-            int nXpix1 = qRound( ( static_cast< double >( m_lineOne.p1().x() ) / m_scaleFactor ) + 0.5 );
-            int nYpix1 = qRound( ( static_cast< double >( m_lineOne.p1().y() ) / m_scaleFactor ) + 0.5 );
-            int nXpix2 = qRound( ( static_cast< double >( m_lineOne.p2().x() ) / m_scaleFactor ) + 0.5 );
-            int nYpix2 = qRound( ( static_cast< double >( m_lineOne.p2().y() ) / m_scaleFactor ) + 0.5 );
+            int nXpix1 = qRound( static_cast< double >( m_lineOne.p1().x() ) / m_scaleFactor );
+            int nYpix1 = qRound( static_cast< double >( m_lineOne.p1().y() ) / m_scaleFactor );
+            int nXpix2 = qRound( static_cast< double >( m_lineOne.p2().x() ) / m_scaleFactor );
+            int nYpix2 = qRound( static_cast< double >( m_lineOne.p2().y() ) / m_scaleFactor );
             double lenPix = Distance( nXpix1, nYpix1, nXpix2, nYpix2 );
 
             Point2d world1, world2;
