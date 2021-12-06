@@ -67,7 +67,8 @@ private slots:
     void on_actionImageLoad_triggered();
     void on_actionImageSave_triggered();
     void on_actionSetROI_toggled( bool );
-    void on_actionSetRuler_triggered();
+    void on_actionSetSearchPoly_toggled( bool );
+    void on_actionSetRuler_toggled( bool );
     void on_lineEdit_imageFolder_textEdited( const QString &strPath );
     void on_listWidget_imageFolder_currentRowChanged(int row);
     void on_toolButton_imageFolder_browse_clicked();
@@ -93,7 +94,6 @@ private slots:
     void on_pushButton_animationStop_clicked();
 
     void on_pushButton_test_clicked();
-
 
 private:
     Ui::MainWindow *ui;
@@ -125,6 +125,8 @@ private:
     QRect m_rectROI;
     QRect m_rectRubberBand;
     QPoint m_ptCapture;
+    LineSearchPoly m_searchPolyGUI;
+    LineSearchPoly m_searchPolyImage;
 
     // vision application
     GuiVisApp m_visApp;

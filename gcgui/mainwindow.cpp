@@ -70,7 +70,11 @@ MainWindow::MainWindow(QWidget *parent) :
     m_lineOne( QPoint( 10, 130 ), QPoint( 130, 10 ) ),
     m_pRubberBand( nullptr ),
     m_rectROI( QRect( 0, 0, MAX_IMAGE_SIZE.width, MAX_IMAGE_SIZE.height ) ),
-    m_rectRubberBand( QRect( 0, 0, MAX_IMAGE_SIZE.width, MAX_IMAGE_SIZE.height ) )
+    m_rectRubberBand( QRect( 0, 0, MAX_IMAGE_SIZE.width, MAX_IMAGE_SIZE.height ) ),
+    m_searchPolyGUI( LineSearchPoly( QPoint( 50, 50 ), QPoint( 100, 50 ),
+                                       QPoint( 100, 100 ),  QPoint( 50, 100 ) ) ),
+    m_searchPolyImage( LineSearchPoly( QPoint( 50, 50 ), QPoint( 100, 50 ),
+                                       QPoint( 100, 100 ),  QPoint( 50, 100 ) ) )
 {
     qRegisterMetaType< std::string >();
 
@@ -565,6 +569,32 @@ void MainWindow::UpdatePixmap()
         painter.setPen( pen1 );
         painter.drawLine( m_lineOne );
     }
+    else if ( ui->actionSetSearchPoly->isChecked() )
+    {
+        int lineWidth = qRound( 1.5 / m_scaleFactor );
+        int endRadius = qRound( 7.0 / m_scaleFactor );
+        QPainter painter( &pixmap );
+        QPen pen1( Qt::SolidLine );
+
+        pen1.setWidth( lineWidth );
+        pen1.setColor( Qt::blue );
+        painter.setPen( pen1 );
+
+        painter.drawLine( QLine( m_searchPolyGUI.lftTop, m_searchPolyGUI.rgtTop ) );
+        painter.drawLine( QLine( m_searchPolyGUI.rgtTop, m_searchPolyGUI.rgtBot ) );
+        painter.drawLine( QLine( m_searchPolyGUI.rgtBot, m_searchPolyGUI.lftBot ) );
+        painter.drawLine( QLine( m_searchPolyGUI.lftBot, m_searchPolyGUI.lftTop ) );
+
+        pen1.setWidth( 3 );
+        pen1.setColor( Qt::red );
+        painter.setBrush( Qt::red );
+        painter.setPen( pen1 );
+
+        painter.drawEllipse( m_searchPolyGUI.lftTop, endRadius, endRadius );
+        painter.drawEllipse( m_searchPolyGUI.rgtTop, endRadius, endRadius );
+        painter.drawEllipse( m_searchPolyGUI.rgtBot, endRadius, endRadius );
+        painter.drawEllipse( m_searchPolyGUI.lftBot, endRadius, endRadius );
+    }
     m_pLabelImgDisplay->setPixmap( pixmap );
 }
 void MainWindow::ScaleImage()
@@ -642,6 +672,11 @@ void MainWindow::mousePressEvent( QMouseEvent *pEvent )
         int ret = m_roiAdjust.EvalRectCapturePt( m_rectRubberBand, pt, sensitivityRadius, m_nCapturePos, m_ptCapture );
         m_bCaptured = ( ( 0 >= m_nCapturePos ) || ( 0 != ret ) ) ? false : true;
     }
+    else if ( ui->actionSetSearchPoly->isChecked() )
+    {
+        int ret = m_roiAdjust.EvalPolyCapturePt( m_searchPolyGUI, pt, m_scaleFactor, sensitivityRadius, m_nCapturePos, m_ptCapture );
+        m_bCaptured = ( ( 0 >= m_nCapturePos ) || ( 0 != ret ) ) ? false : true;
+    }
     else if ( ui->actionSetRuler->isChecked() )
     {
         int ret = m_roiAdjust.EvalRulerCapturePt( m_lineOne, pt, m_scaleFactor, sensitivityRadius, m_nCapturePos, m_ptCapture );
@@ -656,7 +691,7 @@ void MainWindow::mouseMoveEvent( QMouseEvent *pEvent )
     int nY = qRound( ( static_cast< double >( pt.y() ) / m_scaleFactor ) + 0.5 );
     if ( 0 <= nX && m_imgWidth > nX && 0 <= nY && m_imgHeight > nY )
     {
-        if ( !ui->actionSetRuler->isChecked() )
+        if ( !ui->actionSetRuler->isChecked() && !ui->actionSetSearchPoly->isChecked() )
         {
             Point2d world;
             GC_STATUS retVal = m_visApp.PixelToWorld( Point2d( nX, nY ), world );
@@ -684,6 +719,14 @@ void MainWindow::mouseMoveEvent( QMouseEvent *pEvent )
             if ( 0 == ret )
             {
                 m_pRubberBand->setGeometry( m_rectRubberBand );
+            }
+        }
+        else if ( ui->actionSetSearchPoly->isChecked() )
+        {
+            int ret = m_roiAdjust.TestAgainstPoly( pt, m_pLabelImgDisplay->size(), m_searchPolyGUI, m_searchPolyImage, m_nCapturePos, m_scaleFactor, m_ptCapture );
+            if ( 0 == ret )
+            {
+                UpdatePixmap();
             }
         }
         else if ( ui->actionSetRuler->isChecked() )
@@ -859,15 +902,28 @@ void MainWindow::on_actionZoom100_triggered()
 }
 void MainWindow::on_actionSetROI_toggled( bool )
 {
-    if ( ui->actionSetRuler->isChecked() )
-        ui->actionSetRuler->setChecked( false );
-    ScaleImage();
-}
-void MainWindow::on_actionSetRuler_triggered()
-{
     if ( ui->actionSetROI->isChecked() )
     {
+        ui->actionSetRuler->setChecked( false );
+        ui->actionSetSearchPoly->setChecked( false );
+    }
+    ScaleImage();
+}
+void MainWindow::on_actionSetSearchPoly_toggled( bool )
+{
+    if ( ui->actionSetSearchPoly->isChecked() )
+    {
         ui->actionSetROI->setChecked( false );
+        ui->actionSetRuler->setChecked( false );
+    }
+    UpdatePixmapTarget();
+}
+void MainWindow::on_actionSetRuler_toggled( bool )
+{
+    if ( ui->actionSetRuler->isChecked() )
+    {
+        ui->actionSetROI->setChecked( false );
+        ui->actionSetSearchPoly->setChecked( false );
     }
     UpdatePixmapTarget();
 }

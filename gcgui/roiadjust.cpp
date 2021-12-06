@@ -180,9 +180,114 @@ int RoiAdjust::EvalRulerCapturePt( const QLine lineOne, const QPoint ptAdj, cons
                                    static_cast< double >( lineOne.p1().y() ),
                                    static_cast< double >( lineOne.p2().x() ),
                                    static_cast< double >( lineOne.p2().y() ) );
-        if ( 10 > qRound( dDist + 0.5 ) ) capturePos = 5;
+        if ( 10 > qRound( dDist + 0.5 ) ) capturePos = 255;
     }
     return 0;
+}
+int RoiAdjust::EvalPolyCapturePt( const LineSearchPoly guiPoly, const QPoint ptAdj, const double scale,
+                                  const int captureRadius, int &capturePos, QPoint &ptCapture )
+{
+    capturePos = 0;
+    int nX = qRound( static_cast< double >( ptAdj.x() ) / scale + 0.5 );
+    int nY = qRound( static_cast< double >( ptAdj.y() ) / scale + 0.5 );
+    ptCapture.setX( nX );
+    ptCapture.setY( nY );
+
+    if ( abs( nX - guiPoly.lftTop.x() ) < captureRadius &&  abs( nY - guiPoly.lftTop.y() ) < captureRadius )
+    {
+        capturePos = 1;
+    }
+    else if ( abs( nX - guiPoly.rgtTop.x() ) < captureRadius &&  abs( nY - guiPoly.rgtTop.y() ) < captureRadius )
+    {
+        capturePos = 4;
+    }
+    else if ( abs( nX - guiPoly.lftBot.x() ) < captureRadius &&  abs( nY - guiPoly.lftBot.y() ) < captureRadius )
+    {
+        capturePos = 32;
+    }
+    else if ( abs( nX - guiPoly.rgtBot.x() ) < captureRadius &&  abs( nY - guiPoly.rgtBot.y() ) < captureRadius )
+    {
+        capturePos = 128;
+    }
+    else if ( nX > guiPoly.lftTop.x() && nX < guiPoly.rgtTop.x() &&
+              nX > guiPoly.lftBot.x() && nX < guiPoly.rgtBot.x() &&
+              nY > guiPoly.lftTop.y() && nY < guiPoly.lftBot.y() &&
+              nY > guiPoly.rgtBot.y() && nY < guiPoly.rgtBot.y() )
+    {
+        capturePos = 5;
+    }
+     return 0;
+}
+int RoiAdjust::TestAgainstPoly( QPoint pt, const QSize displaySize, LineSearchPoly &guiPoly, LineSearchPoly &imgPoly,
+                                const int capturePos, const double scale, QPoint &ptCapture )
+{
+    int ret = 0;
+
+    switch ( capturePos )
+    {
+        case 1: guiPoly.lftTop = pt; break;
+        case 4: guiPoly.rgtTop = pt;  break;
+        case 32: guiPoly.lftBot = pt; break;
+        case 128:  guiPoly.rgtBot = pt; break;
+        case 255:
+            guiPoly.lftTop.setX( ptCapture.x() + pt.x() );
+            guiPoly.lftTop.setY( ptCapture.y() + pt.y() );
+            guiPoly.rgtTop.setX( ptCapture.x() + pt.x() );
+            guiPoly.rgtTop.setY( ptCapture.y() + pt.y() );
+            guiPoly.lftBot.setX( ptCapture.x() + pt.x() );
+            guiPoly.lftBot.setY( ptCapture.y() + pt.y() );
+            guiPoly.rgtBot.setX( ptCapture.x() + pt.x() );
+            guiPoly.rgtBot.setY( ptCapture.y() + pt.y() );
+            break;
+        default: break;
+    }
+    AdjustPointPoly( displaySize, guiPoly );
+    imgPoly.lftTop.setX( qRound( static_cast< double >( guiPoly.lftTop.x() ) / scale ) );
+    imgPoly.lftTop.setY( qRound( static_cast< double >( guiPoly.lftTop.y() ) / scale ) );
+    imgPoly.rgtTop.setX( qRound( static_cast< double >( guiPoly.lftTop.x() ) / scale ) );
+    imgPoly.rgtTop.setY( qRound( static_cast< double >( guiPoly.lftTop.y() ) / scale ) );
+    imgPoly.lftBot.setX( qRound( static_cast< double >( guiPoly.lftTop.x() ) / scale ) );
+    imgPoly.lftBot.setY( qRound( static_cast< double >( guiPoly.lftTop.y() ) / scale ) );
+    imgPoly.rgtBot.setX( qRound( static_cast< double >( guiPoly.lftTop.x() ) / scale ) );
+    imgPoly.rgtBot.setY( qRound( static_cast< double >( guiPoly.lftTop.y() ) / scale ) );
+
+    ptCapture = pt;
+
+    return ret;
+}
+int RoiAdjust::AdjustPointPoly( const QSize displaySize, LineSearchPoly &guiPoly )
+{
+    int ret = 0;
+
+    if ( 50 > guiPoly.rgtTop.x() - guiPoly.lftTop.x() ) guiPoly.rgtTop.setX( guiPoly.lftTop.x() + 50 );
+    if ( 50 > guiPoly.rgtBot.x() - guiPoly.lftBot.x() ) guiPoly.rgtBot.setX( guiPoly.lftBot.x() + 50 );
+    if ( 50 > guiPoly.lftBot.y() - guiPoly.lftTop.y() ) guiPoly.lftBot.setY( guiPoly.lftTop.y() + 50 );
+    if ( 50 > guiPoly.rgtBot.y() - guiPoly.rgtTop.y() ) guiPoly.rgtBot.setY( guiPoly.rgtTop.y() + 50 );
+
+    if ( 0 > guiPoly.lftTop.x() ) guiPoly.lftTop.setX( 0 );
+    if ( 0 > guiPoly.lftBot.x() ) guiPoly.lftBot.setX( 0 );
+    if ( 0 > guiPoly.rgtTop.x() ) guiPoly.rgtTop.setX( 0 );
+    if ( 0 > guiPoly.rgtBot.x() ) guiPoly.rgtBot.setX( 0 );
+    if ( displaySize.width() < guiPoly.lftTop.x() ) guiPoly.lftTop.setX( displaySize.width() - 1 );
+    if ( displaySize.width() < guiPoly.lftBot.x() ) guiPoly.lftBot.setX( displaySize.width() - 1 );
+    if ( displaySize.width() < guiPoly.rgtTop.x() ) guiPoly.rgtTop.setX( displaySize.width() - 1 );
+    if ( displaySize.width() < guiPoly.rgtBot.x() ) guiPoly.rgtBot.setX( displaySize.width() - 1 );
+
+    if ( 0 > guiPoly.lftTop.y() ) guiPoly.lftTop.setY( 0 );
+    if ( 0 > guiPoly.lftBot.y() ) guiPoly.lftBot.setY( 0 );
+    if ( 0 > guiPoly.rgtTop.y() ) guiPoly.rgtTop.setY( 0 );
+    if ( 0 > guiPoly.rgtBot.y() ) guiPoly.rgtBot.setY( 0 );
+    if ( displaySize.height() < guiPoly.lftTop.y() ) guiPoly.lftTop.setX( displaySize.height() - 1 );
+    if ( displaySize.height() < guiPoly.lftBot.y() ) guiPoly.lftBot.setX( displaySize.height() - 1 );
+    if ( displaySize.height() < guiPoly.rgtTop.y() ) guiPoly.rgtTop.setX( displaySize.height() - 1 );
+    if ( displaySize.height() < guiPoly.rgtBot.y() ) guiPoly.rgtBot.setX( displaySize.height() - 1 );
+
+    if ( 50 > guiPoly.rgtTop.x() - guiPoly.lftTop.x() ) guiPoly.lftTop.setX( displaySize.width() - 50 );
+    if ( 50 > guiPoly.rgtBot.x() - guiPoly.lftBot.x() ) guiPoly.lftBot.setX( displaySize.width() - 50 );
+    if ( 50 > guiPoly.lftBot.y() - guiPoly.lftTop.y() ) guiPoly.lftTop.setY( displaySize.height() - 50 );
+    if ( 50 > guiPoly.rgtBot.y() - guiPoly.rgtTop.y() ) guiPoly.lftBot.setY( displaySize.height() - 50 );
+
+    return ret;
 }
 int RoiAdjust::FormBowtieCalibJsonString( const std::string csvFilepath, const std::string jsonResultFilepath,
                                           const bool useSearchROI, const QRect rectROI, std::string &json )

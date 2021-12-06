@@ -29,6 +29,27 @@ typedef enum CALIB_JSON_STRING_TYPE
     STOPSIGN
 } CalibJsonStringType;
 
+class LineSearchPoly
+{
+public:
+    LineSearchPoly() :
+        lftTop( QPoint( 50, 50 ) ),
+        rgtTop( QPoint( 100, 50 ) ),
+        rgtBot( QPoint( 100, 100 ) ),
+        lftBot( QPoint( 50, 100 ) )
+    {}
+
+    LineSearchPoly( const QPoint tl, const QPoint rt,
+                    const QPoint rb, const QPoint lb ) :
+        lftTop( tl ), rgtTop( rt ), rgtBot( rb ), lftBot( lb )
+    {}
+
+    QPoint lftTop;
+    QPoint rgtTop;
+    QPoint rgtBot;
+    QPoint lftBot;
+};
+
 class RoiAdjust
 {
 public:
@@ -39,18 +60,25 @@ public:
     int FormStopsignCalibJsonString( const std::string csvFilepath, const std::string jsonResultFilepath,
                                      const bool useSearchROI, const QRect rectROI,
                                      const bool fromFacetLength, const double facetLength, std::string &json );
+
     int TestAgainstFindLines( const QPoint pt, const QSize displaySize, const int capturePos,
                               const double scale, QPoint &ptCapture, QLine &lineOne );
     int TestAgainstRubberBands( QPoint pt, const QSize displaySize, QRect &rectRubberBand, QRect &rectROI,
                                 const int capturePos, const double scale, QPoint &ptCapture );
+    int TestAgainstPoly( QPoint pt, const QSize displaySize, LineSearchPoly &guiPoly, LineSearchPoly &imgPoly,
+                         const int capturePos, const double scale, QPoint &ptCapture );
+
     int EvalRectCapturePt( const QRect rectRubberBand, const QPoint ptAdj,
                            const int captureRadius, int &capturePos, QPoint &ptCapture );
     int EvalRulerCapturePt( const QLine lineOne, const QPoint ptAdj, const double scale,
                             const int captureRadius, int &capturePos, QPoint &ptCapture );
+    int EvalPolyCapturePt( const LineSearchPoly guiPoly, const QPoint ptAdj, const double scale,
+                           const int captureRadius, int &capturePos, QPoint &ptCapture );
 
 private:
     int AdjustPointFindLines( const QSize displaySize, const double scale, QLine &lineOne );
     int AdjustPointRubberBand( const QSize displaySize, QRect &rectRubberBand );
+    int AdjustPointPoly( const QSize displaySize, LineSearchPoly &guiPoly );
 };
 
 #endif // ROIADJUST_H

@@ -1145,7 +1145,7 @@ metadata</string>
                 <item>
                  <widget class="QGroupBox" name="groupBox_stopsignCalibMethods">
                   <property name="title">
-                   <string>Stop sign calibration method</string>
+                   <string>Stop sign calib method</string>
                   </property>
                   <layout class="QHBoxLayout" name="horizontalLayout_23">
                    <item>
@@ -1157,7 +1157,7 @@ metadata</string>
                       <string>World coord. file</string>
                      </property>
                      <property name="checked">
-                      <bool>true</bool>
+                      <bool>false</bool>
                      </property>
                     </widget>
                    </item>
@@ -1186,7 +1186,7 @@ metadata</string>
                       <string>Facet length</string>
                      </property>
                      <property name="checked">
-                      <bool>false</bool>
+                      <bool>true</bool>
                      </property>
                     </widget>
                    </item>
@@ -1305,22 +1305,6 @@ metadata</string>
                  <layout class="QHBoxLayout" name="horizontalLayout_12">
                   <item>
                    <spacer name="horizontalSpacer_9">
-                    <property name="orientation">
-                     <enum>Qt::Horizontal</enum>
-                    </property>
-                    <property name="sizeType">
-                     <enum>QSizePolicy::Preferred</enum>
-                    </property>
-                    <property name="sizeHint" stdset="0">
-                     <size>
-                      <width>40</width>
-                      <height>20</height>
-                     </size>
-                    </property>
-                   </spacer>
-                  </item>
-                  <item>
-                   <spacer name="horizontalSpacer_11">
                     <property name="orientation">
                      <enum>Qt::Horizontal</enum>
                     </property>
@@ -1591,6 +1575,7 @@ p, li { white-space: pre-wrap; }
    <addaction name="actionToggleControls"/>
    <addaction name="actionSetRuler"/>
    <addaction name="actionSetROI"/>
+   <addaction name="actionSetSearchPoly"/>
    <addaction name="actionExit"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
@@ -1712,6 +1697,21 @@ p, li { white-space: pre-wrap; }
    </property>
    <property name="toolTip">
     <string>Show/Hide overlay controls</string>
+   </property>
+  </action>
+  <action name="actionSetSearchPoly">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/icons/icons/icon_search_area.png</normaloff>:/icons/icons/icon_search_area.png</iconset>
+   </property>
+   <property name="text">
+    <string>SetSearchPoly</string>
+   </property>
+   <property name="toolTip">
+    <string>Toggle search polygon selection tool</string>
    </property>
   </action>
  </widget>
