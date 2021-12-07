@@ -394,7 +394,12 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result 
                 FILE_LOG( logERROR ) << "Timestamp passed into method not yet implemented";
                 retVal = GC_ERR;
             }
-            if ( GC_OK == retVal )
+
+            if ( GC_OK != retVal )
+            {
+                result.msgs.push_back( "Timestamp failure. Check source, format, and start position of timestamp" );
+            }
+            else
             {
                 bool isOK = true;
                 if ( ( params.imagePath != params.resultImagePath ) && !params.resultImagePath.empty() )

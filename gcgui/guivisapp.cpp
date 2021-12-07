@@ -857,6 +857,11 @@ GC_STATUS GuiVisApp::CalcLinesThreadFinish()
             m_isRunning = false;
             m_folderFuture.wait();
             retVal = m_folderFuture.get();
+            if ( GC_OK != retVal )
+            {
+                FILE_LOG( logERROR ) << "[VisApp::CalcLinesThreadFinish] Error in thread before termination";
+                retVal = GC_OK;
+            }
         }
         catch( std::exception &e )
         {
@@ -1070,73 +1075,86 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                                                                                      params.timeStampFormat, timestamp );
                             }
                         }
-                        img = imread( images[ i ], IMREAD_GRAYSCALE );
-                        if ( img.empty() )
+                        else if ( FROM_EXTERNAL == params.timeStampType )
                         {
-                            sigMessage( fs::path( images[ i ] ).filename().string() + " FAILURE: Could not open image" );
+                            FILE_LOG( logERROR ) << "Timestamp passed into method not yet implemented";
+                            retVal = GC_ERR;
+                        }
+
+                        if ( GC_OK != retVal )
+                        {
+                            sigMessage( "Timestamp failure. Check source, format, and start position of timestamp" );
                         }
                         else
                         {
-                            if ( FROM_EXTERNAL == params.timeStampType )
+                            img = imread( images[ i ], IMREAD_GRAYSCALE );
+                            if ( img.empty() )
                             {
-                                FILE_LOG( logERROR ) << "Timestamp passed into method not yet implemented";
-                                retVal = GC_ERR;
-                            }
-
-                            resultString = filename + ",";
-                            resultString += timestamp + ",";
-
-                            retVal = m_visApp.CalcLine( img, timestamp );
-                            msg = filename + ( GC_OK == retVal ? " SUCCESS\n" : " FAILURE\n" );
-                            if ( GC_OK == retVal )
-                            {
-                                findData.findlineResult = m_visApp.GetFindLineResult();
-
-                                sprintf( buffer, "Timestamp=%s\n", findData.findlineResult.timestamp.c_str() );
-                                msg += string( buffer );
-
-                                sprintf( buffer, "Water level=%.3f\n", findData.findlineResult.waterLevelAdjusted.y );
-                                msg += string( buffer );
-                                resultString += to_string( findData.findlineResult.waterLevelAdjusted.y );
-                                sprintf( buffer, "Target movement x=%.3f, y=%.3f\n",
-                                         findData.findlineResult.offsetMovePts.ctrWorld.x, findData.findlineResult.offsetMovePts.ctrWorld.y );
-                                msg += string( buffer );
+                                sigMessage( fs::path( images[ i ] ).filename().string() + " FAILURE: Could not open image" );
                             }
                             else
                             {
-                                msg += string( "Water level=FAIL" );
-                                resultString += to_string( -9999999.0 );
-                            }
+                                if ( FROM_EXTERNAL == params.timeStampType )
+                                {
+                                    FILE_LOG( logERROR ) << "Timestamp passed into method not yet implemented";
+                                    retVal = GC_ERR;
+                                }
 
-                            findData.findlineResult.timestamp = timestamp;
-                            if ( !params.resultCSVPath.empty() )
-                            {
-                                csvOut << std::setprecision( 3 ) << std::fixed << filename << "," << timestamp << "," <<
-                                          ( findData.findlineResult.findSuccess ? "SUCCESS" : "FAIL" ) << "," <<
-                                          findData.findlineResult.waterLevelAdjusted.y << "," <<
-                                          findData.findlineResult.calcLinePts.angleWorld << "," <<
-                                          findData.findlineResult.offsetMovePts.ctrWorld.y << endl;
-                            }
-                            if ( !params.resultImagePath.empty() )
-                            {
-                                Mat color;
-                                retVal = m_visApp.DrawLineFindOverlay( img, color, findData.findlineResult, drawTypes );
+                                resultString = filename + ",";
+                                resultString += timestamp + ",";
+
+                                retVal = m_visApp.CalcLine( img, timestamp );
+                                msg = filename + ( GC_OK == retVal ? " SUCCESS\n" : " FAILURE\n" );
                                 if ( GC_OK == retVal )
                                 {
-                                    string resultFilepath = resultFolderAdj + fs::path( images[ i ] ).stem().string() + "_overlay.png";
-                                    bool bRet = imwrite( resultFilepath, color );
-                                    if ( !bRet )
+                                    findData.findlineResult = m_visApp.GetFindLineResult();
+
+                                    sprintf( buffer, "Timestamp=%s\n", findData.findlineResult.timestamp.c_str() );
+                                    msg += string( buffer );
+
+                                    sprintf( buffer, "Water level=%.3f\n", findData.findlineResult.waterLevelAdjusted.y );
+                                    msg += string( buffer );
+                                    resultString += to_string( findData.findlineResult.waterLevelAdjusted.y );
+                                    sprintf( buffer, "Target movement x=%.3f, y=%.3f\n",
+                                             findData.findlineResult.offsetMovePts.ctrWorld.x, findData.findlineResult.offsetMovePts.ctrWorld.y );
+                                    msg += string( buffer );
+                                }
+                                else
+                                {
+                                    msg += string( "Water level=FAIL" );
+                                    resultString += to_string( -9999999.0 );
+                                }
+
+                                findData.findlineResult.timestamp = timestamp;
+                                if ( !params.resultCSVPath.empty() )
+                                {
+                                    csvOut << std::setprecision( 3 ) << std::fixed << filename << "," << timestamp << "," <<
+                                              ( findData.findlineResult.findSuccess ? "SUCCESS" : "FAIL" ) << "," <<
+                                              findData.findlineResult.waterLevelAdjusted.y << "," <<
+                                              findData.findlineResult.calcLinePts.angleWorld << "," <<
+                                              findData.findlineResult.offsetMovePts.ctrWorld.y << endl;
+                                }
+                                if ( !params.resultImagePath.empty() )
+                                {
+                                    Mat color;
+                                    retVal = m_visApp.DrawLineFindOverlay( img, color, findData.findlineResult, drawTypes );
+                                    if ( GC_OK == retVal )
                                     {
-                                        FILE_LOG( logWARNING ) << "Could not write result image to " << resultFilepath;
+                                        string resultFilepath = resultFolderAdj + fs::path( images[ i ] ).stem().string() + "_overlay.png";
+                                        bool bRet = imwrite( resultFilepath, color );
+                                        if ( !bRet )
+                                        {
+                                            FILE_LOG( logWARNING ) << "Could not write result image to " << resultFilepath;
+                                        }
                                     }
                                 }
-                            }
 
-                            findData.findlineParams.imagePath = images[ i ];
-                            retVal = LoadImageToApp( img );
-                            sigMessage( "update image only" );
-                            sigMessage( msg );
-                            sigTableAddRow( resultString );
+                                findData.findlineParams.imagePath = images[ i ];
+                                retVal = LoadImageToApp( img );
+                                sigMessage( "update image only" );
+                                sigMessage( msg );
+                                sigTableAddRow( resultString );
+                            }
                         }
                     }
                     progressVal = cvRound( 100.0 * static_cast< double >( i ) / static_cast< double >( images.size() ) ) + 1;

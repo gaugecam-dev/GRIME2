@@ -644,14 +644,19 @@ void MainWindow::do_visAppMessage(QString msg)
     }
     else
     {
-        if ( msg.contains( "Folder run complete" ) )
+        if ( msg.contains( "Timestamp failure" ) )
+        {
+            on_pushButton_findLine_stopFolderProcess_clicked();
+            ui->statusBar->showMessage( msg );
+        }
+        else if ( msg.contains( "Folder run complete" ) )
         {
             ui->pushButton_findLine_processFolder->setEnabled( true );
             ui->pushButton_findLine_stopFolderProcess->setEnabled( false );
             ui->pushButton_createAnimation->setEnabled( true );
             ui->pushButton_animationStop->setEnabled( false );
         }
-        if ( msg.contains( "Create GIF complete" ) )
+        else if ( msg.contains( "Create GIF complete" ) )
         {
             ui->pushButton_createAnimation->setEnabled( true );
             ui->pushButton_animationStop->setEnabled( false );
