@@ -95,7 +95,7 @@ public:
 
     // calibration methods
     GC_STATUS LoadCalib( const std::string calibJson );
-    GC_STATUS Calibrate( const std::string imgFilepath, const string jsonControl, Mat &imgOut );
+    GC_STATUS Calibrate( const std::string imgFilepath, const string jsonControl );
     GC_STATUS PixelToWorld( const cv::Point2d pixelPt, cv::Point2d &worldPt );
 
     // findline app methods

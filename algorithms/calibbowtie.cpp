@@ -15,7 +15,7 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include "log.h"
-#include "calib.h"
+#include "calibbowtie.h"
 #include "findline.h"
 #include <vector>
 #include <limits>
@@ -56,15 +56,14 @@ enum PIX_POS_INDEX
     PIX_POS_Y = 1
 };
 
-void Calib::clear()
+void CalibBowtie::clear()
 {
     m_model.clear();
     m_matHomogPixToWorld = Mat();
     m_matHomogWorldToPix = Mat();
 }
-GC_STATUS Calib::Calibrate( const vector< Point2d > pixelPts, const vector< Point2d > worldPts,
-                            const Size gridSize, const Size imgSize, const Mat &img, Mat &imgOut,
-                            const bool drawCalib, const bool drawMoveROIs, const bool drawSearchROI )
+GC_STATUS CalibBowtie::Calibrate( const vector< Point2d > pixelPts, const vector< Point2d > worldPts,
+                                  const Size gridSize, const Size imgSize )
 {
     GC_STATUS retVal = GC_OK;
     if ( pixelPts.size() != worldPts.size() || pixelPts.empty() || worldPts.empty() ||
@@ -123,141 +122,6 @@ GC_STATUS Calib::Calibrate( const vector< Point2d > pixelPts, const vector< Poin
 
                 m_model.wholeTargetRegion = Rect( left, top, width, height );
             }
-
-            if ( ( drawCalib || drawMoveROIs || drawSearchROI ) && !img.empty() )
-            {
-                if ( CV_8UC1 == img.type() )
-                {
-                     cvtColor( img, imgOut, COLOR_GRAY2BGR );
-                }
-                else if ( CV_8UC3 == img.type() )
-                {
-                    imgOut = img.clone();
-                }
-                else
-                {
-                    FILE_LOG( logERROR ) << "[Calib::Calibrate] Invalid image format for calibration";
-                    retVal = GC_ERR;
-                }
-
-                if ( GC_OK == retVal )
-                {
-                    int textOffset = cvRound( static_cast< double >( imgOut.rows ) / 6.6666667 );
-                    int circleSize =  std::max( 5, cvRound( static_cast< double >( imgOut.rows ) / 120.0 ) );
-                    int textStroke = std::max( 1, cvRound( static_cast< double >( imgOut.rows ) / 300.0 ) );
-                    double fontScale = 1.0 + static_cast< double >( imgOut.rows ) / 1200.0;
-
-                    if ( drawMoveROIs )
-                    {
-                        rectangle( imgOut, m_model.moveSearchRegionLft, Scalar( 0, 0, 255 ), textStroke );
-                        rectangle( imgOut, m_model.moveSearchRegionRgt, Scalar( 0, 0, 255 ), textStroke );
-                    }
-
-                    if ( drawSearchROI )
-                    {
-                        if ( m_model.searchLines.empty() )
-                        {
-                            FILE_LOG( logWARNING ) << "[Calib::Calibrate] Search lines not calculated properly so they cannot be drawn";
-                            retVal = GC_WARN;
-                        }
-                        else
-                        {
-                            line( imgOut, m_model.searchLines[ 0 ].top, m_model.searchLines[ 0 ].bot, Scalar( 255, 0, 0 ), textStroke );
-                            line( imgOut, m_model.searchLines[ 0 ].top, m_model.searchLines[ m_model.searchLines.size() - 1 ].top, Scalar( 255, 0, 0 ), textStroke );
-                            line( imgOut, m_model.searchLines[ m_model.searchLines.size() - 1 ].top, m_model.searchLines[ m_model.searchLines.size() - 1 ].bot, Scalar( 255, 0, 0 ), textStroke );
-                            line( imgOut, m_model.searchLines[ 0 ].bot, m_model.searchLines[ m_model.searchLines.size() - 1 ].bot, Scalar( 255, 0, 0 ), textStroke );
-                        }
-                    }
-
-                    if ( drawCalib )
-                    {
-                        Point2d topLft, botRgt;
-                        retVal = PixelToWorld( m_model.pixelPoints[ 0 ], topLft );
-                        if ( GC_OK == retVal )
-                        {
-                            retVal = PixelToWorld( m_model.pixelPoints[ m_model.pixelPoints.size() - 1 ], botRgt );
-                            if ( GC_OK == retVal )
-                            {
-                                Point2d pt1, pt2;
-                                double minCol = std::min( topLft.x, botRgt.x );
-                                double maxCol = std::max( topLft.x, botRgt.x );
-                                double minRow = std::min( topLft.y, botRgt.y );
-                                double maxRow = std::max( topLft.y, botRgt.y );
-                                double rowInc = ( maxRow - minRow ) / static_cast< double >( m_model.gridSize.height + 2 );
-                                double colInc = ( maxCol - minCol ) / static_cast< double >( m_model.gridSize.width );
-                                minRow -= rowInc;
-                                maxRow += rowInc;
-                                stringstream buf;
-
-                                bool first;
-                                double row, col;
-                                int rowInt, colInt;
-                                for ( rowInt = 0, row = maxRow; row > minRow; row -= rowInc, ++rowInt )
-                                {
-                                    first = true;
-                                    for ( colInt = 0, col = minCol; col < maxCol; col += colInc, ++colInt )
-                                    {
-                                        retVal = WorldToPixel( Point2d( col, row ), pt1 );
-                                        if ( GC_OK == retVal )
-                                        {
-                                            retVal = WorldToPixel( Point2d( col + colInc, row ), pt2 );
-                                            if ( GC_OK == retVal )
-                                            {
-                                                line( imgOut, pt1, pt2, Scalar( 0, 255, 255 ), textStroke );
-                                                retVal = WorldToPixel( Point2d( col, row - rowInc ), pt2 );
-                                                if ( GC_OK == retVal && pt1.y < imgOut.rows )
-                                                {
-                                                    line( imgOut, pt1, pt2, Scalar( 0, 255, 255 ), textStroke );
-                                                    if ( ( ( rowInt % 2 ) == 1 ) && ( ( colInt % 2 ) == 0 ) )
-                                                        circle( imgOut, pt1, circleSize, Scalar( 0, 255, 0 ), textStroke );
-                                                }
-                                            }
-                                        }
-                                        if ( first )
-                                        {
-                                            first = false;
-                                            buf.str( string() ); buf << boost::format( "%.1f" ) % row;
-                                            putText( imgOut, buf.str(), Point( cvRound( pt1.x ) - textOffset, cvRound( pt1.y ) + 5 ),
-                                                     FONT_HERSHEY_COMPLEX, fontScale * 0.5, Scalar( 0, 255, 255 ), textStroke );
-                                        }
-                                    }
-                                    retVal = WorldToPixel( Point2d( maxCol, row ), pt1 );
-                                    if ( GC_OK == retVal && pt1.y < imgOut.rows )
-                                    {
-                                        retVal = WorldToPixel( Point2d( maxCol, row - rowInc ), pt2 );
-                                        if ( GC_OK == retVal )
-                                        {
-                                            line( imgOut, pt1, pt2, Scalar( 0, 255, 255 ), textStroke );
-                                            if ( ( rowInt % 2 ) == 1 )
-                                                circle( imgOut, pt1, circleSize, Scalar( 0, 255, 0 ), textStroke );
-                                        }
-                                    }
-                                }
-                                first = true;
-                                for ( double col = minCol; col < maxCol; col += colInc )
-                                {
-                                    retVal = WorldToPixel( Point2d( col, minRow ), pt1 );
-                                    if ( GC_OK == retVal )
-                                    {
-                                        retVal = WorldToPixel( Point2d( col + colInc, minRow ), pt2 );
-                                        if ( GC_OK == retVal )
-                                        {
-                                            line( imgOut, pt1, pt2, Scalar( 0, 255, 255 ), textStroke );
-                                        }
-                                    }
-                                    if ( first )
-                                    {
-                                        first = false;
-                                        buf.str( string() ); buf << boost::format( "%.1f" ) % minRow;
-                                        putText( imgOut, buf.str(), Point( cvRound( pt1.x ) - textOffset, cvRound( pt1.y ) + 5 ),
-                                                 FONT_HERSHEY_COMPLEX, fontScale * 0.5, Scalar( 0, 255, 255 ), textStroke );
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
         }
         catch( Exception &e )
         {
@@ -267,7 +131,152 @@ GC_STATUS Calib::Calibrate( const vector< Point2d > pixelPts, const vector< Poin
     }
     return retVal;
 }
-GC_STATUS Calib::PixelToWorld( const Point2d ptPixel, Point2d &ptWorld )
+GC_STATUS CalibBowtie::DrawOverlay( const cv::Mat img, cv::Mat &imgOut, const bool drawCalib,
+                              const bool drawMoveROIs, const bool drawSearchROI )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        if ( CV_8UC1 == img.type() )
+        {
+             cvtColor( img, imgOut, COLOR_GRAY2BGR );
+        }
+        else if ( CV_8UC3 == img.type() )
+        {
+            imgOut = img.clone();
+        }
+        else
+        {
+            FILE_LOG( logERROR ) << "[Calib::Calibrate] Invalid image format for calibration";
+            retVal = GC_ERR;
+        }
+
+        if ( GC_OK == retVal )
+        {
+            int textOffset = cvRound( static_cast< double >( imgOut.rows ) / 6.6666667 );
+            int circleSize =  std::max( 5, cvRound( static_cast< double >( imgOut.rows ) / 120.0 ) );
+            int textStroke = std::max( 1, cvRound( static_cast< double >( imgOut.rows ) / 300.0 ) );
+            double fontScale = 1.0 + static_cast< double >( imgOut.rows ) / 1200.0;
+
+            if ( drawMoveROIs )
+            {
+                rectangle( imgOut, m_model.moveSearchRegionLft, Scalar( 0, 0, 255 ), textStroke );
+                rectangle( imgOut, m_model.moveSearchRegionRgt, Scalar( 0, 0, 255 ), textStroke );
+            }
+
+            if ( drawSearchROI )
+            {
+                if ( m_model.searchLines.empty() )
+                {
+                    FILE_LOG( logWARNING ) << "[Calib::Calibrate] Search lines not calculated properly so they cannot be drawn";
+                    retVal = GC_WARN;
+                }
+                else
+                {
+                    line( imgOut, m_model.searchLines[ 0 ].top, m_model.searchLines[ 0 ].bot, Scalar( 255, 0, 0 ), textStroke );
+                    line( imgOut, m_model.searchLines[ 0 ].top, m_model.searchLines[ m_model.searchLines.size() - 1 ].top, Scalar( 255, 0, 0 ), textStroke );
+                    line( imgOut, m_model.searchLines[ m_model.searchLines.size() - 1 ].top, m_model.searchLines[ m_model.searchLines.size() - 1 ].bot, Scalar( 255, 0, 0 ), textStroke );
+                    line( imgOut, m_model.searchLines[ 0 ].bot, m_model.searchLines[ m_model.searchLines.size() - 1 ].bot, Scalar( 255, 0, 0 ), textStroke );
+                }
+            }
+
+            if ( drawCalib )
+            {
+                Point2d topLft, botRgt;
+                retVal = PixelToWorld( m_model.pixelPoints[ 0 ], topLft );
+                if ( GC_OK == retVal )
+                {
+                    retVal = PixelToWorld( m_model.pixelPoints[ m_model.pixelPoints.size() - 1 ], botRgt );
+                    if ( GC_OK == retVal )
+                    {
+                        Point2d pt1, pt2;
+                        double minCol = std::min( topLft.x, botRgt.x );
+                        double maxCol = std::max( topLft.x, botRgt.x );
+                        double minRow = std::min( topLft.y, botRgt.y );
+                        double maxRow = std::max( topLft.y, botRgt.y );
+                        double rowInc = ( maxRow - minRow ) / static_cast< double >( m_model.gridSize.height + 2 );
+                        double colInc = ( maxCol - minCol ) / static_cast< double >( m_model.gridSize.width );
+                        minRow -= rowInc;
+                        maxRow += rowInc;
+                        stringstream buf;
+
+                        bool first;
+                        double row, col;
+                        int rowInt, colInt;
+                        for ( rowInt = 0, row = maxRow; row > minRow; row -= rowInc, ++rowInt )
+                        {
+                            first = true;
+                            for ( colInt = 0, col = minCol; col < maxCol; col += colInc, ++colInt )
+                            {
+                                retVal = WorldToPixel( Point2d( col, row ), pt1 );
+                                if ( GC_OK == retVal )
+                                {
+                                    retVal = WorldToPixel( Point2d( col + colInc, row ), pt2 );
+                                    if ( GC_OK == retVal )
+                                    {
+                                        line( imgOut, pt1, pt2, Scalar( 0, 255, 255 ), textStroke );
+                                        retVal = WorldToPixel( Point2d( col, row - rowInc ), pt2 );
+                                        if ( GC_OK == retVal && pt1.y < imgOut.rows )
+                                        {
+                                            line( imgOut, pt1, pt2, Scalar( 0, 255, 255 ), textStroke );
+                                            if ( ( ( rowInt % 2 ) == 1 ) && ( ( colInt % 2 ) == 0 ) )
+                                                circle( imgOut, pt1, circleSize, Scalar( 0, 255, 0 ), textStroke );
+                                        }
+                                    }
+                                }
+                                if ( first )
+                                {
+                                    first = false;
+                                    buf.str( string() ); buf << boost::format( "%.1f" ) % row;
+                                    putText( imgOut, buf.str(), Point( cvRound( pt1.x ) - textOffset, cvRound( pt1.y ) + 5 ),
+                                             FONT_HERSHEY_COMPLEX, fontScale * 0.5, Scalar( 0, 255, 255 ), textStroke );
+                                }
+                            }
+                            retVal = WorldToPixel( Point2d( maxCol, row ), pt1 );
+                            if ( GC_OK == retVal && pt1.y < imgOut.rows )
+                            {
+                                retVal = WorldToPixel( Point2d( maxCol, row - rowInc ), pt2 );
+                                if ( GC_OK == retVal )
+                                {
+                                    line( imgOut, pt1, pt2, Scalar( 0, 255, 255 ), textStroke );
+                                    if ( ( rowInt % 2 ) == 1 )
+                                        circle( imgOut, pt1, circleSize, Scalar( 0, 255, 0 ), textStroke );
+                                }
+                            }
+                        }
+                        first = true;
+                        for ( double col = minCol; col < maxCol; col += colInc )
+                        {
+                            retVal = WorldToPixel( Point2d( col, minRow ), pt1 );
+                            if ( GC_OK == retVal )
+                            {
+                                retVal = WorldToPixel( Point2d( col + colInc, minRow ), pt2 );
+                                if ( GC_OK == retVal )
+                                {
+                                    line( imgOut, pt1, pt2, Scalar( 0, 255, 255 ), textStroke );
+                                }
+                            }
+                            if ( first )
+                            {
+                                first = false;
+                                buf.str( string() ); buf << boost::format( "%.1f" ) % minRow;
+                                putText( imgOut, buf.str(), Point( cvRound( pt1.x ) - textOffset, cvRound( pt1.y ) + 5 ),
+                                         FONT_HERSHEY_COMPLEX, fontScale * 0.5, Scalar( 0, 255, 255 ), textStroke );
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    catch( Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[" << __func__ << "] " << e.what();
+        return GC_EXCEPT;
+    }
+    return retVal;
+}
+GC_STATUS CalibBowtie::PixelToWorld( const Point2d ptPixel, Point2d &ptWorld )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -294,7 +303,7 @@ GC_STATUS Calib::PixelToWorld( const Point2d ptPixel, Point2d &ptWorld )
 
     return retVal;
 }
-GC_STATUS Calib::WorldToPixel( const Point2d ptWorld, Point2d &ptPixel )
+GC_STATUS CalibBowtie::WorldToPixel( const Point2d ptWorld, Point2d &ptPixel )
 {
     GC_STATUS retVal = GC_OK;
     if ( m_matHomogWorldToPix.empty() )
@@ -320,12 +329,12 @@ GC_STATUS Calib::WorldToPixel( const Point2d ptWorld, Point2d &ptPixel )
 
     return retVal;
 }
-cv::Rect Calib::MoveSearchROI( const bool isLeft )
+cv::Rect CalibBowtie::MoveSearchROI( const bool isLeft )
 {
     return isLeft ? m_model.moveSearchRegionLft :
                     m_model.moveSearchRegionRgt;
 }
-GC_STATUS Calib::MoveRefPoint( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt )
+GC_STATUS CalibBowtie::MoveRefPoint( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt )
 {
     GC_STATUS retVal = GC_OK;
     Point2d pt( numeric_limits< double >::min(), numeric_limits< double >::min() );
@@ -346,7 +355,7 @@ GC_STATUS Calib::MoveRefPoint( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt )
     }
     return retVal;
 }
-GC_STATUS Calib::Load( const string &jsonCalibString )
+GC_STATUS CalibBowtie::Load( const string &jsonCalibString )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -447,7 +456,7 @@ GC_STATUS Calib::Load( const string &jsonCalibString )
                 m_model.gridSize = Size( static_cast< int >( cols ), static_cast< int >( rows ) );
 
                 Mat matIn, matOut;
-                retVal = Calibrate( m_model.pixelPoints, m_model.worldPoints, m_model.gridSize, m_model.imgSize, matIn, matOut, false, false );
+                retVal = Calibrate( m_model.pixelPoints, m_model.worldPoints, m_model.gridSize, m_model.imgSize );
             }
 #ifdef LOG_CALIB_VALUES
             FILE_LOG( logINFO ) << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
@@ -470,7 +479,7 @@ GC_STATUS Calib::Load( const string &jsonCalibString )
 
     return retVal;
 }
-GC_STATUS Calib::Save( const string jsonCalFilepath )
+GC_STATUS CalibBowtie::Save( const string jsonCalFilepath )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -561,7 +570,7 @@ GC_STATUS Calib::Save( const string jsonCalFilepath )
 
     return retVal;
 }
-GC_STATUS Calib::CalcSearchSwaths()
+GC_STATUS CalibBowtie::CalcSearchSwaths()
 {
     GC_STATUS retVal = GC_OK;
 
@@ -612,7 +621,7 @@ GC_STATUS Calib::CalcSearchSwaths()
 
     return retVal;
 }
-string Calib::ModelJsonString()
+string CalibBowtie::ModelJsonString()
 {
     stringstream ss;
 

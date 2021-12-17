@@ -73,9 +73,9 @@ GC_STATUS VisApp::LoadCalib( const std::string calibJson )
     GC_STATUS retVal = m_calibExec.Load( calibJson );
     return retVal;
 }
-GC_STATUS VisApp::Calibrate( const string imgFilepath, const string jsonControl, Mat &imgOut )
+GC_STATUS VisApp::Calibrate( const string imgFilepath, const string jsonControl )
 {
-    GC_STATUS retVal = m_calibExec.Calibrate( imgFilepath, jsonControl, imgOut );
+    GC_STATUS retVal = m_calibExec.Calibrate( imgFilepath, jsonControl );
     return retVal;
 }
 GC_STATUS VisApp::GetImageTimestamp( const std::string filepath, std::string &timestamp )

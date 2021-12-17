@@ -44,7 +44,7 @@ void CalibExecutive::clear()
     bowTie.clear();
     stopSign.clear();
 }
-GC_STATUS CalibExecutive::Calibrate( const std::string calibTargetImagePath, const std::string jsonParams, cv::Mat &imgResult )
+GC_STATUS CalibExecutive::Calibrate( const std::string calibTargetImagePath, const std::string jsonParams )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -72,7 +72,7 @@ GC_STATUS CalibExecutive::Calibrate( const std::string calibTargetImagePath, con
 
         if ( "BowTie" == paramsCurrent.calibType )
         {
-            retVal = CalibrateBowTie( calibTargetImagePath, imgResult );
+            retVal = CalibrateBowTie( calibTargetImagePath );
         }
         else if ( "StopSign" == paramsCurrent.calibType )
         {
@@ -98,13 +98,12 @@ GC_STATUS CalibExecutive::DrawOverlay( const cv::Mat matIn, cv::Mat &imgMatOut,
     GC_STATUS retVal = GC_OK;
     if ( "BowTie" == paramsCurrent.calibType )
     {
-        CalibModel model = bowTie.GetModel();
-        retVal = bowTie.Calibrate( model.pixelPoints, model.worldPoints, model.gridSize, matIn.size(),
-                                   matIn, imgMatOut, drawCalib, drawMoveROIs, drawSearchROI );
+        CalibModelBowtie model = bowTie.GetModel();
+        retVal = bowTie.DrawOverlay( matIn, imgMatOut, drawCalib, drawMoveROIs, drawSearchROI );
     }
     else if ( "StopSign" == paramsCurrent.calibType )
     {
-        retVal = stopSign.DrawCalibration( matIn, imgMatOut, drawCalib, drawMoveROIs, drawSearchROI );
+        retVal = stopSign.DrawOverlay( matIn, imgMatOut, drawCalib, drawMoveROIs, drawSearchROI );
     }
     else
     {
@@ -228,7 +227,7 @@ GC_STATUS CalibExecutive::CalibrateStopSign( const string imgFilepath )
 
     return retVal;
 }
-GC_STATUS CalibExecutive::CalibrateBowTie( const string imgFilepath, Mat &imgOut )
+GC_STATUS CalibExecutive::CalibrateBowTie( const string imgFilepath )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -291,8 +290,7 @@ GC_STATUS CalibExecutive::CalibrateBowTie( const string imgFilepath, Mat &imgOut
                                         worldPtArray.push_back( worldCoords[ i ][ j ] );
                                     }
                                 }
-                                retVal = bowTie.Calibrate( pixPtArray, worldPtArray, Size( 2, 4 ), img.size(), img, imgOut,
-                                                           paramsCurrent.drawCalib, paramsCurrent.drawMoveSearchROIs, paramsCurrent.drawMoveSearchROIs );
+                                retVal = bowTie.Calibrate( pixPtArray, worldPtArray, Size( 2, 4 ), img.size() );
                                 if ( GC_OK == retVal )
                                 {
                                     retVal = bowTie.Save( paramsCurrent.calibResultJsonFilepath );

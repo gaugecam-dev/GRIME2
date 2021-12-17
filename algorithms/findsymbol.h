@@ -41,14 +41,10 @@ class FindSymbol
 {
 public:
     FindSymbol();
-    GC_STATUS Load( const std::string jsonCalFilepath );
-    GC_STATUS Save( const std::string jsonCalFilepath );
     GC_STATUS Calibrate( const cv::Mat &img, const cv::Scalar hsvRange_1_start, const cv::Scalar hsvRange_1_end,
                          const cv::Scalar hsvRange_2_start = cv::Scalar( -1 ), const cv::Scalar hsvRange_2_end = cv::Scalar( -1 ) );
     GC_STATUS CreateTemplates( const cv::Mat &img, const cv::Rect templateRect, const cv::Rect searchRect );
     GC_STATUS FindTargets( const cv::Mat &img, const cv::Rect targetRoi, const double minScore, const std::string resultFilepath );
-    GC_STATUS PixelToWorld( const cv::Point2d ptPixel, cv::Point2d &ptWorld );
-    GC_STATUS WorldToPixel( const cv::Point2d ptWorld, cv::Point2d &ptPixel );
     GC_STATUS DrawCalibration( const cv::Mat &img, cv::Mat &result, const bool drawCalib, const bool drawMoveROIs, const bool drawSearchROI );
     void clear();
 
@@ -63,7 +59,7 @@ public:
 private:
     cv::Mat matHomogPixToWorld;
     cv::Mat matHomogWorldToPix;
-    SymbolCalibModel model;
+    CalibModelSymbol model;
 
     cv::Rect searchROI;
     std::vector< cv::Mat > templates;

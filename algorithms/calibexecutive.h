@@ -1,9 +1,9 @@
 #ifndef CALIBEXECUTIVE_H
 #define CALIBEXECUTIVE_H
 
-#include "calib.h"
+#include "calibbowtie.h"
 #include "findcalibgrid.h"
-#include "findstopsign.h"
+#include "calibstopsign.h"
 
 namespace gc
 {
@@ -50,7 +50,7 @@ public:
 
     void clear();
     GC_STATUS Load( const std::string jsonFilepath );
-    GC_STATUS Calibrate( const std::string calibTargetImagePath, const std::string jsonParams, cv::Mat &imgResult );
+    GC_STATUS Calibrate( const std::string calibTargetImagePath, const std::string jsonParams );
     GC_STATUS PixelToWorld( const cv::Point2d pixelPt, cv::Point2d &worldPt );
     GC_STATUS WorldToPixel( const cv::Point2d worldPt, cv::Point2d &pixelPt );
     GC_STATUS GetMoveSearchROIs( cv::Rect &rectLeft, cv::Rect &rectRight );
@@ -66,14 +66,14 @@ public:
     std::string &GetCalibType() { return paramsCurrent.calibType; }
 
 private:
-    Calib bowTie;
-    FindStopSign stopSign;
+    CalibBowtie bowTie;
+    CalibStopSign stopSign;
     FindCalibGrid findCalibGrid;
     CalibExecParams paramsCurrent;
     std::vector< LineEnds > nullSearchLines;    ///< Empty vector of search lines to be searched for the water line
     cv::Rect nullRect = cv::Rect( -1, -1, -1, -1 );
 
-    GC_STATUS CalibrateBowTie( const string imgFilepath, cv::Mat &imgOut );
+    GC_STATUS CalibrateBowTie( const string imgFilepath );
     GC_STATUS CalibrateStopSign( const string imgFilepath );
     GC_STATUS FindMoveTargetsBowTie( const cv::Mat &img, FindPointSet &ptsFound );
     GC_STATUS FindMoveTargetsStopSign( const cv::Mat &img, FindPointSet &ptsFound );

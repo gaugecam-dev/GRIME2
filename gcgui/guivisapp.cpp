@@ -705,14 +705,14 @@ GC_STATUS GuiVisApp::LoadCalib( const std::string calibJson )
     sigMessage( string( "Load calibration: " ) + ( GC_OK == retVal ? "SUCCESS" : "FAILURE" ) );
     return retVal;
 }
-GC_STATUS GuiVisApp::Calibrate( const std::string imgFilepath, const string jsonControl, Mat &imgOut )
+GC_STATUS GuiVisApp::Calibrate( const std::string imgFilepath, const string jsonControl )
 {
     GC_STATUS retVal = GC_OK;
 
     retVal = LoadImageToApp( imgFilepath );
     if ( GC_OK == retVal )
     {
-        retVal = m_visApp.Calibrate( imgFilepath, jsonControl, imgOut );
+        retVal = m_visApp.Calibrate( imgFilepath, jsonControl );
     }
     sigMessage( string( "Calibration: " ) + ( GC_OK == retVal ? "SUCCESS" : "FAILURE" ) );
     return retVal;

@@ -1,5 +1,5 @@
 #include "log.h"
-#include "findstopsign.h"
+#include "calibstopsign.h"
 #include <opencv2/imgproc.hpp>
 #include <opencv2/calib3d.hpp>
 #include <boost/foreach.hpp>
@@ -34,18 +34,18 @@ namespace gc
 static double elongation( Moments m );
 static double EuclidianDistance( Point2d a, Point2d b );
 
-FindStopSign::FindStopSign()
+CalibStopSign::CalibStopSign()
 {
 
 }
-void FindStopSign::clear()
+void CalibStopSign::clear()
 {
     matHomogPixToWorld = Mat();
     matHomogWorldToPix = Mat();
     model.clear();
 }
 // symbolPoints are clockwise ordered with 0 being the topmost left point
-GC_STATUS FindStopSign::Calibrate( const cv::Mat &img, const double octoSideLength )
+GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double octoSideLength )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -90,14 +90,6 @@ GC_STATUS FindStopSign::Calibrate( const cv::Mat &img, const double octoSideLeng
                             if ( GC_OK == retVal )
                             {
                                 retVal = Calibrate( model.pixelPoints, model.worldPoints );
-                                if ( GC_OK == retVal )
-                                {
-                                    retVal = CalcMoveSearchROI( img.size(), model.pixelPoints, model.moveSearchRegion );
-                                    if ( GC_OK == retVal )
-                                    {
-                                        // retVal = CalcLineSearchROI( img.size(), model.pixelPoints, )
-                                    }
-                                }
                             }
                         }
                     }
@@ -113,7 +105,7 @@ GC_STATUS FindStopSign::Calibrate( const cv::Mat &img, const double octoSideLeng
 
     return retVal;
 }
-GC_STATUS FindStopSign::Calibrate( const std::vector< cv::Point2d > &pixelPts, const std::vector< cv::Point2d > &worldPts )
+GC_STATUS CalibStopSign::Calibrate( const std::vector< cv::Point2d > &pixelPts, const std::vector< cv::Point2d > &worldPts )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -151,7 +143,7 @@ GC_STATUS FindStopSign::Calibrate( const std::vector< cv::Point2d > &pixelPts, c
 
     return retVal;
 }
-GC_STATUS FindStopSign::CalcPointOnLine( const StopSignLine linePts, const double dist, cv::Point2d &pt )
+GC_STATUS CalibStopSign::CalcPointOnLine( const StopSignLine linePts, const double dist, cv::Point2d &pt )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -188,60 +180,21 @@ GC_STATUS FindStopSign::CalcPointOnLine( const StopSignLine linePts, const doubl
 
     return retVal;
 }
-GC_STATUS FindStopSign::CalcSearchLines( const cv::Size imgSz, const std::vector< cv::Point2d > symbolCorners, std::vector< LineEnds > &searchLines )
+GC_STATUS CalibStopSign::CalcSearchLines( const Mat &img, const Point lftTop, const Point lftBot,
+                                          const Point rgtTop, const Point rgtBot, std::vector< LineEnds > &searchLines )
 {
     GC_STATUS retVal = GC_OK;
 
     try
     {
-        if ( 8 != symbolCorners.size() )
+        if ( img.empty() )
         {
-            FILE_LOG( logERROR ) << "[FindSymbol::CalcSearchLines] Symbol corners count wrong";
+            FILE_LOG( logERROR ) << "[FindSymbol::CalcSearchLines] Invalid input image";
             retVal = GC_ERR;
         }
         else
         {
-            // find top left and top right points
-            vector< Point2d > vecSortCorners = symbolCorners;
-            std::sort( vecSortCorners.begin(), vecSortCorners.end(), []( const Point2d &a, const Point2d &b ) { return a.y < b.y; } );
-
-            Point2d lftTop, rgtTop;
-            if ( vecSortCorners[ 0 ].x > vecSortCorners[ 1 ].x )
-            {
-                lftTop = vecSortCorners[ 1 ];
-                rgtTop = vecSortCorners[ 0 ];
-            }
-            else
-            {
-                rgtTop = vecSortCorners[ 1 ];
-                lftTop = vecSortCorners[ 0 ];
-            }
-
-            Point2d lftBot, rgtBot;
-            if ( vecSortCorners[ 7 ].x > vecSortCorners[ 8 ].x )
-            {
-                lftBot = vecSortCorners[ 8 ];
-                rgtBot = vecSortCorners[ 7 ];
-            }
-            else
-            {
-                rgtBot = vecSortCorners[ 8 ];
-                lftBot = vecSortCorners[ 7 ];
-            }
-
-            StopSignLine lftLine( lftTop, lftBot );
-            StopSignLine rgtLine( rgtTop, rgtBot );
-
-            double topLineLength = EuclidianDistance( lftTop, rgtTop );
-            double distToLftTopLinePt = topLineLength / 3.0;
-            double distToRgtTopLinePt = distToLftTopLinePt * 2.0;
-
-            double botLineLength = EuclidianDistance( lftBot, rgtBot );
-            double distToLftBotLinePt = botLineLength / 3.0;
-            double distToRgtBotLinePt = distToLftBotLinePt * 2.0;
-
-#ifdef DEBUG_FIND_CALIB_SYMBOL
-#endif
+            searchLines.clear();
         }
     }
     catch( Exception &e )
@@ -252,7 +205,7 @@ GC_STATUS FindStopSign::CalcSearchLines( const cv::Size imgSz, const std::vector
 
     return retVal;
 }
-GC_STATUS FindStopSign::Load( const std::string jsonCalFilepath )
+GC_STATUS CalibStopSign::Load( const std::string jsonCalFilepath )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -290,11 +243,11 @@ GC_STATUS FindStopSign::Load( const std::string jsonCalFilepath )
                 model.worldPoints.push_back( ptTemp );
             }
 
-            const property_tree::ptree &ptreeMoveSearch = ptreeTop.get_child( "MoveSearchRegions" );
-            model.moveSearchRegion.x =      ptreeMoveSearch.get< int >( "x", 0 );
-            model.moveSearchRegion.y =      ptreeMoveSearch.get< int >( "y", 0 );
-            model.moveSearchRegion.width =  ptreeMoveSearch.get< int >( "width", 0 );
-            model.moveSearchRegion.height = ptreeMoveSearch.get< int >( "height", 0 );
+            const property_tree::ptree &ptreeMoveSearch = ptreeTop.get_child( "TargetSearchRegions" );
+            model.wholeTargetRegion.x =      ptreeMoveSearch.get< int >( "x", 0 );
+            model.wholeTargetRegion.y =      ptreeMoveSearch.get< int >( "y", 0 );
+            model.wholeTargetRegion.width =  ptreeMoveSearch.get< int >( "width", 0 );
+            model.wholeTargetRegion.height = ptreeMoveSearch.get< int >( "height", 0 );
 
             Point ptTop, ptBot;
             model.searchLines.clear();
@@ -353,7 +306,7 @@ GC_STATUS FindStopSign::Load( const std::string jsonCalFilepath )
 
     return retVal;
 }
-GC_STATUS FindStopSign::Save( const std::string jsonCalFilepath )
+GC_STATUS CalibStopSign::Save( const std::string jsonCalFilepath )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -396,13 +349,13 @@ GC_STATUS FindStopSign::Save( const std::string jsonCalFilepath )
                                       "\"worldY\": " << model.worldPoints[ model.pixelPoints.size() - 1 ].y << " }" << endl;
                 fileStream << "    ]" << endl;
                 fileStream << "  }," << endl;
-                fileStream << "  \"MoveSearchRegion\": " << endl;
+                fileStream << "  \"TargetSearchRegion\": " << endl;
                 fileStream << "  {" << endl;
                 fileStream << fixed << setprecision( 0 );
-                fileStream << "      \"x\": " <<      model.moveSearchRegion.x << ", " << \
-                                    "\"y\": " <<      model.moveSearchRegion.y << ", " << \
-                                    "\"width\": " <<  model.moveSearchRegion.width << ", " << \
-                                    "\"height\": " << model.moveSearchRegion.height << endl;
+                fileStream << "      \"x\": " <<      model.wholeTargetRegion.x << ", " << \
+                                    "\"y\": " <<      model.wholeTargetRegion.y << ", " << \
+                                    "\"width\": " <<  model.wholeTargetRegion.width << ", " << \
+                                    "\"height\": " << model.wholeTargetRegion.height << endl;
                 fileStream << "  }," << endl;
                 fileStream << "  \"SearchLines\": [" << endl;
                 for ( size_t i = 0; i < model.searchLines.size() - 1; ++i )
@@ -436,7 +389,7 @@ GC_STATUS FindStopSign::Save( const std::string jsonCalFilepath )
 
     return retVal;
 }
-GC_STATUS FindStopSign::CalcOctoWorldPoints( const double sideLength, std::vector< cv::Point2d > &pts )
+GC_STATUS CalibStopSign::CalcOctoWorldPoints( const double sideLength, std::vector< cv::Point2d > &pts )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -460,89 +413,7 @@ GC_STATUS FindStopSign::CalcOctoWorldPoints( const double sideLength, std::vecto
 
     return retVal;
 }
-GC_STATUS FindStopSign::CalcMoveSearchROI( const cv::Size imgSz, const std::vector< Point2d > symbolCorners, cv::Rect &rect )
-{
-    GC_STATUS retVal = GC_OK;
-
-    try
-    {
-        if ( 4 > symbolCorners.size() )
-        {
-            FILE_LOG( logERROR ) << "[FindSymbol::CalcMoveSearchROI] Not enough symbol corners=" << symbolCorners.size();
-            retVal = GC_ERR;
-        }
-        else
-        {
-            double minX = std::numeric_limits< double >::max();
-            double minY = std::numeric_limits< double >::max();
-            double maxX = -std::numeric_limits< double >::max();
-            double maxY = -std::numeric_limits< double >::max();
-            for ( size_t i = 0; i < symbolCorners.size(); ++i )
-            {
-                if ( symbolCorners[ i ].x < minX )
-                    minX = symbolCorners[ i ].x;
-                if ( symbolCorners[ i ].y < minY )
-                    minY = symbolCorners[ i ].y;
-                if ( symbolCorners[ i ].x > maxX )
-                    maxX = symbolCorners[ i ].x;
-                if ( symbolCorners[ i ].y > maxY )
-                    maxY = symbolCorners[ i ].y;
-            }
-
-            int x = cvRound( minX );
-            int y = cvRound( minY );
-            int xMax = cvRound( maxX );
-            int yMax = cvRound( maxY );
-            if ( 0 > x )
-                x = 0;
-            if ( 0 > y )
-                y = 0;
-            if ( imgSz.width <= xMax )
-                xMax = imgSz.width - 1;
-            if ( imgSz.height <= yMax )
-                yMax = imgSz.height - 1;
-
-            int wide = xMax - x;
-            int high = yMax - y;
-
-            xMax = xMax + wide / 2;
-            yMax = yMax + high / 2;
-            x -= wide / 2;
-            y -= high / 2;
-
-            if ( 0 > x )
-                x = 0;
-            if ( 0 > y )
-                y = 0;
-            if ( imgSz.width <= xMax )
-                xMax = imgSz.width - 1;
-            if ( imgSz.height <= yMax )
-                yMax = imgSz.height - 1;
-
-            wide = xMax - x;
-            high = yMax - y;
-
-            if ( 30 > wide || 30 > high )
-            {
-                FILE_LOG( logERROR ) << "[FindSymbol::CalcMoveSearchROI] Move ROI invalid. x=" <<
-                                        x << " y=" << " w=" << wide << " h=" << high;
-                retVal = GC_ERR;
-            }
-            else
-            {
-                rect = Rect( x, y, wide, high );
-            }
-        }
-    }
-    catch( cv::Exception &e )
-    {
-        FILE_LOG( logERROR ) << "[FindSymbol::CalcMoveSearchROI] " << e.what();
-        retVal = GC_EXCEPT;
-    }
-
-    return retVal;
-}
-GC_STATUS FindStopSign::FindRed( const cv::Mat &img, cv::Mat1b &redMask, std::vector< StopSignCandidate > &symbolCandidates )
+GC_STATUS CalibStopSign::FindRed( const cv::Mat &img, cv::Mat1b &redMask, std::vector< StopSignCandidate > &symbolCandidates )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -624,7 +495,7 @@ GC_STATUS FindStopSign::FindRed( const cv::Mat &img, cv::Mat1b &redMask, std::ve
 
     return retVal;
 }
-GC_STATUS FindStopSign::FindCorners( const cv::Mat &mask, const std::vector< cv::Point > &contour, OctagonLines &octoLines )
+GC_STATUS CalibStopSign::FindCorners( const cv::Mat &mask, const std::vector< cv::Point > &contour, OctagonLines &octoLines )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -744,7 +615,7 @@ GC_STATUS FindStopSign::FindCorners( const cv::Mat &mask, const std::vector< cv:
 
     return retVal;
 }
-GC_STATUS FindStopSign::CalcCorners( const OctagonLines octoLines, std::vector< cv::Point2d > &symbolCorners )
+GC_STATUS CalibStopSign::CalcCorners( const OctagonLines octoLines, std::vector< cv::Point2d > &symbolCorners )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -803,7 +674,7 @@ GC_STATUS FindStopSign::CalcCorners( const OctagonLines octoLines, std::vector< 
 }
 // Finds the intersection of two lines, or returns false.
 // The lines are defined by (o1, p1) and (o2, p2).
-GC_STATUS FindStopSign::LineIntersection( const StopSignLine line1, const StopSignLine line2, Point2d &r )
+GC_STATUS CalibStopSign::LineIntersection( const StopSignLine line1, const StopSignLine line2, Point2d &r )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -830,7 +701,7 @@ GC_STATUS FindStopSign::LineIntersection( const StopSignLine line1, const StopSi
 
     return retVal;
 }
-GC_STATUS FindStopSign::FindDiagonals( const cv::Mat &mask, const std::vector< cv::Point > &contour, OctagonLines &octoLines )
+GC_STATUS CalibStopSign::FindDiagonals( const cv::Mat &mask, const std::vector< cv::Point > &contour, OctagonLines &octoLines )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -932,7 +803,7 @@ GC_STATUS FindStopSign::FindDiagonals( const cv::Mat &mask, const std::vector< c
 
     return retVal;
 }
-GC_STATUS FindStopSign::GetLineEndPoints( cv::Mat &mask, const cv::Rect rect, cv::Point2d &pt1, cv::Point2d &pt2 )
+GC_STATUS CalibStopSign::GetLineEndPoints( cv::Mat &mask, const cv::Rect rect, cv::Point2d &pt1, cv::Point2d &pt2 )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -1017,7 +888,7 @@ GC_STATUS FindStopSign::GetLineEndPoints( cv::Mat &mask, const cv::Rect rect, cv
     return retVal;
 
 }
-GC_STATUS FindStopSign::GetNonZeroPoints( cv::Mat &img, std::vector< cv::Point > &pts )
+GC_STATUS CalibStopSign::GetNonZeroPoints( cv::Mat &img, std::vector< cv::Point > &pts )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -1051,7 +922,7 @@ GC_STATUS FindStopSign::GetNonZeroPoints( cv::Mat &img, std::vector< cv::Point >
 
     return retVal;
 }
-GC_STATUS FindStopSign::PixelToWorld( const Point2d ptPixel, Point2d &ptWorld )
+GC_STATUS CalibStopSign::PixelToWorld( const Point2d ptPixel, Point2d &ptWorld )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -1078,7 +949,7 @@ GC_STATUS FindStopSign::PixelToWorld( const Point2d ptPixel, Point2d &ptWorld )
 
     return retVal;
 }
-GC_STATUS FindStopSign::WorldToPixel( const Point2d ptWorld, Point2d &ptPixel )
+GC_STATUS CalibStopSign::WorldToPixel( const Point2d ptWorld, Point2d &ptPixel )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -1106,8 +977,8 @@ GC_STATUS FindStopSign::WorldToPixel( const Point2d ptWorld, Point2d &ptPixel )
 
     return retVal;
 }
-GC_STATUS FindStopSign::DrawCalibration( const cv::Mat &img, cv::Mat &result,
-                                       const bool drawCalib, const bool drawMoveROIs, const bool drawSearchROI )
+GC_STATUS CalibStopSign::DrawOverlay( const cv::Mat &img, cv::Mat &result, const bool drawCalib,
+                                      const bool drawMoveROIs, const bool drawSearchROI )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -1228,11 +1099,20 @@ GC_STATUS FindStopSign::DrawCalibration( const cv::Mat &img, cv::Mat &result,
                 }
                 if ( drawMoveROIs )
                 {
-                    rectangle( result, model.moveSearchRegion, Scalar( 0, 0, 255 ), lineWidth );
+                    // rectangle( result, model.wholeTargetRegion,  );
                 }
                 if ( drawSearchROI )
                 {
-
+                    if ( model.searchLines.empty() )
+                    {
+                        putText( result, "NO SEARCH REGION SET", Point( 50, result.cols - 100 ), FONT_HERSHEY_PLAIN, 2.7, Scalar( 0, 0, 255 ), 3 );
+                        rectangle( result, Rect( 100, 100, result.cols - 200, result.rows - 200 ), Scalar( 0, 0, 255 ), 3 );
+                        line( result, Point( 100, 100 ), Point( result.cols - 200, result.rows - 200 ), Scalar( 0, 0, 255 ), 3 );
+                        line( result, Point( 100, result.rows - 200 ), Point( result.cols - 200, 100 ), Scalar( 0, 0, 255 ), 3 );
+                    }
+                    else
+                    {
+                    }
                 }
             }
         }

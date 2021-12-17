@@ -76,10 +76,9 @@ public:
      * @brief Set the current calibration from a calibration model json file
      * @param imgFilepath The filepath of the image with the calibration target
      * @param jsonControl Json string that controls the calibration
-     * @param imgOut Image where the calibration result will be shown as on overlay
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
-    GC_STATUS Calibrate( const string imgFilepath, const string jsonControl, cv::Mat &imgOut );
+    GC_STATUS Calibrate( const string imgFilepath, const string jsonControl );
 
     /**
      * @brief Set the current calibration from a calibration model json file

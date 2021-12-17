@@ -90,13 +90,13 @@ public:
 /**
  * @brief Data class to hold all items needed to define a calibration
  */
-class CalibModel
+class CalibModelBowtie
 {
 public:
     /**
      * @brief Constructor to set the model to an uninitialized state
      */
-    CalibModel() :
+    CalibModelBowtie() :
         imgSize( cv::Size( -1, -1 ) ),
         gridSize( cv::Size( -1, -1 ) ),
         moveSearchRegionLft( cv::Rect( -1, -1, -1, -1 ) ),
@@ -113,7 +113,7 @@ public:
      * @param mvSrchROILft Left move search region (to search for top-left bowtie)
      * @param mvSrchROIRgt Right move search region (to search for top-right bowtie)
      */
-    CalibModel( cv::Size imageSize,
+    CalibModelBowtie( cv::Size imageSize,
                 cv::Size gridSz,
                 std::vector< cv::Point2d > pixelPts,
                 std::vector< cv::Point2d > worldPts,
@@ -155,15 +155,14 @@ public:
     cv::Rect wholeTargetRegion;             ///< Region within which to perform line and move search
 };
 
-class SymbolCalibModel
+class CalibModelSymbol
 {
 public:
     /**
      * @brief Constructor to set the model to an uninitialized state
      */
-    SymbolCalibModel() :
+    CalibModelSymbol() :
         imgSize( cv::Size( -1, -1 ) ),
-        moveSearchRegion( cv::Rect( -1, -1, -1, -1 ) ),
         wholeTargetRegion( cv::Rect( -1, -1, -1, -1 ) )
     {}
 
@@ -176,16 +175,14 @@ public:
      * @param mvSrchROILft Left move search region (to search for top-left bowtie)
      * @param mvSrchROIRgt Right move search region (to search for top-right bowtie)
      */
-    SymbolCalibModel( cv::Size imageSize,
+    CalibModelSymbol( cv::Size imageSize,
                       std::vector< cv::Point2d > pixelPts,
                       std::vector< cv::Point2d > worldPts,
-                      std::vector< LineEnds > lineEndPts,
-                      cv::Rect moveSrchROI ) :
+                      std::vector< LineEnds > lineEndPts ) :
         imgSize( imageSize ),
         pixelPoints( pixelPts ),
         worldPoints( worldPts ),
         searchLines( lineEndPts ),
-        moveSearchRegion( moveSrchROI ),
         wholeTargetRegion( cv::Rect( -1, -1, -1, -1 ) )
     {}
 
@@ -198,7 +195,6 @@ public:
         pixelPoints.clear();
         worldPoints.clear();
         searchLines.clear();
-        moveSearchRegion = cv::Rect( -1, -1, -1, -1 );
         wholeTargetRegion = cv::Rect( -1, -1, -1, -1 );
     }
 
@@ -206,7 +202,6 @@ public:
     std::vector< cv::Point2d > pixelPoints; ///< Vector of pixel points ordered to match the world point vector
     std::vector< cv::Point2d > worldPoints; ///< Vector of world points ordered to match the pixel point vector
     std::vector< LineEnds > searchLines;    ///< Vector of search lines to be searched for the water line
-    cv::Rect moveSearchRegion;              ///< Left move search region (to search for top-left bowtie)
     cv::Rect wholeTargetRegion;             ///< Region within which to perform line and move search
 };
 
@@ -449,7 +444,7 @@ public:
      * @param params    Find line parameters
      * @param result    Find line results
      */
-    FindData( const CalibModel settings,
+    FindData( const CalibModelBowtie settings,
               const FindLineParams params,
               const FindLineResult result ) :
         calibSettings( settings ),
@@ -467,7 +462,7 @@ public:
         findlineResult.clear();
     }
 
-    CalibModel calibSettings;       ///< Calibration settings
+    CalibModelBowtie calibSettings;       ///< Calibration settings
     FindLineParams findlineParams;  ///< Find line parameters
     FindLineResult findlineResult;  ///< Find line results
 };

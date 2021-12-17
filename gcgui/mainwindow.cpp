@@ -1065,7 +1065,6 @@ void MainWindow::on_pushButton_visionCalibrate_clicked()
     ui->statusBar->showMessage( "calibrating..." );
     ui->statusBar->update();
 
-    Mat imgOut;
     string jsonControlStr;
     GC_STATUS retVal = GC_OK;
     int ret = -1;
@@ -1091,7 +1090,7 @@ void MainWindow::on_pushButton_visionCalibrate_clicked()
 
     if ( 0 == ret )
     {
-        retVal = m_visApp.Calibrate( strFilepath.toStdString(), jsonControlStr, imgOut );
+        retVal = m_visApp.Calibrate( strFilepath.toStdString(), jsonControlStr );
         ui->checkBox_showCalib->setChecked( true );
         m_pComboBoxImageToView->setCurrentText( "Overlay" );
         UpdatePixmapTarget();
@@ -1419,19 +1418,8 @@ void MainWindow::on_pushButton_animationStop_clicked()
     }
 }
 
-
-#include "../algorithms/findsymbol.h"
-#include <opencv2/imgcodecs.hpp>
 void MainWindow::on_pushButton_test_clicked()
 {
-    Mat img = imread( "/media/kchapman/Elements/data/2021_12_10_usgs_beggars_cr_nr_dawley_corners/VA_Beggars_Cr_nr_Dawley_Corners___2021-12-07_17-01-19-0000-05-00_overlay.jpg", IMREAD_COLOR );
-
-    Mat mask;
-    FindSymbol findSymbol;
-    GC_STATUS retVal = findSymbol.Calibrate( img, Scalar( 153, 215, 190 ), Scalar( 193, 255, 230 ), Scalar( -1 ), Scalar( -1 ) );
-
-    imwrite( "/var/tmp/water/triangle_find_000.png", img );
-
     ui->statusBar->showMessage( "Test not implemented" );
     return;
 }
