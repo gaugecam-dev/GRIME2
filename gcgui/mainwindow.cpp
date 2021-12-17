@@ -1424,6 +1424,14 @@ void MainWindow::on_pushButton_animationStop_clicked()
 #include <opencv2/imgcodecs.hpp>
 void MainWindow::on_pushButton_test_clicked()
 {
+    Mat img = imread( "/media/kchapman/Elements/data/2021_12_10_usgs_beggars_cr_nr_dawley_corners/VA_Beggars_Cr_nr_Dawley_Corners___2021-12-07_17-01-19-0000-05-00_overlay.jpg", IMREAD_COLOR );
+
+    Mat mask;
+    FindSymbol findSymbol;
+    GC_STATUS retVal = findSymbol.Calibrate( img, Scalar( 153, 215, 190 ), Scalar( 193, 255, 230 ), Scalar( -1 ), Scalar( -1 ) );
+
+    imwrite( "/var/tmp/water/triangle_find_000.png", img );
+
     ui->statusBar->showMessage( "Test not implemented" );
     return;
 }

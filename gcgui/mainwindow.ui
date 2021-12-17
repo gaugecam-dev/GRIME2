@@ -461,7 +461,7 @@ metadata</string>
                <enum>QTabWidget::South</enum>
               </property>
               <property name="currentIndex">
-               <number>1</number>
+               <number>3</number>
               </property>
               <widget class="QWidget" name="tab_mainRunFolder">
                <attribute name="title">
@@ -1395,7 +1395,7 @@ p, li { white-space: pre-wrap; }
                    <enum>QTabWidget::South</enum>
                   </property>
                   <property name="currentIndex">
-                   <number>0</number>
+                   <number>1</number>
                   </property>
                   <widget class="QWidget" name="tab_helpReleaseNotes">
                    <attribute name="title">

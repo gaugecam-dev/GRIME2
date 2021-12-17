@@ -3,7 +3,7 @@
 
 #include "calib.h"
 #include "findcalibgrid.h"
-#include "findsymbol.h"
+#include "findstopsign.h"
 
 namespace gc
 {
@@ -67,7 +67,7 @@ public:
 
 private:
     Calib bowTie;
-    FindSymbol stopSign;
+    FindStopSign stopSign;
     FindCalibGrid findCalibGrid;
     CalibExecParams paramsCurrent;
     std::vector< LineEnds > nullSearchLines;    ///< Empty vector of search lines to be searched for the water line

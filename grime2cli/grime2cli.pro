@@ -25,6 +25,7 @@ SOURCES += \
         ../algorithms/findcalibgrid.cpp \
         ../algorithms/findline.cpp \
 	../algorithms/findsymbol.cpp \
+	../algorithms/findstopsign.cpp \
 	../algorithms/gifanim/gifanim.cpp \
 	../algorithms/metadata.cpp \
         ../algorithms/visapp.cpp \
@@ -38,7 +39,8 @@ HEADERS += \
     ../algorithms/csvreader.h \
     ../algorithms/findcalibgrid.h \
     ../algorithms/findline.h \
-    ../algorithms/findsymbol.cpp \
+    ../algorithms/findsymbol.h \
+    ../algorithms/findstopsign.h \
     ../algorithms/gifanim/gifanim.h \
     ../algorithms/gc_types.h \
     ../algorithms/log.h \
