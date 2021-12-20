@@ -13,8 +13,8 @@
 #include <algorithm>
 #include <iterator>
 
-#ifndef DEBUG_FIND_CALIB_SYMBOL
-#define DEBUG_FIND_CALIB_SYMBOL
+#ifdef DEBUG_FIND_CALIB_SYMBOL
+#undef DEBUG_FIND_CALIB_SYMBOL
 #include <iostream>
 #include <opencv2/imgcodecs.hpp>
 static const std::string DEBUG_RESULT_FOLDER = "/var/tmp/water/";
@@ -24,6 +24,7 @@ static const double MIN_SYMBOL_CONTOUR_SIZE = 50;
 static const double MIN_SYMBOL_CONTOUR_AREA = 1500;
 static const int MIN_SYMBOL_CONTOUR_LENGTH = 7;
 static const double MAX_SYMBOL_CONTOUR_ELONG = 1.5;
+static const double MIN_SEARCH_LINE_LENGTH = 120.0;
 using namespace cv;
 using namespace std;
 using namespace boost;
@@ -32,7 +33,6 @@ namespace gc
 {
 
 static double elongation( Moments m );
-static double EuclidianDistance( Point2d a, Point2d b );
 
 CalibStopSign::CalibStopSign()
 {
@@ -45,7 +45,7 @@ void CalibStopSign::clear()
     model.clear();
 }
 // symbolPoints are clockwise ordered with 0 being the topmost left point
-GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double octoSideLength )
+GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double octoSideLength, std::vector< Point > searchLineCorners )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -90,6 +90,10 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double octoSideLen
                             if ( GC_OK == retVal )
                             {
                                 retVal = Calibrate( model.pixelPoints, model.worldPoints );
+                                if ( GC_OK == retVal )
+                                {
+                                    retVal = CalcSearchLines( img, searchLineCorners, model.searchLines );
+                                }
                             }
                         }
                     }
@@ -99,7 +103,7 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double octoSideLen
     }
     catch( cv::Exception &e )
     {
-        FILE_LOG( logERROR ) << "[FindSymbol::FindRed] " << e.what();
+        FILE_LOG( logERROR ) << "[CalibStopSign::FindRed] " << e.what();
         retVal = GC_EXCEPT;
     }
 
@@ -113,7 +117,7 @@ GC_STATUS CalibStopSign::Calibrate( const std::vector< cv::Point2d > &pixelPts, 
     {
         if ( pixelPts.empty() || worldPts.empty() || pixelPts.size() != worldPts.size() )
         {
-            FILE_LOG( logERROR ) << "[FindSymbol::Calibrate] Invalid world and/or pixel point sets";
+            FILE_LOG( logERROR ) << "[CalibStopSign::Calibrate] Invalid world and/or pixel point sets";
             retVal = GC_ERR;
         }
         else
@@ -121,7 +125,7 @@ GC_STATUS CalibStopSign::Calibrate( const std::vector< cv::Point2d > &pixelPts, 
             matHomogPixToWorld = findHomography( pixelPts, worldPts );
             if ( matHomogPixToWorld.empty() )
             {
-                FILE_LOG( logERROR ) << "[FindSymbol::Calibrate] Could not find pixel to world coordinate homography";
+                FILE_LOG( logERROR ) << "[CalibStopSign::Calibrate] Could not find pixel to world coordinate homography";
                 retVal = GC_ERR;
             }
             else
@@ -129,7 +133,7 @@ GC_STATUS CalibStopSign::Calibrate( const std::vector< cv::Point2d > &pixelPts, 
                 matHomogWorldToPix = findHomography( worldPts, pixelPts );
                 if ( matHomogPixToWorld.empty() )
                 {
-                    FILE_LOG( logERROR ) << "[FindSymbol::Calibrate] Could not find world to pixel coordinate homography";
+                    FILE_LOG( logERROR ) << "[CalibStopSign::Calibrate] Could not find world to pixel coordinate homography";
                     retVal = GC_ERR;
                 }
             }
@@ -137,51 +141,13 @@ GC_STATUS CalibStopSign::Calibrate( const std::vector< cv::Point2d > &pixelPts, 
     }
     catch( Exception &e )
     {
-        FILE_LOG( logERROR ) << "[FindSymbol::Calibrate] " << e.what();
+        FILE_LOG( logERROR ) << "[CalibStopSign::Calibrate] " << e.what();
         retVal = GC_EXCEPT;
     }
 
     return retVal;
 }
-GC_STATUS CalibStopSign::CalcPointOnLine( const StopSignLine linePts, const double dist, cv::Point2d &pt )
-{
-    GC_STATUS retVal = GC_OK;
-
-    try
-    {
-        double deltaX = linePts.pt2.x - linePts.pt1.x;
-        double deltaY = linePts.pt2.y - linePts.pt1.y;
-        if ( numeric_limits< double >::epsilon() > deltaX )
-        {
-            pt.x = linePts.pt1.x;
-            pt.y = linePts.pt1.y + dist;
-        }
-        else if ( numeric_limits< double >::epsilon() > deltaY )
-        {
-            pt.x = linePts.pt1.x + dist;
-            pt.y = linePts.pt1.y;
-        }
-        else
-        {
-            double m = deltaY / deltaX;
-            double b = linePts.pt1.y - m * linePts.pt2.x;
-            double xPlus = linePts.pt1.x + ( dist / ( 1.0 + m * m ) );
-            double yPlus = pt.y = m * pt.x + b;
-            double xMinus = linePts.pt1.x - ( dist / ( 1.0 + m * m ) );
-            double yMinus = pt.y = m * pt.x + b;
-            pt = ( yPlus > yMinus ) ?  Point2d( xPlus, yPlus ) : Point2d( xMinus, yMinus );
-        }
-    }
-    catch( std::exception &e )
-    {
-        FILE_LOG( logERROR ) << "[FindSymbol::CalcPointOnLine] " << e.what();
-        retVal = GC_EXCEPT;
-    }
-
-    return retVal;
-}
-GC_STATUS CalibStopSign::CalcSearchLines( const Mat &img, const Point lftTop, const Point lftBot,
-                                          const Point rgtTop, const Point rgtBot, std::vector< LineEnds > &searchLines )
+GC_STATUS CalibStopSign::CalcSearchLines( const Mat &img, const vector< Point > searchLineCorners, std::vector< LineEnds > &searchLines )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -189,17 +155,50 @@ GC_STATUS CalibStopSign::CalcSearchLines( const Mat &img, const Point lftTop, co
     {
         if ( img.empty() )
         {
-            FILE_LOG( logERROR ) << "[FindSymbol::CalcSearchLines] Invalid input image";
+            FILE_LOG( logERROR ) << "[CalibStopSign::CalcSearchLines] Invalid input image";
+            retVal = GC_ERR;
+        }
+        else if ( 4 != searchLineCorners.size() )
+        {
+            FILE_LOG( logERROR ) << "[CalibStopSign::CalcSearchLines] Invalid search line corner point count. Must be 4";
             retVal = GC_ERR;
         }
         else
         {
-            searchLines.clear();
+            Point lftTop, rgtTop, lftBot, rgtBot;
+//            sort( searchLineCorners.begin(), searchLineCorners.end(), []( Point const &a, Point const &b ) { return ( a.y < b.y ); } );
+//            lftTop = searchLineCorners[ searchLineCorners[ 0 ].x > searchLineCorners[ 1 ].x ? 1 : 0 ];
+//            rgtTop = searchLineCorners[ searchLineCorners[ 0 ].x > searchLineCorners[ 1 ].x ? 0 : 1 ];
+//            lftBot = searchLineCorners[ searchLineCorners[ 2 ].x > searchLineCorners[ 3 ].x ? 3 : 2 ];
+//            rgtBot = searchLineCorners[ searchLineCorners[ 2 ].x > searchLineCorners[ 3 ].x ? 2 : 3 ];
+
+//            int widthTop = rgtTop.x - lftTop.x;
+//            int widthBot = rgtBot.x - lftBot.x;
+//            int heightLft = lftBot.y - lftTop.y;
+//            int heightRgt = rgtBot.y - rgtTop.y;
+
+//            double xIncTop = 1.0;
+//            double xIncBot = static_cast< double >( widthBot ) / static_cast< double >( widthTop );
+//            double yInc;
+
+//            searchLines.clear();
+//            Point2d ptTop = lftTop;
+//            Point2d ptBot = lftBot;
+//            for ( int i = 0; i <= widthTop; ++i )
+//            {
+//                searchLines.push_back( LineEnds( ptTop, ptBot ) );
+//                ptTop.x += xIncTop;
+//                ptTop.y += yInc;
+//                ptBot.x += xIncBot;
+//                ptBot.y += yInc;
+//            }
         }
+
+        return retVal;
     }
     catch( Exception &e )
     {
-        FILE_LOG( logERROR ) << "[FindSymbol::CalcSearchLines] " << e.what();
+        FILE_LOG( logERROR ) << "[CalibStopSign::CalcSearchLines] " << e.what();
         retVal = GC_EXCEPT;
     }
 
@@ -213,7 +212,7 @@ GC_STATUS CalibStopSign::Load( const std::string jsonCalFilepath )
     {
         if ( jsonCalFilepath.empty() )
         {
-            FILE_LOG( logERROR ) << "[FindSymbol::Load] Bow tie calibration string is empty";
+            FILE_LOG( logERROR ) << "[CalibStopSign::Load] Bow tie calibration string is empty";
             retVal = GC_ERR;
         }
         else
@@ -269,7 +268,7 @@ GC_STATUS CalibStopSign::Load( const std::string jsonCalFilepath )
 #endif
             if ( cols * rows != model.pixelPoints.size() )
             {
-                FILE_LOG( logERROR ) << "[FindSymbol::Load] Invalid association point count";
+                FILE_LOG( logERROR ) << "[CalibStopSign::Load] Invalid association point count";
                 retVal = GC_ERR;
             }
             else
@@ -300,7 +299,7 @@ GC_STATUS CalibStopSign::Load( const std::string jsonCalFilepath )
     }
     catch( boost::exception &e )
     {
-        FILE_LOG( logERROR ) << "[FindSymbol::Load] " << diagnostic_information( e );
+        FILE_LOG( logERROR ) << "[CalibStopSign::Load] " << diagnostic_information( e );
         retVal = GC_EXCEPT;
     }
 
@@ -313,12 +312,12 @@ GC_STATUS CalibStopSign::Save( const std::string jsonCalFilepath )
     if ( model.pixelPoints.empty() || model.worldPoints.empty() ||
          model.pixelPoints.size() != model.worldPoints.size() || model.searchLines.empty() )
     {
-        FILE_LOG( logERROR ) << "[FindSymbol::Save] Empty cal point vector(s)";
+        FILE_LOG( logERROR ) << "[CalibStopSign::Save] Empty cal point vector(s)";
         retVal = GC_ERR;
     }
     else if ( jsonCalFilepath.empty() )
     {
-        FILE_LOG( logERROR ) << "[FindSymbol::Save] Calibration filepath is empty";
+        FILE_LOG( logERROR ) << "[CalibStopSign::Save] Calibration filepath is empty";
         retVal = GC_ERR;
     }
     else
@@ -375,14 +374,14 @@ GC_STATUS CalibStopSign::Save( const std::string jsonCalFilepath )
             }
             else
             {
-                FILE_LOG( logERROR ) << "[FindSymbol::Save]"
+                FILE_LOG( logERROR ) << "[CalibStopSign::Save]"
                                         "Could not open calibration save file " << jsonCalFilepath;
                 retVal = GC_ERR;
             }
         }
         catch( std::exception &e )
         {
-            FILE_LOG( logERROR ) << "[FindSymbol::Save] " << e.what();
+            FILE_LOG( logERROR ) << "[CalibStopSign::Save] " << e.what();
             retVal = GC_EXCEPT;
         }
     }
@@ -407,7 +406,7 @@ GC_STATUS CalibStopSign::CalcOctoWorldPoints( const double sideLength, std::vect
     }
     catch( std::exception &e )
     {
-        FILE_LOG( logERROR ) << "[FindSymbol::CalcWorldPoints] " << e.what();
+        FILE_LOG( logERROR ) << "[CalibStopSign::CalcWorldPoints] " << e.what();
         retVal = GC_EXCEPT;
     }
 
@@ -421,12 +420,12 @@ GC_STATUS CalibStopSign::FindRed( const cv::Mat &img, cv::Mat1b &redMask, std::v
     {
         if ( img.empty() )
         {
-            FILE_LOG( logERROR ) << "[FindSymbol::FindRed] Cannot find red in an empty image";
+            FILE_LOG( logERROR ) << "[CalibStopSign::FindRed] Cannot find red in an empty image";
             retVal = GC_ERR;
         }
         else if ( img.type() != CV_8UC3 )
         {
-            FILE_LOG( logERROR ) << "[FindSymbol::FindRed] Image must be an 8-bit BGR image to find red";
+            FILE_LOG( logERROR ) << "[CalibStopSign::FindRed] Image must be an 8-bit BGR image to find red";
             retVal = GC_ERR;
         }
         else
@@ -476,7 +475,7 @@ GC_STATUS CalibStopSign::FindRed( const cv::Mat &img, cv::Mat1b &redMask, std::v
             }
             if ( symbolCandidates.empty() )
             {
-                FILE_LOG( logERROR ) << "[FindSymbol::FindRed] No symbol candidates found";
+                FILE_LOG( logERROR ) << "[CalibStopSign::FindRed] No symbol candidates found";
                 retVal = GC_ERR;
             }
 #ifdef DEBUG_FIND_CALIB_SYMBOL
@@ -489,7 +488,7 @@ GC_STATUS CalibStopSign::FindRed( const cv::Mat &img, cv::Mat1b &redMask, std::v
     }
     catch( cv::Exception &e )
     {
-        FILE_LOG( logERROR ) << "[FindSymbol::FindRed] " << e.what();
+        FILE_LOG( logERROR ) << "[CalibStopSign::FindRed] " << e.what();
         retVal = GC_EXCEPT;
     }
 
@@ -503,12 +502,12 @@ GC_STATUS CalibStopSign::FindCorners( const cv::Mat &mask, const std::vector< cv
     {
         if ( contour.size() < MIN_SYMBOL_CONTOUR_SIZE )
         {
-            FILE_LOG( logERROR ) << "[FindSymbol::FindSymbolCorners] Contour must have at least " << MIN_SYMBOL_CONTOUR_SIZE << " contour points";
+            FILE_LOG( logERROR ) << "[CalibStopSign::CalibStopSignCorners] Contour must have at least " << MIN_SYMBOL_CONTOUR_SIZE << " contour points";
             retVal = GC_ERR;
         }
         else if ( mask.empty() || CV_8UC1 != mask.type() )
         {
-            FILE_LOG( logERROR ) << "[FindSymbol::FindSymbolCorners] Invalid mask image";
+            FILE_LOG( logERROR ) << "[CalibStopSign::CalibStopSignCorners] Invalid mask image";
             retVal = GC_ERR;
         }
         else
@@ -609,7 +608,7 @@ GC_STATUS CalibStopSign::FindCorners( const cv::Mat &mask, const std::vector< cv
     }
     catch( cv::Exception &e )
     {
-        FILE_LOG( logERROR ) << "[FindSymbol::FindSymbolCorners] " << e.what();
+        FILE_LOG( logERROR ) << "[CalibStopSign::CalibStopSignCorners] " << e.what();
         retVal = GC_EXCEPT;
     }
 
@@ -666,7 +665,7 @@ GC_STATUS CalibStopSign::CalcCorners( const OctagonLines octoLines, std::vector<
     }
     catch( cv::Exception &e )
     {
-        FILE_LOG( logERROR ) << "[FindSymbol::CalcCorners] " << e.what();
+        FILE_LOG( logERROR ) << "[CalibStopSign::CalcCorners] " << e.what();
         retVal = GC_EXCEPT;
     }
 
@@ -686,7 +685,7 @@ GC_STATUS CalibStopSign::LineIntersection( const StopSignLine line1, const StopS
         double cross = d1.x * d2.y - d1.y * d2.x;
         if (abs(cross) < numeric_limits< double >::epsilon() )
         {
-            FILE_LOG( logERROR ) << "[FindSymbol::LineIntersection] Lines are parallel";
+            FILE_LOG( logERROR ) << "[CalibStopSign::LineIntersection] Lines are parallel";
             return GC_ERR;
         }
 
@@ -695,7 +694,7 @@ GC_STATUS CalibStopSign::LineIntersection( const StopSignLine line1, const StopS
     }
     catch( cv::Exception &e )
     {
-        FILE_LOG( logERROR ) << "[FindSymbol::LineIntersection] " << e.what();
+        FILE_LOG( logERROR ) << "[CalibStopSign::LineIntersection] " << e.what();
         retVal = GC_EXCEPT;
     }
 
@@ -709,12 +708,12 @@ GC_STATUS CalibStopSign::FindDiagonals( const cv::Mat &mask, const std::vector< 
     {
         if ( contour.size() < MIN_SYMBOL_CONTOUR_SIZE )
         {
-            FILE_LOG( logERROR ) << "[FindSymbol::FindSymbolCorners] Contour must have at least " << MIN_SYMBOL_CONTOUR_SIZE << " contour points";
+            FILE_LOG( logERROR ) << "[CalibStopSign::CalibStopSignCorners] Contour must have at least " << MIN_SYMBOL_CONTOUR_SIZE << " contour points";
             retVal = GC_ERR;
         }
         else if ( mask.empty() || CV_8UC1 != mask.type() )
         {
-            FILE_LOG( logERROR ) << "[FindSymbol::FindSymbolCorners] Invalid mask image";
+            FILE_LOG( logERROR ) << "[CalibStopSign::CalibStopSignCorners] Invalid mask image";
             retVal = GC_ERR;
         }
         else
@@ -797,7 +796,7 @@ GC_STATUS CalibStopSign::FindDiagonals( const cv::Mat &mask, const std::vector< 
     }
     catch( cv::Exception &e )
     {
-        FILE_LOG( logERROR ) << "[FindSymbol::FindDiagonals] " << e.what();
+        FILE_LOG( logERROR ) << "[CalibStopSign::FindDiagonals] " << e.what();
         retVal = GC_EXCEPT;
     }
 
@@ -881,7 +880,7 @@ GC_STATUS CalibStopSign::GetLineEndPoints( cv::Mat &mask, const cv::Rect rect, c
     }
     catch( cv::Exception &e )
     {
-        FILE_LOG( logERROR ) << "[FindSymbol::GetLineEndPoints] " << e.what();
+        FILE_LOG( logERROR ) << "[CalibStopSign::GetLineEndPoints] " << e.what();
         retVal = GC_EXCEPT;
     }
 
@@ -896,7 +895,7 @@ GC_STATUS CalibStopSign::GetNonZeroPoints( cv::Mat &img, std::vector< cv::Point 
     {
         if ( img.empty() )
         {
-            FILE_LOG( logERROR ) << "[FindSymbol::GetNonZeroPoints] Can not get points from an empty image";
+            FILE_LOG( logERROR ) << "[CalibStopSign::GetNonZeroPoints] Can not get points from an empty image";
             retVal = GC_ERR;
         }
         else
@@ -916,7 +915,7 @@ GC_STATUS CalibStopSign::GetNonZeroPoints( cv::Mat &img, std::vector< cv::Point 
     }
     catch( cv::Exception &e )
     {
-        FILE_LOG( logERROR ) << "[FindSymbol::GetNonZeroPoints] " << e.what();
+        FILE_LOG( logERROR ) << "[CalibStopSign::GetNonZeroPoints] " << e.what();
         retVal = GC_EXCEPT;
     }
 
@@ -930,7 +929,7 @@ GC_STATUS CalibStopSign::PixelToWorld( const Point2d ptPixel, Point2d &ptWorld )
     {
         if ( matHomogPixToWorld.empty() )
         {
-            FILE_LOG( logERROR ) << "[FindSymbol::PixelToWorld] No calibration for pixel to world conversion";
+            FILE_LOG( logERROR ) << "[CalibStopSign::PixelToWorld] No calibration for pixel to world conversion";
             retVal = GC_ERR;
         }
         else
@@ -943,7 +942,7 @@ GC_STATUS CalibStopSign::PixelToWorld( const Point2d ptPixel, Point2d &ptWorld )
     }
     catch( Exception &e )
     {
-        FILE_LOG( logERROR ) << "[FindSymbol::PixelToWorld] " << e.what();
+        FILE_LOG( logERROR ) << "[CalibStopSign::PixelToWorld] " << e.what();
         retVal = GC_EXCEPT;
     }
 
@@ -957,7 +956,7 @@ GC_STATUS CalibStopSign::WorldToPixel( const Point2d ptWorld, Point2d &ptPixel )
     {
         if ( matHomogWorldToPix.empty() )
         {
-            FILE_LOG( logERROR ) << "[FindSymbol::WorldToPixel]"
+            FILE_LOG( logERROR ) << "[CalibStopSign::WorldToPixel]"
                                     "No calibration for world to pixel conversion";
             retVal = GC_ERR;
         }
@@ -971,7 +970,7 @@ GC_STATUS CalibStopSign::WorldToPixel( const Point2d ptWorld, Point2d &ptPixel )
     }
     catch( Exception &e )
     {
-        FILE_LOG( logERROR ) << "[FindSymbol::WorldToPixel] " << e.what();
+        FILE_LOG( logERROR ) << "[CalibStopSign::WorldToPixel] " << e.what();
         retVal = GC_EXCEPT;
     }
 
@@ -986,12 +985,12 @@ GC_STATUS CalibStopSign::DrawOverlay( const cv::Mat &img, cv::Mat &result, const
     {
         if ( matHomogPixToWorld.empty() || matHomogWorldToPix.empty() )
         {
-            FILE_LOG( logERROR ) << "[FindSymbol::DrawCalibration] System not calibrated";
+            FILE_LOG( logERROR ) << "[CalibStopSign::DrawCalibration] System not calibrated";
             retVal = GC_ERR;
         }
         else if ( img.empty() )
         {
-            FILE_LOG( logERROR ) << "[FindSymbol::DrawCalibration] Empty image";
+            FILE_LOG( logERROR ) << "[CalibStopSign::DrawCalibration] Empty image";
             retVal = GC_ERR;
         }
         else
@@ -1006,13 +1005,13 @@ GC_STATUS CalibStopSign::DrawOverlay( const cv::Mat &img, cv::Mat &result, const
             }
             else
             {
-                FILE_LOG( logERROR ) << "[FindSymbol::DrawCalibration] Invalid image type";
+                FILE_LOG( logERROR ) << "[CalibStopSign::DrawCalibration] Invalid image type";
                 retVal = GC_ERR;
             }
 
             if ( model.pixelPoints.empty() )
             {
-                FILE_LOG( logERROR ) << "[FindSymbol::DrawCalibration] No symbol points to draw";
+                FILE_LOG( logERROR ) << "[CalibStopSign::DrawCalibration] No symbol points to draw";
                 retVal = GC_ERR;
             }
             else if ( GC_OK == retVal )
@@ -1119,7 +1118,7 @@ GC_STATUS CalibStopSign::DrawOverlay( const cv::Mat &img, cv::Mat &result, const
     }
     catch( Exception &e )
     {
-        FILE_LOG( logERROR ) << "[FindSymbol::DrawCalibration] " << e.what();
+        FILE_LOG( logERROR ) << "[CalibStopSign::DrawCalibration] " << e.what();
         retVal = GC_EXCEPT;
     }
 
@@ -1127,10 +1126,6 @@ GC_STATUS CalibStopSign::DrawOverlay( const cv::Mat &img, cv::Mat &result, const
 }
 
 // helper functions
-static double EuclidianDistance( Point2d a, Point2d b )
-{
-    return sqrt( ( b.x - a.x ) * ( b.x - a.x ) + ( b.y - a.y ) * ( b.y - a.y ) );
-}
 static double elongation( Moments m )
 {
     double x = m.mu20 + m.mu02;

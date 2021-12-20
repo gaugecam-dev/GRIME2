@@ -39,9 +39,9 @@ public:
         lftBot( QPoint( 50, 100 ) )
     {}
 
-    LineSearchPoly( const QPoint tl, const QPoint rt,
-                    const QPoint rb, const QPoint lb ) :
-        lftTop( tl ), rgtTop( rt ), rgtBot( rb ), lftBot( lb )
+    LineSearchPoly( const QPoint lftTop, const QPoint rgtTop,
+                    const QPoint rgtBot, const QPoint lftBot ) :
+        lftTop( lftTop ), rgtTop( rgtTop ), rgtBot( rgtBot ), lftBot( lftBot )
     {}
 
     QPoint lftTop;
@@ -59,7 +59,8 @@ public:
                                    const bool useSearchROI, const QRect rectROI, std::string &json );
     int FormStopsignCalibJsonString( const std::string csvFilepath, const std::string jsonResultFilepath,
                                      const bool useSearchROI, const QRect rectROI,
-                                     const bool fromFacetLength, const double facetLength, std::string &json );
+                                     const bool fromFacetLength, const double facetLength,
+                                     const LineSearchPoly searchPoly, std::string &json );
 
     int TestAgainstFindLines( const QPoint pt, const QSize displaySize, const int capturePos,
                               const double scale, QPoint &ptCapture, QLine &lineOne );

@@ -89,7 +89,7 @@ public:
     CalibStopSign();
     GC_STATUS Load( const std::string jsonCalFilepath );
     GC_STATUS Save( const std::string jsonCalFilepath );
-    GC_STATUS Calibrate( const cv::Mat &img, const double octoSideLength );
+    GC_STATUS Calibrate( const cv::Mat &img, const double octoSideLength, std::vector< cv::Point > searchLineCorners );
     GC_STATUS PixelToWorld( const cv::Point2d ptPixel, cv::Point2d &ptWorld );
     GC_STATUS WorldToPixel( const cv::Point2d ptWorld, cv::Point2d &ptPixel );
     GC_STATUS DrawOverlay( const cv::Mat &img, cv::Mat &result, const bool drawCalib, const bool drawMoveROIs, const bool drawSearchROI );
@@ -118,10 +118,8 @@ private:
     GC_STATUS CalcCorners( const OctagonLines octoLines, std::vector< cv::Point2d > &symbolCorners );
     GC_STATUS CalcOctoWorldPoints( const double sideLength, std::vector< cv::Point2d > &pts );
     GC_STATUS CalcMoveSearchROI( const cv::Size imgSz, const std::vector< cv::Point2d > symbolCorners, cv::Rect &rect );
-    GC_STATUS CalcSearchLines( const cv::Mat &img, const cv::Point lftTop, const cv::Point lftBot,
-                               const cv::Point rgtTop, const cv::Point rgtBot, std::vector< LineEnds > &searchLines );
+    GC_STATUS CalcSearchLines( const cv::Mat &img, const std::vector< cv::Point > searchLineCorners, std::vector< LineEnds > &searchLines );
     GC_STATUS Calibrate( const std::vector< cv::Point2d > &pixelPts, const std::vector< cv::Point2d > &worldPts );
-    GC_STATUS CalcPointOnLine( const StopSignLine linePts, const double dist, cv::Point2d &pt );
 };
 
 } // namespace gc

@@ -16,7 +16,11 @@ public:
         drawCalib( false ),
         drawMoveSearchROIs( false ),
         drawWaterLineSearchROI( false ),
-        targetSearchROI( cv::Rect( -1, -1, -1, -1 ) )
+        targetSearchROI( cv::Rect( -1, -1, -1, -1 ) ),
+        lineSearch_lftTop( cv::Point( -1, -1 ) ),
+        lineSearch_rgtTop( cv::Point( -1, -1 ) ),
+        lineSearch_lftBot( cv::Point( -1, -1 ) ),
+        lineSearch_rgtBot( cv::Point( -1, -1 ) )
     {}
 
     void clear()
@@ -29,6 +33,10 @@ public:
         drawMoveSearchROIs = false;
         drawWaterLineSearchROI = false;
         targetSearchROI = cv::Rect( -1, -1, -1, -1 );
+        lineSearch_lftTop = cv::Point( -1, -1 );
+        lineSearch_rgtTop = cv::Point( -1, -1 );
+        lineSearch_lftBot = cv::Point( -1, -1 );
+        lineSearch_rgtBot = cv::Point( -1, -1 );
     }
 
     string calibType;
@@ -39,6 +47,10 @@ public:
     bool drawMoveSearchROIs;
     bool drawWaterLineSearchROI;
     cv::Rect targetSearchROI;
+    cv::Point lineSearch_lftTop;
+    cv::Point lineSearch_rgtTop;
+    cv::Point lineSearch_lftBot;
+    cv::Point lineSearch_rgtBot;
 
     friend std::ostream &operator<<( std::ostream &out, const CalibExecParams &params ) ;
 };

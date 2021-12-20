@@ -81,6 +81,7 @@ private slots:
     void on_tableAddRow( const string row_strings );
     void on_actionSaveVideo_triggered();
     void on_pushButton_visionCalibrate_clicked();
+    void on_pushButton_resetSearchRegion_clicked();
     void on_toolButton_calibVisionTarget_csv_browse_clicked();
     void on_toolButton_calibVisionResult_json_browse_clicked();
     void on_toolButton_findLineTopFolder_browse_clicked();
@@ -153,8 +154,8 @@ private:
     void UpdatePixmapTarget();
     void UpdateCalibType();
     void UpdateCalibSearchRegion();
-//    void TestAgainstRubberBands( QPoint pt );
-//    void AdjustPointRubberBand();
+    void UpdateRegionButton();
+    void UpdateRulerMeasurement();
     int ReadSettings( const QString filepath = "" );
     int WriteSettings(const QString filepath = "" );
     size_t GetImagesPathsFromFolder(  const QString strPath );
@@ -163,7 +164,6 @@ private:
     void ClearTable();
     int InitTable( const vector< string > headings );
     int AddRow( const string row_string );
-    // int FormCalibJsonString( string &json );
 };
 
 #endif // MAINWINDOW_H

@@ -240,7 +240,7 @@ void MainWindow::createConnections()
     connect( ui->actionToggleControls, &QAction::toggled, this, &MainWindow::UpdateGUIEnables );
     connect( ui->radioButton_calibBowtie, &QRadioButton::toggled, this, &MainWindow::UpdateCalibType );
     connect( ui->radioButton_stopsignFromFile, &QRadioButton::toggled, this, &MainWindow::UpdateCalibType );
-    connect( ui->checkBox_calibSearchROI, &QRadioButton::toggled, this, &MainWindow::UpdateCalibSearchRegion );
+    connect( ui->radioButton_calibSearchROI, &QRadioButton::toggled, this, &MainWindow::UpdateCalibSearchRegion );
 
     connect( this, SIGNAL( sig_visAppMessage(QString) ), this, SLOT( do_visAppMessage(QString) ) );
     connect( this, SIGNAL( sig_updateProgess(int) ),     this, SLOT( do_updateProgress(int) ) );
@@ -333,6 +333,21 @@ int MainWindow::ReadSettings( const QString filepath )
         m_rectROI.setWidth( pSettings->value( "roiWidth", 100 ).toInt() );
         m_rectROI.setHeight( pSettings->value( "roiHeight", 100 ).toInt() );
 
+        int x1 = pSettings->value( "lineOneX1", 10 ).toInt();
+        int y1 = pSettings->value( "lineOneY1", 10 ).toInt();
+        int x2 = pSettings->value( "lineOneX2", 120 ).toInt();
+        int y2 = pSettings->value( "lineOneY2", 120 ).toInt();
+        m_lineOne = QLine( QPoint( x1, y1 ), QPoint( x2, y2 ) );
+
+        m_searchPolyImage.lftTop.setX( pSettings->value( "polyLftTopX", 10 ).toInt() );
+        m_searchPolyImage.lftTop.setY( pSettings->value( "polyLftTopY", 10 ).toInt() );
+        m_searchPolyImage.rgtTop.setX( pSettings->value( "polyRgtTopX", 120 ).toInt() );
+        m_searchPolyImage.rgtTop.setY( pSettings->value( "polyRgtTopY", 10 ).toInt() );
+        m_searchPolyImage.lftBot.setX( pSettings->value( "polyLftBotX", 120 ).toInt() );
+        m_searchPolyImage.lftBot.setY( pSettings->value( "polyLftBotY", 120 ).toInt() );
+        m_searchPolyImage.rgtBot.setX( pSettings->value( "polyRgtBotX", 10 ).toInt() );
+        m_searchPolyImage.rgtBot.setY( pSettings->value( "polyRgtBotY", 120 ).toInt() );
+
         m_folderLoadImages = pSettings->value( "loadFolder", "." ).toString();
         m_folderSaveImages = pSettings->value( "saveFolder", "." ).toString();
 
@@ -343,9 +358,10 @@ int MainWindow::ReadSettings( const QString filepath )
         pSettings->beginGroup( "Vision" );
         ui->lineEdit_calibVisionTarget_csv->setText( pSettings->value( "calibCSVFileIn", QString( __CONFIGURATION_FOLDER.c_str() ) + "calibration_target_world_coordinates.csv" ).toString() );
         ui->lineEdit_calibVisionResult_json->setText( pSettings->value( "calibJsonFileOut", QString( __CONFIGURATION_FOLDER.c_str() ) + "calib.json" ).toString() );
-        // TODO: Replace hard set to bow tie when other methods are implemented
-        ui->radioButton_calibBowtie->setChecked( true );
-        // pSettings->value( "calibTypeIsBowtie", true ).toBool() ? ui->radioButton_calibBowtie->setChecked( true ) : ui->radioButton_calibStopSign->setChecked( true );
+        pSettings->value( "calibTypeIsBowtie", true ).toBool() ? ui->radioButton_calibBowtie->setChecked( true ) : ui->radioButton_calibStopSign->setChecked( true );
+        pSettings->value( "useWholeImage", true ).toBool() ? ui->radioButton_calibSearchWholeImage->setChecked( true ) : ui->radioButton_calibSearchROI->setChecked( true );
+        pSettings->value( "useFacetLength", true ).toBool() ? ui->radioButton_stopsignFacetLength->setChecked( true ) : ui->radioButton_stopsignFromFile->setChecked( true );
+        ui->doubleSpinBox_stopSignFacetLength->setValue( pSettings->value( "stopSignFacetLength", 7.1875 ).toDouble() );
 
         ui->lineEdit_findLineTopFolder->setText( pSettings->value( "findLineFolder", QString( __CONFIGURATION_FOLDER.c_str() ) ).toString() );
         ui->lineEdit_findLine_resultCSVFile->setText( pSettings->value( "findLineCSVOutPath", QString( __CONFIGURATION_FOLDER.c_str() ) + "waterlevel.csv" ).toString() );
@@ -408,6 +424,20 @@ int MainWindow::WriteSettings( const QString filepath )
     pSettings->setValue( "roiWidth", m_rectROI.width() );
     pSettings->setValue( "roiHeight", m_rectROI.height() );
 
+    pSettings->setValue( "lineOneX1", m_lineOne.p1().x() );
+    pSettings->setValue( "lineOneY1", m_lineOne.p1().y() );
+    pSettings->setValue( "lineOneX2", m_lineOne.p2().x() );
+    pSettings->setValue( "lineOneY2", m_lineOne.p2().y() );
+
+    pSettings->setValue( "polyLftTopX", m_searchPolyImage.lftTop.x() );
+    pSettings->setValue( "polyLftTopY", m_searchPolyImage.lftTop.y() );
+    pSettings->setValue( "polyRgtTopX", m_searchPolyImage.rgtTop.x() );
+    pSettings->setValue( "polyRgtTopY", m_searchPolyImage.rgtTop.y() );
+    pSettings->setValue( "polyLftBotX", m_searchPolyImage.lftBot.x() );
+    pSettings->setValue( "polyLftBotY", m_searchPolyImage.lftBot.y() );
+    pSettings->setValue( "polyRgtBotX", m_searchPolyImage.rgtBot.x() );
+    pSettings->setValue( "polyRgtBotY", m_searchPolyImage.rgtBot.y() );
+
     pSettings->setValue( "loadFolder", m_folderLoadImages );
     pSettings->setValue( "saveFolder", m_folderSaveImages );
 
@@ -419,6 +449,10 @@ int MainWindow::WriteSettings( const QString filepath )
     pSettings->setValue( "calibCSVFileIn", ui->lineEdit_calibVisionTarget_csv->text() );
     pSettings->setValue( "calibJsonFileOut", ui->lineEdit_calibVisionResult_json->text() );
     pSettings->setValue( "calibTypeIsBowtie", ui->radioButton_calibBowtie->isChecked() );
+    pSettings->setValue( "useWholeImage", ui->radioButton_calibSearchWholeImage->isChecked() );
+    pSettings->setValue( "useFacetLength", ui->radioButton_stopsignFacetLength->isChecked() );
+    pSettings->setValue( "stopSignFacetLength", ui->doubleSpinBox_stopSignFacetLength->value() );
+
     pSettings->setValue( "findLineFolder", ui->lineEdit_findLineTopFolder->text() );
     pSettings->setValue( "findLineCSVOutPath", ui->lineEdit_findLine_resultCSVFile->text() );
     pSettings->setValue( "folderOfImages", ui->radioButton_folderOfImages->isChecked() );
@@ -454,11 +488,11 @@ void MainWindow::ZoomTo( const int width, const int height )
 }
 void MainWindow::UpdateCalibSearchRegion()
 {
-    if ( ui->checkBox_calibSearchROI->isChecked() )
+    if ( ui->radioButton_calibSearchROI->isChecked() )
     {
         QString msg;
         ui->label_calibCurrentROI->setText(
-                    msg.asprintf( "x=%d y=%d w=%d h=%d", m_rectROI.x(), m_rectROI.y(),
+                    msg.asprintf( "x=%d y=%d\nw=%d h=%d", m_rectROI.x(), m_rectROI.y(),
                                  m_rectROI.width(), m_rectROI.height() ) );
     }
     else
@@ -616,6 +650,17 @@ void MainWindow::ScaleImage()
         m_pRubberBand->setGeometry( m_rectRubberBand );
         m_pRubberBand->show();
     }
+    else if ( ui->actionSetSearchPoly->isChecked() )
+    {
+        m_searchPolyGUI = LineSearchPoly( QPoint( qRound( static_cast< double >( m_searchPolyImage.lftTop.x() ) * m_scaleFactor ),
+                                                  qRound( static_cast< double >( m_searchPolyImage.lftTop.y() ) * m_scaleFactor ) ),
+                                          QPoint( qRound( static_cast< double >( m_searchPolyImage.rgtTop.x() ) * m_scaleFactor ),
+                                                  qRound( static_cast< double >( m_searchPolyImage.rgtTop.y() ) * m_scaleFactor ) ),
+                                          QPoint( qRound( static_cast< double >( m_searchPolyImage.rgtBot.x() ) * m_scaleFactor ),
+                                                  qRound( static_cast< double >( m_searchPolyImage.rgtBot.y() ) * m_scaleFactor ) ),
+                                          QPoint( qRound( static_cast< double >( m_searchPolyImage.lftBot.x() ) * m_scaleFactor ),
+                                                  qRound( static_cast< double >( m_searchPolyImage.lftBot.y() ) * m_scaleFactor ) ) );
+    }
     UpdatePixmapTarget();
 }
 
@@ -631,10 +676,7 @@ void MainWindow::paintEvent( QPaintEvent * )
 void MainWindow::on_pushButton_clearTable_clicked() { ClearTable(); }
 void MainWindow::on_tableAddRow( const string row_string ) { AddRow( row_string ); }
 void MainWindow::on_updateProgress( const int value ) { emit sig_updateProgess( value ); }
-void MainWindow::do_updateProgress( const int value )
-{
-    ui->progressBar_imageLoad->setValue( std::min( 100, std::max( 0, value ) ) );
-}
+void MainWindow::do_updateProgress( const int value ) { ui->progressBar_imageLoad->setValue( std::min( 100, std::max( 0, value ) ) ); }
 void MainWindow::on_visAppMessage(string msg) { emit sig_visAppMessage( QString::fromStdString( msg ) ); }
 void MainWindow::do_visAppMessage(QString msg)
 {
@@ -743,38 +785,7 @@ void MainWindow::mouseMoveEvent( QMouseEvent *pEvent )
             {
                 UpdatePixmap();
             }
-            int nXpix1 = qRound( static_cast< double >( m_lineOne.p1().x() ) / m_scaleFactor );
-            int nYpix1 = qRound( static_cast< double >( m_lineOne.p1().y() ) / m_scaleFactor );
-            int nXpix2 = qRound( static_cast< double >( m_lineOne.p2().x() ) / m_scaleFactor );
-            int nYpix2 = qRound( static_cast< double >( m_lineOne.p2().y() ) / m_scaleFactor );
-            double lenPix = Distance( nXpix1, nYpix1, nXpix2, nYpix2 );
-
-            Point2d world1, world2;
-            GC_STATUS retVal1 = m_visApp.PixelToWorld( Point2d( nXpix1, nYpix1 ), world1 );
-            if ( GC_OK != retVal1 )
-            {
-                world1 = Point2d( -9999999.9, -9999999.9 );
-            }
-            GC_STATUS retVal2 = m_visApp.PixelToWorld( Point2d( nXpix2, nYpix2 ), world2 );
-            if ( GC_OK != retVal2 )
-            {
-                world2 = Point2d( -9999999.9, -9999999.9 );
-            }
-            double lenWorld = ( GC_OK != retVal1 || GC_OK != retVal2 ) ? -9999999.9 :  Distance( world1.x, world1.y, world2.x, world2.y );
-
-            ui->textEdit_measures->setText( "PIXEL" );
-            QString strMsg = QString( "X1=" ) + QString::number( nXpix1 ) + " Y1=" + QString::number( nYpix1 );
-            strMsg += QString( " X2=" ) + QString::number( nXpix2 ) + " Y2=" + QString::number( nYpix2 );
-            ui->textEdit_measures->append( strMsg );
-            strMsg = QString( "Length=" ) + QString::number( lenPix );
-            ui->textEdit_measures->append( strMsg );
-            ui->textEdit_measures->append( "WORLD" );
-            strMsg = QString( "X1=" ) + QString::number( world1.x ) + " Y1=" + QString::number( world1.y );
-            ui->textEdit_measures->append( strMsg );
-            strMsg = QString( "X2=" ) + QString::number( world2.x ) + " Y2=" + QString::number( world2.y );
-            ui->textEdit_measures->append( strMsg );
-            strMsg = QString( "Length=" ) + QString::number( lenWorld );
-            ui->textEdit_measures->append( strMsg );
+            UpdateRulerMeasurement();
         }
     }
 }
@@ -907,33 +918,70 @@ void MainWindow::on_actionZoom100_triggered()
 {
     ui->horizontalSlider_zoom->setValue( 100 );
 }
-void MainWindow::on_actionSetROI_toggled( bool )
+void MainWindow::UpdateRulerMeasurement()
 {
+    int nXpix1 = qRound( static_cast< double >( m_lineOne.p1().x() ) / m_scaleFactor );
+    int nYpix1 = qRound( static_cast< double >( m_lineOne.p1().y() ) / m_scaleFactor );
+    int nXpix2 = qRound( static_cast< double >( m_lineOne.p2().x() ) / m_scaleFactor );
+    int nYpix2 = qRound( static_cast< double >( m_lineOne.p2().y() ) / m_scaleFactor );
+    double lenPix = Distance( nXpix1, nYpix1, nXpix2, nYpix2 );
+
+    Point2d world1, world2;
+    GC_STATUS retVal1 = m_visApp.PixelToWorld( Point2d( nXpix1, nYpix1 ), world1 );
+    if ( GC_OK != retVal1 )
+    {
+        world1 = Point2d( -9999999.9, -9999999.9 );
+    }
+    GC_STATUS retVal2 = m_visApp.PixelToWorld( Point2d( nXpix2, nYpix2 ), world2 );
+    if ( GC_OK != retVal2 )
+    {
+        world2 = Point2d( -9999999.9, -9999999.9 );
+    }
+    double lenWorld = ( GC_OK != retVal1 || GC_OK != retVal2 ) ? -9999999.9 :  Distance( world1.x, world1.y, world2.x, world2.y );
+
+    ui->textEdit_measures->setText( "PIXEL" );
+    QString strMsg = QString( "X1=" ) + QString::number( nXpix1 ) + " Y1=" + QString::number( nYpix1 );
+    ui->textEdit_measures->append( strMsg );
+    strMsg = QString( "X2=" ) + QString::number( nXpix2 ) + " Y2=" + QString::number( nYpix2 );
+    ui->textEdit_measures->append( strMsg );
+    strMsg = QString( "Length=" ) + QString::number( lenPix );
+    ui->textEdit_measures->append( strMsg );
+    ui->textEdit_measures->append( "WORLD" );
+    strMsg = QString( "X1=" ) + QString::number( world1.x ) + " Y1=" + QString::number( world1.y );
+    ui->textEdit_measures->append( strMsg );
+    strMsg = QString( "X2=" ) + QString::number( world2.x ) + " Y2=" + QString::number( world2.y );
+    ui->textEdit_measures->append( strMsg );
+    strMsg = QString( "Length=" ) + QString::number( lenWorld );
+    ui->textEdit_measures->append( strMsg );
+}
+void MainWindow::UpdateRegionButton()
+{
+    bool enableResetRegionButton = true;
     if ( ui->actionSetROI->isChecked() )
     {
         ui->actionSetRuler->setChecked( false );
         ui->actionSetSearchPoly->setChecked( false );
     }
-    ScaleImage();
-}
-void MainWindow::on_actionSetSearchPoly_toggled( bool )
-{
-    if ( ui->actionSetSearchPoly->isChecked() )
+    else if ( ui->actionSetSearchPoly->isChecked() )
     {
         ui->actionSetROI->setChecked( false );
         ui->actionSetRuler->setChecked( false );
     }
-    UpdatePixmapTarget();
-}
-void MainWindow::on_actionSetRuler_toggled( bool )
-{
-    if ( ui->actionSetRuler->isChecked() )
+    else if ( ui->actionSetRuler->isChecked() )
     {
         ui->actionSetROI->setChecked( false );
         ui->actionSetSearchPoly->setChecked( false );
     }
-    UpdatePixmapTarget();
+    else
+    {
+        enableResetRegionButton = false;
+    }
+    ui->pushButton_resetSearchRegion->setEnabled( enableResetRegionButton );
+    ScaleImage();
 }
+void MainWindow::on_actionSetROI_toggled( bool ) { UpdateRegionButton(); }
+void MainWindow::on_actionSetSearchPoly_toggled( bool ) { UpdateRegionButton(); }
+void MainWindow::on_actionSetRuler_toggled( bool ) { UpdateRegionButton(); }
 void MainWindow::on_actionImageLoad_triggered()
 {
     QString filters = "Image Files (*.png *.jpg *.bmp)";
@@ -1072,15 +1120,16 @@ void MainWindow::on_pushButton_visionCalibrate_clicked()
     {
         ret = m_roiAdjust.FormBowtieCalibJsonString( ui->lineEdit_calibVisionTarget_csv->text().toStdString(),
                                                      ui->lineEdit_calibVisionResult_json->text().toStdString(),
-                                                     ui->checkBox_calibSearchROI->isChecked(), m_rectROI, jsonControlStr );
+                                                     ui->radioButton_calibSearchROI->isChecked(), m_rectROI, jsonControlStr );
     }
     else if ( ui->radioButton_calibStopSign->isChecked() )
     {
         ret = m_roiAdjust.FormStopsignCalibJsonString( ui->lineEdit_calibVisionTarget_csv->text().toStdString(),
                                                        ui->lineEdit_calibVisionResult_json->text().toStdString(),
-                                                       ui->checkBox_calibSearchROI->isChecked(), m_rectROI,
+                                                       ui->radioButton_calibSearchROI->isChecked(), m_rectROI,
                                                        ui->radioButton_stopsignFacetLength->isChecked(),
-                                                       ui->doubleSpinBox_stopSignFacetLength->value(), jsonControlStr );
+                                                       ui->doubleSpinBox_stopSignFacetLength->value(),
+                                                       m_searchPolyImage, jsonControlStr );
     }
     else
     {
@@ -1128,6 +1177,38 @@ void MainWindow::on_toolButton_calibVisionResult_json_browse_clicked()
     else
     {
         ui->lineEdit_calibVisionResult_json->setText( strFullPath );
+    }
+}
+void MainWindow::on_pushButton_resetSearchRegion_clicked()
+{
+    if ( ui->actionSetROI->isChecked() )
+    {
+        Size imgSize;
+        m_visApp.GetImageSize( imgSize );
+        m_rectROI = QRect( imgSize.width / 10, imgSize.height / 10, imgSize.width >> 2, imgSize.height >> 2 );
+        ScaleImage();
+    }
+    else if ( ui->actionSetSearchPoly->isChecked() )
+    {
+        Size imgSize;
+        m_visApp.GetImageSize( imgSize );
+        int width = imgSize.width >> 1;
+        int height = imgSize.height >> 1;
+        int lft = imgSize.width / 10;
+        int top = imgSize.height / 10;
+        m_searchPolyImage = LineSearchPoly( QPoint( lft, top ), QPoint( lft + width, top ),
+                                            QPoint( lft + width, top + height ), QPoint( lft, top + height ) );
+        ScaleImage();
+    }
+    else if ( ui->actionSetRuler->isChecked() )
+    {
+        Size imgSize;
+        m_visApp.GetImageSize( imgSize );
+        m_lineOne = QLine( QPoint( m_scaleFactor * imgSize.width / 10, m_scaleFactor * imgSize.height / 10 ),
+                           QPoint( m_scaleFactor * ( imgSize.width / 10 + ( imgSize.width >> 1 ) ),
+                                   m_scaleFactor * ( imgSize.height / 10 + ( imgSize.height >> 1 ) ) ) );
+        UpdatePixmap();
+        UpdateRulerMeasurement();
     }
 }
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -70,6 +70,15 @@ GC_STATUS CalibExecutive::Calibrate( const std::string calibTargetImagePath, con
         paramsCurrent.targetSearchROI.width = top_level.get< int >( "targetRoi_width", -1 );
         paramsCurrent.targetSearchROI.height = top_level.get< int >( "targetRoi_height", -1 );
 
+        paramsCurrent.lineSearch_lftTop.x = top_level.get< int >( "searchPoly_lftTop_x", -1 );
+        paramsCurrent.lineSearch_lftTop.y = top_level.get< int >( "searchPoly_lftTop_y", -1 );
+        paramsCurrent.lineSearch_rgtTop.x = top_level.get< int >( "searchPoly_rgtTop_x", -1 );
+        paramsCurrent.lineSearch_rgtTop.y = top_level.get< int >( "searchPoly_rgtTop_y", -1 );
+        paramsCurrent.lineSearch_lftBot.x = top_level.get< int >( "searchPoly_lftBot_x", -1 );
+        paramsCurrent.lineSearch_lftBot.y = top_level.get< int >( "searchPoly_lftBot_y", -1 );
+        paramsCurrent.lineSearch_rgtBot.x = top_level.get< int >( "searchPoly_rgtBot_x", -1 );
+        paramsCurrent.lineSearch_rgtBot.y = top_level.get< int >( "searchPoly_rgtBot_y", -1 );
+
         if ( "BowTie" == paramsCurrent.calibType )
         {
             retVal = CalibrateBowTie( calibTargetImagePath );
@@ -211,7 +220,12 @@ GC_STATUS CalibExecutive::CalibrateStopSign( const string imgFilepath )
         }
         else
         {
-            retVal = stopSign.Calibrate( searchImg, paramsCurrent.stopSignFacetLength );
+            vector< Point > searchLineCorners;
+            searchLineCorners.push_back( paramsCurrent.lineSearch_lftTop );
+            searchLineCorners.push_back( paramsCurrent.lineSearch_rgtTop );
+            searchLineCorners.push_back( paramsCurrent.lineSearch_lftBot );
+            searchLineCorners.push_back( paramsCurrent.lineSearch_rgtBot );
+            retVal = stopSign.Calibrate( searchImg, paramsCurrent.stopSignFacetLength, searchLineCorners );
             if ( GC_OK == retVal )
             {
                 retVal = stopSign.Save( paramsCurrent.calibResultJsonFilepath );

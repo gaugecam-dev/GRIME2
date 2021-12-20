@@ -1102,50 +1102,131 @@ metadata</string>
                  </layout>
                 </item>
                 <item>
-                 <widget class="QGroupBox" name="groupBox_2">
-                  <property name="title">
-                   <string>Target search region</string>
-                  </property>
-                  <layout class="QHBoxLayout" name="horizontalLayout_3">
-                   <item>
-                    <widget class="QCheckBox" name="checkBox_calibSearchROI">
-                     <property name="sizePolicy">
-                      <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                       <horstretch>0</horstretch>
-                       <verstretch>0</verstretch>
-                      </sizepolicy>
-                     </property>
-                     <property name="toolTip">
-                      <string>Search only currently specified region of interest (ROI)</string>
-                     </property>
-                     <property name="text">
-                      <string>Use ROI</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QLabel" name="label_calibCurrentROI">
-                     <property name="sizePolicy">
-                      <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
-                       <horstretch>0</horstretch>
-                       <verstretch>0</verstretch>
-                      </sizepolicy>
-                     </property>
-                     <property name="text">
-                      <string>Whole image</string>
-                     </property>
-                     <property name="alignment">
-                      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-                     </property>
-                    </widget>
-                   </item>
-                  </layout>
-                 </widget>
+                 <layout class="QHBoxLayout" name="horizontalLayout_24">
+                  <item>
+                   <widget class="QGroupBox" name="groupBox_2">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="title">
+                     <string>Target search region</string>
+                    </property>
+                    <layout class="QHBoxLayout" name="horizontalLayout_3">
+                     <item>
+                      <layout class="QVBoxLayout" name="verticalLayout_14">
+                       <item>
+                        <widget class="QRadioButton" name="radioButton_calibSearchWholeImage">
+                         <property name="sizePolicy">
+                          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                           <horstretch>0</horstretch>
+                           <verstretch>0</verstretch>
+                          </sizepolicy>
+                         </property>
+                         <property name="font">
+                          <font>
+                           <pointsize>9</pointsize>
+                          </font>
+                         </property>
+                         <property name="toolTip">
+                          <string>Search only currently specified region of interest (ROI)</string>
+                         </property>
+                         <property name="text">
+                          <string>Use whole image</string>
+                         </property>
+                         <property name="checked">
+                          <bool>true</bool>
+                         </property>
+                        </widget>
+                       </item>
+                       <item>
+                        <widget class="QRadioButton" name="radioButton_calibSearchROI">
+                         <property name="sizePolicy">
+                          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                           <horstretch>0</horstretch>
+                           <verstretch>0</verstretch>
+                          </sizepolicy>
+                         </property>
+                         <property name="font">
+                          <font>
+                           <pointsize>9</pointsize>
+                          </font>
+                         </property>
+                         <property name="toolTip">
+                          <string>Search only currently specified region of interest (ROI)</string>
+                         </property>
+                         <property name="text">
+                          <string>Use ROI</string>
+                         </property>
+                        </widget>
+                       </item>
+                      </layout>
+                     </item>
+                     <item>
+                      <widget class="QLabel" name="label_calibCurrentROI">
+                       <property name="text">
+                        <string>Whole image</string>
+                       </property>
+                       <property name="alignment">
+                        <set>Qt::AlignCenter</set>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </widget>
+                  </item>
+                  <item>
+                   <layout class="QVBoxLayout" name="verticalLayout_12">
+                    <item>
+                     <spacer name="verticalSpacer">
+                      <property name="orientation">
+                       <enum>Qt::Vertical</enum>
+                      </property>
+                      <property name="sizeType">
+                       <enum>QSizePolicy::Preferred</enum>
+                      </property>
+                      <property name="sizeHint" stdset="0">
+                       <size>
+                        <width>20</width>
+                        <height>40</height>
+                       </size>
+                      </property>
+                     </spacer>
+                    </item>
+                    <item>
+                     <widget class="QPushButton" name="pushButton_resetSearchRegion">
+                      <property name="enabled">
+                       <bool>false</bool>
+                      </property>
+                      <property name="sizePolicy">
+                       <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                        <horstretch>0</horstretch>
+                        <verstretch>0</verstretch>
+                       </sizepolicy>
+                      </property>
+                      <property name="font">
+                       <font>
+                        <pointsize>9</pointsize>
+                       </font>
+                      </property>
+                      <property name="toolTip">
+                       <string>Resets the calibration search region so that it is visible in the current field of view</string>
+                      </property>
+                      <property name="text">
+                       <string>Reset search region</string>
+                      </property>
+                     </widget>
+                    </item>
+                   </layout>
+                  </item>
+                 </layout>
                 </item>
                 <item>
                  <widget class="QGroupBox" name="groupBox_stopsignCalibMethods">
                   <property name="title">
-                   <string>Stop sign calib method</string>
+                   <string>Stop sign world coords.</string>
                   </property>
                   <layout class="QHBoxLayout" name="horizontalLayout_23">
                    <item>
@@ -1194,6 +1275,9 @@ metadata</string>
                     <widget class="QDoubleSpinBox" name="doubleSpinBox_stopSignFacetLength">
                      <property name="enabled">
                       <bool>true</bool>
+                     </property>
+                     <property name="decimals">
+                      <number>5</number>
                      </property>
                      <property name="minimum">
                       <double>0.000000000000000</double>
@@ -1603,7 +1687,7 @@ p, li { white-space: pre-wrap; }
     <string>SetROI</string>
    </property>
    <property name="toolTip">
-    <string>Toggle ROI selection rectangle</string>
+    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Toggle ROI selection rectangle.&lt;/p&gt;&lt;p&gt;If it is not visible when toggled,&lt;/p&gt;&lt;p&gt;press the &amp;quot;Reset calib ROI&amp;quot; button&lt;/p&gt;&lt;p&gt;to reset it to a visible position.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
    </property>
   </action>
   <action name="actionImageLoad">
@@ -1711,7 +1795,7 @@ p, li { white-space: pre-wrap; }
     <string>SetSearchPoly</string>
    </property>
    <property name="toolTip">
-    <string>Toggle search polygon selection tool</string>
+    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Toggle search polygon selection tool.&lt;br/&gt;If it is not visible when toggled,&lt;/p&gt;&lt;p&gt;press the &amp;quot;Reset search Poly&amp;quot; button&lt;/p&gt;&lt;p&gt;to reset it to a visible position.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
    </property>
   </action>
  </widget>

@@ -318,13 +318,22 @@ int RoiAdjust::FormBowtieCalibJsonString( const std::string csvFilepath, const s
         json += "\"targetRoi_width\": -1, ";
         json += "\"targetRoi_height\": -1, ";
     }
+    json += "\"searchPoly_lftTop_x\": -1, ";
+    json += "\"searchPoly_lftTop_y\": -1, ";
+    json += "\"searchPoly_rgtTop_x\": -1, ";
+    json += "\"searchPoly_rgtTop_y\": -1, ";
+    json += "\"searchPoly_lftBot_x\": -1, ";
+    json += "\"searchPoly_lftBot_y\": -1, ";
+    json += "\"searchPoly_rgtBot_x\": -1, ";
+    json += "\"searchPoly_rgtBot_y\": -1, ";
     json += "\"calibResult_json\": \"" + jsonResultFilepath + "\"}";
 
     return ret;
 }
 int RoiAdjust::FormStopsignCalibJsonString( const std::string csvFilepath, const std::string jsonResultFilepath,
                                             const bool useSearchROI, const QRect rectROI,
-                                            const bool fromFacetLength, const double facetLength, std::string &json )
+                                            const bool fromFacetLength, const double facetLength,
+                                            const LineSearchPoly searchPoly, std::string &json )
 {
     int ret = 0;
 
@@ -355,6 +364,14 @@ int RoiAdjust::FormStopsignCalibJsonString( const std::string csvFilepath, const
         json += "\"targetRoi_width\": -1, ";
         json += "\"targetRoi_height\": -1, ";
     }
+    json += "\"searchPoly_lftTop_x\": " + std::to_string( searchPoly.lftTop.x() ) + ", ";
+    json += "\"searchPoly_lftTop_y\": " + std::to_string( searchPoly.lftTop.y() ) + ", ";
+    json += "\"searchPoly_rgtTop_x\": " + std::to_string( searchPoly.rgtTop.x() ) + ", ";
+    json += "\"searchPoly_rgtTop_y\": " + std::to_string( searchPoly.rgtTop.y() ) + ", ";
+    json += "\"searchPoly_lftBot_x\": " + std::to_string( searchPoly.lftBot.x() ) + ", ";
+    json += "\"searchPoly_lftBot_y\": " + std::to_string( searchPoly.lftBot.y() ) + ", ";
+    json += "\"searchPoly_rgtBot_x\": " + std::to_string( searchPoly.rgtBot.x() ) + ", ";
+    json += "\"searchPoly_rgtBot_y\": " + std::to_string( searchPoly.rgtBot.y() ) + ", ";
     json += "\"calibResult_json\": \"" + jsonResultFilepath + "\"}";
 
     return ret;
