@@ -147,7 +147,34 @@ GC_STATUS CalibStopSign::Calibrate( const std::vector< cv::Point2d > &pixelPts, 
 
     return retVal;
 }
-GC_STATUS CalibStopSign::CalcSearchLines( const Mat &img, const vector< Point > searchLineCorners, std::vector< LineEnds > &searchLines )
+GC_STATUS CalibStopSign::GetLineEquation( const cv::Point2d pt1, const cv::Point2d pt2, double &slope, double &intercept )
+{
+    GC_STATUS retVal = GC_OK;
+
+    try
+    {
+        double deltaX = pt2.x - pt1.x;
+        double deltaY = pt2.y - pt1.y;
+        if ( numeric_limits< double >::epsilon() > deltaX )
+        {
+            FILE_LOG( logERROR ) << "[CalibStopSign::GetLineEquation] Invalid points: pt1 and pt2 cannot have the same value of X";
+            retVal = GC_ERR;
+        }
+        else
+        {
+            slope = deltaY / deltaX;
+            intercept = pt2.y - slope * pt2.x;
+        }
+    }
+    catch( Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[CalibStopSign::GetLineEquation] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+
+    return retVal;
+}
+GC_STATUS CalibStopSign::CalcSearchLines( const Mat &img, vector< Point > &searchLineCorners, std::vector< LineEnds > &searchLines )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -165,33 +192,46 @@ GC_STATUS CalibStopSign::CalcSearchLines( const Mat &img, const vector< Point > 
         }
         else
         {
-            Point lftTop, rgtTop, lftBot, rgtBot;
-//            sort( searchLineCorners.begin(), searchLineCorners.end(), []( Point const &a, Point const &b ) { return ( a.y < b.y ); } );
-//            lftTop = searchLineCorners[ searchLineCorners[ 0 ].x > searchLineCorners[ 1 ].x ? 1 : 0 ];
-//            rgtTop = searchLineCorners[ searchLineCorners[ 0 ].x > searchLineCorners[ 1 ].x ? 0 : 1 ];
-//            lftBot = searchLineCorners[ searchLineCorners[ 2 ].x > searchLineCorners[ 3 ].x ? 3 : 2 ];
-//            rgtBot = searchLineCorners[ searchLineCorners[ 2 ].x > searchLineCorners[ 3 ].x ? 2 : 3 ];
+            sort( searchLineCorners.begin(), searchLineCorners.end(), []( Point const &a, Point const &b ) { return ( a.y < b.y ); } );
 
-//            int widthTop = rgtTop.x - lftTop.x;
-//            int widthBot = rgtBot.x - lftBot.x;
-//            int heightLft = lftBot.y - lftTop.y;
-//            int heightRgt = rgtBot.y - rgtTop.y;
+            const Point lftTop = searchLineCorners[ searchLineCorners[ 0 ].x > searchLineCorners[ 1 ].x ? 1 : 0 ];
+            const Point rgtTop = searchLineCorners[ searchLineCorners[ 0 ].x > searchLineCorners[ 1 ].x ? 0 : 1 ];
+            const Point lftBot = searchLineCorners[ searchLineCorners[ 2 ].x > searchLineCorners[ 3 ].x ? 3 : 2 ];
+            const Point rgtBot = searchLineCorners[ searchLineCorners[ 2 ].x > searchLineCorners[ 3 ].x ? 2 : 3 ];
 
-//            double xIncTop = 1.0;
-//            double xIncBot = static_cast< double >( widthBot ) / static_cast< double >( widthTop );
-//            double yInc;
+            searchLines.clear();
+            searchLines.push_back( LineEnds( lftTop, lftBot ) );
 
-//            searchLines.clear();
-//            Point2d ptTop = lftTop;
-//            Point2d ptBot = lftBot;
-//            for ( int i = 0; i <= widthTop; ++i )
-//            {
-//                searchLines.push_back( LineEnds( ptTop, ptBot ) );
-//                ptTop.x += xIncTop;
-//                ptTop.y += yInc;
-//                ptBot.x += xIncBot;
-//                ptBot.y += yInc;
-//            }
+            int widthTop = rgtTop.x - lftTop.x;
+            int widthBot = rgtBot.x - lftBot.x;
+            int width = std::max( widthTop, widthBot );
+            double topInc = static_cast< double >( widthTop ) / static_cast< double >( width );
+            double botInc = static_cast< double >( widthBot ) / static_cast< double >( width );
+
+            double topX = static_cast< double >( lftTop.x );
+            double topY = static_cast< double >( lftTop.y );
+            double botX = static_cast< double >( lftBot.x );
+            double botY = static_cast< double >( lftBot.y );
+
+            double slopeTop, interceptTop;
+            retVal = GetLineEquation( lftTop, rgtTop, slopeTop, interceptTop );
+            if ( GC_OK == retVal )
+            {
+                double slopeBot, interceptBot;
+                retVal = GetLineEquation( lftBot, rgtBot, slopeBot, interceptBot );
+                if ( GC_OK == retVal )
+                {
+                    for ( int i = 0; i < width; ++i )
+                    {
+                        topX += topInc;
+                        botX += botInc;
+                        topY = slopeTop * topX + interceptTop;
+                        botY = slopeBot * botX + interceptBot;
+                        searchLines.push_back( LineEnds( Point2d( topX, topY ), Point2d( botX, botY ) ) );
+                    }
+                    searchLines.push_back( LineEnds( rgtTop, rgtBot ) );
+                }
+            }
         }
 
         return retVal;
@@ -227,8 +267,6 @@ GC_STATUS CalibStopSign::Load( const std::string jsonCalFilepath )
             property_tree::ptree ptreeCalib = ptreeTop.get_child( "PixelToWorld" );
 
             Point2d ptTemp;
-            size_t cols = ptreeCalib.get< size_t >( "columns", 2 );
-            size_t rows = ptreeCalib.get< size_t >( "rows", 4 );
             model.pixelPoints.clear();
             model.worldPoints.clear();
 
@@ -266,7 +304,7 @@ GC_STATUS CalibStopSign::Load( const std::string jsonCalFilepath )
             FILE_LOG( logINFO ) << "Columns=" << cols << " Rows=" << rows;
             FILE_LOG( logINFO ) << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~";
 #endif
-            if ( cols * rows != model.pixelPoints.size() )
+            if ( 5 > model.pixelPoints.size() )
             {
                 FILE_LOG( logERROR ) << "[CalibStopSign::Load] Invalid association point count";
                 retVal = GC_ERR;
@@ -1017,21 +1055,24 @@ GC_STATUS CalibStopSign::DrawOverlay( const cv::Mat &img, cv::Mat &result, const
             else if ( GC_OK == retVal )
             {
                 double dim = static_cast< double >( std::max( result.cols, result.rows ) );
-                int lineWidth = max( 1, cvRound( dim / 300.0 ) );
+                int lineWidth = max( 1, cvRound( dim / 900.0 ) );
+                int targetRadius = lineWidth * 5;
 
                 if ( drawCalib )
                 {
-                    line( result, Point( model.pixelPoints[ 0 ].x - lineWidth * 7, model.pixelPoints[ 0 ].y ),
-                                  Point( model.pixelPoints[ 0 ].x + lineWidth * 7, model.pixelPoints[ 0 ].y ), Scalar( 0, 255, 0 ), lineWidth );
-                    line( result, Point( model.pixelPoints[ 0 ].x, model.pixelPoints[ 0 ].y - lineWidth * 7 ),
-                                  Point( model.pixelPoints[ 0 ].x, model.pixelPoints[ 0 ].y + lineWidth * 7 ), Scalar( 0, 255, 0 ), lineWidth );
+                    line( result, Point( model.pixelPoints[ 0 ].x - targetRadius, model.pixelPoints[ 0 ].y ),
+                                  Point( model.pixelPoints[ 0 ].x + targetRadius, model.pixelPoints[ 0 ].y ), Scalar( 0, 255, 0 ), lineWidth );
+                    line( result, Point( model.pixelPoints[ 0 ].x, model.pixelPoints[ 0 ].y - targetRadius ),
+                                  Point( model.pixelPoints[ 0 ].x, model.pixelPoints[ 0 ].y + targetRadius ), Scalar( 0, 255, 0 ), lineWidth );
+                    circle( result, model.pixelPoints[ 0 ], targetRadius, Scalar( 0, 255, 0 ), lineWidth );
                     for ( size_t i = 1; i < model.pixelPoints.size(); ++i )
                     {
                         line( result, model.pixelPoints[ i - 1 ], model.pixelPoints[ i ], Scalar( 255, 0, 0 ), lineWidth );
-                        line( result, Point( model.pixelPoints[ i ].x - lineWidth * 7, model.pixelPoints[ i ].y ),
-                                      Point( model.pixelPoints[ i ].x + lineWidth * 7, model.pixelPoints[ i ].y ), Scalar( 0, 255, 0 ), lineWidth );
-                        line( result, Point( model.pixelPoints[ i ].x, model.pixelPoints[ i ].y - lineWidth * 7 ),
-                                      Point( model.pixelPoints[ i ].x, model.pixelPoints[ i ].y + lineWidth * 7 ), Scalar( 0, 255, 0 ), lineWidth );
+                        line( result, Point( model.pixelPoints[ i ].x - targetRadius, model.pixelPoints[ i ].y ),
+                                      Point( model.pixelPoints[ i ].x + targetRadius, model.pixelPoints[ i ].y ), Scalar( 0, 255, 0 ), lineWidth );
+                        line( result, Point( model.pixelPoints[ i ].x, model.pixelPoints[ i ].y - targetRadius ),
+                                      Point( model.pixelPoints[ i ].x, model.pixelPoints[ i ].y + targetRadius ), Scalar( 0, 255, 0 ), lineWidth );
+                        circle( result, model.pixelPoints[ i ], targetRadius, Scalar( 0, 255, 0 ), lineWidth );
                     }
                     line( result, model.pixelPoints[ 0 ], model.pixelPoints[ model.pixelPoints.size() - 1 ], Scalar( 255, 0, 0 ), lineWidth );
 

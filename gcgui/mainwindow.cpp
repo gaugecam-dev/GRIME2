@@ -802,6 +802,17 @@ void MainWindow::mouseReleaseEvent( QMouseEvent * )
                 m_rectROI.setRight( qRound( static_cast< double >( m_rectRubberBand.right() ) / m_scaleFactor ) );
                 m_rectROI.setBottom( qRound( static_cast< double >( m_rectRubberBand.bottom() ) / m_scaleFactor ) );
             }
+            else if ( ui->actionSetSearchPoly->isChecked() )
+            {
+                m_searchPolyImage = LineSearchPoly( QPoint( qRound( static_cast< double >( m_searchPolyGUI.lftTop.x() ) / m_scaleFactor ),
+                                                            qRound( static_cast< double >( m_searchPolyGUI.lftTop.y() ) / m_scaleFactor ) ),
+                                                    QPoint( qRound( static_cast< double >( m_searchPolyGUI.rgtTop.x() ) / m_scaleFactor ),
+                                                            qRound( static_cast< double >( m_searchPolyGUI.rgtTop.y() ) / m_scaleFactor ) ),
+                                                    QPoint( qRound( static_cast< double >( m_searchPolyGUI.rgtBot.x() ) / m_scaleFactor ),
+                                                            qRound( static_cast< double >( m_searchPolyGUI.rgtBot.y() ) / m_scaleFactor ) ),
+                                                    QPoint( qRound( static_cast< double >( m_searchPolyGUI.lftBot.x() ) / m_scaleFactor ),
+                                                            qRound( static_cast< double >( m_searchPolyGUI.lftBot.y() ) / m_scaleFactor ) ) );
+            }
         }
         m_bCaptured = false;
         m_nCapturePos = 0;
