@@ -79,7 +79,6 @@ private slots:
     void do_updateProgress( const int );
     void on_pushButton_clearTable_clicked();
     void on_tableAddRow( const string row_strings );
-    void on_actionSaveVideo_triggered();
     void on_pushButton_visionCalibrate_clicked();
     void on_pushButton_resetSearchRegion_clicked();
     void on_toolButton_calibVisionTarget_csv_browse_clicked();
@@ -139,7 +138,7 @@ private:
     void paintEvent( QPaintEvent * ) override;
     void mousePressEvent( QMouseEvent *pEvent ) override;
     void mouseMoveEvent( QMouseEvent *pEvent ) override;
-    void ScaleImage();
+    int ScaleImage();
     void ZoomTo( const int width, const int height );
 
     // context menu
@@ -150,7 +149,7 @@ private:
 
     // helper methods
     void UpdateGUIEnables();
-    void UpdatePixmap();
+    int UpdatePixmap();
     void UpdatePixmapTarget();
     void UpdateCalibType();
     void UpdateCalibSearchRegion();
