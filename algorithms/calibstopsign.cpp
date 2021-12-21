@@ -10,6 +10,7 @@
 #include <limits>
 #include <fstream>
 #include <iomanip>
+#include <iostream>
 #include <algorithm>
 #include <iterator>
 
@@ -258,6 +259,7 @@ GC_STATUS CalibStopSign::Load( const std::string jsonCalFilepath )
         {
             stringstream ss;
             ss << jsonCalFilepath;
+            cout << endl << endl << ss.str() << endl;
             property_tree::ptree ptreeTop;
             property_tree::json_parser::read_json( ss, ptreeTop );
 
@@ -279,7 +281,7 @@ GC_STATUS CalibStopSign::Load( const std::string jsonCalFilepath )
                 model.worldPoints.push_back( ptTemp );
             }
 
-            const property_tree::ptree &ptreeMoveSearch = ptreeTop.get_child( "TargetSearchRegions" );
+            const property_tree::ptree &ptreeMoveSearch = ptreeTop.get_child( "TargetSearchRegion" );
             model.wholeTargetRegion.x =      ptreeMoveSearch.get< int >( "x", 0 );
             model.wholeTargetRegion.y =      ptreeMoveSearch.get< int >( "y", 0 );
             model.wholeTargetRegion.width =  ptreeMoveSearch.get< int >( "width", 0 );
@@ -349,7 +351,7 @@ GC_STATUS CalibStopSign::Save( const std::string jsonCalFilepath )
     if ( model.pixelPoints.empty() || model.worldPoints.empty() ||
          model.pixelPoints.size() != model.worldPoints.size() || model.searchLines.empty() )
     {
-        FILE_LOG( logERROR ) << "[CalibStopSign::Save] Empty cal point vector(s)";
+        FILE_LOG( logERROR ) << "[CalibStopSign::Save] Empty cal point vector(s). Saves not possible without a calibrated object";
         retVal = GC_ERR;
     }
     else if ( jsonCalFilepath.empty() )

@@ -673,14 +673,7 @@ int MainWindow::ScaleImage()
         }
         else if ( ui->actionSetSearchPoly->isChecked() )
         {
-            m_searchPolyGUI = LineSearchPoly( QPoint( qRound( static_cast< double >( m_searchPolyImage.lftTop.x() ) * m_scaleFactor ),
-                                                      qRound( static_cast< double >( m_searchPolyImage.lftTop.y() ) * m_scaleFactor ) ),
-                                              QPoint( qRound( static_cast< double >( m_searchPolyImage.rgtTop.x() ) * m_scaleFactor ),
-                                                      qRound( static_cast< double >( m_searchPolyImage.rgtTop.y() ) * m_scaleFactor ) ),
-                                              QPoint( qRound( static_cast< double >( m_searchPolyImage.rgtBot.x() ) * m_scaleFactor ),
-                                                      qRound( static_cast< double >( m_searchPolyImage.rgtBot.y() ) * m_scaleFactor ) ),
-                                              QPoint( qRound( static_cast< double >( m_searchPolyImage.lftBot.x() ) * m_scaleFactor ),
-                                                      qRound( static_cast< double >( m_searchPolyImage.lftBot.y() ) * m_scaleFactor ) ) );
+            m_searchPolyGUI =  m_searchPolyImage;
         }
         UpdatePixmapTarget();
     }
