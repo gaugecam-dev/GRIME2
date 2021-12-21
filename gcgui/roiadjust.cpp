@@ -248,16 +248,7 @@ int RoiAdjust::TestAgainstPoly( QPoint pt, const QSize displaySize, LineSearchPo
 
     if ( doAdjust )
     {
-        AdjustPointPoly( displaySize, scale, guiPoly );
-
-        imgPoly.lftTop.setX( qRound( static_cast< double >( guiPoly.lftTop.x() ) / scale ) );
-        imgPoly.lftTop.setY( qRound( static_cast< double >( guiPoly.lftTop.y() ) / scale ) );
-        imgPoly.rgtTop.setX( qRound( static_cast< double >( guiPoly.rgtTop.x() ) / scale ) );
-        imgPoly.rgtTop.setY( qRound( static_cast< double >( guiPoly.rgtTop.y() ) / scale ) );
-        imgPoly.lftBot.setX( qRound( static_cast< double >( guiPoly.lftBot.x() ) / scale ) );
-        imgPoly.lftBot.setY( qRound( static_cast< double >( guiPoly.lftBot.y() ) / scale ) );
-        imgPoly.rgtBot.setX( qRound( static_cast< double >( guiPoly.rgtBot.x() ) / scale ) );
-        imgPoly.rgtBot.setY( qRound( static_cast< double >( guiPoly.rgtBot.y() ) / scale ) );
+        ret = AdjustPointPoly( displaySize, scale, guiPoly );
     }
 
     ptCapture = ptTemp;

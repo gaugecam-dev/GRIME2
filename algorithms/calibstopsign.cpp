@@ -45,7 +45,7 @@ void CalibStopSign::clear()
     model.clear();
 }
 // symbolPoints are clockwise ordered with 0 being the topmost left point
-GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double octoSideLength, std::vector< Point > searchLineCorners )
+GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double octoSideLength, std::vector< Point > &searchLineCorners )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -208,11 +208,6 @@ GC_STATUS CalibStopSign::CalcSearchLines( const Mat &img, vector< Point > &searc
             double topInc = static_cast< double >( widthTop ) / static_cast< double >( width );
             double botInc = static_cast< double >( widthBot ) / static_cast< double >( width );
 
-            double topX = static_cast< double >( lftTop.x );
-            double topY = static_cast< double >( lftTop.y );
-            double botX = static_cast< double >( lftBot.x );
-            double botY = static_cast< double >( lftBot.y );
-
             double slopeTop, interceptTop;
             retVal = GetLineEquation( lftTop, rgtTop, slopeTop, interceptTop );
             if ( GC_OK == retVal )
@@ -221,6 +216,10 @@ GC_STATUS CalibStopSign::CalcSearchLines( const Mat &img, vector< Point > &searc
                 retVal = GetLineEquation( lftBot, rgtBot, slopeBot, interceptBot );
                 if ( GC_OK == retVal )
                 {
+                    double topY, botY;
+                    double topX = static_cast< double >( lftTop.x );
+                    double botX = static_cast< double >( lftBot.x );
+
                     for ( int i = 0; i < width; ++i )
                     {
                         topX += topInc;

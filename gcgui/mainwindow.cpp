@@ -804,14 +804,7 @@ void MainWindow::mouseReleaseEvent( QMouseEvent * )
             }
             else if ( ui->actionSetSearchPoly->isChecked() )
             {
-                m_searchPolyImage = LineSearchPoly( QPoint( qRound( static_cast< double >( m_searchPolyGUI.lftTop.x() ) / m_scaleFactor ),
-                                                            qRound( static_cast< double >( m_searchPolyGUI.lftTop.y() ) / m_scaleFactor ) ),
-                                                    QPoint( qRound( static_cast< double >( m_searchPolyGUI.rgtTop.x() ) / m_scaleFactor ),
-                                                            qRound( static_cast< double >( m_searchPolyGUI.rgtTop.y() ) / m_scaleFactor ) ),
-                                                    QPoint( qRound( static_cast< double >( m_searchPolyGUI.rgtBot.x() ) / m_scaleFactor ),
-                                                            qRound( static_cast< double >( m_searchPolyGUI.rgtBot.y() ) / m_scaleFactor ) ),
-                                                    QPoint( qRound( static_cast< double >( m_searchPolyGUI.lftBot.x() ) / m_scaleFactor ),
-                                                            qRound( static_cast< double >( m_searchPolyGUI.lftBot.y() ) / m_scaleFactor ) ) );
+                m_searchPolyImage = m_searchPolyGUI;
             }
         }
         m_bCaptured = false;
@@ -931,19 +924,15 @@ void MainWindow::on_actionZoom100_triggered()
 }
 void MainWindow::UpdateRulerMeasurement()
 {
-    int nXpix1 = qRound( static_cast< double >( m_lineOne.p1().x() ) / m_scaleFactor );
-    int nYpix1 = qRound( static_cast< double >( m_lineOne.p1().y() ) / m_scaleFactor );
-    int nXpix2 = qRound( static_cast< double >( m_lineOne.p2().x() ) / m_scaleFactor );
-    int nYpix2 = qRound( static_cast< double >( m_lineOne.p2().y() ) / m_scaleFactor );
-    double lenPix = Distance( nXpix1, nYpix1, nXpix2, nYpix2 );
+    double lenPix = Distance( m_lineOne.p1().x(), m_lineOne.p1().y(), m_lineOne.p2().x(), m_lineOne.p2().y() );
 
     Point2d world1, world2;
-    GC_STATUS retVal1 = m_visApp.PixelToWorld( Point2d( nXpix1, nYpix1 ), world1 );
+    GC_STATUS retVal1 = m_visApp.PixelToWorld( Point2d( m_lineOne.p1().x(), m_lineOne.p1().y() ), world1 );
     if ( GC_OK != retVal1 )
     {
         world1 = Point2d( -9999999.9, -9999999.9 );
     }
-    GC_STATUS retVal2 = m_visApp.PixelToWorld( Point2d( nXpix2, nYpix2 ), world2 );
+    GC_STATUS retVal2 = m_visApp.PixelToWorld( Point2d( m_lineOne.p2().x(), m_lineOne.p2().y() ), world2 );
     if ( GC_OK != retVal2 )
     {
         world2 = Point2d( -9999999.9, -9999999.9 );
@@ -951,9 +940,9 @@ void MainWindow::UpdateRulerMeasurement()
     double lenWorld = ( GC_OK != retVal1 || GC_OK != retVal2 ) ? -9999999.9 :  Distance( world1.x, world1.y, world2.x, world2.y );
 
     ui->textEdit_measures->setText( "PIXEL" );
-    QString strMsg = QString( "X1=" ) + QString::number( nXpix1 ) + " Y1=" + QString::number( nYpix1 );
+    QString strMsg = QString( "X1=" ) + QString::number( m_lineOne.p1().x() ) + " Y1=" + QString::number( m_lineOne.p1().y() );
     ui->textEdit_measures->append( strMsg );
-    strMsg = QString( "X2=" ) + QString::number( nXpix2 ) + " Y2=" + QString::number( nYpix2 );
+    strMsg = QString( "X2=" ) + QString::number( m_lineOne.p2().x() ) + " Y2=" + QString::number( m_lineOne.p2().y() );
     ui->textEdit_measures->append( strMsg );
     strMsg = QString( "Length=" ) + QString::number( lenPix );
     ui->textEdit_measures->append( strMsg );
