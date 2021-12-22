@@ -125,7 +125,6 @@ private:
     QRect m_rectROI;
     QRect m_rectRubberBand;
     QPoint m_ptCapture;
-    LineSearchPoly m_searchPolyGUI;
     LineSearchPoly m_searchPolyImage;
 
     // vision application

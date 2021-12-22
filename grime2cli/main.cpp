@@ -123,10 +123,10 @@ GC_STATUS Calibrate( const Grime2CLIParams cliParams )
         retVal = FormCalibJsonString( cliParams, jsonString );
         if ( GC_OK == retVal )
         {
-            cv::Mat imgOut;
-            retVal = vis.Calibrate( cliParams.src_imagePath, jsonString, imgOut );
+            retVal = vis.Calibrate( cliParams.src_imagePath, jsonString );
             if ( GC_OK == retVal && !cliParams.result_imagePath.empty() )
             {
+                cv::Mat imgOut;
                 bool bRet = cv::imwrite( cliParams.result_imagePath, imgOut );
                 if ( !bRet )
                 {

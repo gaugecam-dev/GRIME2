@@ -71,8 +71,6 @@ MainWindow::MainWindow(QWidget *parent) :
     m_pRubberBand( nullptr ),
     m_rectROI( QRect( 0, 0, MAX_IMAGE_SIZE.width, MAX_IMAGE_SIZE.height ) ),
     m_rectRubberBand( QRect( 0, 0, MAX_IMAGE_SIZE.width, MAX_IMAGE_SIZE.height ) ),
-    m_searchPolyGUI( LineSearchPoly( QPoint( 50, 50 ), QPoint( 100, 50 ),
-                                       QPoint( 100, 100 ),  QPoint( 50, 100 ) ) ),
     m_searchPolyImage( LineSearchPoly( QPoint( 50, 50 ), QPoint( 100, 50 ),
                                        QPoint( 100, 100 ),  QPoint( 50, 100 ) ) )
 {
@@ -630,20 +628,20 @@ int MainWindow::UpdatePixmap()
                 pen1.setColor( Qt::blue );
                 painter.setPen( pen1 );
 
-                painter.drawLine( QLine( m_searchPolyGUI.lftTop, m_searchPolyGUI.rgtTop ) );
-                painter.drawLine( QLine( m_searchPolyGUI.rgtTop, m_searchPolyGUI.rgtBot ) );
-                painter.drawLine( QLine( m_searchPolyGUI.rgtBot, m_searchPolyGUI.lftBot ) );
-                painter.drawLine( QLine( m_searchPolyGUI.lftBot, m_searchPolyGUI.lftTop ) );
+                painter.drawLine( QLine( m_searchPolyImage.lftTop, m_searchPolyImage.rgtTop ) );
+                painter.drawLine( QLine( m_searchPolyImage.rgtTop, m_searchPolyImage.rgtBot ) );
+                painter.drawLine( QLine( m_searchPolyImage.rgtBot, m_searchPolyImage.lftBot ) );
+                painter.drawLine( QLine( m_searchPolyImage.lftBot, m_searchPolyImage.lftTop ) );
 
                 pen1.setWidth( 3 );
                 pen1.setColor( Qt::red );
                 painter.setBrush( Qt::red );
                 painter.setPen( pen1 );
 
-                painter.drawEllipse( m_searchPolyGUI.lftTop, endRadius, endRadius );
-                painter.drawEllipse( m_searchPolyGUI.rgtTop, endRadius, endRadius );
-                painter.drawEllipse( m_searchPolyGUI.rgtBot, endRadius, endRadius );
-                painter.drawEllipse( m_searchPolyGUI.lftBot, endRadius, endRadius );
+                painter.drawEllipse( m_searchPolyImage.lftTop, endRadius, endRadius );
+                painter.drawEllipse( m_searchPolyImage.rgtTop, endRadius, endRadius );
+                painter.drawEllipse( m_searchPolyImage.rgtBot, endRadius, endRadius );
+                painter.drawEllipse( m_searchPolyImage.lftBot, endRadius, endRadius );
             }
             m_pLabelImgDisplay->setPixmap( pixmap );
         }
@@ -673,7 +671,7 @@ int MainWindow::ScaleImage()
         }
         else if ( ui->actionSetSearchPoly->isChecked() )
         {
-            m_searchPolyGUI =  m_searchPolyImage;
+            m_searchPolyImage =  m_searchPolyImage;
         }
         UpdatePixmapTarget();
     }
@@ -737,7 +735,7 @@ void MainWindow::mousePressEvent( QMouseEvent *pEvent )
     }
     else if ( ui->actionSetSearchPoly->isChecked() )
     {
-        int ret = m_roiAdjust.EvalPolyCapturePt( m_searchPolyGUI, pt, m_scaleFactor, sensitivityRadius, m_nCapturePos, m_ptCapture );
+        int ret = m_roiAdjust.EvalPolyCapturePt( m_searchPolyImage, pt, m_scaleFactor, sensitivityRadius, m_nCapturePos, m_ptCapture );
         m_bCaptured = ( ( 0 >= m_nCapturePos ) || ( 0 != ret ) ) ? false : true;
     }
     else if ( ui->actionSetRuler->isChecked() )
@@ -789,7 +787,7 @@ void MainWindow::mouseMoveEvent( QMouseEvent *pEvent )
         }
         else if ( ui->actionSetSearchPoly->isChecked() )
         {
-            int ret = m_roiAdjust.TestAgainstPoly( pt, m_pLabelImgDisplay->size(), m_searchPolyGUI,
+            int ret = m_roiAdjust.TestAgainstPoly( pt, m_pLabelImgDisplay->size(),
                                                    m_searchPolyImage, m_nCapturePos, m_scaleFactor, m_ptCapture );
             if ( 0 == ret )
             {
@@ -823,7 +821,7 @@ void MainWindow::mouseReleaseEvent( QMouseEvent * )
             }
             else if ( ui->actionSetSearchPoly->isChecked() )
             {
-                m_searchPolyImage = m_searchPolyGUI;
+                m_searchPolyImage = m_searchPolyImage;
             }
         }
         m_bCaptured = false;

@@ -50,24 +50,23 @@ SOURCES += \
 	../algorithms/calibexecutive.cpp \
 	../algorithms/calibstopsign.cpp \
         ../algorithms/findcalibgrid.cpp \
-        ../algorithms/findline.cpp \
+	../algorithms/findline.cpp \
 	../algorithms/gifanim/gifanim.cpp \
 	../algorithms/metadata.cpp \
         ../algorithms/visapp.cpp \
         guivisapp.cpp \
         main.cpp \
         mainwindow.cpp \
-    roiadjust.cpp
+	roiadjust.cpp
 
 HEADERS += \
         ../algorithms/animate.h \
         ../algorithms/bresenham.h \
 	../algorithms/calibbowtie.h \
-	../algorithms/calibexecutive.h \
 	../algorithms/calibstopsign.h \
         ../algorithms/csvreader.h \
         ../algorithms/findcalibgrid.h \
-        ../algorithms/findline.h \
+	../algorithms/findline.h \
 	../algorithms/gc_types.h \
 	../algorithms/gifanim/gifanim.h \
         ../algorithms/log.h \
@@ -77,7 +76,7 @@ HEADERS += \
         ../algorithms/wincmd.h \
         guivisapp.h \
         mainwindow.h \
-    roiadjust.h
+	roiadjust.h
 
 FORMS += \
         mainwindow.ui

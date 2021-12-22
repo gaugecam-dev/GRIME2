@@ -73,9 +73,62 @@ GC_STATUS VisApp::LoadCalib( const std::string calibJson )
     GC_STATUS retVal = m_calibExec.Load( calibJson );
     return retVal;
 }
+GC_STATUS VisApp::Calibrate( const string imgFilepath, const string jsonControl, const string resultImgPath )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        Mat img = imread( imgFilepath, IMREAD_ANYCOLOR );
+        if ( img.empty() )
+        {
+            FILE_LOG( logERROR ) << "[VisApp::Calibrate] Could not open image file " << imgFilepath;
+            retVal = GC_ERR;
+        }
+        else
+        {
+            retVal = m_calibExec.Calibrate( img, jsonControl );
+            if ( GC_OK == retVal )
+            {
+                Mat imgOut;
+                retVal = m_calibExec.DrawOverlay( img, imgOut );
+                if ( GC_OK == retVal )
+                {
+                    bool bRet = imwrite( resultImgPath, imgOut );
+                    if ( !bRet )
+                    {
+                        FILE_LOG( logERROR ) << "[VisApp::Calibrate] Could not write result image " << resultImgPath;
+                        retVal = GC_ERR;
+                    }
+                }
+            }
+        }
+    }
+    catch( Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[VisApp::Calibrate] " << e.what();
+    }
+    return retVal;
+}
 GC_STATUS VisApp::Calibrate( const string imgFilepath, const string jsonControl )
 {
-    GC_STATUS retVal = m_calibExec.Calibrate( imgFilepath, jsonControl );
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        Mat img = imread( imgFilepath, IMREAD_ANYCOLOR );
+        if ( img.empty() )
+        {
+            FILE_LOG( logERROR ) << "[VisApp::Calibrate] Could not open image file " << imgFilepath;
+            retVal = GC_ERR;
+        }
+        else
+        {
+            m_calibExec.Calibrate( img, jsonControl );
+        }
+    }
+    catch( Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[VisApp::Calibrate] " << e.what();
+    }
     return retVal;
 }
 GC_STATUS VisApp::GetImageTimestamp( const std::string filepath, std::string &timestamp )
@@ -486,6 +539,11 @@ GC_STATUS VisApp::PixelToWorld( FindPointSet &ptSet )
             retVal = m_calibExec.PixelToWorld( ptSet.rgtPixel, ptSet.rgtWorld );
         }
     }
+    return retVal;
+}
+GC_STATUS VisApp::DrawCalibOverlay( const cv::Mat matIn, cv::Mat &imgMatOut )
+{
+    GC_STATUS retVal = m_calibExec.DrawOverlay( matIn, imgMatOut );
     return retVal;
 }
 GC_STATUS VisApp::DrawCalibOverlay( const cv::Mat matIn, cv::Mat &imgMatOut,

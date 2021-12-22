@@ -66,7 +66,7 @@ public:
                               const double scale, QPoint &ptCapture, QLine &lineOne );
     int TestAgainstRubberBands( QPoint pt, const QSize displaySize, QRect &rectRubberBand, QRect &rectROI,
                                 const int capturePos, const double scale, QPoint &ptCapture );
-    int TestAgainstPoly( QPoint pt, const QSize displaySize, LineSearchPoly &guiPoly, LineSearchPoly &imgPoly,
+    int TestAgainstPoly( QPoint pt, const QSize displaySize, LineSearchPoly &guiPoly,
                          const int capturePos, const double scale, QPoint &ptCapture );
 
     int EvalRectCapturePt( const QRect rectRubberBand, const QPoint ptAdj,

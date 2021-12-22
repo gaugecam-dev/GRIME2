@@ -44,7 +44,16 @@ void CalibExecutive::clear()
     bowTie.clear();
     stopSign.clear();
 }
-GC_STATUS CalibExecutive::Calibrate( const std::string calibTargetImagePath, const std::string jsonParams )
+GC_STATUS CalibExecutive::Calibrate( const Mat &img, const std::string jsonParams, cv::Mat &imgResult )
+{
+    GC_STATUS retVal = Calibrate( img, jsonParams );
+    if ( GC_OK == retVal )
+    {
+        retVal = DrawOverlay( img, imgResult );
+    }
+    return retVal;
+}
+GC_STATUS CalibExecutive::Calibrate( const cv::Mat &img, const std::string jsonParams )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -81,11 +90,11 @@ GC_STATUS CalibExecutive::Calibrate( const std::string calibTargetImagePath, con
 
         if ( "BowTie" == paramsCurrent.calibType )
         {
-            retVal = CalibrateBowTie( calibTargetImagePath );
+            retVal = CalibrateBowTie( img );
         }
         else if ( "StopSign" == paramsCurrent.calibType )
         {
-            retVal = CalibrateStopSign( calibTargetImagePath );
+            retVal = CalibrateStopSign( img );
         }
         else
         {
@@ -99,6 +108,12 @@ GC_STATUS CalibExecutive::Calibrate( const std::string calibTargetImagePath, con
         FILE_LOG( logERROR ) << "[CalibExecutive::Load] " << diagnostic_information( e );
         retVal = GC_EXCEPT;
     }
+    return retVal;
+}
+GC_STATUS CalibExecutive::DrawOverlay( const cv::Mat matIn, cv::Mat &imgMatOut )
+{
+    GC_STATUS retVal = DrawOverlay( matIn, imgMatOut, paramsCurrent.drawMoveSearchROIs,
+                                     paramsCurrent.drawMoveSearchROIs, paramsCurrent.drawWaterLineSearchROI );
     return retVal;
 }
 GC_STATUS CalibExecutive::DrawOverlay( const cv::Mat matIn, cv::Mat &imgMatOut,
@@ -200,20 +215,14 @@ GC_STATUS CalibExecutive::ReadWorldCoordsFromCSVBowTie( const string csvFilepath
 
     return retVal;
 }
-GC_STATUS CalibExecutive::CalibrateStopSign( const string imgFilepath )
+GC_STATUS CalibExecutive::CalibrateStopSign( const cv::Mat &img )
 {
     GC_STATUS retVal = GC_OK;
 
     try
     {
         clear();
-        Mat searchImg = imread( imgFilepath, IMREAD_ANYCOLOR );
-        if ( searchImg.empty() )
-        {
-            FILE_LOG( logERROR ) << "[VisApp::CalibrateStopSign] Could not open image file " << imgFilepath;
-            retVal = GC_ERR;
-        }
-        else if ( CV_8UC3 != searchImg.type() )
+        if ( CV_8UC3 != img.type() )
         {
             FILE_LOG( logERROR ) << "[VisApp::CalibrateStopSign] A color image (RGB) is required for stop sign calibration";
             retVal = GC_ERR;
@@ -225,7 +234,7 @@ GC_STATUS CalibExecutive::CalibrateStopSign( const string imgFilepath )
             searchLineCorners.push_back( paramsCurrent.lineSearch_rgtTop );
             searchLineCorners.push_back( paramsCurrent.lineSearch_lftBot );
             searchLineCorners.push_back( paramsCurrent.lineSearch_rgtBot );
-            retVal = stopSign.Calibrate( searchImg, paramsCurrent.stopSignFacetLength, searchLineCorners );
+            retVal = stopSign.Calibrate( img, paramsCurrent.stopSignFacetLength, searchLineCorners );
             if ( GC_OK == retVal )
             {
                 retVal = stopSign.Save( paramsCurrent.calibResultJsonFilepath );
@@ -235,80 +244,70 @@ GC_STATUS CalibExecutive::CalibrateStopSign( const string imgFilepath )
     catch( Exception &e )
     {
         FILE_LOG( logERROR ) << "[VisApp::CalibrateStopSign] " << e.what();
-        FILE_LOG( logERROR ) << "Image=" << imgFilepath << " facet length=" << paramsCurrent.stopSignFacetLength;
         retVal = GC_EXCEPT;
     }
 
     return retVal;
 }
-GC_STATUS CalibExecutive::CalibrateBowTie( const string imgFilepath )
+GC_STATUS CalibExecutive::CalibrateBowTie( const cv::Mat &img )
 {
     GC_STATUS retVal = GC_OK;
 
     try
     {
-        Mat img = imread( imgFilepath, IMREAD_GRAYSCALE );
-        if ( img.empty() )
+        retVal = findCalibGrid.InitBowtieTemplate( GC_BOWTIE_TEMPLATE_DIM, img.size() );
+        if ( GC_OK != retVal )
         {
-            FILE_LOG( logERROR ) << "[VisApp::CalibrateBowTie] Could not open image file " << imgFilepath;
-            retVal = GC_ERR;
+            FILE_LOG( logERROR ) << "[VisApp::VisApp] Could not initialize bowtie templates for calibration";
         }
         else
         {
-            retVal = findCalibGrid.InitBowtieTemplate( GC_BOWTIE_TEMPLATE_DIM, Size( GC_IMAGE_SIZE_WIDTH, GC_IMAGE_SIZE_HEIGHT ) );
-            if ( GC_OK != retVal )
+            vector< vector< Point2d > > worldCoords;
+            retVal = ReadWorldCoordsFromCSVBowTie( paramsCurrent.worldPtCSVFilepath, worldCoords );
+            if ( GC_OK == retVal )
             {
-                FILE_LOG( logERROR ) << "[VisApp::VisApp] Could not initialize bowtie templates for calibration";
-            }
-            else
-            {
-                vector< vector< Point2d > > worldCoords;
-                retVal = ReadWorldCoordsFromCSVBowTie( paramsCurrent.worldPtCSVFilepath, worldCoords );
+#ifdef DEBUG_BOWTIE_FIND
+                retVal = m_findCalibGrid.FindTargets( img, MIN_BOWTIE_FIND_SCORE, DEBUG_FOLDER + "bowtie_find.png" );
+#else
+                Rect rect = ( -1 == paramsCurrent.targetSearchROI.x ||
+                              -1 == paramsCurrent.targetSearchROI.y ||
+                              -1 == paramsCurrent.targetSearchROI.width ||
+                              -1 == paramsCurrent.targetSearchROI.height ) ? Rect( 0, 0, img.cols, img.rows ) : paramsCurrent.targetSearchROI;
+                retVal = findCalibGrid.FindTargets( img, rect, MIN_BOWTIE_FIND_SCORE );
+#endif
                 if ( GC_OK == retVal )
                 {
-#ifdef DEBUG_BOWTIE_FIND
-                    retVal = m_findCalibGrid.FindTargets( img, MIN_BOWTIE_FIND_SCORE, DEBUG_FOLDER + "bowtie_find.png" );
-#else
-                    Rect rect = ( -1 == paramsCurrent.targetSearchROI.x ||
-                                  -1 == paramsCurrent.targetSearchROI.y ||
-                                  -1 == paramsCurrent.targetSearchROI.width ||
-                                  -1 == paramsCurrent.targetSearchROI.height ) ? Rect( 0, 0, img.cols, img.rows ) : paramsCurrent.targetSearchROI;
-                    retVal = findCalibGrid.FindTargets( img, rect, MIN_BOWTIE_FIND_SCORE );
-#endif
+                    vector< vector< Point2d > > pixelCoords;
+                    retVal = findCalibGrid.GetFoundPoints( pixelCoords );
                     if ( GC_OK == retVal )
                     {
-                        vector< vector< Point2d > > pixelCoords;
-                        retVal = findCalibGrid.GetFoundPoints( pixelCoords );
-                        if ( GC_OK == retVal )
+                        if ( pixelCoords.size() != worldCoords.size() )
                         {
-                            if ( pixelCoords.size() != worldCoords.size() )
+                            FILE_LOG( logERROR ) << "[VisApp::CalibrateBowTie] Found pixel array row count does not equal world array count";
+                            retVal = GC_ERR;
+                        }
+                        else
+                        {
+                            vector< Point2d > pixPtArray;
+                            vector< Point2d > worldPtArray;
+                            for ( size_t i = 0; i < pixelCoords.size(); ++i )
                             {
-                                FILE_LOG( logERROR ) << "[VisApp::CalibrateBowTie] Found pixel array row count does not equal world array count";
-                                retVal = GC_ERR;
+                                if ( pixelCoords[ i ].size() != worldCoords[ i ].size() )
+                                {
+                                    FILE_LOG( logERROR ) << "[VisApp::CalibrateBowTie] Found pixel array column count does not equal world array count";
+                                    retVal = GC_ERR;
+                                    break;
+                                }
+                                for ( size_t j = 0; j < pixelCoords[ i ].size(); ++j )
+                                {
+                                    pixPtArray.push_back( pixelCoords[ i ][ j ] );
+                                    worldPtArray.push_back( worldCoords[ i ][ j ] );
+                                }
                             }
-                            else
+                            retVal = bowTie.Calibrate( pixPtArray, worldPtArray, Size( 2, 4 ), img.size() );
+                            if ( GC_OK == retVal )
                             {
-                                vector< Point2d > pixPtArray;
-                                vector< Point2d > worldPtArray;
-                                for ( size_t i = 0; i < pixelCoords.size(); ++i )
-                                {
-                                    if ( pixelCoords[ i ].size() != worldCoords[ i ].size() )
-                                    {
-                                        FILE_LOG( logERROR ) << "[VisApp::CalibrateBowTie] Found pixel array column count does not equal world array count";
-                                        retVal = GC_ERR;
-                                        break;
-                                    }
-                                    for ( size_t j = 0; j < pixelCoords[ i ].size(); ++j )
-                                    {
-                                        pixPtArray.push_back( pixelCoords[ i ][ j ] );
-                                        worldPtArray.push_back( worldCoords[ i ][ j ] );
-                                    }
-                                }
-                                retVal = bowTie.Calibrate( pixPtArray, worldPtArray, Size( 2, 4 ), img.size() );
-                                if ( GC_OK == retVal )
-                                {
-                                    retVal = bowTie.Save( paramsCurrent.calibResultJsonFilepath );
-                                }
+                                retVal = bowTie.Save( paramsCurrent.calibResultJsonFilepath );
                             }
                         }
                     }
@@ -319,7 +318,6 @@ GC_STATUS CalibExecutive::CalibrateBowTie( const string imgFilepath )
     catch( Exception &e )
     {
         FILE_LOG( logERROR ) << "[VisApp::CalibrateBowTie] " << e.what();
-        FILE_LOG( logERROR ) << "Image=" << imgFilepath << " world coords csv=" << paramsCurrent.worldPtCSVFilepath;
         retVal = GC_EXCEPT;
     }
 

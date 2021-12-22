@@ -218,7 +218,7 @@ int RoiAdjust::EvalPolyCapturePt( const LineSearchPoly guiPoly, const QPoint ptA
     }
      return 0;
 }
-int RoiAdjust::TestAgainstPoly( QPoint pt, const QSize displaySize, LineSearchPoly &guiPoly, LineSearchPoly &imgPoly,
+int RoiAdjust::TestAgainstPoly( QPoint pt, const QSize displaySize, LineSearchPoly &guiPoly,
                                 const int capturePos, const double scale, QPoint &ptCapture )
 {
     int ret = 0;

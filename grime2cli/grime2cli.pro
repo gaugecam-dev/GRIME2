@@ -20,12 +20,11 @@ win32 {
 
 SOURCES += \
         ../algorithms/animate.cpp \
-        ../algorithms/calib.cpp \
+	../algorithms/calibbowtie.cpp \
 	../algorithms/calibexecutive.cpp \
-        ../algorithms/findcalibgrid.cpp \
-        ../algorithms/findline.cpp \
-	../algorithms/findsymbol.cpp \
-	../algorithms/findstopsign.cpp \
+	../algorithms/calibstopsign.cpp \
+	../algorithms/findcalibgrid.cpp \
+	../algorithms/findline.cpp \
 	../algorithms/gifanim/gifanim.cpp \
 	../algorithms/metadata.cpp \
         ../algorithms/visapp.cpp \
@@ -34,13 +33,12 @@ SOURCES += \
 HEADERS += \
     ../algorithms/animate.h \
     ../algorithms/bresenham.h \
-    ../algorithms/calib.h \
+    ../algorithms/calibbowtie.h \
     ../algorithms/calibexecutive.h \
+    ../algorithms/calibstopsign.h \
     ../algorithms/csvreader.h \
     ../algorithms/findcalibgrid.h \
     ../algorithms/findline.h \
-    ../algorithms/findsymbol.h \
-    ../algorithms/findstopsign.h \
     ../algorithms/gifanim/gifanim.h \
     ../algorithms/gc_types.h \
     ../algorithms/log.h \

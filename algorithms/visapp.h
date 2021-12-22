@@ -80,6 +80,9 @@ public:
      */
     GC_STATUS Calibrate( const string imgFilepath, const string jsonControl );
 
+    // TODO: Add doxygen comments
+    GC_STATUS Calibrate( const string imgFilepath, const string jsonControl, const string resultImgPath );
+
     /**
      * @brief Set the current calibration from a calibration model json file
      * @param calibJson The filepath of the calibration model json file
@@ -109,8 +112,11 @@ public:
      * @param imageMatOut OpenCV Mat of the output image that holds the input image with an overlay of the calibration
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
+
+    // TODO: Fix doxygen
+    GC_STATUS DrawCalibOverlay( const cv::Mat matIn, cv::Mat &imgMatOut );
     GC_STATUS DrawCalibOverlay( const cv::Mat matIn, cv::Mat &imgMatOut,
-                                const bool drawCalib = true, const bool drawMoveROIs = true, const bool drawSearchROI = true );
+                                const bool drawCalib, const bool drawMoveROIs, const bool drawSearchROI );
 
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // Findline methods
