@@ -63,6 +63,7 @@ HEADERS += \
         ../algorithms/animate.h \
         ../algorithms/bresenham.h \
 	../algorithms/calibbowtie.h \
+	../algorithms/calibexecutive.h \
 	../algorithms/calibstopsign.h \
         ../algorithms/csvreader.h \
         ../algorithms/findcalibgrid.h \

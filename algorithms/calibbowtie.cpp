@@ -63,7 +63,7 @@ void CalibBowtie::clear()
     m_matHomogWorldToPix = Mat();
 }
 GC_STATUS CalibBowtie::Calibrate( const vector< Point2d > pixelPts, const vector< Point2d > worldPts,
-                                  const Size gridSize, const Size imgSize )
+                                  const std::string &controlJson, const Size gridSize, const Size imgSize )
 {
     GC_STATUS retVal = GC_OK;
     if ( pixelPts.size() != worldPts.size() || pixelPts.empty() || worldPts.empty() ||
@@ -131,6 +131,10 @@ GC_STATUS CalibBowtie::Calibrate( const vector< Point2d > pixelPts, const vector
             {
                 FILE_LOG( logERROR ) << "[CalibBowtie::Calibrate] System not calibrated";
                 retVal = GC_ERR;
+            }
+            else
+            {
+                m_model.controlJson = controlJson;
             }
         }
         catch( Exception &e )
@@ -476,8 +480,10 @@ GC_STATUS CalibBowtie::Load( const string &jsonCalibString )
 #endif
                 m_model.gridSize = Size( static_cast< int >( cols ), static_cast< int >( rows ) );
 
+                m_model.controlJson = ptreeTop.get< string >( "control_json", "{}" );
+
                 Mat matIn, matOut;
-                retVal = Calibrate( m_model.pixelPoints, m_model.worldPoints, m_model.gridSize, m_model.imgSize );
+                retVal = Calibrate( m_model.pixelPoints, m_model.worldPoints, m_model.controlJson, m_model.gridSize, m_model.imgSize );
             }
 #ifdef LOG_CALIB_VALUES
             FILE_LOG( logINFO ) << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
@@ -572,7 +578,8 @@ GC_STATUS CalibBowtie::Save( const string jsonCalFilepath )
                                       "\"topY\": " << m_model.searchLines[ m_model.searchLines.size() - 1 ].top.y << ", " << \
                                       "\"botX\": " << m_model.searchLines[ m_model.searchLines.size() - 1 ].bot.x << ", " << \
                                       "\"botY\": " << m_model.searchLines[ m_model.searchLines.size() - 1 ].bot.y << " }" << endl;
-                fileStream << "  ]" << endl;
+                fileStream << "  ]," << endl;
+                fileStream << "  \"control_json\": \"" << m_model.controlJson << "\"" << endl;
                 fileStream << "}" << endl;
                 fileStream.close();
             }

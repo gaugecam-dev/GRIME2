@@ -46,7 +46,8 @@ void CalibStopSign::clear()
     model.clear();
 }
 // symbolPoints are clockwise ordered with 0 being the topmost left point
-GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double octoSideLength, std::vector< Point > &searchLineCorners )
+GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double octoSideLength,
+                                    const std::string &controlJson, std::vector< Point > &searchLineCorners )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -110,6 +111,10 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double octoSideLen
         {
             FILE_LOG( logERROR ) << "[CalibStopSign::Calibrate] System not calibrated";
             retVal = GC_ERR;
+        }
+        else
+        {
+            model.controlJson = controlJson;
         }
     }
     catch( cv::Exception &e )
@@ -330,6 +335,9 @@ GC_STATUS CalibStopSign::Load( const std::string jsonCalFilepath )
                                            " worldX=" << m_settings.worldPoints[ i ].x << " worldY=" << m_settings.worldPoints[ i ].y;
                 }
 #endif
+
+                model.controlJson = ptreeTop.get< string >( "control_json", "{}" );
+
                 Mat matIn, matOut;
                 retVal = Calibrate( model.pixelPoints, model.worldPoints );
             }
@@ -417,7 +425,8 @@ GC_STATUS CalibStopSign::Save( const std::string jsonCalFilepath )
                                       "\"topY\": " << model.searchLines[ model.searchLines.size() - 1 ].top.y << ", " << \
                                       "\"botX\": " << model.searchLines[ model.searchLines.size() - 1 ].bot.x << ", " << \
                                       "\"botY\": " << model.searchLines[ model.searchLines.size() - 1 ].bot.y << " }" << endl;
-                fileStream << "  ]" << endl;
+                fileStream << "  ]," << endl;
+                fileStream << "  \"control_json\": \"" << model.controlJson << "\"" << endl;
                 fileStream << "}" << endl;
                 fileStream.close();
             }

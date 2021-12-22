@@ -135,6 +135,7 @@ public:
     */
     void clear()
     {
+        controlJson.clear();
         imgSize = cv::Size( -1, -1 );
         gridSize = cv::Size( -1, -1 );
         pixelPoints.clear();
@@ -145,6 +146,7 @@ public:
         wholeTargetRegion = cv::Rect( -1, -1, -1, -1 );
     }
 
+    std::string controlJson;                ///< Json control string
     cv::Size imgSize;                       ///< Dimensions of the calibration image
     cv::Size gridSize;                      ///< Dimensions of the calibration grid
     std::vector< cv::Point2d > pixelPoints; ///< Vector of pixel points ordered to match the world point vector
@@ -191,6 +193,7 @@ public:
     */
     void clear()
     {
+        controlJson.clear();
         imgSize = cv::Size( -1, -1 );
         pixelPoints.clear();
         worldPoints.clear();
@@ -198,6 +201,7 @@ public:
         wholeTargetRegion = cv::Rect( -1, -1, -1, -1 );
     }
 
+    std::string controlJson;                ///< Json control string
     cv::Size imgSize;                       ///< Dimensions of the calibration image
     std::vector< cv::Point2d > pixelPoints; ///< Vector of pixel points ordered to match the world point vector
     std::vector< cv::Point2d > worldPoints; ///< Vector of world points ordered to match the pixel point vector

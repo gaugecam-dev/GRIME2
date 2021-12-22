@@ -64,6 +64,7 @@ public:
     GC_STATUS Load( const std::string jsonFilepath );
     GC_STATUS Calibrate( const cv::Mat &img, const std::string jsonParams );
     GC_STATUS Calibrate( const cv::Mat &img, const std::string jsonParams, cv::Mat &imgResult );
+    GC_STATUS Recalibrate( const cv::Mat &img, const std::string calibType );
     GC_STATUS PixelToWorld( const cv::Point2d pixelPt, cv::Point2d &worldPt );
     GC_STATUS WorldToPixel( const cv::Point2d worldPt, cv::Point2d &pixelPt );
     GC_STATUS GetMoveSearchROIs( cv::Rect &rectLeft, cv::Rect &rectRight );
@@ -87,8 +88,8 @@ private:
     std::vector< LineEnds > nullSearchLines;    ///< Empty vector of search lines to be searched for the water line
     cv::Rect nullRect = cv::Rect( -1, -1, -1, -1 );
 
-    GC_STATUS CalibrateBowTie( const cv::Mat &img );
-    GC_STATUS CalibrateStopSign( const cv::Mat &img );
+    GC_STATUS CalibrateBowTie( const cv::Mat &img, const string &controlJson );
+    GC_STATUS CalibrateStopSign( const cv::Mat &img, const string &controlJson );
     GC_STATUS FindMoveTargetsBowTie( const cv::Mat &img, FindPointSet &ptsFound );
     GC_STATUS FindMoveTargetsStopSign( const cv::Mat &img, FindPointSet &ptsFound );
     GC_STATUS MoveRefPointBowTie( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt );

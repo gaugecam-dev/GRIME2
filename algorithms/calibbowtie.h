@@ -83,7 +83,7 @@ public:
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
     GC_STATUS Calibrate( const std::vector< cv::Point2d > pixelPts, const std::vector< cv::Point2d > worldPts,
-                         const cv::Size gridSize, const cv::Size imgSize );
+                         const std::string &controlJson, const cv::Size gridSize, const cv::Size imgSize );
     /**
      * @brief Load a calibration model from a json file
      *
@@ -200,6 +200,7 @@ public:
     cv::Rect &TargetRoi() { return m_model.wholeTargetRegion; }
 
     // TODO: Add doxygen comments
+    std::string ControlJson() { return m_model.controlJson; }
     GC_STATUS DrawOverlay( const cv::Mat img, cv::Mat &imgOut,
                            const bool drawCalib, const bool drawMoveROIs, const bool drawSearchROI );
 
