@@ -579,7 +579,17 @@ GC_STATUS CalibBowtie::Save( const string jsonCalFilepath )
                                       "\"botX\": " << m_model.searchLines[ m_model.searchLines.size() - 1 ].bot.x << ", " << \
                                       "\"botY\": " << m_model.searchLines[ m_model.searchLines.size() - 1 ].bot.y << " }" << endl;
                 fileStream << "  ]," << endl;
-                fileStream << "  \"control_json\": \"" << m_model.controlJson << "\"" << endl;
+
+                string escaped;
+                for ( size_t i = 0; i < m_model.controlJson.size(); ++i )
+                {
+                    if ( m_model.controlJson[ i ] == '\"' )
+                        escaped += "\\\"";
+                    else
+                        escaped += m_model.controlJson[ i ];
+                }
+
+                fileStream << "  \"control_json\": \"" << escaped << "\"" << endl;
                 fileStream << "}" << endl;
                 fileStream.close();
             }

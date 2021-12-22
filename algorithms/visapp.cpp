@@ -282,7 +282,7 @@ GC_STATUS VisApp::CalcFindLine( const Mat &img, FindLineResult &result )
             if ( GC_OK != retVal )
             {
                 m_findLineResult = result;
-                FILE_LOG( logERROR ) << "[VisApp::CalcFindLine] Could not calc line in image";
+                result.msgs.push_back( "Could not perform find with provided image and calibration" );
                 retVal = GC_ERR;
             }
             else

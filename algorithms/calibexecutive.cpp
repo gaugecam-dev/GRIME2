@@ -88,7 +88,7 @@ GC_STATUS CalibExecutive::Calibrate( const cv::Mat &img, const std::string jsonP
 
         stringstream ss;
         ss << jsonParams;
-        // cout << ss.str() << endl;
+        cout << ss.str() << endl;
 
         pt::ptree top_level;
         pt::json_parser::read_json( ss, top_level );
@@ -131,7 +131,7 @@ GC_STATUS CalibExecutive::Calibrate( const cv::Mat &img, const std::string jsonP
     }
     catch( boost::exception &e )
     {
-        FILE_LOG( logERROR ) << "[CalibExecutive::Load] " << diagnostic_information( e );
+        FILE_LOG( logERROR ) << "[CalibExecutive::Calibrate] " << diagnostic_information( e );
         retVal = GC_EXCEPT;
     }
     return retVal;
@@ -367,6 +367,7 @@ GC_STATUS CalibExecutive::Load( const string jsonFilepath )
 
             stringstream ss;
             ss << jsonString;
+            // cout << endl << jsonString << endl;
 
             property_tree::ptree pt;
             property_tree::read_json( ss, pt );

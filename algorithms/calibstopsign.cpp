@@ -426,7 +426,17 @@ GC_STATUS CalibStopSign::Save( const std::string jsonCalFilepath )
                                       "\"botX\": " << model.searchLines[ model.searchLines.size() - 1 ].bot.x << ", " << \
                                       "\"botY\": " << model.searchLines[ model.searchLines.size() - 1 ].bot.y << " }" << endl;
                 fileStream << "  ]," << endl;
-                fileStream << "  \"control_json\": \"" << model.controlJson << "\"" << endl;
+
+                string escaped;
+                for ( size_t i = 0; i < model.controlJson.size(); ++i )
+                {
+                    if ( model.controlJson[ i ] == '\"' )
+                        escaped += "\\\"";
+                    else
+                        escaped += model.controlJson[ i ];
+                }
+
+                fileStream << "  \"control_json\": \"" << escaped << "\"" << endl;
                 fileStream << "}" << endl;
                 fileStream.close();
             }
