@@ -101,10 +101,20 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double octoSideLen
                 }
             }
         }
+        if ( model.pixelPoints.empty() || model.worldPoints.empty() || model.searchLines.empty() )
+        {
+            FILE_LOG( logERROR ) << "[CalibStopSign::Calibrate] No valid calibration for drawing";
+            retVal = GC_ERR;
+        }
+        else if ( matHomogPixToWorld.empty() || matHomogWorldToPix.empty() )
+        {
+            FILE_LOG( logERROR ) << "[CalibStopSign::Calibrate] System not calibrated";
+            retVal = GC_ERR;
+        }
     }
     catch( cv::Exception &e )
     {
-        FILE_LOG( logERROR ) << "[CalibStopSign::FindRed] " << e.what();
+        FILE_LOG( logERROR ) << "[CalibStopSign::Calibrate] " << e.what();
         retVal = GC_EXCEPT;
     }
 

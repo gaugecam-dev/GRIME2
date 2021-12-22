@@ -106,6 +106,7 @@ GC_STATUS VisApp::Calibrate( const string imgFilepath, const string jsonControl,
     catch( Exception &e )
     {
         FILE_LOG( logERROR ) << "[VisApp::Calibrate] " << e.what();
+        retVal = GC_EXCEPT;
     }
     return retVal;
 }
@@ -122,12 +123,13 @@ GC_STATUS VisApp::Calibrate( const string imgFilepath, const string jsonControl 
         }
         else
         {
-            m_calibExec.Calibrate( img, jsonControl );
+            retVal = m_calibExec.Calibrate( img, jsonControl );
         }
     }
     catch( Exception &e )
     {
         FILE_LOG( logERROR ) << "[VisApp::Calibrate] " << e.what();
+        retVal = GC_EXCEPT;
     }
     return retVal;
 }

@@ -69,7 +69,7 @@ GC_STATUS CalibBowtie::Calibrate( const vector< Point2d > pixelPts, const vector
     if ( pixelPts.size() != worldPts.size() || pixelPts.empty() || worldPts.empty() ||
          gridSize.width * gridSize.height != static_cast< int >( pixelPts.size() ) || 0 >= gridSize.width )
     {
-        FILE_LOG( logERROR ) << "[Calib::Calibrate] Calibration world/pixel coordinate point counts do not match or are empty";
+        FILE_LOG( logERROR ) << "[CalibBowtie::Calibrate] Calibration world/pixel coordinate point counts do not match or are empty";
         retVal = GC_ERR;
     }
     else
@@ -122,10 +122,20 @@ GC_STATUS CalibBowtie::Calibrate( const vector< Point2d > pixelPts, const vector
 
                 m_model.wholeTargetRegion = Rect( left, top, width, height );
             }
+            if ( m_model.pixelPoints.empty() || m_model.worldPoints.empty() || m_model.searchLines.empty() )
+            {
+                FILE_LOG( logERROR ) << "[CalibBowtie::Calibrate] No valid calibration for drawing";
+                retVal = GC_ERR;
+            }
+            else if ( m_matHomogPixToWorld.empty() || m_matHomogWorldToPix.empty() )
+            {
+                FILE_LOG( logERROR ) << "[CalibBowtie::Calibrate] System not calibrated";
+                retVal = GC_ERR;
+            }
         }
         catch( Exception &e )
         {
-            FILE_LOG( logERROR ) << "[" << __func__ << "] " << e.what();
+            FILE_LOG( logERROR ) << "[CalibBowtie::Calibrate] " << e.what();
             return GC_EXCEPT;
         }
     }
@@ -147,7 +157,18 @@ GC_STATUS CalibBowtie::DrawOverlay( const cv::Mat img, cv::Mat &imgOut, const bo
         }
         else
         {
-            FILE_LOG( logERROR ) << "[Calib::Calibrate] Invalid image format for calibration";
+            FILE_LOG( logERROR ) << "[CalibBowtie::DrawOverlay] Invalid image format for calibration";
+            retVal = GC_ERR;
+        }
+
+        if ( m_model.pixelPoints.empty() || m_model.worldPoints.empty() || m_model.searchLines.empty() )
+        {
+            FILE_LOG( logERROR ) << "[CalibBowtie::DrawOverlay] No valid calibration for drawing";
+            retVal = GC_ERR;
+        }
+        else if ( m_matHomogPixToWorld.empty() || m_matHomogWorldToPix.empty() )
+        {
+            FILE_LOG( logERROR ) << "[CalibBowtie::DrawOverlay] System not calibrated";
             retVal = GC_ERR;
         }
 
@@ -168,7 +189,7 @@ GC_STATUS CalibBowtie::DrawOverlay( const cv::Mat img, cv::Mat &imgOut, const bo
             {
                 if ( m_model.searchLines.empty() )
                 {
-                    FILE_LOG( logWARNING ) << "[Calib::Calibrate] Search lines not calculated properly so they cannot be drawn";
+                    FILE_LOG( logWARNING ) << "[CalibBowtie::Calibrate] Search lines not calculated properly so they cannot be drawn";
                     retVal = GC_WARN;
                 }
                 else
@@ -271,7 +292,7 @@ GC_STATUS CalibBowtie::DrawOverlay( const cv::Mat img, cv::Mat &imgOut, const bo
     }
     catch( Exception &e )
     {
-        FILE_LOG( logERROR ) << "[" << __func__ << "] " << e.what();
+        FILE_LOG( logERROR ) << "[CalibBowtie::DrawOverlay] " << e.what();
         return GC_EXCEPT;
     }
     return retVal;
@@ -282,7 +303,7 @@ GC_STATUS CalibBowtie::PixelToWorld( const Point2d ptPixel, Point2d &ptWorld )
 
     if ( m_matHomogPixToWorld.empty() )
     {
-        FILE_LOG( logERROR ) << "[Calib::PixelToWorld] No calibration for pixel to world conversion";
+        FILE_LOG( logERROR ) << "[CalibBowtie::PixelToWorld] No calibration for pixel to world conversion";
         retVal = GC_ERR;
     }
     else
@@ -296,7 +317,7 @@ GC_STATUS CalibBowtie::PixelToWorld( const Point2d ptPixel, Point2d &ptWorld )
         }
         catch( Exception &e )
         {
-            FILE_LOG( logERROR ) << "[Calib::PixelToWorld] " << e.what();
+            FILE_LOG( logERROR ) << "[CalibBowtie::PixelToWorld] " << e.what();
             retVal = GC_EXCEPT;
         }
     }
@@ -308,7 +329,7 @@ GC_STATUS CalibBowtie::WorldToPixel( const Point2d ptWorld, Point2d &ptPixel )
     GC_STATUS retVal = GC_OK;
     if ( m_matHomogWorldToPix.empty() )
     {
-        FILE_LOG( logERROR ) << "[Calib::WorldToPixel] No calibration for world to pixel conversion";
+        FILE_LOG( logERROR ) << "[CalibBowtie::WorldToPixel] No calibration for world to pixel conversion";
         retVal = GC_ERR;
     }
     else
@@ -322,7 +343,7 @@ GC_STATUS CalibBowtie::WorldToPixel( const Point2d ptWorld, Point2d &ptPixel )
         }
         catch( Exception &e )
         {
-            FILE_LOG( logERROR ) << "[Calib::WorldToPixel] " << e.what();
+            FILE_LOG( logERROR ) << "[CalibBowtie::WorldToPixel] " << e.what();
             retVal = GC_EXCEPT;
         }
     }
@@ -340,12 +361,12 @@ GC_STATUS CalibBowtie::MoveRefPoint( cv::Point2d &lftRefPt, cv::Point2d &rgtRefP
     Point2d pt( numeric_limits< double >::min(), numeric_limits< double >::min() );
     if ( m_model.pixelPoints.empty() )
     {
-        FILE_LOG( logERROR ) << "[Calib::MoveRefPoint] Cannot retrieve move reference point from an uncalibrated system";
+        FILE_LOG( logERROR ) << "[CalibBowtie::MoveRefPoint] Cannot retrieve move reference point from an uncalibrated system";
         retVal = GC_ERR;
     }
     else if ( static_cast< size_t >( m_model.gridSize.width * m_model.gridSize.height ) != m_model.pixelPoints.size() )
     {
-        FILE_LOG( logERROR ) << "[Calib::MoveRefPoint] Cannot retrieve move reference point with invalid calibration";
+        FILE_LOG( logERROR ) << "[CalibBowtie::MoveRefPoint] Cannot retrieve move reference point with invalid calibration";
         retVal = GC_ERR;
     }
     else
@@ -363,7 +384,7 @@ GC_STATUS CalibBowtie::Load( const string &jsonCalibString )
     {
         if ( jsonCalibString.empty() )
         {
-            FILE_LOG( logERROR ) << "[Calib::Load] Bow tie calibration string is empty";
+            FILE_LOG( logERROR ) << "[CalibBowtie::Load] Bow tie calibration string is empty";
             retVal = GC_ERR;
         }
         else
@@ -440,7 +461,7 @@ GC_STATUS CalibBowtie::Load( const string &jsonCalibString )
 #endif
             if ( cols * rows != m_model.pixelPoints.size() )
             {
-                FILE_LOG( logERROR ) << "[Calib::Load] Invalid association point count";
+                FILE_LOG( logERROR ) << "[CalibBowtie::Load] Invalid association point count";
                 retVal = GC_ERR;
             }
             else
@@ -473,7 +494,7 @@ GC_STATUS CalibBowtie::Load( const string &jsonCalibString )
     }
     catch( boost::exception &e )
     {
-        FILE_LOG( logERROR ) << "[Calib::Load] " << diagnostic_information( e );
+        FILE_LOG( logERROR ) << "[CalibBowtie::Load] " << diagnostic_information( e );
         retVal = GC_EXCEPT;
     }
 
@@ -487,7 +508,7 @@ GC_STATUS CalibBowtie::Save( const string jsonCalFilepath )
          m_model.pixelPoints.size() != m_model.worldPoints.size() ||
          2 > m_model.gridSize.width || 4 > m_model.gridSize.height || m_model.searchLines.empty() )
     {
-        FILE_LOG( logERROR ) << "[Calib::Save] Invalid calib grid dimension(s) or empty cal point vector(s)";
+        FILE_LOG( logERROR ) << "[CalibBowtie::Save] Invalid calib grid dimension(s) or empty cal point vector(s)";
         retVal = GC_ERR;
     }
     else
@@ -557,13 +578,13 @@ GC_STATUS CalibBowtie::Save( const string jsonCalFilepath )
             }
             else
             {
-                FILE_LOG( logERROR ) << "[Calib::Save] Could not open calibration save file " << jsonCalFilepath;
+                FILE_LOG( logERROR ) << "[CalibBowtie::Save] Could not open calibration save file " << jsonCalFilepath;
                 retVal = GC_ERR;
             }
         }
         catch( boost::exception &e )
         {
-            FILE_LOG( logERROR ) << "[Calib::Save] " << diagnostic_information( e );
+            FILE_LOG( logERROR ) << "[CalibBowtie::Save] " << diagnostic_information( e );
             retVal = GC_EXCEPT;
         }
     }
@@ -578,7 +599,7 @@ GC_STATUS CalibBowtie::CalcSearchSwaths()
          m_model.pixelPoints.size() != m_model.worldPoints.size() ||
          2 > m_model.gridSize.width || 4 > m_model.gridSize.height )
     {
-        FILE_LOG( logERROR ) << "[" << __func__ << "] Invalid calib grid dimension(s) or empty cal point vector(s)";
+        FILE_LOG( logERROR ) << "[CalibBowtie::CalcSearchSwaths] Invalid calib grid dimension(s) or empty cal point vector(s)";
         retVal = GC_ERR;
     }
     else
@@ -614,7 +635,7 @@ GC_STATUS CalibBowtie::CalcSearchSwaths()
         }
         catch( boost::exception &e )
         {
-            FILE_LOG( logERROR ) << "[Calib::CalcSearchSwaths] " << diagnostic_information( e );
+            FILE_LOG( logERROR ) << "[CalibBowtie::CalcSearchSwaths] " << diagnostic_information( e );
             retVal = GC_EXCEPT;
         }
     }
@@ -629,7 +650,7 @@ string CalibBowtie::ModelJsonString()
          m_model.pixelPoints.size() != m_model.worldPoints.size() ||
          2 > m_model.gridSize.width || 4 > m_model.gridSize.height || m_model.searchLines.empty() )
     {
-        FILE_LOG( logERROR ) << "[Calib::SettingsJsonString] Invalid calib grid dimension(s) or empty cal point vector(s)";
+        FILE_LOG( logERROR ) << "[CalibBowtie::SettingsJsonString] Invalid calib grid dimension(s) or empty cal point vector(s)";
     }
     else
     {
@@ -684,7 +705,7 @@ string CalibBowtie::ModelJsonString()
         }
         catch( boost::exception &e )
         {
-            FILE_LOG( logERROR ) << "[Calib::SettingsJsonString] " << diagnostic_information( e );
+            FILE_LOG( logERROR ) << "[CalibBowtie::SettingsJsonString] " << diagnostic_information( e );
         }
     }
 
