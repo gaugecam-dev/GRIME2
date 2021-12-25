@@ -200,6 +200,7 @@ public:
     cv::Rect &TargetRoi() { return m_model.wholeTargetRegion; }
 
     // TODO: Add doxygen comments
+    CalibModelBowtie &Model() { return m_model; }
     std::string ControlJson() { return m_model.controlJson; }
     GC_STATUS DrawOverlay( const cv::Mat img, cv::Mat &imgOut,
                            const bool drawCalib, const bool drawMoveROIs, const bool drawSearchROI );

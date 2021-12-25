@@ -95,6 +95,10 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double octoSideLen
                                 if ( GC_OK == retVal )
                                 {
                                     retVal = CalcSearchLines( img, searchLineCorners, model.searchLines );
+                                    if ( GC_OK == retVal )
+                                    {
+                                        retVal = CalcCenterAngle( model.worldPoints, model.center, model.angle );
+                                    }
                                 }
                             }
                         }
@@ -120,6 +124,44 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double octoSideLen
     catch( cv::Exception &e )
     {
         FILE_LOG( logERROR ) << "[CalibStopSign::Calibrate] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+
+    return retVal;
+}
+GC_STATUS CalibStopSign::CalcCenterAngle( const std::vector< cv::Point2d > &pts, cv::Point2d &center, double &angle )
+{
+    GC_STATUS retVal = GC_OK;
+
+    try
+    {
+        if ( pts.empty() )
+        {
+            FILE_LOG( logERROR ) << "[CalibStopSign::Calibrate] Empty point sets";
+            retVal = GC_ERR;
+        }
+        else
+        {
+            center = Point2d( 0.0, 0.0 );
+            for ( size_t i = 0; i < pts.size(); ++i )
+            {
+                center.x += pts[ i ].x;
+                center.y += pts[ i ].y;
+            }
+            center.x /= static_cast< double >( pts.size() );
+            center.y /= static_cast< double >( pts.size() );
+
+            vector< Point2d > ptsSortY = pts;
+            sort( ptsSortY.begin(), ptsSortY.end(), []( Point2d const &a, Point const &b ) { return ( a.y < b.y ); } );
+            Point2d ptLftTop = ptsSortY[ ptsSortY[ 0 ].x < ptsSortY[ 1 ].x ? 0 : 1 ];
+            Point2d ptRgtTop = ptsSortY[ ptsSortY[ 0 ].x < ptsSortY[ 1 ].x ? 1 : 0 ];
+
+            angle = atan2( ptRgtTop.y - ptLftTop.y, ptRgtTop.x - ptLftTop.x ) * ( 180.0 / CV_PI );
+        }
+    }
+    catch( std::exception &e )
+    {
+        FILE_LOG( logERROR ) << "[CalibStopSign::CalcCenterAngle] " << e.what();
         retVal = GC_EXCEPT;
     }
 
@@ -463,14 +505,22 @@ GC_STATUS CalibStopSign::CalcOctoWorldPoints( const double sideLength, std::vect
     {
         pts.clear();
         double cornerLength = sideLength * sqrt( 2.0 );
-        pts.push_back( Point2d( cornerLength, 0.0 ) );
-        pts.push_back( Point2d( cornerLength + sideLength, 0.0 ) );
-        pts.push_back( Point2d( cornerLength * 2.0 + sideLength, cornerLength ) );
-        pts.push_back( Point2d( cornerLength * 2.0 + sideLength, cornerLength + sideLength ) );
-        pts.push_back( Point2d( cornerLength + sideLength, cornerLength * 2.0 + sideLength ) );
-        pts.push_back( Point2d( cornerLength, cornerLength * 2.0 + sideLength ) );
-        pts.push_back( Point2d( 0.0, cornerLength + sideLength ) );
-        pts.push_back( Point2d( 0.0, cornerLength ) );
+        double top = cornerLength * 2.0 + sideLength;
+        double row2 = cornerLength + sideLength;
+        double row3 = cornerLength;
+        double bot = 0.0;
+        double lft = 0.0;
+        double col2 = cornerLength;
+        double col3 = cornerLength + sideLength;
+        double rgt = cornerLength * 2.0 + sideLength;
+        pts.push_back( Point2d( col2, top ) );
+        pts.push_back( Point2d( col3, top ) );
+        pts.push_back( Point2d( rgt, row2 ) );
+        pts.push_back( Point2d( rgt, row3 ) );
+        pts.push_back( Point2d( col3, bot ) );
+        pts.push_back( Point2d( col2, bot ) );
+        pts.push_back( Point2d( lft, row3 ) );
+        pts.push_back( Point2d( lft, row2 ) );
     }
     catch( std::exception &e )
     {
@@ -1128,6 +1178,10 @@ GC_STATUS CalibStopSign::DrawOverlay( const cv::Mat &img, cv::Mat &result, const
                                     double maxXW = std::max( ptRgtTopW.x, ptRgtBotW.x );
                                     double minYW = std::min( ptLftTopW.y, ptRgtTopW.y );
                                     double maxYW = std::max( ptLftBotW.y, ptRgtBotW.y );
+                                    if ( maxYW < minYW )
+                                    {
+                                        swap( minYW, maxYW );
+                                    }
 
                                     double incX = ( maxXW - minXW ) / 10.0;
                                     double incY = ( maxYW - minYW ) / 10.0;

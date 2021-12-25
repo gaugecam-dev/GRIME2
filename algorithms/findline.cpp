@@ -382,10 +382,10 @@ GC_STATUS FindLine::DrawResult( const Mat &img, Mat &imgOut, const FindLineResul
             }
             if ( GC_OK == retVal )
             {
-                int circleSize =  std::max( 5, cvRound( static_cast< double >( imgOut.rows ) / 120.0 ) );
-                int textStroke = std::max( 1, cvRound( static_cast< double >( imgOut.rows ) / 300.0 ) );
-                int textRowSpacing = cvRound( static_cast< double >( imgOut.rows ) / 25.0 );
-                double fontScale = static_cast< double >( imgOut.rows ) / 300.0;
+                int circleSize =  std::max( 5, cvRound( static_cast< double >( imgOut.rows ) / 400.0 ) );
+                int textStroke = std::max( 1, cvRound( static_cast< double >( imgOut.rows ) / 1000.0 ) );
+                int textRowSpacing = cvRound( static_cast< double >( imgOut.rows ) / 70.0 );
+                double fontScale = static_cast< double >( imgOut.rows ) / 1000.0;
 
                 if ( ( overlayTypes & ROW_SUMS ) && !result.diagRowSums.empty() )
                 {

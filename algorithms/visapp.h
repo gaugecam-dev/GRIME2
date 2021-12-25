@@ -226,17 +226,10 @@ public:
                                                                                                   static_cast< int >( RANSAC_POINTS ) ) );
 
     /**
-     * @brief Set the internal found line position from a user specifed find line result
-     * @param findLineResult User specified found line result object
-     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
-     */
-    void SetFindLineResult( const FindLineResult result );
-
-    /**
      * @brief Get the current found line position
      * @return Internal FindLineResult object
      */
-    FindLineResult GetFindLineResult();
+    FindLineResult GetFindLineResult() { return m_findLineResult; }
 
     /**
      * @brief Create and/or append find line results fo a csv file
@@ -252,14 +245,6 @@ public:
      */
     GC_STATUS WriteFindlineResultToCSV( const std::string resultCSV, const std::string imgPath,
                                         const FindLineResult &result, const bool overwrite = false );
-
-    /**
-     * @brief Draw both calibration model and line find overlays on a line find image based on its metadata
-     * @param imageFilepathIn Input image filepath of the line find image that holds metadata
-     * @param imageFilepathOut Output image filepath of the overlay image that is created
-     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
-     */
-    GC_STATUS DrawBothOverlays( const std::string imageFilepathIn, const std::string imageFilepathOut );
 
 private:
     std::string m_calibFilepath;

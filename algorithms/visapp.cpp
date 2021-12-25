@@ -78,7 +78,7 @@ GC_STATUS VisApp::Calibrate( const string imgFilepath, const string jsonControl,
     GC_STATUS retVal = GC_OK;
     try
     {
-        Mat img = imread( imgFilepath, IMREAD_ANYCOLOR );
+        Mat img = imread( imgFilepath, IMREAD_COLOR );
         if ( img.empty() )
         {
             FILE_LOG( logERROR ) << "[VisApp::Calibrate] Could not open image file " << imgFilepath;
@@ -115,7 +115,7 @@ GC_STATUS VisApp::Calibrate( const string imgFilepath, const string jsonControl 
     GC_STATUS retVal = GC_OK;
     try
     {
-        Mat img = imread( imgFilepath, IMREAD_ANYCOLOR );
+        Mat img = imread( imgFilepath, IMREAD_COLOR );
         if ( img.empty() )
         {
             FILE_LOG( logERROR ) << "[VisApp::Calibrate] Could not open image file " << imgFilepath;
@@ -163,14 +163,6 @@ GC_STATUS VisApp::GetImageData( const std::string filepath, ExifFeatures &exifFe
         FILE_LOG( logERROR ) << "[VisApp::ListMetadata] Could  not retrieve exif image data from " << filepath;
     }
     return retVal;
-}
-FindLineResult VisApp::GetFindLineResult()
-{
-    return m_findLineResult;
-}
-void VisApp::SetFindLineResult( const FindLineResult result )
-{
-    m_findLineResult = result;
 }
 GC_STATUS VisApp::AdjustSearchAreaForMovement( const std::vector< LineEnds > &searchLines,
                                                std::vector< LineEnds > &searchLinesAdj, const cv::Point2d offsets )
@@ -267,7 +259,18 @@ GC_STATUS VisApp::CalcFindLine( const Mat &img, FindLineResult &result )
         }
         else if ( "StopSign" == m_calibExec.GetCalibType() )
         {
+            CalibModelSymbol calibModel = m_calibExec.CalibModel();
+            Point2d origCenter = calibModel.center;
+            double origAngle = calibModel.angle;
+
             retVal = m_calibExec.Recalibrate( img, "StopSign" );
+            if ( GC_OK == retVal )
+            {
+                sprintf( buffer, "Target move x= %.3f y=%.3f a=%.3f", calibModel.center.x - origCenter.x,
+                         calibModel.center.x - origCenter.x, calibModel.angle - origAngle );
+                result.msgs.push_back( buffer );
+                searchLinesAdj = m_calibExec.SearchLines();
+            }
         }
         else
         {
@@ -300,11 +303,7 @@ GC_STATUS VisApp::CalcFindLine( const Mat &img, FindLineResult &result )
                     snprintf( buffer, 256, "Angle: %.3f", result.calcLinePts.angleWorld );
                     result.msgs.push_back( buffer );
 
-                    result.waterLevelAdjusted.y = result.calcLinePts.ctrWorld.y;
-                    result.calcLinePts.ctrWorld.y -= result.offsetMovePts.ctrWorld.y;
                     snprintf( buffer, 256, "Level: %.3f", result.calcLinePts.ctrWorld.y );
-                    result.msgs.push_back( buffer );
-                    snprintf( buffer, 256, "Level (adj): %.3f", result.waterLevelAdjusted.y );
                     result.msgs.push_back( buffer );
                 }
             }
@@ -435,7 +434,7 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result 
     try
     {
         result.clear();
-        cv::Mat img = imread( params.imagePath, IMREAD_GRAYSCALE );
+        cv::Mat img = imread( params.imagePath, IMREAD_COLOR );
         if ( img.empty() )
         {
             FILE_LOG( logERROR ) << "[VisApp::CalcLine] Empty image=" << params.imagePath ;

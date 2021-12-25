@@ -102,6 +102,7 @@ public:
      */
     std::vector< LineEnds > &SearchLines() { return model.searchLines; }
     std::string ControlJson() { return model.controlJson; }
+    CalibModelSymbol &Model() { return model; }
 
     cv::Rect &TargetRoi() { return model.wholeTargetRegion; }
 
@@ -123,6 +124,7 @@ private:
     GC_STATUS CalcSearchLines( const cv::Mat &img, std::vector< cv::Point > &searchLineCorners, std::vector< LineEnds > &searchLines );
     GC_STATUS Calibrate( const std::vector< cv::Point2d > &pixelPts, const std::vector< cv::Point2d > &worldPts );
     GC_STATUS GetLineEquation( const cv::Point2d pt1, const cv::Point2d pt2, double &slope, double &intercept );
+    GC_STATUS CalcCenterAngle( const std::vector< cv::Point2d > &pts, cv::Point2d &center, double &angle );
 };
 
 } // namespace gc
