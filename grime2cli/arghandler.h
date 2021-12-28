@@ -5,6 +5,7 @@
 #include <boost/exception/diagnostic_information.hpp>
 #include <string>
 #include <iostream>
+#include <algorithm>
 
 using namespace std;
 using namespace boost;

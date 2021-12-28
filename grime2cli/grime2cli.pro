@@ -4,7 +4,6 @@ CONFIG -= app_bundle
 CONFIG -= qt
 
 DEFINES += BOOST_ALL_NO_LIB BOOST_BIND_GLOBAL_PLACEHOLDERS
-CONFIG += c++11
 
 win32 {
     DEFINES += NOMINMAX
@@ -12,9 +11,7 @@ win32 {
     DEFINES += _WIN32_WINNT=0x0501
     OPENCV_INCLUDES = c:/opencv/opencv_451/include
     OPENCV_LIBS = C:/opencv/opencv_451/x64/lib/vc19
-    # BOOST_INCLUDES = C:/local/boost_1_74_0
     BOOST_INCLUDES = C:/Boost/include/boost-1_74
-    # BOOST_LIBS = C:/local/boost_1_74_0/stage/lib
     BOOST_LIBS = C:/Boost/lib
 }
 
@@ -130,6 +127,7 @@ RESOURCES += \
 DISTFILES += \
     ../algorithms/Doxyfile \
     LICENSE \
+    Makefile \
     NOTICE \
     config/calib.json \
     config/calib_result.png \
