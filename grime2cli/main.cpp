@@ -385,7 +385,7 @@ void ShowVersion()
     cout << "Application and library versions" << endl;
     cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
     cout << "  GRIME2: " << VisApp::Version()  << endl;
-    cout << "  OpenCV: " << cv::getVersionString();
+    cout << "  OpenCV: " << cv::getVersionString() << endl;
     cout << "ExifTool: "; fflush( stdout ); VisApp::GetExifToolVersion();
     cout << "   Boost: " << BOOST_VERSION / 100000 <<
             "." << BOOST_VERSION / 100 % 1000 <<

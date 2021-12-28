@@ -19,6 +19,7 @@
 #include <cstdio>
 #include <fstream>
 #include <sstream>
+#include <iostream>
 #include <algorithm>
 #include <opencv2/imgcodecs.hpp>
 #include <boost/filesystem.hpp>
