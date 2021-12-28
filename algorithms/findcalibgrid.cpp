@@ -391,6 +391,11 @@ GC_STATUS FindCalibGrid::MatchTemplate( const int index, const Mat &img, const R
                                                    " matches.  Must be in range 1-1000";
         retVal = GC_ERR;
     }
+    else if ( CV_8UC1 != img.type() )
+    {
+        FILE_LOG( logERROR ) << "[FindCalibGrid::MatchTemplate] Invalid image type. Must be 8-bit, 1-channel";
+        retVal = GC_ERR;
+    }
     else
     {
         try
@@ -401,14 +406,7 @@ GC_STATUS FindCalibGrid::MatchTemplate( const int index, const Mat &img, const R
             Point2d ptFinal;
             TemplateBowtieItem itemTemp;
 
-//            m_matchSpace = 0.0;
-//            Mat matchSpaceROI = m_matchSpace( targetRoi );
-
-            Mat matROI = img( targetRoi ).clone();
-            if ( CV_8UC3 == matROI.type() )
-            {
-                cvtColor( matROI, matROI, COLOR_BGR2GRAY );
-            }
+            Mat matROI = img( targetRoi );
 
             m_matchItems.clear();
             matchTemplate( matROI, m_templates[ static_cast< size_t >( index ) ], m_matchSpace, cv::TM_CCOEFF_NORMED );
@@ -667,7 +665,7 @@ GC_STATUS FindCalibGrid::FindMoveTargetsBowTie( const Mat &img, const Rect targe
     {
         try
         {
-            Mat scratch = Mat::zeros( img.size(), CV_8UC1 );
+            Mat scratch = Mat::zeros( img.size(), img.type() );
 
             Mat matMoveSearch = img( m_rectLeftMoveSearch );
             Mat matMoveSearchScratch = scratch( m_rectLeftMoveSearch );
@@ -676,6 +674,11 @@ GC_STATUS FindCalibGrid::FindMoveTargetsBowTie( const Mat &img, const Rect targe
             matMoveSearch = img( m_rectRightMoveSearch );
             matMoveSearchScratch = scratch( m_rectRightMoveSearch );
             matMoveSearch.copyTo( matMoveSearchScratch );
+
+            if ( CV_8UC3 == img.type() )
+            {
+                cvtColor( scratch, scratch, COLOR_BGR2GRAY );
+            }
 
 #ifdef DEBUG_FIND_CALIB_GRID
             imwrite( DEBUG_RESULT_FOLDER + "move_search_image_original.png", img );
