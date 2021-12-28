@@ -123,15 +123,13 @@ GC_STATUS Calibrate( const Grime2CLIParams cliParams )
         retVal = FormCalibJsonString( cliParams, jsonString );
         if ( GC_OK == retVal )
         {
-            retVal = vis.Calibrate( cliParams.src_imagePath, jsonString );
-            if ( GC_OK == retVal && !cliParams.result_imagePath.empty() )
+            if ( cliParams.result_imagePath.empty() )
             {
-                cv::Mat imgOut;
-                bool bRet = cv::imwrite( cliParams.result_imagePath, imgOut );
-                if ( !bRet )
-                {
-                    FILE_LOG( logWARNING ) << "Could not save calibration result image " << cliParams.result_imagePath;
-                }
+                retVal = vis.Calibrate( cliParams.src_imagePath, jsonString );
+            }
+            else
+            {
+                retVal = vis.Calibrate( cliParams.src_imagePath, jsonString, cliParams.result_imagePath );
             }
         }
     }

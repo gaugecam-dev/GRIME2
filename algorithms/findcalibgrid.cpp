@@ -307,7 +307,11 @@ GC_STATUS FindCalibGrid::MatchRefine( const int index, const Mat &img, const Rec
             double minScore, maxScore;
             TemplateBowtieItem itemTemp;
 
-            Mat targetMat = img( targetRoi );
+            Mat targetMat = img( targetRoi ).clone();
+            if ( CV_8UC3 == targetMat.type() )
+            {
+                cvtColor( targetMat, targetMat, COLOR_BGR2GRAY );
+            }
 
             m_matchSpace = Mat();
 
@@ -326,8 +330,13 @@ GC_STATUS FindCalibGrid::MatchRefine( const int index, const Mat &img, const Rec
             if ( rect.y + rect.height >= targetMat.rows )
                 rect.y = targetMat.rows - rect.height;
 
-            Mat matROI = targetMat( rect );
+            Mat matROI = targetMat( rect ).clone();
             m_matchSpaceSmall = 0;
+
+            if ( CV_8UC3 == matROI.type() )
+            {
+                cvtColor( matROI, matROI, COLOR_BGR2GRAY );
+            }
 
             matchTemplate( matROI, m_templates[ static_cast< size_t >( index ) ], m_matchSpaceSmall, TM_CCOEFF_NORMED );
             minMaxLoc( m_matchSpaceSmall, &minScore, &maxScore, &ptMin, &ptMax );
@@ -395,8 +404,14 @@ GC_STATUS FindCalibGrid::MatchTemplate( const int index, const Mat &img, const R
 //            m_matchSpace = 0.0;
 //            Mat matchSpaceROI = m_matchSpace( targetRoi );
 
+            Mat matROI = img( targetRoi ).clone();
+            if ( CV_8UC3 == matROI.type() )
+            {
+                cvtColor( matROI, matROI, COLOR_BGR2GRAY );
+            }
+
             m_matchItems.clear();
-            matchTemplate( img( targetRoi ), m_templates[ static_cast< size_t >( index ) ], m_matchSpace, cv::TM_CCOEFF_NORMED );
+            matchTemplate( matROI, m_templates[ static_cast< size_t >( index ) ], m_matchSpace, cv::TM_CCOEFF_NORMED );
 
 #ifdef DEBUG_FIND_CALIB_GRID
             Mat matTemp;

@@ -229,7 +229,7 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                         }
                         else if ( !fs::exists( fs::path( params.csvPath ).parent_path() ) )
                         {
-                            bool isOk = fs::create_directories( fs::path( params.result_imagePath ).parent_path() );
+                            bool isOk = fs::create_directories( fs::path( fs::canonical( params.result_imagePath ) ).parent_path() );
                             if ( !isOk )
                             {
                                 FILE_LOG( logERROR ) << "[ArgHandler] Could not create result image folder: " << fs::path( params.result_imagePath ).parent_path().string();
