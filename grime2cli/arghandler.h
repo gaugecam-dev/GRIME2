@@ -296,7 +296,7 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                         }
                         else
                         {
-                            string result_folder = fs::path( params.result_imagePath ).parent_path().string();
+                            string result_folder = fs::path( fs::canonical( params.result_imagePath ) ).parent_path().string();
                             if ( !fs::exists( result_folder ) )
                             {
                                 bool isOk = fs::create_directories( result_folder );
