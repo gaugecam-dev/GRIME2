@@ -64,7 +64,11 @@ int main( int argc, char *argv[] )
         GC_STATUS retVal = GC_OK;
         Grime2CLIParams params;
         ret = GetArgs( argc, argv, params );
-        if ( 0 == ret )
+        if ( 0 != ret )
+        {
+            cout << "{\"status\": \"FAILURE\", \"return\": " << to_string( ret ) << "}" << endl;
+        }
+        else
         {
             if ( CALIBRATE == params.opToPerform )
             {
