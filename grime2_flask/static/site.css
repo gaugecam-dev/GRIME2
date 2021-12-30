@@ -4,10 +4,7 @@
 }
 
 .navbar {
-    background-color: lightslategray;
     font-size: 1em;
-    font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
-    color: white;
     padding: 8px 5px 8px 5px;
 }
 
@@ -22,13 +19,11 @@
 }
 
 .navbar-item {
-    font-variant: small-caps;
     margin-left: 30px;
 }
 
 .body-content {
     padding: 5px;
-    font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 body{
@@ -42,22 +37,27 @@ body{
 }
 
 .leftpane{
-    background-color: lightgray;
     width: 25%;
     min-width: 350px;
-    height: available;
-    min-height: 400px;
+    min-height: 600px;
     float: left;
-    border-width: 5;
-    border-color: black;
+    padding: 3px;
+    margin: 3px;
+    border: 3px solid black;
 }    
 
 .rightpane{
-   background-color: white;
-   width: 50%;
+   width: 65%;
    min-width: 800px;
-   height: available;
-   min-height: 650px;
+   min-height: 600px;
    float: left;
-   border-collapse: collapse;
+   padding: 3px;
+   margin: 3px;
+   border: 3px solid black;
 }
+.header, .footer {
+    padding: 15px;
+    width: 85%;
+    height: 5% 
+  }
+  
