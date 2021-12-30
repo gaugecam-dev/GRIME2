@@ -248,6 +248,7 @@ GC_STATUS VisApp::CalcFindLine( const Mat &img, FindLineResult &result )
                             result.offsetMovePts.ctrWorld.y = result.foundMovePts.ctrWorld.y - result.refMovePts.ctrWorld.y;
                             result.offsetMovePts.rgtWorld.x = result.foundMovePts.rgtWorld.x - result.refMovePts.rgtWorld.x;
                             result.offsetMovePts.rgtWorld.y = result.foundMovePts.rgtWorld.y - result.refMovePts.rgtWorld.y;
+
                             result.calibOffsets.calibAngle = atan2( result.refMovePts.rgtWorld.y - result.refMovePts.lftWorld.y,
                                                                result.refMovePts.rgtWorld.x - result.refMovePts.lftWorld.x ) * ( 180.0 / CV_PI );
                             result.calibOffsets.calibCenterPt = ( result.refMovePts.lftWorld + result.refMovePts.rgtWorld ) / 2.0;
@@ -307,9 +308,8 @@ GC_STATUS VisApp::CalcFindLine( const Mat &img, FindLineResult &result )
                 }
                 else
                 {
-                    double denom = result.offsetMovePts.rgtWorld.x == result.offsetMovePts.lftWorld.x ?
-                                std::numeric_limits< double >::epsilon() : result.offsetMovePts.rgtWorld.x - result.offsetMovePts.lftWorld.x;
-                    result.calcLinePts.angleWorld = atan( ( result.offsetMovePts.rgtWorld.y - result.offsetMovePts.lftWorld.y ) / denom );
+                    result.calcLinePts.angleWorld = atan2( result.calcLinePts.rgtWorld.y - result.calcLinePts.lftWorld.y,
+                                                           result.calcLinePts.rgtWorld.x - result.calcLinePts.lftWorld.x ) * ( 180.0 / CV_PI );
                     snprintf( buffer, 256, "Angle: %.3f", result.calcLinePts.angleWorld );
                     result.msgs.push_back( buffer );
 
@@ -369,13 +369,18 @@ GC_STATUS VisApp::CalcLine( const Mat &img, const string timestamp )
 GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result, string &resultJson )
 {
     GC_STATUS retVal = CalcLine( params, result );
-    if ( GC_OK == retVal )
+    try
     {
-        try
+        stringstream ss;
+        resultJson.clear();
+        if ( GC_OK != retVal )
         {
-            resultJson.clear();
-            stringstream ss;
+            ss << "{\"image_path\": \"FAILURE\"}";
+        }
+        else
+        {
             ss << "{";
+            ss << "\"status\": \"SUCCESS\",";
             ss << "\"image_path\": \"" << params.imagePath << "\",";
             ss << "\"calib_path\": \"" << params.calibFilepath << "\",";
             ss << "\"result_path\": \"" << params.resultImagePath << "\",";
@@ -383,7 +388,6 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result,
             ss << "\"timestamp_format\": \"" << params.timeStampFormat << "\",";
             ss << "\"timestamp_start_pos\": " << params.timeStampStartPos << ",";
             ss << "\"timestamp_length\": " << params.timeStampStartPos << ",";
-            ss << "\"status\":  \"" << ( result.findSuccess ? "SUCCESS" : "FAIL" ) << "\",";
             ss << "\"timestamp\": \"" << result.timestamp << "\",";
             ss << "\"origCalCenter_x\": " << result.calibOffsets.calibCenterPt.x << ",";
             ss << "\"origCalCenter_y\": " << result.calibOffsets.calibCenterPt.y << ",";
@@ -391,55 +395,49 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result,
             ss << "\"foundCalCenter_x\": " << result.calibOffsets.offsetCenterPt.x << ",";
             ss << "\"foundCalCenter_y\": " << result.calibOffsets.offsetCenterPt.y << ",";
             ss << "\"foundCalCenter_angle\": " << result.calibOffsets.offsetAngle << ",";
-            ss << "\"waterLevelAdjusted_x\": " << result.waterLevelAdjusted.x << ",";
-            ss << "\"waterLevelAdjusted_y\": " << result.waterLevelAdjusted.y << ",";
 
-            string json;
-            retVal = FindPtSet2JsonString( result.calcLinePts, "calc_line_pts", json );
-            if ( GC_OK == retVal )
+            ss << "\"pixel_line_left_x\": " << result.calcLinePts.lftPixel.x << ",";
+            ss << "\"pixel_line_left_y\": " << result.calcLinePts.lftPixel.y << ",";
+            ss << "\"pixel_line_center_x\": " << result.calcLinePts.ctrPixel.x << ",";
+            ss << "\"pixel_line_center_y\": " << result.calcLinePts.ctrPixel.y << ",";
+            ss << "\"pixel_line_right_x\": " << result.calcLinePts.rgtPixel.x << ",";
+            ss << "\"pixel_line_right_y\": " << result.calcLinePts.rgtPixel.y << ",";
+            ss << "\"pixel_line_angle\": " << result.calcLinePts.anglePixel << ",";
+
+            ss << "\"world_line_left_x\": " << result.calcLinePts.lftWorld.x << ",";
+            ss << "\"world_line_left_y\": " << result.calcLinePts.lftWorld.y << ",";
+            ss << "\"world_line_center_x\": " << result.calcLinePts.ctrWorld.x << ",";
+            ss << "\"world_line_center_y\": " << result.calcLinePts.ctrWorld.y << ",";
+            ss << "\"world_line_right_x\": " << result.calcLinePts.rgtWorld.x << ",";
+            ss << "\"world_line_right_y\": " << result.calcLinePts.rgtWorld.y << ",";
+            ss << "\"world_line_angle\": " << result.calcLinePts.angleWorld << ",";
+
+            ss << "\"found_pts\": [";
+            for ( size_t i = 0; i < result.foundPoints.size(); ++i )
             {
-                ss << json << ",";
-                retVal = FindPtSet2JsonString( result.refMovePts, "ref_move_pts", json );
-                if ( GC_OK == retVal )
-                {
-                    ss << json << ",";
-                    retVal = FindPtSet2JsonString( result.foundMovePts, "found_move_pts", json );
-                    if ( GC_OK == retVal )
-                    {
-                        ss << json << ",";
-                        retVal = FindPtSet2JsonString( result.offsetMovePts, "offset_move_pts", json );
-                        if ( GC_OK == retVal )
-                        {
-                            ss << json << ", \"found_pts\": [";
-                            for ( size_t i = 0; i < result.foundPoints.size(); ++i )
-                            {
-                                ss << "{\"x\": " << result.foundPoints[ i ].x << ",";
-                                ss <<  "\"y\": " << result.foundPoints[ i ].y << "}";
-                                if ( result.foundPoints.size() - 1 != i )
-                                    ss << ",";
-                            }
-                            ss << "],";
-                            ss << json << ", \"messages\": [";
-                            for ( size_t i = 0; i < result.msgs.size(); ++i )
-                            {
-                                ss << "\"" << result.msgs[ i ] << "\"";
-                                if ( result.msgs.size() - 1 != i )
-                                    ss << ",";
-                            }
-                            ss << "]";
-                            ss << "}";
-                            resultJson = ss.str();
-                        }
-                    }
-                }
+                ss << "{\"x\": " << result.foundPoints[ i ].x << ",";
+                ss <<  "\"y\": " << result.foundPoints[ i ].y << "}";
+                if ( result.foundPoints.size() - 1 != i )
+                    ss << ",";
             }
+            ss << "],";
+            ss << "\"messages\": [";
+            for ( size_t i = 0; i < result.msgs.size(); ++i )
+            {
+                ss << "\"" << result.msgs[ i ] << "\"";
+                if ( result.msgs.size() - 1 != i )
+                    ss << ",";
+            }
+            ss << "]";
+            ss << "}";
+            resultJson = ss.str();
         }
-        catch( std::exception &e )
-        {
-            FILE_LOG( logERROR ) << "[VisApp::CalcLine] " << e.what();
-            FILE_LOG( logERROR ) << "Image=" << params.imagePath << " calib=" << params.calibFilepath;
-            retVal = GC_EXCEPT;
-        }
+    }
+    catch( std::exception &e )
+    {
+        FILE_LOG( logERROR ) << "[VisApp::CalcLine] " << e.what();
+        FILE_LOG( logERROR ) << "Image=" << params.imagePath << " calib=" << params.calibFilepath;
+        retVal = GC_EXCEPT;
     }
 
     return retVal;

@@ -64,7 +64,11 @@ int main( int argc, char *argv[] )
         GC_STATUS retVal = GC_OK;
         Grime2CLIParams params;
         ret = GetArgs( argc, argv, params );
-        if ( 0 == ret )
+        if ( 0 != ret )
+        {
+            cout << "{\"status\": \"FAILURE\", \"return\": " << to_string( ret ) << "}" << endl;
+        }
+        else
         {
             if ( CALIBRATE == params.opToPerform )
             {
@@ -230,7 +234,7 @@ GC_STATUS FindWaterLevel( const Grime2CLIParams cliParams )
     string resultJson;
     FindLineResult result;
     GC_STATUS retVal = visApp.CalcLine( params, result, resultJson );
-    cout << ( GC_OK == retVal ? resultJson : "ERROR" ) << endl;
+    cout << resultJson << endl;
     return retVal;
 }
 GC_STATUS FormCalibJsonString( const Grime2CLIParams cliParams, string &json )

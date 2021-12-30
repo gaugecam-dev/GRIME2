@@ -202,8 +202,8 @@ GC_STATUS FindLine::FitLineRANSAC( const std::vector< Point2d > &pts, FindPointS
                     findPtSet.rgtPixel.y = lineVec[ 3 ] + ( lineVec[ 1 ] * ( img.cols - lineVec[ 2 ] - 1 ) );
                     findPtSet.ctrPixel.x = lineVec[ 2 ] + ( lineVec[ 0 ] * ( xCenter - lineVec[ 2 ] ) );
                     findPtSet.ctrPixel.y = lineVec[ 3 ] + ( lineVec[ 1 ] * ( xCenter - lineVec[ 2 ] ) );
-                    findPtSet.anglePixel = atan( ( findPtSet.rgtPixel.y - findPtSet.lftPixel.y ) /
-                                                 ( findPtSet.rgtPixel.x - findPtSet.lftPixel.x ) ) * 180 / 3.14159265;
+                    findPtSet.anglePixel = atan2( ( findPtSet.rgtPixel.y - findPtSet.lftPixel.y ),
+                                                 ( findPtSet.rgtPixel.x - findPtSet.lftPixel.x ) ) * ( 180.0 / CV_PI );
 #ifdef DEBUG_FIND_LINE
                     line( scratch, findPtSet.lftPixel, findPtSet.rgtPixel, Scalar( 0, 0, 255 ), 1 );
 #endif
