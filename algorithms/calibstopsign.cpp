@@ -708,10 +708,6 @@ GC_STATUS CalibStopSign::FindCorners( const cv::Mat &mask, const std::vector< cv
                                     {
                                         octoLines.left.pt1 = octoLines.bot.pt2;
                                         retVal = LineIntersection( StopSignLine( botPt1, botPt2 ), StopSignLine( rgtPt1, rgtPt2 ), octoLines.right.pt2 );
-                                        if ( GC_OK == retVal )
-                                        {
-                                            octoLines.bot.pt1 = octoLines.right.pt2;
-                                        }
                                     }
                                 }
                             }

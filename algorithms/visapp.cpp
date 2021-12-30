@@ -248,6 +248,13 @@ GC_STATUS VisApp::CalcFindLine( const Mat &img, FindLineResult &result )
                             result.offsetMovePts.ctrWorld.y = result.foundMovePts.ctrWorld.y - result.refMovePts.ctrWorld.y;
                             result.offsetMovePts.rgtWorld.x = result.foundMovePts.rgtWorld.x - result.refMovePts.rgtWorld.x;
                             result.offsetMovePts.rgtWorld.y = result.foundMovePts.rgtWorld.y - result.refMovePts.rgtWorld.y;
+                            result.calibOffsets.calibAngle = atan2( result.refMovePts.rgtWorld.y - result.refMovePts.lftWorld.y,
+                                                               result.refMovePts.rgtWorld.x - result.refMovePts.lftWorld.x ) * ( 180.0 / CV_PI );
+                            result.calibOffsets.calibCenterPt = ( result.refMovePts.lftWorld + result.refMovePts.rgtWorld ) / 2.0;
+                            result.calibOffsets.offsetAngle = atan2( result.foundMovePts.rgtWorld.y - result.foundMovePts.lftWorld.y,
+                                                                    result.foundMovePts.rgtWorld.x - result.foundMovePts.lftWorld.x ) * ( 180.0 / CV_PI );
+                            result.calibOffsets.offsetCenterPt = ( result.foundMovePts.lftWorld + result.foundMovePts.rgtWorld ) / 2.0;
+
 
                             sprintf( buffer, "Adjust: %.3f", result.offsetMovePts.ctrWorld.y );
                             result.msgs.push_back( buffer );
@@ -260,15 +267,17 @@ GC_STATUS VisApp::CalcFindLine( const Mat &img, FindLineResult &result )
         }
         else if ( "StopSign" == m_calibExec.GetCalibType() )
         {
-            CalibModelSymbol calibModel = m_calibExec.CalibModel();
-            Point2d origCenter = calibModel.center;
-            double origAngle = calibModel.angle;
+            CalibModelSymbol calibModel = m_calibExec.CalibSymbolModel();
+            result.calibOffsets.calibCenterPt = calibModel.center;
+            result.calibOffsets.calibAngle = calibModel.angle;
 
             retVal = m_calibExec.Recalibrate( img, "StopSign" );
             if ( GC_OK == retVal )
             {
-                sprintf( buffer, "Target move x= %.3f y=%.3f a=%.3f", calibModel.center.x - origCenter.x,
-                         calibModel.center.x - origCenter.x, calibModel.angle - origAngle );
+                result.calibOffsets.offsetCenterPt = calibModel.center;
+                result.calibOffsets.offsetAngle = calibModel.angle;
+                sprintf( buffer, "Target move x= %.3f y=%.3f a=%.3f", calibModel.center.x - result.calibOffsets.calibCenterPt.x,
+                         calibModel.center.y - result.calibOffsets.calibCenterPt.y, calibModel.angle - result.calibOffsets.calibAngle );
                 result.msgs.push_back( buffer );
                 searchLinesAdj = m_calibExec.SearchLines();
             }
@@ -376,6 +385,12 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result,
             ss << "\"timestamp_length\": " << params.timeStampStartPos << ",";
             ss << "\"status\":  \"" << ( result.findSuccess ? "SUCCESS" : "FAIL" ) << "\",";
             ss << "\"timestamp\": \"" << result.timestamp << "\",";
+            ss << "\"origCalCenter_x\": " << result.calibOffsets.calibCenterPt.x << ",";
+            ss << "\"origCalCenter_y\": " << result.calibOffsets.calibCenterPt.y << ",";
+            ss << "\"origCalCenter_angle\": " << result.calibOffsets.calibAngle << ",";
+            ss << "\"foundCalCenter_x\": " << result.calibOffsets.offsetCenterPt.x << ",";
+            ss << "\"foundCalCenter_y\": " << result.calibOffsets.offsetCenterPt.y << ",";
+            ss << "\"foundCalCenter_angle\": " << result.calibOffsets.offsetAngle << ",";
             ss << "\"waterLevelAdjusted_x\": " << result.waterLevelAdjusted.x << ",";
             ss << "\"waterLevelAdjusted_y\": " << result.waterLevelAdjusted.y << ",";
 

@@ -1,6 +1,7 @@
 #include "log.h"
 #include "calibexecutive.h"
 #include <iostream>
+#include <opencv2/imgproc.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/algorithm.hpp>
@@ -114,9 +115,19 @@ GC_STATUS CalibExecutive::Calibrate( const cv::Mat &img, const std::string jsonP
         paramsCurrent.lineSearch_rgtBot.x = top_level.get< int >( "searchPoly_rgtBot_x", -1 );
         paramsCurrent.lineSearch_rgtBot.y = top_level.get< int >( "searchPoly_rgtBot_y", -1 );
 
+
         if ( "BowTie" == paramsCurrent.calibType )
         {
-            retVal = CalibrateBowTie( img, jsonParams );
+            Mat imgFixed;
+            if ( CV_8UC3 == img.type() )
+            {
+                cvtColor( img, imgFixed, cv::COLOR_BGR2GRAY );
+                retVal = CalibrateBowTie( imgFixed, jsonParams );
+            }
+            else
+            {
+                retVal = CalibrateBowTie( img, jsonParams );
+            }
         }
         else if ( "StopSign" == paramsCurrent.calibType )
         {

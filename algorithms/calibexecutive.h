@@ -77,7 +77,8 @@ public:
     GC_STATUS MoveRefPoint( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt );
 
 
-    CalibModelSymbol &CalibModel() { return stopSign.Model(); }
+    CalibModelBowtie &CalibBowtieModel() { return bowTie.Model(); }
+    CalibModelSymbol &CalibSymbolModel() { return stopSign.Model(); }
     std::vector< LineEnds > &SearchLines();
     cv::Rect &TargetRoi();
     std::string &GetCalibType() { return paramsCurrent.calibType; }

@@ -356,6 +356,42 @@ public:
     cv::Point2d rgtWorld;   ///< Right most world coordinate position of the found line
 };
 
+// TODO:  Add doxygen comments
+/**
+ * @brief Data class to hold the offsets from the original calibration
+ */
+class CalibOffset
+{
+public:
+    CalibOffset() :
+        calibAngle( -9999999.0 ),
+        calibCenterPt( cv::Point2d( -1.0, -1.0 ) ),
+        offsetAngle( -9999999.0 ),
+        offsetCenterPt( cv::Point2d( -1.0, -1.0 ) )
+    {}
+
+    CalibOffset( const double calAngle, const cv::Point2d calCenter,
+                 const double offAngle, const cv::Point2d offCenter ) :
+        calibAngle( calAngle ),
+        calibCenterPt( calCenter ),
+        offsetAngle( offAngle ),
+        offsetCenterPt( offCenter )
+    {}
+
+    void clear()
+    {
+        calibAngle = -9999999.0;
+        calibCenterPt = cv::Point2d( -1.0, -1.0 );
+        offsetAngle = -9999999.0;
+        offsetCenterPt = cv::Point2d( -1.0, -1.0 );
+    }
+
+    double calibAngle;                      ///< Calibration angle
+    cv::Point2d calibCenterPt;              ///< Calibration center point
+    double offsetAngle;                     ///< Calibration offset angle
+    cv::Point2d offsetCenterPt;             ///< Calibration offset center point
+};
+
 /**
  * @brief Data class to hold the results of a search calculation for both water level and move detection
  */
@@ -366,7 +402,9 @@ public:
      * @brief Constructor sets the object to an uninitialized state
      */
     FindLineResult()
-    {}
+    {
+        clear();
+    }
 
     /**
      * @brief Constructor to set the object to a valid state
@@ -376,6 +414,7 @@ public:
      * @param moveRefPoints         Line between the move targets at the time of calibration
      * @param moveFoundPoints       Line between the move targets at the time of the current line find
      * @param moveOffsetPoints      Offset between the moveRef and the moveFound lines
+     * @param calibOffsets          Calibration offset center and angle (along with original center and angle)
      * @param lineFoundPts          Water line points used to calculate the found water level line
      * @param rowSumDiag            Find line row sums vector of vectors of points
      * @param oneDerivDiag          Find line row sums first derivative vector of vectors of points
@@ -389,6 +428,7 @@ public:
                     const FindPointSet moveRefPoints,
                     const FindPointSet moveFoundPoints,
                     const FindPointSet moveOffsetPoints,
+                    const CalibOffset calOffsets,
                     const std::vector< cv::Point2d > lineFoundPts,
                     const std::vector< std::vector< cv::Point > > rowSumDiag,
                     const std::vector< std::vector< cv::Point > > oneDerivDiag,
@@ -401,6 +441,7 @@ public:
         refMovePts( moveRefPoints ),
         foundMovePts( moveFoundPoints ),
         offsetMovePts( moveOffsetPoints ),
+        calibOffsets( calOffsets ),
         foundPoints( lineFoundPts ),
         diagRowSums( rowSumDiag ),
         diag1stDeriv( oneDerivDiag ),
@@ -422,6 +463,7 @@ public:
         foundMovePts.clear();
         foundPoints.clear();
         offsetMovePts.clear();
+        calibOffsets.clear();
         diagRowSums.clear();
         diag1stDeriv.clear();
         diag2ndDeriv.clear();
@@ -435,6 +477,7 @@ public:
     FindPointSet refMovePts;                ///< Line between the move targets at the time of calibration
     FindPointSet foundMovePts;              ///< Line between the move targets at the time of the current line find
     FindPointSet offsetMovePts;             ///< Offset between the moveRef and the moveFound lines
+    CalibOffset calibOffsets;               ///< Calibration offset center and angle (along with original center and angle)
     std::vector< cv::Point2d > foundPoints; ///< Water line points used to calculate the found water level line
     std::vector< std::vector< cv::Point > > diagRowSums;   ///< Row sums diagnostic lines
     std::vector< std::vector< cv::Point > > diag1stDeriv;  ///< 1st deriv diagnostic lines
