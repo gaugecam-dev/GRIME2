@@ -30,3 +30,34 @@
     padding: 5px;
     font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
+
+body{
+    width: available;
+    height: available;
+}
+
+.container{
+    width: available;
+    height: available;
+}
+
+.leftpane{
+    background-color: lightgray;
+    width: 25%;
+    min-width: 350px;
+    height: available;
+    min-height: 400px;
+    float: left;
+    border-width: 5;
+    border-color: black;
+}    
+
+.rightpane{
+   background-color: white;
+   width: 50%;
+   min-width: 800px;
+   height: available;
+   min-height: 650px;
+   float: left;
+   border-collapse: collapse;
+}
