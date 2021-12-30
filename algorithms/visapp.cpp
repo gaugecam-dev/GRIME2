@@ -369,13 +369,18 @@ GC_STATUS VisApp::CalcLine( const Mat &img, const string timestamp )
 GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result, string &resultJson )
 {
     GC_STATUS retVal = CalcLine( params, result );
-    if ( GC_OK == retVal )
+    try
     {
-        try
+        stringstream ss;
+        resultJson.clear();
+        if ( GC_OK != retVal )
         {
-            resultJson.clear();
-            stringstream ss;
+            ss << "{\"image_path\": \"FAILURE\"}";
+        }
+        else
+        {
             ss << "{";
+            ss << "\"image_path\": \"SUCCESS\",";
             ss << "\"image_path\": \"" << params.imagePath << "\",";
             ss << "\"calib_path\": \"" << params.calibFilepath << "\",";
             ss << "\"result_path\": \"" << params.resultImagePath << "\",";
@@ -434,12 +439,12 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result,
                 }
             }
         }
-        catch( std::exception &e )
-        {
-            FILE_LOG( logERROR ) << "[VisApp::CalcLine] " << e.what();
-            FILE_LOG( logERROR ) << "Image=" << params.imagePath << " calib=" << params.calibFilepath;
-            retVal = GC_EXCEPT;
-        }
+    }
+    catch( std::exception &e )
+    {
+        FILE_LOG( logERROR ) << "[VisApp::CalcLine] " << e.what();
+        FILE_LOG( logERROR ) << "Image=" << params.imagePath << " calib=" << params.calibFilepath;
+        retVal = GC_EXCEPT;
     }
 
     return retVal;

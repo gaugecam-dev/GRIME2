@@ -230,7 +230,7 @@ GC_STATUS FindWaterLevel( const Grime2CLIParams cliParams )
     string resultJson;
     FindLineResult result;
     GC_STATUS retVal = visApp.CalcLine( params, result, resultJson );
-    cout << ( GC_OK == retVal ? resultJson : "ERROR" ) << endl;
+    cout << resultJson << endl;
     return retVal;
 }
 GC_STATUS FormCalibJsonString( const Grime2CLIParams cliParams, string &json )
