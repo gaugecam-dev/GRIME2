@@ -26,7 +26,7 @@ class Images():
     db_filepath = None
     cursor = None
     
-    def __init__(self, grime2cli_filepath = "/media/kchapman/Elements/Projects/GRIME2/build-grime2cli-Desktop_Qt_5_15_2_GCC_64bit-Release/grime2cli"):
+    def __init__(self, grime2cli_filepath = "bin/grime2cli"):
         self.grime2cli_path = grime2cli_filepath
             
     def open_db(self, db_path):
@@ -94,8 +94,8 @@ class Images():
 
 if __name__ == "__main__":
     image_access = Images()
-    item = LineFindItem('/media/kchapman/Elements/Projects/GRIME2/build-grime2cli-Desktop_Qt_5_15_2_GCC_64bit-Debug/config/2012_demo/06/NRmarshDN-12-06-30-10-30.jpg',
-                        'filename', 10, 'yy-mm-dd-hh-mm', '/media/kchapman/Elements/Projects/GRIME2/build-grime2cli-Desktop_Qt_5_15_2_GCC_64bit-Debug/config/calib.json',
+    item = LineFindItem('/home/pi/Projects/GRIME2/gcgui/config/2012_demo/06/NRmarshDN-12-06-30-10-30.jpg',
+                        'filename', 10, 'yy-mm-dd-hh-mm', '/home/pi/Projects/GRIME2/gcgui/config/calib.json',
                         '/var/tmp/water/find_line_result.png')
     output = image_access.find_line(item)
     print(output.decode())
