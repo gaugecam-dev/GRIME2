@@ -1,0 +1,23 @@
+{% extends "layout.html" %}
+{% block title %}
+Login
+{% endblock %}
+{% block content %}
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <ul>
+                {% for message in messages %}
+                <li>{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+    <h3>Login</h3>
+    <form method="post" action="">
+        <fieldset class="form-field" size=20>
+            {{ form.username.label }}: {{ form.username(size=20) }}
+            {{ form.password.label }}: {{ form.password(size=20) }}
+            {{ form.submit }}
+        </fieldset>
+    </form>
+{% endblock %}
