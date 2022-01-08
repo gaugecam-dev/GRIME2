@@ -3,7 +3,14 @@
 Home
 {% endblock %}
 {% block content %}
-<h1>GRIME2 on Raspberry Pi</h1>
-<h2>Home</h2>
-<h5>GaugeCam Remote Image Manager (Educational)</h5>
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <ul>
+                {% for message in messages %}
+                <li>{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+    <h3>Home</h3>
 {% endblock %}

@@ -5,8 +5,10 @@ Images
 {% block content %}
 <div class="container">
     <div class="leftpane">
-        <h1>Left pane</h1>
-    </div>
+        <select class="form-control" id="timestamp_src" name="timestamp_src">
+            <option value="exif">exif</option>
+            <option value="filename">filename</option>
+        </select>    </div>
     <div class="rightpane">
         <h1>Right pane</h1>
     </div>
