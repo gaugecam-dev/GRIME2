@@ -1,42 +1,51 @@
 .message {
+    font-family: 'Courier New', monospace;
     font-weight: 600;
     color: blue;
 }
 
 .navbar {
+    font-family: 'Courier New', monospace;
     font-size: 1em;
     padding: 8px 5px 8px 5px;
 }
 
 .navbar a {
+    font-family: 'Courier New', monospace;
     text-decoration: none;
     color: inherit;
 }
 
 .navbar-brand {
+    font-family: 'Courier New', monospace;
     font-size: 1.2em;
     font-weight: 600;
 }
 
 .navbar-item {
+    font-family: 'Courier New', monospace;
     margin-left: 30px;
 }
 
 .body-content {
+    font-family: 'Courier New', monospace;
     padding: 5px;
 }
 
 body{
+    font-family: 'Courier New', monospace;
     width: available;
     height: available;
 }
 
 .container{
+    font-family: 'Courier New', monospace;
     width: available;
     height: available;
 }
 
 .leftpane{
+    font-family: 'Courier New', monospace;
     width: 25%;
     min-width: 350px;
     min-height: 600px;
@@ -47,16 +56,18 @@ body{
 }    
 
 .rightpane{
-   width: 65%;
-   min-width: 800px;
-   min-height: 600px;
-   float: left;
-   padding: 3px;
-   margin: 3px;
-   border: 3px solid black;
+    font-family: 'Courier New', monospace;
+    width: 65%;
+    min-width: 800px;
+    min-height: 600px;
+    float: left;
+    padding: 3px;
+    margin: 3px;
+    border: 3px solid black;
 }
 .header, .footer {
-    padding: 15px;
+    font-family: 'Courier New', monospace;
+        padding: 15px;
     width: 85%;
     height: 5% 
   }

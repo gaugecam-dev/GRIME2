@@ -26,7 +26,7 @@ class Images():
     db_filepath = None
     cursor = None
     
-    def __init__(self, grime2cli_filepath = "bin/grime2cli"):
+    def __init__(self, grime2cli_filepath = "/media/kchapman/Elements/Projects/GRIME2/build-grime2cli-Desktop_Qt_5_15_2_GCC_64bit-Release/grime2cli"):
         self.grime2cli_path = grime2cli_filepath
             
     def open_db(self, db_path):
@@ -42,12 +42,12 @@ class Images():
             self.db_filepath = ""
             cursor = None
             
-    def add_image(self, img_path):
+    def add_image(self, img_path, result_json_str):
         if None is self.cursor:
             print('No database open to add image')
         else:
-            sql_str = "INSERT INTO images VALUES (\'"
-            sql_str += img_path + "\')";
+            sql_str = "INSERT INTO images, results VALUES (\'"
+            sql_str += img_path + "\', \'" + result_json_str + "\')";
             print(sql_str)
             self.cursor.execute(sql_str)
             
@@ -70,8 +70,6 @@ class Images():
                                  '--calib_json', item.calib_filepath, '--result_image', item.result_image_filepath], stdout=subprocess.PIPE)
         return result.stdout
 
-
-                    
     def init_images_db(self, image_top_level_folderpath):
         if not os.path.isdir(image_top_level_folderpath):
             print(self.db_filepath + "Invalid top level folderpath")
@@ -92,15 +90,16 @@ class Images():
                     self.add_image(img)
                 self.conn.commit()
 
-if __name__ == "__main__":
-    image_access = Images()
-    item = LineFindItem('/home/pi/Projects/GRIME2/gcgui/config/2012_demo/06/NRmarshDN-12-06-30-10-30.jpg',
-                        'filename', 10, 'yy-mm-dd-hh-mm', '/home/pi/Projects/GRIME2/gcgui/config/calib.json',
-                        '/var/tmp/water/find_line_result.png')
-    output = image_access.find_line(item)
-    print(output.decode())
-    
 # if __name__ == "__main__":
 #     image_access = Images()
-#     image_access.open_db('/var/tmp/water/ncmarsh.db')
-#     image_access.init_images_db('/media/kchapman/Elements/data/NCMarch_for_article_two/2012_02_ncmarsh_raw_images/')
+#     item = LineFindItem('/media/kchapman/Elements/Projects/GRIME2/build-grime2cli-Desktop_Qt_5_15_2_GCC_64bit-Debug/config/2012_demo/06/NRmarshDN-12-06-30-10-30.jpg',
+#                         'filename', 10, 'yy-mm-dd-hh-mm', '/media/kchapman/Elements/Projects/GRIME2/build-grime2cli-Desktop_Qt_5_15_2_GCC_64bit-Debug/config/calib.json',
+#                         '/var/tmp/water/find_line_result.png')
+#     output = image_access.find_line(item)
+#     print(output.decode())
+    
+if __name__ == "__main__":
+    image_access = Images()
+    image_access.open_db('/var/tmp/water/ncmarsh.db')
+    image_access.init_images_db('/media/kchapman/Elements/data/NCMarch_for_article_two/2012_02_ncmarsh_raw_images/')
+    
