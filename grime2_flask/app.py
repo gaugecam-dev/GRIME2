@@ -1,6 +1,7 @@
-from flask import Flask, flash, render_template, redirect, request, session
+from flask import Flask, flash, render_template, redirect
+from flask import make_response, request, session
 from flask.helpers import url_for
-from forms import LoginForm
+from forms import LoginForm, SettingsForm
 import os
 
 app = Flask(__name__)
@@ -18,6 +19,7 @@ def login():
             msg = 'user=' + form.username.data + " pass=" + form.password.data
             if form.username.data == 'admin' and form.password.data == 'password':
                 flash('Login correct: ' + msg)
+                session['logged_in'] = True
                 return redirect(url_for('home'))
             else:
                 flash('Login failed: ' + msg)
@@ -32,12 +34,18 @@ def logout():
     flash('You were logged out.')
     return redirect('home')
 
-@app.route("/images/")
+@app.route("/images/", methods=['GET', 'POST'])
 def images():
     if not session.get('logged_in'):
         return redirect(url_for('login'))
     else:
-        return render_template("images.html")
+        settings_form = SettingsForm()
+        if request.method == 'POST':
+            if settings_form.validate():
+                print(settings_form.timestamp_source.data)
+            else:
+                print(settings_form.errors)
+        return render_template("images.html", form=settings_form)
 
 @app.route("/about/")
 def about():
@@ -47,3 +55,6 @@ def about():
 def contact():
     return render_template("contact.html")
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Cookie handling
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

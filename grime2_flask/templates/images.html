@@ -5,10 +5,11 @@ Images
 {% block content %}
 <div class="container">
     <div class="leftpane">
-        <select class="form-control" id="timestamp_src" name="timestamp_src">
-            <option value="exif">exif</option>
-            <option value="filename">filename</option>
-        </select>    </div>
+        <form method="post">
+            {{ form.timestamp_source }}
+            <input type="submit">
+        </form>
+    </div>
     <div class="rightpane">
         <h1>Right pane</h1>
     </div>
