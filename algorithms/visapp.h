@@ -91,7 +91,7 @@ public:
      * @param calibJson The filepath of the calibration model json file
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
-    GC_STATUS LoadCalib( const std::string calibJson , double &rmseDist, double &rmseX, double &rmseY );
+    GC_STATUS LoadCalib( const std::string calibJson );
 
     /**
      * @brief Convert world coordinates to pixel coordinates using the currently set calibration

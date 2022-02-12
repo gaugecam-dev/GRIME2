@@ -80,16 +80,10 @@ public:
      * @param gridSize The dimensions of the point array (2x4 for standard GaugeCam target)
      * @param imgSize The dimensions of the calibrated image
      * @param resultFilepath Optional filepath for the creation of an image with the calibration overlay
-     * @param reprojectionRSME Root Mean Square Error after conversion of the bow-tie centers from pixel
-     *        to world coordinates followed by reprojection back to pixel coordinates of the Euclidean
-     *        distance between the found and the reprojected
-     * @param rmseX RSME of X difference between found and reprojected points
-     * @param rmseY RSME of Y difference between found and reprojected points
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
     GC_STATUS Calibrate( const std::vector< cv::Point2d > pixelPts, const std::vector< cv::Point2d > worldPts,
-                         const std::string &controlJson, const cv::Size gridSize, const cv::Size imgSize,
-                         double &rmseEuclidDist, double &rmseX, double &rmseY );
+                         const std::string &controlJson, const cv::Size gridSize, const cv::Size imgSize );
     /**
      * @brief Load a calibration model from a json file
      *
@@ -133,7 +127,7 @@ public:
      * @see Load()
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
-    GC_STATUS Load( const std::string &jsonCalibString, double &rmseDist, double &rmseX, double &rmseY );
+    GC_STATUS Load( const std::string &jsonCalibString );
 
     /**
      * @brief Save the current calibration model to a json file
@@ -142,9 +136,6 @@ public:
      * method.
      *
      * @param jsonCalFilepath File to save
-     * @param rmseDist RMSE of the Euclidean distance between found and reprojected points
-     * @param rmseX RMSE of the x distances between found and reprojected points
-     * @param rmseY RMSE of the y distances between found and reprojected points
      * @see Save()
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */

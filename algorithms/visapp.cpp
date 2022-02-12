@@ -69,9 +69,9 @@ VisApp::VisApp() :
         FILE_LOG( logERROR ) << "[VisApp::VisApp] Creating debug folder" << diagnostic_information( e );
     }
 }
-GC_STATUS VisApp::LoadCalib( const std::string calibJson, double &rmseDist, double &rmseX, double &rmseY )
+GC_STATUS VisApp::LoadCalib( const std::string calibJson )
 {
-    GC_STATUS retVal = m_calibExec.Load( calibJson, rmseDist, rmseX, rmseY );
+    GC_STATUS retVal = m_calibExec.Load( calibJson );
     return retVal;
 }
 GC_STATUS VisApp::Calibrate( const string imgFilepath, const string jsonControl,
@@ -251,10 +251,10 @@ GC_STATUS VisApp::CalcFindLine( const Mat &img, FindLineResult &result )
                             result.offsetMovePts.rgtWorld.y = result.foundMovePts.rgtWorld.y - result.refMovePts.rgtWorld.y;
 
                             result.calibOffsets.calibAngle = atan2( result.refMovePts.rgtWorld.y - result.refMovePts.lftWorld.y,
-                                                               result.refMovePts.rgtWorld.x - result.refMovePts.lftWorld.x ) * ( 180.0 / CV_PI );
+                                                                    result.refMovePts.rgtWorld.x - result.refMovePts.lftWorld.x ) * ( 180.0 / CV_PI );
                             result.calibOffsets.calibCenterPt = ( result.refMovePts.lftWorld + result.refMovePts.rgtWorld ) / 2.0;
                             result.calibOffsets.offsetAngle = atan2( result.foundMovePts.rgtWorld.y - result.foundMovePts.lftWorld.y,
-                                                                    result.foundMovePts.rgtWorld.x - result.foundMovePts.lftWorld.x ) * ( 180.0 / CV_PI );
+                                                                     result.foundMovePts.rgtWorld.x - result.foundMovePts.lftWorld.x ) * ( 180.0 / CV_PI );
                             result.calibOffsets.offsetCenterPt = ( result.foundMovePts.lftWorld + result.foundMovePts.rgtWorld ) / 2.0;
 
 
@@ -320,6 +320,31 @@ GC_STATUS VisApp::CalcFindLine( const Mat &img, FindLineResult &result )
 
                     result.waterLevelAdjusted.x = result.calcLinePts.ctrWorld.x + result.offsetMovePts.ctrWorld.x;
                     result.waterLevelAdjusted.y = result.calcLinePts.ctrWorld.y + result.offsetMovePts.ctrWorld.y;
+
+                    Point2d reprojectPt;
+                    retVal = WorldToPixel( result.calcLinePts.ctrWorld, reprojectPt );
+                    if ( GC_OK == retVal )
+                    {
+                        result.calibReprojectOffset_x = result.calcLinePts.ctrPixel.x - reprojectPt.x;
+                        result.calibReprojectOffset_y = result.calcLinePts.ctrPixel.y - reprojectPt.y;
+                        double dist = sqrt( pow( result.calcLinePts.ctrPixel.x - reprojectPt.x, 2 ) +
+                                            pow( result.calcLinePts.ctrPixel.y - reprojectPt.y, 2 ) );
+                        result.calibReprojectOffset_dist = dist;
+                    }
+                    else
+                    {
+                        result.calibReprojectOffset_x = -9999999.0;
+                        result.calibReprojectOffset_y = -9999999.0;
+                        result.calibReprojectOffset_dist = -9999999.0;;
+                    }
+                    snprintf( buffer, 256, "Reproject error:" );
+                    result.msgs.push_back( buffer );
+                    snprintf( buffer, 256, "   x=%0.3e y=%0.3e",
+                              result.calibReprojectOffset_x, result.calibReprojectOffset_y );
+                    result.msgs.push_back( buffer );
+                    snprintf( buffer, 256, "   Euclid. dist=%0.3e",
+                              result.calibReprojectOffset_dist );
+                    result.msgs.push_back( buffer );
                 }
             }
         }
@@ -359,6 +384,10 @@ GC_STATUS VisApp::CalcLine( const Mat &img, const string timestamp )
                 result.findSuccess = false;
                 FILE_LOG( logERROR ) << "[VisApp::CalcLine] Could not calc line in image";
                 retVal = GC_ERR;
+            }
+            else
+            {
+
             }
         }
         m_findLineResult = result;
@@ -501,8 +530,7 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result 
                 }
                 if ( params.calibFilepath != m_calibFilepath && GC_OK == retVal )
                 {
-                    double rmseDist, rmseX, rmseY;
-                    retVal = m_calibExec.Load( params.calibFilepath, rmseDist, rmseX, rmseY );
+                    retVal = m_calibExec.Load( params.calibFilepath );
                     if ( GC_OK != retVal )
                     {
                         result.msgs.push_back( "Could not load calibration" );

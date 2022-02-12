@@ -44,7 +44,6 @@ ostream &operator<<( ostream &out, CalibExecParams &params )
 
 CalibExecutive::CalibExecutive()
 {
-
 }
 void CalibExecutive::clear()
 {
@@ -138,7 +137,7 @@ GC_STATUS CalibExecutive::Calibrate( const cv::Mat &img, const std::string jsonP
         Rect searchBB;
         if ( "BowTie" == paramsCurrent.calibType )
         {
-            retVal = CalibrateBowTie( imgFixed, jsonParams, rmseDist, rmseX, rmseY );
+            retVal = CalibrateBowTie( imgFixed, jsonParams );
             if ( GC_OK == retVal )
             {
                 retVal = bowTie.GetSearchRegionBoundingRect( searchBB );
@@ -146,7 +145,7 @@ GC_STATUS CalibExecutive::Calibrate( const cv::Mat &img, const std::string jsonP
         }
         else if ( "StopSign" == paramsCurrent.calibType )
         {
-            retVal = CalibrateStopSign( imgFixed, jsonParams, rmseDist, rmseX, rmseY );
+            retVal = CalibrateStopSign( imgFixed, jsonParams );
             if ( GC_OK == retVal )
             {
                 retVal = stopSign.GetSearchRegionBoundingRect( searchBB );
@@ -282,8 +281,7 @@ GC_STATUS CalibExecutive::ReadWorldCoordsFromCSVBowTie( const string csvFilepath
 
     return retVal;
 }
-GC_STATUS CalibExecutive::CalibrateStopSign( const cv::Mat &img, const string &controlJson,
-                                             double &rmseDist, double &rmseX, double &rmseY )
+GC_STATUS CalibExecutive::CalibrateStopSign( const cv::Mat &img, const string &controlJson )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -303,7 +301,7 @@ GC_STATUS CalibExecutive::CalibrateStopSign( const cv::Mat &img, const string &c
             searchLineCorners.push_back( paramsCurrent.lineSearch_lftBot );
             searchLineCorners.push_back( paramsCurrent.lineSearch_rgtBot );
             retVal = stopSign.Calibrate( img, paramsCurrent.stopSignFacetLength, controlJson,
-                                         searchLineCorners, rmseDist, rmseX, rmseY );
+                                         searchLineCorners );
             if ( GC_OK == retVal )
             {
                 retVal = stopSign.Save( paramsCurrent.calibResultJsonFilepath );
@@ -318,8 +316,7 @@ GC_STATUS CalibExecutive::CalibrateStopSign( const cv::Mat &img, const string &c
 
     return retVal;
 }
-GC_STATUS CalibExecutive::CalibrateBowTie( const cv::Mat &img, const std::string &controlJson,
-                                           double &rmseDist, double &rmseX, double &rmseY )
+GC_STATUS CalibExecutive::CalibrateBowTie( const cv::Mat &img, const std::string &controlJson )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -374,8 +371,7 @@ GC_STATUS CalibExecutive::CalibrateBowTie( const cv::Mat &img, const std::string
                                     worldPtArray.push_back( worldCoords[ i ][ j ] );
                                 }
                             }
-                            retVal = bowTie.Calibrate( pixPtArray, worldPtArray, controlJson, Size( 2, 4 ), img.size(),
-                                                       rmseDist, rmseX, rmseY );
+                            retVal = bowTie.Calibrate( pixPtArray, worldPtArray, controlJson, Size( 2, 4 ), img.size() );
                             if ( GC_OK == retVal )
                             {
                                 retVal = bowTie.Save( paramsCurrent.calibResultJsonFilepath );
@@ -394,7 +390,7 @@ GC_STATUS CalibExecutive::CalibrateBowTie( const cv::Mat &img, const std::string
 
     return retVal;
 }
-GC_STATUS CalibExecutive::Load( const string jsonFilepath, double &rmseDist, double &rmseX, double &rmseY )
+GC_STATUS CalibExecutive::Load( const string jsonFilepath )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -425,7 +421,7 @@ GC_STATUS CalibExecutive::Load( const string jsonFilepath, double &rmseDist, dou
                 retVal = findCalibGrid.InitBowtieTemplate( GC_BOWTIE_TEMPLATE_DIM, Size( GC_IMAGE_SIZE_WIDTH, GC_IMAGE_SIZE_HEIGHT ) );
                 if ( GC_OK == retVal )
                 {
-                    retVal = bowTie.Load( ss.str(), rmseDist, rmseX, rmseY );
+                    retVal = bowTie.Load( ss.str() );
                     if ( GC_OK == retVal )
                     {
                         Mat scratch( bowTie.GetModel().imgSize, CV_8UC1 );
@@ -438,7 +434,7 @@ GC_STATUS CalibExecutive::Load( const string jsonFilepath, double &rmseDist, dou
                 bowTie.clear();
                 findCalibGrid.clear();
                 paramsCurrent.calibType = "StopSign";
-                retVal = stopSign.Load( ss.str(), rmseDist, rmseX, rmseY );
+                retVal = stopSign.Load( ss.str() );
             }
             else if ( "NotSet" == calibTypeString )
             {
