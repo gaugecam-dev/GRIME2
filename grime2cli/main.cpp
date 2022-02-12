@@ -127,13 +127,24 @@ GC_STATUS Calibrate( const Grime2CLIParams cliParams )
         retVal = FormCalibJsonString( cliParams, jsonString );
         if ( GC_OK == retVal )
         {
+            double rmseX, rmseY, rmseDist;
             if ( cliParams.result_imagePath.empty() )
             {
-                retVal = vis.Calibrate( cliParams.src_imagePath, jsonString );
+                retVal = vis.Calibrate( cliParams.src_imagePath, jsonString, rmseX, rmseY, rmseDist );
             }
             else
             {
-                retVal = vis.Calibrate( cliParams.src_imagePath, jsonString, cliParams.result_imagePath );
+                retVal = vis.Calibrate( cliParams.src_imagePath, jsonString,
+                                        cliParams.result_imagePath, rmseX, rmseY, rmseDist );
+            }
+            if ( GC_OK == retVal )
+            {
+                cout << "Calibration RMSE" << endl;
+                cout << "~~~~~~~~~~~~~~~~" << endl;
+                char msg[ 256 ];
+                sprintf( msg, "X=%0.3e\nY=%0.3e\nEuclid. dist=%0.3e", rmseX, rmseY, rmseDist );
+                cout << msg << endl;
+                cout << "~~~~~~~~~~~~~~~~" << endl;
             }
         }
     }
