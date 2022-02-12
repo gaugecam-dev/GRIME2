@@ -112,5 +112,5 @@
       { "topX": 579, "topY": 84, "botX": 576, "botY": 596 },
       { "topX": 580, "topY": 84, "botX": 577, "botY": 596 }
   ],
-  "control_json": "{\"calibType\": \"BowTie\", \"calibWorldPt_csv\": \"../gcgui/config/calibration_target_world_coordinates.csv\", \"stopSignFacetLength\": -1.0, \"drawCalib\": 1, \"drawMoveSearchROIs\": 1, \"drawWaterLineSearchROI\": 1, \"targetRoi_x\": \"-1\", \"targetRoi_y\": \"-1\", \"targetRoi_width\": \"-1\", \"targetRoi_height\": \"-1\", \"calibResult_json\": \"../gcgui/config/calib.json\"}"
+  "control_json": "{\"calibType\": \"BowTie\", \"calibWorldPt_csv\": \"/media/kchapman/Elements/Projects/GRIME2/gcgui/config/calibration_target_world_coordinates.csv\", \"stopSignFacetLength\": -1.0, \"drawCalib\": 0, \"drawMoveSearchROIs\": 0, \"drawWaterLineSearchROI\": 0, \"targetRoi_x\": -1, \"targetRoi_y\": -1, \"targetRoi_width\": -1, \"targetRoi_height\": -1, \"searchPoly_lftTop_x\": -1, \"searchPoly_lftTop_y\": -1, \"searchPoly_rgtTop_x\": -1, \"searchPoly_rgtTop_y\": -1, \"searchPoly_lftBot_x\": -1, \"searchPoly_lftBot_y\": -1, \"searchPoly_rgtBot_x\": -1, \"searchPoly_rgtBot_y\": -1, \"calibResult_json\": \"/media/kchapman/Elements/Projects/GRIME2/gcgui/config/calib.json\"}"
 }

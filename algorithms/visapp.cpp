@@ -69,12 +69,13 @@ VisApp::VisApp() :
         FILE_LOG( logERROR ) << "[VisApp::VisApp] Creating debug folder" << diagnostic_information( e );
     }
 }
-GC_STATUS VisApp::LoadCalib( const std::string calibJson )
+GC_STATUS VisApp::LoadCalib( const std::string calibJson, double &rmseDist, double &rmseX, double &rmseY )
 {
-    GC_STATUS retVal = m_calibExec.Load( calibJson );
+    GC_STATUS retVal = m_calibExec.Load( calibJson, rmseDist, rmseX, rmseY );
     return retVal;
 }
-GC_STATUS VisApp::Calibrate( const string imgFilepath, const string jsonControl, const string resultImgPath )
+GC_STATUS VisApp::Calibrate( const string imgFilepath, const string jsonControl,
+                             const string resultImgPath, double &rmseDist, double &rmseX, double &rmseY )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -87,7 +88,7 @@ GC_STATUS VisApp::Calibrate( const string imgFilepath, const string jsonControl,
         }
         else
         {
-            retVal = m_calibExec.Calibrate( img, jsonControl );
+            retVal = m_calibExec.Calibrate( img, jsonControl, rmseDist, rmseX, rmseY );
             if ( GC_OK == retVal )
             {
                 Mat imgOut;
@@ -111,7 +112,7 @@ GC_STATUS VisApp::Calibrate( const string imgFilepath, const string jsonControl,
     }
     return retVal;
 }
-GC_STATUS VisApp::Calibrate( const string imgFilepath, const string jsonControl )
+GC_STATUS VisApp::Calibrate( const string imgFilepath, const string jsonControl, double &rmseDist, double &rmseX, double &rmseY )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -124,7 +125,7 @@ GC_STATUS VisApp::Calibrate( const string imgFilepath, const string jsonControl 
         }
         else
         {
-            retVal = m_calibExec.Calibrate( img, jsonControl );
+            retVal = m_calibExec.Calibrate( img, jsonControl, rmseDist, rmseX, rmseY );
         }
     }
     catch( Exception &e )
@@ -272,7 +273,8 @@ GC_STATUS VisApp::CalcFindLine( const Mat &img, FindLineResult &result )
             result.calibOffsets.calibCenterPt = calibModel.center;
             result.calibOffsets.calibAngle = calibModel.angle;
 
-            retVal = m_calibExec.Recalibrate( img, "StopSign" );
+            double rmseDist, rmseX, rmseY;
+            retVal = m_calibExec.Recalibrate( img, "StopSign", rmseDist, rmseX, rmseY );
             if ( GC_OK == retVal )
             {
                 result.calibOffsets.offsetCenterPt = calibModel.center;
@@ -315,6 +317,9 @@ GC_STATUS VisApp::CalcFindLine( const Mat &img, FindLineResult &result )
 
                     snprintf( buffer, 256, "Level: %.3f", result.calcLinePts.ctrWorld.y );
                     result.msgs.push_back( buffer );
+
+                    result.waterLevelAdjusted.x = result.calcLinePts.ctrWorld.x + result.offsetMovePts.ctrWorld.x;
+                    result.waterLevelAdjusted.y = result.calcLinePts.ctrWorld.y + result.offsetMovePts.ctrWorld.y;
                 }
             }
         }
@@ -496,7 +501,8 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result 
                 }
                 if ( params.calibFilepath != m_calibFilepath && GC_OK == retVal )
                 {
-                    retVal = m_calibExec.Load( params.calibFilepath );
+                    double rmseDist, rmseX, rmseY;
+                    retVal = m_calibExec.Load( params.calibFilepath, rmseDist, rmseX, rmseY );
                     if ( GC_OK != retVal )
                     {
                         result.msgs.push_back( "Could not load calibration" );

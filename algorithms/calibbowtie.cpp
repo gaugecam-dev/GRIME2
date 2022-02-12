@@ -61,9 +61,10 @@ void CalibBowtie::clear()
     m_model.clear();
     m_matHomogPixToWorld = Mat();
     m_matHomogWorldToPix = Mat();
+    // m_worldToPixParams.clear();
 }
-GC_STATUS CalibBowtie::Calibrate( const vector< Point2d > pixelPts, const vector< Point2d > worldPts,
-                                  const std::string &controlJson, const Size gridSize, const Size imgSize )
+GC_STATUS CalibBowtie::Calibrate( const vector< Point2d > pixelPts, const vector< Point2d > worldPts, const std::string &controlJson,
+                                  const Size gridSize, const Size imgSize, double &rmseDist, double &rmseX, double &rmseY  )
 {
     GC_STATUS retVal = GC_OK;
     if ( pixelPts.size() != worldPts.size() || pixelPts.empty() || worldPts.empty() ||
@@ -86,8 +87,22 @@ GC_STATUS CalibBowtie::Calibrate( const vector< Point2d > pixelPts, const vector
                 m_model.pixelPoints.push_back( pixelPts[ i ] );
                 m_model.worldPoints.push_back( worldPts[ i ] );
             }
+
             m_matHomogPixToWorld = findHomography( m_model.pixelPoints, m_model.worldPoints );
-            m_matHomogWorldToPix = findHomography( m_model.worldPoints, m_model.pixelPoints );
+            invert( m_matHomogPixToWorld, m_matHomogWorldToPix );
+
+            // Mat homogWorldToPix;
+            // invert( m_matHomogPixToWorld, homogWorldToPix );
+            // m_worldToPixParams.clear();
+            // m_worldToPixParams.push_back( homogWorldToPix.at< double >( 0, 0 ) );
+            // m_worldToPixParams.push_back( homogWorldToPix.at< double >( 0, 1 ) );
+            // m_worldToPixParams.push_back( homogWorldToPix.at< double >( 0, 2 ) );
+            // m_worldToPixParams.push_back( homogWorldToPix.at< double >( 1, 0 ) );
+            // m_worldToPixParams.push_back( homogWorldToPix.at< double >( 1, 1 ) );
+            // m_worldToPixParams.push_back( homogWorldToPix.at< double >( 1, 2 ) );
+            // m_worldToPixParams.push_back( homogWorldToPix.at< double >( 2, 0 ) );
+            // m_worldToPixParams.push_back( homogWorldToPix.at< double >( 2, 1 ) );
+            // m_worldToPixParams.push_back( homogWorldToPix.at< double >( 2, 2 ) );
 
             retVal = CalcSearchSwaths();
             if ( GC_OK == retVal )
@@ -142,6 +157,32 @@ GC_STATUS CalibBowtie::Calibrate( const vector< Point2d > pixelPts, const vector
             FILE_LOG( logERROR ) << "[CalibBowtie::Calibrate] " << e.what();
             return GC_EXCEPT;
         }
+    }
+    return retVal;
+}
+GC_STATUS CalibBowtie::GetSearchRegionBoundingRect( cv::Rect &rect )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        if ( m_model.searchLines.empty() )
+        {
+            FILE_LOG( logERROR ) << "[CalibBowtie::GetSearchRegionBoundingRect] System not calibrated";
+            retVal = GC_ERR;
+        }
+        else
+        {
+            int left = std::min( m_model.searchLines[ 0 ].top.x, m_model.searchLines[ 0 ].bot.x );
+            int top = std::min( m_model.searchLines[ 0 ].top.y, m_model.searchLines[ m_model.searchLines.size() - 1 ].top.y );
+            int right = std::max( m_model.searchLines[ m_model.searchLines.size() - 1 ].top.x, m_model.searchLines[ m_model.searchLines.size() - 1 ].bot.x );
+            int bottom = std::max( m_model.searchLines[ 0 ].bot.y, m_model.searchLines[ m_model.searchLines.size() - 1 ].bot.y );
+            rect = Rect( left, top, right - left, bottom - top );
+        }
+    }
+    catch( Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[CalibBowtie::GetSearchRegionBoundingRect] " << e.what();
+        return GC_EXCEPT;
     }
     return retVal;
 }
@@ -331,6 +372,7 @@ GC_STATUS CalibBowtie::PixelToWorld( const Point2d ptPixel, Point2d &ptWorld )
 GC_STATUS CalibBowtie::WorldToPixel( const Point2d ptWorld, Point2d &ptPixel )
 {
     GC_STATUS retVal = GC_OK;
+    // if ( 9 != m_worldToPixParams.size() )
     if ( m_matHomogWorldToPix.empty() )
     {
         FILE_LOG( logERROR ) << "[CalibBowtie::WorldToPixel] No calibration for world to pixel conversion";
@@ -340,10 +382,55 @@ GC_STATUS CalibBowtie::WorldToPixel( const Point2d ptWorld, Point2d &ptPixel )
     {
         try
         {
+#if 1
             vector< Point2d > vecIn, vecOut;
             vecIn.push_back( ptWorld );
             perspectiveTransform( vecIn, vecOut, m_matHomogWorldToPix );
             ptPixel = vecOut[ 0 ];
+#else
+            double tx = m_worldToPixParams[ 0 ] * ptWorld.x + m_worldToPixParams[ 1 ] * ptWorld.y + m_worldToPixParams[ 2 ];
+            double ty = m_worldToPixParams[ 3 ] * ptWorld.x + m_worldToPixParams[ 4 ] * ptWorld.y + m_worldToPixParams[ 5 ];
+            double tz = m_worldToPixParams[ 6 ] * ptWorld.x + m_worldToPixParams[ 7 ] * ptWorld.y + m_worldToPixParams[ 8 ];
+
+            ptPixel = Point2d( tx / tz, ty / tz );
+#endif
+
+            // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            // https://stackoverflow.com/questions/32366786/opencv-homography-matrix-h-and-inverse-h-to-transform-a-point-is-not-getting-exp
+            // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            //def transformPoints(self, x, y, reverse=False, integer=True):
+            //
+            //    if reverse == False:
+            //        H = self.transform_matrix
+            //    else:
+            //        val, H = cv2.invert(self.transform_matrix)
+            //
+            //    # get the elements in the transform matrix
+            //    h0 = H[0,0]
+            //    h1 = H[0,1]
+            //    h2 = H[0,2]
+            //    h3 = H[1,0]
+            //    h4 = H[1,1]
+            //    h5 = H[1,2]
+            //    h6 = H[2,0]
+            //    h7 = H[2,1]
+            //    h8 = H[2,2]
+            //
+            //    tx = (h0*x + h1*y + h2)
+            //    ty = (h3*x + h4*x + h5)
+            //    tz = (h6*x + h7*y + h8)
+            //
+            //    if integer==True:
+            //        px = int(tx/tz)
+            //        py = int(ty/tz)
+            //        Z = int(1/tz)
+            //    else:
+            //        px = tx/tz
+            //        py = ty/tz
+            //        Z = 1/tz
+            //
+            //    return (px, py)
+            // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         }
         catch( Exception &e )
         {
@@ -380,7 +467,7 @@ GC_STATUS CalibBowtie::MoveRefPoint( cv::Point2d &lftRefPt, cv::Point2d &rgtRefP
     }
     return retVal;
 }
-GC_STATUS CalibBowtie::Load( const string &jsonCalibString )
+GC_STATUS CalibBowtie::Load( const string &jsonCalibString, double &rmseDist, double &rmseX, double &rmseY )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -483,7 +570,8 @@ GC_STATUS CalibBowtie::Load( const string &jsonCalibString )
                 m_model.controlJson = ptreeTop.get< string >( "control_json", "{}" );
 
                 Mat matIn, matOut;
-                retVal = Calibrate( m_model.pixelPoints, m_model.worldPoints, m_model.controlJson, m_model.gridSize, m_model.imgSize );
+                retVal = Calibrate( m_model.pixelPoints, m_model.worldPoints, m_model.controlJson,
+                                    m_model.gridSize, m_model.imgSize, rmseDist, rmseX, rmseY );
             }
 #ifdef LOG_CALIB_VALUES
             FILE_LOG( logINFO ) << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
@@ -729,4 +817,4 @@ string CalibBowtie::ModelJsonString()
     return ss.str();
 }
 
-}   // namespace gc
+} // namespace gc

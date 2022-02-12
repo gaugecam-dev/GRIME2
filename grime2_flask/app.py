@@ -41,11 +41,13 @@ def images():
     else:
         settings_form = SettingsForm()
         if request.method == 'POST':
-            if settings_form.validate():
-                print(settings_form.timestamp_source.data)
-            else:
-                print(settings_form.errors)
-        return render_template("images.html", form=settings_form)
+            # if settings_form.validate():
+            #     print(settings_form.timestamp_source.data)
+            # else:
+            #     print(settings_form.errors)
+            resp = make_response(render_template("images.html", form=settings_form))
+            resp.set_cookie('timestamp_source', request.form['timestamp_source'])
+            return resp
 
 @app.route("/about/")
 def about():

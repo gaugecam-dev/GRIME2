@@ -16,6 +16,12 @@ using namespace boost;
 namespace fs = filesystem;
 namespace pt = property_tree;
 
+static double Distance( const Point2d p1, const Point2d p2 )
+{
+    return sqrt( ( p2.x - p1.x ) * ( p2.x - p1.x ) +
+                 ( p2.y - p1.y ) * ( p2.y - p1.y ) );
+}
+
 namespace gc
 {
 
@@ -45,7 +51,8 @@ void CalibExecutive::clear()
     bowTie.clear();
     stopSign.clear();
 }
-GC_STATUS CalibExecutive::Recalibrate( const Mat &img, const std::string calibType )
+GC_STATUS CalibExecutive::Recalibrate( const Mat &img, const std::string calibType,
+                                       double &rmseDist, double &rmseX, double &rmseY )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -66,21 +73,23 @@ GC_STATUS CalibExecutive::Recalibrate( const Mat &img, const std::string calibTy
 
     if ( GC_OK == retVal )
     {
-        retVal = Calibrate( img, controlJson );
+        retVal = Calibrate( img, controlJson, rmseDist, rmseX, rmseY );
     }
 
     return retVal;
 }
-GC_STATUS CalibExecutive::Calibrate( const Mat &img, const std::string jsonParams, cv::Mat &imgResult )
+GC_STATUS CalibExecutive::Calibrate( const Mat &img, const std::string jsonParams, cv::Mat &imgResult,
+                                     double &rmseDist, double &rmseX, double &rmseY )
 {
-    GC_STATUS retVal = Calibrate( img, jsonParams );
+    GC_STATUS retVal = Calibrate( img, jsonParams, rmseDist, rmseX, rmseY );
     if ( GC_OK == retVal )
     {
         retVal = DrawOverlay( img, imgResult );
     }
     return retVal;
 }
-GC_STATUS CalibExecutive::Calibrate( const cv::Mat &img, const std::string jsonParams )
+GC_STATUS CalibExecutive::Calibrate( const cv::Mat &img, const std::string jsonParams,
+                                     double &rmseDist, double &rmseX, double &rmseY )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -116,28 +125,49 @@ GC_STATUS CalibExecutive::Calibrate( const cv::Mat &img, const std::string jsonP
         paramsCurrent.lineSearch_rgtBot.y = top_level.get< int >( "searchPoly_rgtBot_y", -1 );
 
 
+        Mat imgFixed;
+        if ( CV_8UC3 == img.type() )
+        {
+            cvtColor( img, imgFixed, cv::COLOR_BGR2GRAY );
+        }
+        else
+        {
+            imgFixed = img;
+        }
+
+        Rect searchBB;
         if ( "BowTie" == paramsCurrent.calibType )
         {
-            Mat imgFixed;
-            if ( CV_8UC3 == img.type() )
+            retVal = CalibrateBowTie( imgFixed, jsonParams, rmseDist, rmseX, rmseY );
+            if ( GC_OK == retVal )
             {
-                cvtColor( img, imgFixed, cv::COLOR_BGR2GRAY );
-                retVal = CalibrateBowTie( imgFixed, jsonParams );
-            }
-            else
-            {
-                retVal = CalibrateBowTie( img, jsonParams );
+                retVal = bowTie.GetSearchRegionBoundingRect( searchBB );
             }
         }
         else if ( "StopSign" == paramsCurrent.calibType )
         {
-            retVal = CalibrateStopSign( img, jsonParams );
+            retVal = CalibrateStopSign( imgFixed, jsonParams, rmseDist, rmseX, rmseY );
+            if ( GC_OK == retVal )
+            {
+                retVal = stopSign.GetSearchRegionBoundingRect( searchBB );
+            }
         }
         else
         {
             FILE_LOG( logERROR ) << "[CalibExecutive::Calibrate] Invalid calibration type=" <<
                                     ( paramsCurrent.calibType.empty() ? "empty()" : paramsCurrent.calibType );
             retVal = GC_ERR;
+        }
+
+        if ( GC_OK == retVal )
+        {
+            retVal = CalculateRMSE( imgFixed( searchBB ), rmseDist, rmseX, rmseY );
+            if ( GC_OK != retVal )
+            {
+                rmseDist = rmseX = rmseY = -9999999.0;
+                FILE_LOG( logWARNING ) << "[CalibBowtie::Calibrate] Could not calculate RMSE";
+                retVal = GC_OK;
+             }
         }
     }
     catch( boost::exception &e )
@@ -252,7 +282,8 @@ GC_STATUS CalibExecutive::ReadWorldCoordsFromCSVBowTie( const string csvFilepath
 
     return retVal;
 }
-GC_STATUS CalibExecutive::CalibrateStopSign( const cv::Mat &img, const string &controlJson )
+GC_STATUS CalibExecutive::CalibrateStopSign( const cv::Mat &img, const string &controlJson,
+                                             double &rmseDist, double &rmseX, double &rmseY )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -271,7 +302,8 @@ GC_STATUS CalibExecutive::CalibrateStopSign( const cv::Mat &img, const string &c
             searchLineCorners.push_back( paramsCurrent.lineSearch_rgtTop );
             searchLineCorners.push_back( paramsCurrent.lineSearch_lftBot );
             searchLineCorners.push_back( paramsCurrent.lineSearch_rgtBot );
-            retVal = stopSign.Calibrate( img, paramsCurrent.stopSignFacetLength, controlJson, searchLineCorners );
+            retVal = stopSign.Calibrate( img, paramsCurrent.stopSignFacetLength, controlJson,
+                                         searchLineCorners, rmseDist, rmseX, rmseY );
             if ( GC_OK == retVal )
             {
                 retVal = stopSign.Save( paramsCurrent.calibResultJsonFilepath );
@@ -286,7 +318,8 @@ GC_STATUS CalibExecutive::CalibrateStopSign( const cv::Mat &img, const string &c
 
     return retVal;
 }
-GC_STATUS CalibExecutive::CalibrateBowTie( const cv::Mat &img, const std::string &controlJson )
+GC_STATUS CalibExecutive::CalibrateBowTie( const cv::Mat &img, const std::string &controlJson,
+                                           double &rmseDist, double &rmseX, double &rmseY )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -341,7 +374,8 @@ GC_STATUS CalibExecutive::CalibrateBowTie( const cv::Mat &img, const std::string
                                     worldPtArray.push_back( worldCoords[ i ][ j ] );
                                 }
                             }
-                            retVal = bowTie.Calibrate( pixPtArray, worldPtArray, controlJson, Size( 2, 4 ), img.size() );
+                            retVal = bowTie.Calibrate( pixPtArray, worldPtArray, controlJson, Size( 2, 4 ), img.size(),
+                                                       rmseDist, rmseX, rmseY );
                             if ( GC_OK == retVal )
                             {
                                 retVal = bowTie.Save( paramsCurrent.calibResultJsonFilepath );
@@ -360,7 +394,7 @@ GC_STATUS CalibExecutive::CalibrateBowTie( const cv::Mat &img, const std::string
 
     return retVal;
 }
-GC_STATUS CalibExecutive::Load( const string jsonFilepath )
+GC_STATUS CalibExecutive::Load( const string jsonFilepath, double &rmseDist, double &rmseX, double &rmseY )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -391,7 +425,7 @@ GC_STATUS CalibExecutive::Load( const string jsonFilepath )
                 retVal = findCalibGrid.InitBowtieTemplate( GC_BOWTIE_TEMPLATE_DIM, Size( GC_IMAGE_SIZE_WIDTH, GC_IMAGE_SIZE_HEIGHT ) );
                 if ( GC_OK == retVal )
                 {
-                    retVal = bowTie.Load( ss.str() );
+                    retVal = bowTie.Load( ss.str(), rmseDist, rmseX, rmseY );
                     if ( GC_OK == retVal )
                     {
                         Mat scratch( bowTie.GetModel().imgSize, CV_8UC1 );
@@ -404,7 +438,7 @@ GC_STATUS CalibExecutive::Load( const string jsonFilepath )
                 bowTie.clear();
                 findCalibGrid.clear();
                 paramsCurrent.calibType = "StopSign";
-                retVal = stopSign.Load( ss.str() );
+                retVal = stopSign.Load( ss.str(), rmseDist, rmseX, rmseY );
             }
             else if ( "NotSet" == calibTypeString )
             {
@@ -548,5 +582,141 @@ GC_STATUS CalibExecutive::MoveRefPointStopSign( cv::Point2d &lftRefPt, cv::Point
     return retVal;
 }
 #endif
+
+GC_STATUS CalibExecutive::CalculateRMSE( const cv::Mat &img, double &rmseEuclideanDist, double &rmseX, double &rmseY )
+{
+    GC_STATUS retVal = GC_OK;
+    rmseX = -9999999.0;
+    rmseY = -9999999.0;
+    rmseEuclideanDist = -9999999.0;
+
+    try
+    {
+        if ( img.empty() )
+        {
+            FILE_LOG( logERROR ) << "[CalibBowtie::CalculateRMSE] The image must not be empty to calculate RMSE";
+            retVal = GC_ERR;
+        }
+        else
+        {
+
+            vector< Point2d > reprojectedPts;
+            Point2d projectedPt, reprojectedPt;
+            for ( int row = 0; row < img.rows; ++row )
+            {
+                for ( int col = 0; col < img.cols; ++col )
+                {
+                    retVal = PixelToWorld( Point2d( col, row ), projectedPt );
+                    if ( GC_OK == retVal )
+                    {
+                        retVal = WorldToPixel( projectedPt, reprojectedPt );
+                        if ( GC_OK == retVal )
+                        {
+                            reprojectedPts.push_back( reprojectedPt );
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+            }
+            if ( GC_OK == retVal )
+            {
+                int reprojectedIdx = 0;
+                double diffSqrDist = 0.0;
+                double diffSqrX = 0.0, diffSqrY = 0.0;
+                for ( int row = 0; row < img.rows; ++row )
+                {
+                    for ( int col = 0; col < img.cols; ++col )
+                    {
+                        diffSqrX += pow( static_cast< double >( col ) - reprojectedPts[ reprojectedIdx ].x, 2 );
+                        diffSqrY += pow( static_cast< double >( row ) - reprojectedPts[ reprojectedIdx ].y, 2 );
+                        diffSqrDist += pow( Distance( Point2d( col, row ), reprojectedPts[ reprojectedIdx++ ] ), 2 );
+                    }
+                }
+
+                rmseX = sqrt( diffSqrX );
+                rmseY = sqrt( diffSqrY );
+                rmseEuclideanDist = sqrt( diffSqrDist );
+            }
+        }
+    }
+    catch( Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[CalibBowtie::CalculateRMSE] " << e.what();
+    }
+
+    return retVal;
+}
+GC_STATUS CalibExecutive::CalculateRMSE( const std::vector< cv::Point2d > &foundPts, std::vector< cv::Point2d > &reprojectedPts,
+                                         double &rmseEuclideanDist, double &rmseX, double &rmseY )
+{
+    GC_STATUS retVal = GC_OK;
+    rmseX = -9999999.0;
+    rmseY = -9999999.0;
+    rmseEuclideanDist = -9999999.0;
+
+    try
+    {
+        if ( 2 > foundPts.size() )
+        {
+            FILE_LOG( logERROR ) << "[CalibBowtie::CalculateRMSE] There must be more than one point to calculate RMSE";
+            retVal = GC_ERR;
+        }
+        else
+        {
+            reprojectedPts.clear();
+            Point2d projectedPt, reprojectedPt;
+            for ( size_t i = 0; i < foundPts.size(); ++i )
+            {
+                retVal = PixelToWorld( foundPts[ i ], projectedPt );
+                if ( GC_OK == retVal )
+                {
+                    retVal = WorldToPixel( projectedPt, reprojectedPt );
+                    if ( GC_OK == retVal )
+                    {
+                        reprojectedPts.push_back( reprojectedPt );
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                else
+                {
+                    break;
+                }
+            }
+            if ( GC_OK == retVal )
+            {
+                vector< double > euclidDists;
+                double diffSqrDist = 0.0;
+                double diffSqrX = 0.0, diffSqrY = 0.0;
+                for ( size_t i = 0; i < foundPts.size(); ++i )
+                {
+                    diffSqrX += pow( foundPts[ i ].x - reprojectedPts[ i ].x, 2 );
+                    diffSqrY += pow( foundPts[ i ].y - reprojectedPts[ i ].y, 2 );
+                    diffSqrDist += pow( Distance( foundPts[ i ], reprojectedPts[ i ] ), 2 );
+                }
+
+                rmseX = sqrt( diffSqrX );
+                rmseY = sqrt( diffSqrY );
+                rmseEuclideanDist = sqrt( diffSqrDist );
+            }
+        }
+    }
+    catch( Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[CalibBowtie::CalculateRMSE] " << e.what();
+    }
+
+    return retVal;
+}
+
 
 } // namespace gc

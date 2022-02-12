@@ -18,6 +18,7 @@
 #undef DEBUG_FIND_CALIB_SYMBOL
 #include <iostream>
 #include <opencv2/imgcodecs.hpp>
+#include <boost/filesystem.hpp>
 static const std::string DEBUG_RESULT_FOLDER = "/var/tmp/water/";
 #endif
 
@@ -37,7 +38,16 @@ static double elongation( Moments m );
 
 CalibStopSign::CalibStopSign()
 {
-
+#ifdef DEBUG_FIND_CALIB_SYMBOL
+    if ( !filesystem::exists( DEBUG_RESULT_FOLDER ) )
+    {
+        bool bRet = filesystem::create_directories( DEBUG_RESULT_FOLDER );
+        if ( !bRet )
+        {
+            FILE_LOG( logWARNING ) << "[CalibStopSign::CalibStopSign] Could not create debug folder " << DEBUG_RESULT_FOLDER;
+        }
+    }
+#endif
 }
 void CalibStopSign::clear()
 {
@@ -46,8 +56,8 @@ void CalibStopSign::clear()
     model.clear();
 }
 // symbolPoints are clockwise ordered with 0 being the topmost left point
-GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double octoSideLength,
-                                    const std::string &controlJson, std::vector< Point > &searchLineCorners )
+GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double octoSideLength, const std::string &controlJson,
+                                    std::vector< Point > &searchLineCorners, double &rmseDist, double &rmseX, double &rmseY )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -91,7 +101,7 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double octoSideLen
                             retVal = CalcOctoWorldPoints( octoSideLength, model.worldPoints );
                             if ( GC_OK == retVal )
                             {
-                                retVal = Calibrate( model.pixelPoints, model.worldPoints );
+                                retVal = Calibrate( model.pixelPoints, model.worldPoints, rmseDist, rmseX, rmseY );
                                 if ( GC_OK == retVal )
                                 {
                                     retVal = CalcSearchLines( img, searchLineCorners, model.searchLines );
@@ -167,7 +177,8 @@ GC_STATUS CalibStopSign::CalcCenterAngle( const std::vector< cv::Point2d > &pts,
 
     return retVal;
 }
-GC_STATUS CalibStopSign::Calibrate( const std::vector< cv::Point2d > &pixelPts, const std::vector< cv::Point2d > &worldPts )
+GC_STATUS CalibStopSign::Calibrate(const std::vector< cv::Point2d > &pixelPts, const std::vector< cv::Point2d > &worldPts,
+                                   double &rmseEuclidDist, double &rmseX, double &rmseY )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -230,6 +241,32 @@ GC_STATUS CalibStopSign::GetLineEquation( const cv::Point2d pt1, const cv::Point
         retVal = GC_EXCEPT;
     }
 
+    return retVal;
+}
+GC_STATUS CalibStopSign::GetSearchRegionBoundingRect( cv::Rect &rect )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        if ( model.searchLines.empty() )
+        {
+            FILE_LOG( logERROR ) << "[CalibBowtie::GetSearchRegionBoundingRect] System not calibrated";
+            retVal = GC_ERR;
+        }
+        else
+        {
+            int left = std::min( model.searchLines[ 0 ].top.x, model.searchLines[ 0 ].bot.x );
+            int top = std::min( model.searchLines[ 0 ].top.y, model.searchLines[ model.searchLines.size() - 1 ].top.y );
+            int right = std::max( model.searchLines[ model.searchLines.size() - 1 ].top.x, model.searchLines[ model.searchLines.size() - 1 ].bot.x );
+            int bottom = std::max( model.searchLines[ 0 ].bot.y, model.searchLines[ model.searchLines.size() - 1 ].bot.y );
+            rect = Rect( left, top, right - left, bottom - top );
+        }
+    }
+    catch( Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[CalibStopSign::GetSearchRegionBoundingRect] " << e.what();
+        return GC_EXCEPT;
+    }
     return retVal;
 }
 GC_STATUS CalibStopSign::CalcSearchLines( const Mat &img, vector< Point > &searchLineCorners, std::vector< LineEnds > &searchLines )
@@ -301,7 +338,7 @@ GC_STATUS CalibStopSign::CalcSearchLines( const Mat &img, vector< Point > &searc
 
     return retVal;
 }
-GC_STATUS CalibStopSign::Load( const std::string jsonCalFilepath )
+GC_STATUS CalibStopSign::Load( const std::string jsonCalFilepath, double &rmseEuclidDist, double &rmseX, double &rmseY )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -381,7 +418,7 @@ GC_STATUS CalibStopSign::Load( const std::string jsonCalFilepath )
                 model.controlJson = ptreeTop.get< string >( "control_json", "{}" );
 
                 Mat matIn, matOut;
-                retVal = Calibrate( model.pixelPoints, model.worldPoints );
+                retVal = Calibrate( model.pixelPoints, model.worldPoints, rmseEuclidDist, rmseX, rmseY );
             }
 #ifdef LOG_CALIB_VALUES
             FILE_LOG( logINFO ) << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
@@ -708,6 +745,10 @@ GC_STATUS CalibStopSign::FindCorners( const cv::Mat &mask, const std::vector< cv
                                     {
                                         octoLines.left.pt1 = octoLines.bot.pt2;
                                         retVal = LineIntersection( StopSignLine( botPt1, botPt2 ), StopSignLine( rgtPt1, rgtPt2 ), octoLines.right.pt2 );
+                                        if ( GC_OK == retVal )
+                                        {
+                                            octoLines.bot.pt1 = octoLines.right.pt2;
+                                        }
                                     }
                                 }
                             }

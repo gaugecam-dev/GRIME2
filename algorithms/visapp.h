@@ -78,17 +78,20 @@ public:
      * @param jsonControl Json string that controls the calibration
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
-    GC_STATUS Calibrate( const string imgFilepath, const string jsonControl );
+    GC_STATUS Calibrate( const string imgFilepath, const string jsonControl,
+                         double &rmseDist, double &rmseX, double &rmseY );
 
     // TODO: Add doxygen comments
-    GC_STATUS Calibrate( const string imgFilepath, const string jsonControl, const string resultImgPath );
+    GC_STATUS Calibrate( const string imgFilepath, const string jsonControl, const string resultImgPath,
+                         double &rmseDist, double &rmseX, double &rmseY );
 
+    // TODO: Adjust doxygen comments
     /**
      * @brief Set the current calibration from a calibration model json file
      * @param calibJson The filepath of the calibration model json file
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
-    GC_STATUS LoadCalib( const std::string calibJson );
+    GC_STATUS LoadCalib( const std::string calibJson , double &rmseDist, double &rmseX, double &rmseY );
 
     /**
      * @brief Convert world coordinates to pixel coordinates using the currently set calibration
@@ -98,6 +101,10 @@ public:
      */
     GC_STATUS WorldToPixel( const cv::Point2d worldPt, cv::Point2d &pixelPt );
 
+    // TODO: Add doxygen comments here
+    GC_STATUS FindBowtieResiduals( const std::string imgFilepath, double &rmseX, double &rmseY, double &rmseEucDist,
+                                   std::vector< cv::Point2d > &pixPts, std::vector< cv::Point2d > &worldPts,
+                                   std::vector< cv::Point2d > &pixPtsReverse );
     /**
      * @brief Convert pixel coordinates to world coordinates using the currently set calibration
      * @param pixelPt Pixel coordinate xy position

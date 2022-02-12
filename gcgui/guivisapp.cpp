@@ -602,20 +602,47 @@ GC_STATUS GuiVisApp::CreateAnimation( const std::string imageFolder, const std::
 }
 GC_STATUS GuiVisApp::LoadCalib( const std::string calibJson )
 {
-    GC_STATUS retVal = m_visApp.LoadCalib( calibJson );
+    double rmseDist, rmseX, rmseY;
+    GC_STATUS retVal = m_visApp.LoadCalib( calibJson, rmseDist, rmseX, rmseY );
     sigMessage( string( "Load calibration: " ) + ( GC_OK == retVal ? "SUCCESS" : "FAILURE" ) );
+    if ( GC_OK == retVal )
+    {
+        char msg[ 256 ];
+        sprintf( msg, "X=%0.3e\nY=%0.3e\nEuclid. dist=%0.3e", rmseX, rmseY, rmseDist );
+        sigMessage( string( "Calibration: SUCCESS\n" ) +
+                    string( "~~~~~~~~~~~~~~~~~\n" ) +
+                    string( "Reprojection RMSE\n" +
+                    string( "~~~~~~~~~~~~~~~~~\n" ) +
+                    string( msg ) +
+                    string( "\n~~~~~~~~~~~~~~~~~\n" ) ) );
+    }
     return retVal;
 }
 GC_STATUS GuiVisApp::Calibrate( const std::string imgFilepath, const string jsonControl )
 {
     GC_STATUS retVal = GC_OK;
 
+    double rmseDist, rmseX, rmseY;
     retVal = LoadImageToApp( imgFilepath );
     if ( GC_OK == retVal )
     {
-        retVal = m_visApp.Calibrate( imgFilepath, jsonControl );
+        retVal = m_visApp.Calibrate( imgFilepath, jsonControl, rmseDist, rmseX, rmseY );
     }
-    sigMessage( string( "Calibration: " ) + ( GC_OK == retVal ? "SUCCESS" : "FAILURE" ) );
+    if ( GC_OK == retVal )
+    {
+        char msg[ 256 ];
+        sprintf( msg, "X=%0.3e\nY=%0.3e\nEuclid. dist=%0.3e", rmseX, rmseY, rmseDist );
+        sigMessage( string( "Calibration: SUCCESS\n" ) +
+                    string( "~~~~~~~~~~~~~~~~~\n" ) +
+                    string( "Reprojection RMSE\n" +
+                    string( "~~~~~~~~~~~~~~~~~\n" ) +
+                    string( msg ) +
+                    string( "\n~~~~~~~~~~~~~~~~~\n" ) ) );
+    }
+    else
+    {
+        sigMessage( string( "Calibration: FAILURE" ) );
+    }
     return retVal;
 }
 GC_STATUS GuiVisApp::PixelToWorld( const cv::Point2d pixelPt, cv::Point2d &worldPt )
@@ -886,7 +913,8 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
 
     try
     {
-        retVal = m_visApp.LoadCalib( params.calibFilepath );
+        double rmseDist, rmseX, rmseY;
+        retVal = m_visApp.LoadCalib( params.calibFilepath, rmseDist, rmseX, rmseY );
         if ( GC_OK != retVal )
         {
             sigMessage( "Failed to load calib for find line folder run" );
@@ -1024,6 +1052,9 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                                 {
                                     msg += string( "Water level=FAIL" );
                                     resultString += to_string( -9999999.0 );
+                                    findData.findlineResult.waterLevelAdjusted.y = -9999999.0;
+                                    findData.findlineResult.calcLinePts.angleWorld = -9999999.0;
+                                    findData.findlineResult.offsetMovePts.ctrWorld.y = -9999999.0;
                                 }
 
                                 findData.findlineResult.timestamp = timestamp;
@@ -1114,7 +1145,7 @@ GC_STATUS GuiVisApp::Test()
 
     auto end = boost::chrono::steady_clock::now();
     auto diff = end - start;
-    FILE_LOG( logINFO ) << "Elapsed time for vertices extraction = " << \
+    FILE_LOG( logINFO ) << "Elapsed time = " << \
                            boost::chrono::duration_cast < boost::chrono::milliseconds >( diff ).count();
     return retVal;
 }

@@ -1497,8 +1497,7 @@ void MainWindow::on_pushButton_animationStop_clicked()
         ui->textEdit_msgs->append( "Tried to stop GIF create process when it was not running" );
     }
 }
-
 void MainWindow::on_pushButton_test_clicked()
 {
-    ui->statusBar->showMessage( "Test not implemented" );
+    ui->statusBar->showMessage( "No test enabled" );
 }
