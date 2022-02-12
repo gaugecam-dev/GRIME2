@@ -125,105 +125,6 @@ bool GuiVisApp::IsInitialized()
 {
     return ( m_matColor.empty() || m_matGray.empty() ) ? false : true;
 }
-GC_STATUS GuiVisApp::SetImage( const Mat matImg, const bool bIsBGR )
-{
-    GC_STATUS retVal = GC_OK;
-    if ( matImg.size() != m_matGray.size() )
-    {
-        FILE_LOG( logERROR ) << "[SetImage] Invalid image size for image set";
-        retVal = GC_ERR;
-    }
-    else
-    {
-        try
-        {
-            if ( matImg.type() == CV_8UC1 )
-            {
-                matImg.copyTo( m_matGray );
-                cvtColor( matImg, m_matColor, COLOR_GRAY2BGR );
-            }
-            else if ( matImg.type() == CV_8UC3 )
-            {
-                matImg.copyTo( m_matColor );
-                cvtColor( matImg, m_matGray, bIsBGR ? COLOR_BGR2GRAY : COLOR_RGB2GRAY );
-            }
-            else
-            {
-                FILE_LOG( logERROR ) << __func__ << "Invalid image type for SetImage()";
-                retVal = GC_ERR;
-            }
-        }
-        catch( const Exception &e )
-        {
-            FILE_LOG( logERROR ) << __func__ << "EXCEPTION: " << string( e.what() );
-            retVal = GC_EXCEPT;
-        }
-    }
-    return retVal;
-}
-GC_STATUS GuiVisApp::SetImage( const Size sizeImg, const size_t nStride, const int nType, uchar *pPix, const bool bIsBGR )
-{
-    GC_STATUS retVal = GC_OK;
-    if ( nullptr == pPix )
-    {
-        FILE_LOG( logERROR ) << __func__ << "Cannot set an image from nullptr pixels";
-        retVal = GC_ERR;
-    }
-    else
-    {
-        try
-        {
-            if ( nType == CV_8UC1 )
-            {
-                uchar *pPixSrc = pPix;
-                uchar *pPixDst = m_matGray.data;
-                for ( int nRow = 0; nRow < sizeImg.height; ++nRow )
-                {
-                    memcpy( pPixDst, pPixSrc, static_cast< size_t >( sizeImg.width ) );
-                    pPixSrc += nStride;
-                    pPixDst += static_cast< long >( m_matGray.step );
-                }
-                cvtColor( m_matGray, m_matColor, COLOR_GRAY2BGR );
-            }
-            else if ( nType == CV_8UC3 )
-            {
-                uchar *pPixSrc = pPix;
-                uchar *pPixDst = m_matColor.data;
-                size_t nBytes2Copy = static_cast< size_t >( sizeImg.width ) * 3;
-                for ( int nRow = 0; nRow < sizeImg.height; ++nRow )
-                {
-                    memcpy( pPixDst, pPixSrc, nBytes2Copy );
-                    pPixSrc += nStride;
-                    pPixDst += static_cast< long >( m_matColor.step );
-                }
-                cvtColor( m_matColor, m_matGray, bIsBGR ? COLOR_BGR2GRAY : COLOR_RGB2GRAY );
-            }
-            else
-            {
-                FILE_LOG( logERROR ) << string( "Invalid image type " ) << nType << string( " for SetImage()" );
-                retVal = GC_ERR;
-            }
-        }
-        catch( const Exception &e )
-        {
-            FILE_LOG( logERROR ) << __func__ << "EXCEPTION: " << string( e.what() );
-            retVal = GC_EXCEPT;
-        }
-    }
-    return retVal;
-}
-cv::Mat &GuiVisApp::GetImageFromType( IMG_BUFFERS type )
-{
-    Mat *pMatRet = nullptr;
-    switch( type )
-    {
-        case BUF_GRAY:    pMatRet = &m_matGray; break;
-        case BUF_RGB:     pMatRet = &m_matColor; break;
-        case BUF_OVERLAY: pMatRet = &m_matDisplay; break;
-        default: break;
-    }
-    return *pMatRet;
-}
 GC_STATUS GuiVisApp::GetImage(const Size sizeImg, const size_t nStride, const int nType,
                                uchar *pPix, const IMG_BUFFERS nImgColor, const IMG_DISPLAY_OVERLAYS overlays )
 {
@@ -701,20 +602,47 @@ GC_STATUS GuiVisApp::CreateAnimation( const std::string imageFolder, const std::
 }
 GC_STATUS GuiVisApp::LoadCalib( const std::string calibJson )
 {
-    GC_STATUS retVal = m_visApp.LoadCalib( calibJson );
+    double rmseDist, rmseX, rmseY;
+    GC_STATUS retVal = m_visApp.LoadCalib( calibJson, rmseDist, rmseX, rmseY );
     sigMessage( string( "Load calibration: " ) + ( GC_OK == retVal ? "SUCCESS" : "FAILURE" ) );
+    if ( GC_OK == retVal )
+    {
+        char msg[ 256 ];
+        sprintf( msg, "X=%0.3e\nY=%0.3e\nEuclid. dist=%0.3e", rmseX, rmseY, rmseDist );
+        sigMessage( string( "Calibration: SUCCESS\n" ) +
+                    string( "~~~~~~~~~~~~~~~~~\n" ) +
+                    string( "Reprojection RMSE\n" +
+                    string( "~~~~~~~~~~~~~~~~~\n" ) +
+                    string( msg ) +
+                    string( "\n~~~~~~~~~~~~~~~~~\n" ) ) );
+    }
     return retVal;
 }
-GC_STATUS GuiVisApp::Calibrate( const std::string imgFilepath, const string jsonControl, Mat &imgOut )
+GC_STATUS GuiVisApp::Calibrate( const std::string imgFilepath, const string jsonControl )
 {
     GC_STATUS retVal = GC_OK;
 
+    double rmseDist, rmseX, rmseY;
     retVal = LoadImageToApp( imgFilepath );
     if ( GC_OK == retVal )
     {
-        retVal = m_visApp.Calibrate( imgFilepath, jsonControl, imgOut );
+        retVal = m_visApp.Calibrate( imgFilepath, jsonControl, rmseDist, rmseX, rmseY );
     }
-    sigMessage( string( "Calibration: " ) + ( GC_OK == retVal ? "SUCCESS" : "FAILURE" ) );
+    if ( GC_OK == retVal )
+    {
+        char msg[ 256 ];
+        sprintf( msg, "X=%0.3e\nY=%0.3e\nEuclid. dist=%0.3e", rmseX, rmseY, rmseDist );
+        sigMessage( string( "Calibration: SUCCESS\n" ) +
+                    string( "~~~~~~~~~~~~~~~~~\n" ) +
+                    string( "Reprojection RMSE\n" +
+                    string( "~~~~~~~~~~~~~~~~~\n" ) +
+                    string( msg ) +
+                    string( "\n~~~~~~~~~~~~~~~~~\n" ) ) );
+    }
+    else
+    {
+        sigMessage( string( "Calibration: FAILURE" ) );
+    }
     return retVal;
 }
 GC_STATUS GuiVisApp::PixelToWorld( const cv::Point2d pixelPt, cv::Point2d &worldPt )
@@ -857,6 +785,11 @@ GC_STATUS GuiVisApp::CalcLinesThreadFinish()
             m_isRunning = false;
             m_folderFuture.wait();
             retVal = m_folderFuture.get();
+            if ( GC_OK != retVal )
+            {
+                FILE_LOG( logERROR ) << "[VisApp::CalcLinesThreadFinish] Error in thread before termination";
+                retVal = GC_OK;
+            }
         }
         catch( std::exception &e )
         {
@@ -980,7 +913,8 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
 
     try
     {
-        retVal = m_visApp.LoadCalib( params.calibFilepath );
+        double rmseDist, rmseX, rmseY;
+        retVal = m_visApp.LoadCalib( params.calibFilepath, rmseDist, rmseX, rmseY );
         if ( GC_OK != retVal )
         {
             sigMessage( "Failed to load calib for find line folder run" );
@@ -1070,73 +1004,89 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                                                                                      params.timeStampFormat, timestamp );
                             }
                         }
-                        img = imread( images[ i ], IMREAD_GRAYSCALE );
-                        if ( img.empty() )
+                        else if ( FROM_EXTERNAL == params.timeStampType )
                         {
-                            sigMessage( fs::path( images[ i ] ).filename().string() + " FAILURE: Could not open image" );
+                            FILE_LOG( logERROR ) << "Timestamp passed into method not yet implemented";
+                            retVal = GC_ERR;
+                        }
+
+                        if ( GC_OK != retVal )
+                        {
+                            sigMessage( "Timestamp failure. Check source, format, and start position of timestamp" );
                         }
                         else
                         {
-                            if ( FROM_EXTERNAL == params.timeStampType )
+                            img = imread( images[ i ], IMREAD_GRAYSCALE );
+                            if ( img.empty() )
                             {
-                                FILE_LOG( logERROR ) << "Timestamp passed into method not yet implemented";
-                                retVal = GC_ERR;
-                            }
-
-                            resultString = filename + ",";
-                            resultString += timestamp + ",";
-
-                            retVal = m_visApp.CalcLine( img, timestamp );
-                            msg = filename + ( GC_OK == retVal ? " SUCCESS\n" : " FAILURE\n" );
-                            if ( GC_OK == retVal )
-                            {
-                                findData.findlineResult = m_visApp.GetFindLineResult();
-
-                                sprintf( buffer, "Timestamp=%s\n", findData.findlineResult.timestamp.c_str() );
-                                msg += string( buffer );
-
-                                sprintf( buffer, "Water level=%.3f\n", findData.findlineResult.waterLevelAdjusted.y );
-                                msg += string( buffer );
-                                resultString += to_string( findData.findlineResult.waterLevelAdjusted.y );
-                                sprintf( buffer, "Target movement x=%.3f, y=%.3f\n",
-                                         findData.findlineResult.offsetMovePts.ctrWorld.x, findData.findlineResult.offsetMovePts.ctrWorld.y );
-                                msg += string( buffer );
+                                sigMessage( fs::path( images[ i ] ).filename().string() + " FAILURE: Could not open image" );
                             }
                             else
                             {
-                                msg += string( "Water level=FAIL" );
-                                resultString += to_string( -9999999.0 );
-                            }
+                                if ( FROM_EXTERNAL == params.timeStampType )
+                                {
+                                    FILE_LOG( logERROR ) << "Timestamp passed into method not yet implemented";
+                                    retVal = GC_ERR;
+                                }
 
-                            findData.findlineResult.timestamp = timestamp;
-                            if ( !params.resultCSVPath.empty() )
-                            {
-                                csvOut << std::setprecision( 3 ) << std::fixed << filename << "," << timestamp << "," <<
-                                          ( findData.findlineResult.findSuccess ? "SUCCESS" : "FAIL" ) << "," <<
-                                          findData.findlineResult.waterLevelAdjusted.y << "," <<
-                                          findData.findlineResult.calcLinePts.angleWorld << "," <<
-                                          findData.findlineResult.offsetMovePts.ctrWorld.y << endl;
-                            }
-                            if ( !params.resultImagePath.empty() )
-                            {
-                                Mat color;
-                                retVal = m_visApp.DrawLineFindOverlay( img, color, findData.findlineResult, drawTypes );
+                                resultString = filename + ",";
+                                resultString += timestamp + ",";
+
+                                retVal = m_visApp.CalcLine( img, timestamp );
+                                msg = filename + ( GC_OK == retVal ? " SUCCESS\n" : " FAILURE\n" );
                                 if ( GC_OK == retVal )
                                 {
-                                    string resultFilepath = resultFolderAdj + fs::path( images[ i ] ).stem().string() + "_overlay.png";
-                                    bool bRet = imwrite( resultFilepath, color );
-                                    if ( !bRet )
+                                    findData.findlineResult = m_visApp.GetFindLineResult();
+
+                                    sprintf( buffer, "Timestamp=%s\n", findData.findlineResult.timestamp.c_str() );
+                                    msg += string( buffer );
+
+                                    sprintf( buffer, "Water level=%.3f\n", findData.findlineResult.waterLevelAdjusted.y );
+                                    msg += string( buffer );
+                                    resultString += to_string( findData.findlineResult.waterLevelAdjusted.y );
+                                    sprintf( buffer, "Target movement x=%.3f, y=%.3f\n",
+                                             findData.findlineResult.offsetMovePts.ctrWorld.x, findData.findlineResult.offsetMovePts.ctrWorld.y );
+                                    msg += string( buffer );
+                                }
+                                else
+                                {
+                                    msg += string( "Water level=FAIL" );
+                                    resultString += to_string( -9999999.0 );
+                                    findData.findlineResult.waterLevelAdjusted.y = -9999999.0;
+                                    findData.findlineResult.calcLinePts.angleWorld = -9999999.0;
+                                    findData.findlineResult.offsetMovePts.ctrWorld.y = -9999999.0;
+                                }
+
+                                findData.findlineResult.timestamp = timestamp;
+                                if ( !params.resultCSVPath.empty() )
+                                {
+                                    csvOut << std::setprecision( 3 ) << std::fixed << filename << "," << timestamp << "," <<
+                                              ( findData.findlineResult.findSuccess ? "SUCCESS" : "FAIL" ) << "," <<
+                                              findData.findlineResult.waterLevelAdjusted.y << "," <<
+                                              findData.findlineResult.calcLinePts.angleWorld << "," <<
+                                              findData.findlineResult.offsetMovePts.ctrWorld.y << endl;
+                                }
+                                if ( !params.resultImagePath.empty() )
+                                {
+                                    Mat color;
+                                    retVal = m_visApp.DrawLineFindOverlay( img, color, findData.findlineResult, drawTypes );
+                                    if ( GC_OK == retVal )
                                     {
-                                        FILE_LOG( logWARNING ) << "Could not write result image to " << resultFilepath;
+                                        string resultFilepath = resultFolderAdj + fs::path( images[ i ] ).stem().string() + "_overlay.png";
+                                        bool bRet = imwrite( resultFilepath, color );
+                                        if ( !bRet )
+                                        {
+                                            FILE_LOG( logWARNING ) << "Could not write result image to " << resultFilepath;
+                                        }
                                     }
                                 }
-                            }
 
-                            findData.findlineParams.imagePath = images[ i ];
-                            retVal = LoadImageToApp( img );
-                            sigMessage( "update image only" );
-                            sigMessage( msg );
-                            sigTableAddRow( resultString );
+                                findData.findlineParams.imagePath = images[ i ];
+                                retVal = LoadImageToApp( img );
+                                sigMessage( "update image only" );
+                                sigMessage( msg );
+                                sigTableAddRow( resultString );
+                            }
                         }
                     }
                     progressVal = cvRound( 100.0 * static_cast< double >( i ) / static_cast< double >( images.size() ) ) + 1;
@@ -1195,7 +1145,7 @@ GC_STATUS GuiVisApp::Test()
 
     auto end = boost::chrono::steady_clock::now();
     auto diff = end - start;
-    FILE_LOG( logINFO ) << "Elapsed time for vertices extraction = " << \
+    FILE_LOG( logINFO ) << "Elapsed time = " << \
                            boost::chrono::duration_cast < boost::chrono::milliseconds >( diff ).count();
     return retVal;
 }

@@ -27,6 +27,7 @@
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QProgressDialog>
 #include <QtWidgets/QListWidget>
+#include "roiadjust.h"
 
 #ifdef QT_NO_CONTEXTMENU
 #undef QT_NO_CONTEXTMENU
@@ -66,7 +67,8 @@ private slots:
     void on_actionImageLoad_triggered();
     void on_actionImageSave_triggered();
     void on_actionSetROI_toggled( bool );
-    void on_actionSetRuler_triggered();
+    void on_actionSetSearchPoly_toggled( bool );
+    void on_actionSetRuler_toggled( bool );
     void on_lineEdit_imageFolder_textEdited( const QString &strPath );
     void on_listWidget_imageFolder_currentRowChanged(int row);
     void on_toolButton_imageFolder_browse_clicked();
@@ -77,8 +79,8 @@ private slots:
     void do_updateProgress( const int );
     void on_pushButton_clearTable_clicked();
     void on_tableAddRow( const string row_strings );
-    void on_actionSaveVideo_triggered();
     void on_pushButton_visionCalibrate_clicked();
+    void on_pushButton_resetSearchRegion_clicked();
     void on_toolButton_calibVisionTarget_csv_browse_clicked();
     void on_toolButton_calibVisionResult_json_browse_clicked();
     void on_toolButton_findLineTopFolder_browse_clicked();
@@ -92,7 +94,6 @@ private slots:
     void on_pushButton_animationStop_clicked();
 
     void on_pushButton_test_clicked();
-
 
 private:
     Ui::MainWindow *ui;
@@ -116,12 +117,15 @@ private:
     QLabel *m_pLabelImgDisplay;
     double m_scaleFactor;
 
+    RoiAdjust m_roiAdjust;
+
     // region of interest code
     QLine m_lineOne;
     QRubberBand *m_pRubberBand;
     QRect m_rectROI;
     QRect m_rectRubberBand;
     QPoint m_ptCapture;
+    LineSearchPoly m_searchPolyImage;
 
     // vision application
     GuiVisApp m_visApp;
@@ -133,7 +137,7 @@ private:
     void paintEvent( QPaintEvent * ) override;
     void mousePressEvent( QMouseEvent *pEvent ) override;
     void mouseMoveEvent( QMouseEvent *pEvent ) override;
-    void ScaleImage();
+    int ScaleImage();
     void ZoomTo( const int width, const int height );
 
     // context menu
@@ -144,14 +148,12 @@ private:
 
     // helper methods
     void UpdateGUIEnables();
-    void UpdatePixmap();
+    int UpdatePixmap();
     void UpdatePixmapTarget();
     void UpdateCalibType();
     void UpdateCalibSearchRegion();
-    void TestAgainstFindLines( QPoint pt );
-    void TestAgainstRubberBands( QPoint pt );
-    void AdjustPointRubberBand();
-    void AdjustPointFindLines();
+    void UpdateRegionButton();
+    void UpdateRulerMeasurement();
     int ReadSettings( const QString filepath = "" );
     int WriteSettings(const QString filepath = "" );
     size_t GetImagesPathsFromFolder(  const QString strPath );
@@ -160,7 +162,6 @@ private:
     void ClearTable();
     int InitTable( const vector< string > headings );
     int AddRow( const string row_string );
-    int FormCalibJsonString( string &json );
 };
 
 #endif // MAINWINDOW_H

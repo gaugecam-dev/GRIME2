@@ -64,7 +64,11 @@ int main( int argc, char *argv[] )
         GC_STATUS retVal = GC_OK;
         Grime2CLIParams params;
         ret = GetArgs( argc, argv, params );
-        if ( 0 == ret )
+        if ( 0 != ret )
+        {
+            cout << "{\"status\": \"FAILURE\", \"return\": " << to_string( ret ) << "}" << endl;
+        }
+        else
         {
             if ( CALIBRATE == params.opToPerform )
             {
@@ -123,15 +127,13 @@ GC_STATUS Calibrate( const Grime2CLIParams cliParams )
         retVal = FormCalibJsonString( cliParams, jsonString );
         if ( GC_OK == retVal )
         {
-            cv::Mat imgOut;
-            retVal = vis.Calibrate( cliParams.src_imagePath, jsonString, imgOut );
-            if ( GC_OK == retVal && !cliParams.result_imagePath.empty() )
+            if ( cliParams.result_imagePath.empty() )
             {
-                bool bRet = cv::imwrite( cliParams.result_imagePath, imgOut );
-                if ( !bRet )
-                {
-                    FILE_LOG( logWARNING ) << "Could not save calibration result image " << cliParams.result_imagePath;
-                }
+                retVal = vis.Calibrate( cliParams.src_imagePath, jsonString );
+            }
+            else
+            {
+                retVal = vis.Calibrate( cliParams.src_imagePath, jsonString, cliParams.result_imagePath );
             }
         }
     }
@@ -232,7 +234,7 @@ GC_STATUS FindWaterLevel( const Grime2CLIParams cliParams )
     string resultJson;
     FindLineResult result;
     GC_STATUS retVal = visApp.CalcLine( params, result, resultJson );
-    cout << ( GC_OK == retVal ? resultJson : "ERROR" ) << endl;
+    cout << resultJson << endl;
     return retVal;
 }
 GC_STATUS FormCalibJsonString( const Grime2CLIParams cliParams, string &json )
@@ -387,6 +389,7 @@ void ShowVersion()
     cout << "Application and library versions" << endl;
     cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
     cout << "  GRIME2: " << VisApp::Version()  << endl;
+    cout << "  OpenCV: " << cv::getVersionString() << endl;
     cout << "ExifTool: "; fflush( stdout ); VisApp::GetExifToolVersion();
     cout << "   Boost: " << BOOST_VERSION / 100000 <<
             "." << BOOST_VERSION / 100 % 1000 <<

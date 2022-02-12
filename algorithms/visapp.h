@@ -76,17 +76,22 @@ public:
      * @brief Set the current calibration from a calibration model json file
      * @param imgFilepath The filepath of the image with the calibration target
      * @param jsonControl Json string that controls the calibration
-     * @param imgOut Image where the calibration result will be shown as on overlay
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
-    GC_STATUS Calibrate( const string imgFilepath, const string jsonControl, cv::Mat &imgOut );
+    GC_STATUS Calibrate( const string imgFilepath, const string jsonControl,
+                         double &rmseDist, double &rmseX, double &rmseY );
 
+    // TODO: Add doxygen comments
+    GC_STATUS Calibrate( const string imgFilepath, const string jsonControl, const string resultImgPath,
+                         double &rmseDist, double &rmseX, double &rmseY );
+
+    // TODO: Adjust doxygen comments
     /**
      * @brief Set the current calibration from a calibration model json file
      * @param calibJson The filepath of the calibration model json file
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
-    GC_STATUS LoadCalib( const std::string calibJson );
+    GC_STATUS LoadCalib( const std::string calibJson , double &rmseDist, double &rmseX, double &rmseY );
 
     /**
      * @brief Convert world coordinates to pixel coordinates using the currently set calibration
@@ -96,6 +101,10 @@ public:
      */
     GC_STATUS WorldToPixel( const cv::Point2d worldPt, cv::Point2d &pixelPt );
 
+    // TODO: Add doxygen comments here
+    GC_STATUS FindBowtieResiduals( const std::string imgFilepath, double &rmseX, double &rmseY, double &rmseEucDist,
+                                   std::vector< cv::Point2d > &pixPts, std::vector< cv::Point2d > &worldPts,
+                                   std::vector< cv::Point2d > &pixPtsReverse );
     /**
      * @brief Convert pixel coordinates to world coordinates using the currently set calibration
      * @param pixelPt Pixel coordinate xy position
@@ -110,8 +119,11 @@ public:
      * @param imageMatOut OpenCV Mat of the output image that holds the input image with an overlay of the calibration
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
+
+    // TODO: Fix doxygen
+    GC_STATUS DrawCalibOverlay( const cv::Mat matIn, cv::Mat &imgMatOut );
     GC_STATUS DrawCalibOverlay( const cv::Mat matIn, cv::Mat &imgMatOut,
-                                const bool drawCalib = true, const bool drawMoveROIs = true, const bool drawSearchROI = true );
+                                const bool drawCalib, const bool drawMoveROIs, const bool drawSearchROI );
 
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // Findline methods
@@ -221,17 +233,10 @@ public:
                                                                                                   static_cast< int >( RANSAC_POINTS ) ) );
 
     /**
-     * @brief Set the internal found line position from a user specifed find line result
-     * @param findLineResult User specified found line result object
-     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
-     */
-    void SetFindLineResult( const FindLineResult result );
-
-    /**
      * @brief Get the current found line position
      * @return Internal FindLineResult object
      */
-    FindLineResult GetFindLineResult();
+    FindLineResult GetFindLineResult() { return m_findLineResult; }
 
     /**
      * @brief Create and/or append find line results fo a csv file
@@ -247,14 +252,6 @@ public:
      */
     GC_STATUS WriteFindlineResultToCSV( const std::string resultCSV, const std::string imgPath,
                                         const FindLineResult &result, const bool overwrite = false );
-
-    /**
-     * @brief Draw both calibration model and line find overlays on a line find image based on its metadata
-     * @param imageFilepathIn Input image filepath of the line find image that holds metadata
-     * @param imageFilepathOut Output image filepath of the overlay image that is created
-     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
-     */
-    GC_STATUS DrawBothOverlays( const std::string imageFilepathIn, const std::string imageFilepathOut );
 
 private:
     std::string m_calibFilepath;

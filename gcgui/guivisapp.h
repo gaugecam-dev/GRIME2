@@ -80,23 +80,20 @@ public:
     GC_STATUS WriteSettings( const std::string strJsonConfig = "" );
     GC_STATUS Test();
 
-    GC_STATUS SetImage( const cv::Mat matImg, const bool bIsBGR = true );
-    GC_STATUS SetImage( const cv::Size sizeImg, const size_t nStride, const int nType, uchar *pPix, const bool bIsBGR = true );
     GC_STATUS GetImage( const cv::Size sizeImg, const size_t nStride, const int nType, uchar *pPix,
                         const IMG_BUFFERS nImgColor, const IMG_DISPLAY_OVERLAYS overlays );
-    cv::Mat &GetImageFromType( IMG_BUFFERS type );
 
     GC_STATUS LoadImageToApp( const cv::Mat img );
     GC_STATUS LoadImageToApp( const std::string strFilepath );
     GC_STATUS SaveImage( const std::string strFilepath, IMG_BUFFERS nColorType );
     GC_STATUS GetImageSize( cv::Size &sizeImage );
 
-    std::string ConfigFolder() { return m_strConfigFolder; }
-
     // calibration methods
     GC_STATUS LoadCalib( const std::string calibJson );
-    GC_STATUS Calibrate( const std::string imgFilepath, const string jsonControl, Mat &imgOut );
+    GC_STATUS Calibrate( const std::string imgFilepath, const string jsonControl );
     GC_STATUS PixelToWorld( const cv::Point2d pixelPt, cv::Point2d &worldPt );
+    GC_STATUS FindBowtieResiduals( const std::string imgFilepath, double &rmseX, double &rmseY, double &rmseEucDist,
+                                   std::vector<Point2d> &pixPts, std::vector< Point2d > &worldPts, std::vector< Point2d > &pixPtsReverse );
 
     // findline app methods
     GC_STATUS GetMetadata( const std::string imgFilepath, std::string &data );

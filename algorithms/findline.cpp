@@ -202,8 +202,8 @@ GC_STATUS FindLine::FitLineRANSAC( const std::vector< Point2d > &pts, FindPointS
                     findPtSet.rgtPixel.y = lineVec[ 3 ] + ( lineVec[ 1 ] * ( img.cols - lineVec[ 2 ] - 1 ) );
                     findPtSet.ctrPixel.x = lineVec[ 2 ] + ( lineVec[ 0 ] * ( xCenter - lineVec[ 2 ] ) );
                     findPtSet.ctrPixel.y = lineVec[ 3 ] + ( lineVec[ 1 ] * ( xCenter - lineVec[ 2 ] ) );
-                    findPtSet.anglePixel = atan( ( findPtSet.rgtPixel.y - findPtSet.lftPixel.y ) /
-                                                 ( findPtSet.rgtPixel.x - findPtSet.lftPixel.x ) ) * 180 / 3.14159265;
+                    findPtSet.anglePixel = atan2( ( findPtSet.rgtPixel.y - findPtSet.lftPixel.y ),
+                                                 ( findPtSet.rgtPixel.x - findPtSet.lftPixel.x ) ) * ( 180.0 / CV_PI );
 #ifdef DEBUG_FIND_LINE
                     line( scratch, findPtSet.lftPixel, findPtSet.rgtPixel, Scalar( 0, 0, 255 ), 1 );
 #endif
@@ -382,10 +382,10 @@ GC_STATUS FindLine::DrawResult( const Mat &img, Mat &imgOut, const FindLineResul
             }
             if ( GC_OK == retVal )
             {
-                int circleSize =  std::max( 5, cvRound( static_cast< double >( imgOut.rows ) / 120.0 ) );
+                int circleSize =  std::max( 5, cvRound( static_cast< double >( imgOut.rows ) / 400.0 ) );
                 int textStroke = std::max( 1, cvRound( static_cast< double >( imgOut.rows ) / 300.0 ) );
-                int textRowSpacing = cvRound( static_cast< double >( imgOut.rows ) / 25.0 );
-                double fontScale = static_cast< double >( imgOut.rows ) / 300.0;
+                int textRowSpacing = cvRound( static_cast< double >( imgOut.rows ) / 40.0 );
+                double fontScale = static_cast< double >( imgOut.rows ) / 500.0;
 
                 if ( ( overlayTypes & ROW_SUMS ) && !result.diagRowSums.empty() )
                 {

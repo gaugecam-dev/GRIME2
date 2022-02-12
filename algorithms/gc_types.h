@@ -90,13 +90,13 @@ public:
 /**
  * @brief Data class to hold all items needed to define a calibration
  */
-class CalibModel
+class CalibModelBowtie
 {
 public:
     /**
      * @brief Constructor to set the model to an uninitialized state
      */
-    CalibModel() :
+    CalibModelBowtie() :
         imgSize( cv::Size( -1, -1 ) ),
         gridSize( cv::Size( -1, -1 ) ),
         moveSearchRegionLft( cv::Rect( -1, -1, -1, -1 ) ),
@@ -113,7 +113,7 @@ public:
      * @param mvSrchROILft Left move search region (to search for top-left bowtie)
      * @param mvSrchROIRgt Right move search region (to search for top-right bowtie)
      */
-    CalibModel( cv::Size imageSize,
+    CalibModelBowtie( cv::Size imageSize,
                 cv::Size gridSz,
                 std::vector< cv::Point2d > pixelPts,
                 std::vector< cv::Point2d > worldPts,
@@ -135,6 +135,7 @@ public:
     */
     void clear()
     {
+        controlJson.clear();
         imgSize = cv::Size( -1, -1 );
         gridSize = cv::Size( -1, -1 );
         pixelPoints.clear();
@@ -145,6 +146,7 @@ public:
         wholeTargetRegion = cv::Rect( -1, -1, -1, -1 );
     }
 
+    std::string controlJson;                ///< Json control string
     cv::Size imgSize;                       ///< Dimensions of the calibration image
     cv::Size gridSize;                      ///< Dimensions of the calibration grid
     std::vector< cv::Point2d > pixelPoints; ///< Vector of pixel points ordered to match the world point vector
@@ -155,18 +157,20 @@ public:
     cv::Rect wholeTargetRegion;             ///< Region within which to perform line and move search
 };
 
-class SymbolCalibModel
+class CalibModelSymbol
 {
 public:
     /**
      * @brief Constructor to set the model to an uninitialized state
      */
-    SymbolCalibModel() :
+    CalibModelSymbol() :
         imgSize( cv::Size( -1, -1 ) ),
-        moveSearchRegion( cv::Rect( -1, -1, -1, -1 ) ),
-        wholeTargetRegion( cv::Rect( -1, -1, -1, -1 ) )
+        wholeTargetRegion( cv::Rect( -1, -1, -1, -1 ) ),
+        center( cv::Point2d( -1.0, -1.0 ) ),
+        angle( -9999999.0 )
     {}
 
+    // TODO: Update doxygen
     /**
      * @brief Constructor to set the model to a valid state
      * @param gridSz Dimensions of the calibration grid
@@ -176,17 +180,20 @@ public:
      * @param mvSrchROILft Left move search region (to search for top-left bowtie)
      * @param mvSrchROIRgt Right move search region (to search for top-right bowtie)
      */
-    SymbolCalibModel( cv::Size imageSize,
+    CalibModelSymbol( cv::Size imageSize,
                       std::vector< cv::Point2d > pixelPts,
                       std::vector< cv::Point2d > worldPts,
                       std::vector< LineEnds > lineEndPts,
-                      cv::Rect moveSrchROI ) :
+                      cv::Rect symbolSearchROI,
+                      cv::Point2d centerPoint,
+                      double symbolAngle ) :
         imgSize( imageSize ),
         pixelPoints( pixelPts ),
         worldPoints( worldPts ),
         searchLines( lineEndPts ),
-        moveSearchRegion( moveSrchROI ),
-        wholeTargetRegion( cv::Rect( -1, -1, -1, -1 ) )
+        wholeTargetRegion( symbolSearchROI ),
+        center( centerPoint ),
+        angle( symbolAngle )
     {}
 
     /**
@@ -194,20 +201,24 @@ public:
     */
     void clear()
     {
+        controlJson.clear();
         imgSize = cv::Size( -1, -1 );
         pixelPoints.clear();
         worldPoints.clear();
         searchLines.clear();
-        moveSearchRegion = cv::Rect( -1, -1, -1, -1 );
         wholeTargetRegion = cv::Rect( -1, -1, -1, -1 );
+        center = cv::Point2d( -1.0, -1.0 );
+        angle = -9999999.0;
     }
 
+    std::string controlJson;                ///< Json control string
     cv::Size imgSize;                       ///< Dimensions of the calibration image
     std::vector< cv::Point2d > pixelPoints; ///< Vector of pixel points ordered to match the world point vector
     std::vector< cv::Point2d > worldPoints; ///< Vector of world points ordered to match the pixel point vector
     std::vector< LineEnds > searchLines;    ///< Vector of search lines to be searched for the water line
-    cv::Rect moveSearchRegion;              ///< Left move search region (to search for top-left bowtie)
     cv::Rect wholeTargetRegion;             ///< Region within which to perform line and move search
+    cv::Point2d center;                     ///< Center of symbol
+    double angle;                           ///< Angle of symbol
 };
 
 /**
@@ -345,6 +356,42 @@ public:
     cv::Point2d rgtWorld;   ///< Right most world coordinate position of the found line
 };
 
+// TODO:  Add doxygen comments
+/**
+ * @brief Data class to hold the offsets from the original calibration
+ */
+class CalibOffset
+{
+public:
+    CalibOffset() :
+        calibAngle( -9999999.0 ),
+        calibCenterPt( cv::Point2d( -1.0, -1.0 ) ),
+        offsetAngle( -9999999.0 ),
+        offsetCenterPt( cv::Point2d( -1.0, -1.0 ) )
+    {}
+
+    CalibOffset( const double calAngle, const cv::Point2d calCenter,
+                 const double offAngle, const cv::Point2d offCenter ) :
+        calibAngle( calAngle ),
+        calibCenterPt( calCenter ),
+        offsetAngle( offAngle ),
+        offsetCenterPt( offCenter )
+    {}
+
+    void clear()
+    {
+        calibAngle = -9999999.0;
+        calibCenterPt = cv::Point2d( -1.0, -1.0 );
+        offsetAngle = -9999999.0;
+        offsetCenterPt = cv::Point2d( -1.0, -1.0 );
+    }
+
+    double calibAngle;                      ///< Calibration angle
+    cv::Point2d calibCenterPt;              ///< Calibration center point
+    double offsetAngle;                     ///< Calibration offset angle
+    cv::Point2d offsetCenterPt;             ///< Calibration offset center point
+};
+
 /**
  * @brief Data class to hold the results of a search calculation for both water level and move detection
  */
@@ -355,7 +402,9 @@ public:
      * @brief Constructor sets the object to an uninitialized state
      */
     FindLineResult()
-    {}
+    {
+        clear();
+    }
 
     /**
      * @brief Constructor to set the object to a valid state
@@ -365,6 +414,7 @@ public:
      * @param moveRefPoints         Line between the move targets at the time of calibration
      * @param moveFoundPoints       Line between the move targets at the time of the current line find
      * @param moveOffsetPoints      Offset between the moveRef and the moveFound lines
+     * @param calibOffsets          Calibration offset center and angle (along with original center and angle)
      * @param lineFoundPts          Water line points used to calculate the found water level line
      * @param rowSumDiag            Find line row sums vector of vectors of points
      * @param oneDerivDiag          Find line row sums first derivative vector of vectors of points
@@ -378,6 +428,7 @@ public:
                     const FindPointSet moveRefPoints,
                     const FindPointSet moveFoundPoints,
                     const FindPointSet moveOffsetPoints,
+                    const CalibOffset calOffsets,
                     const std::vector< cv::Point2d > lineFoundPts,
                     const std::vector< std::vector< cv::Point > > rowSumDiag,
                     const std::vector< std::vector< cv::Point > > oneDerivDiag,
@@ -390,6 +441,7 @@ public:
         refMovePts( moveRefPoints ),
         foundMovePts( moveFoundPoints ),
         offsetMovePts( moveOffsetPoints ),
+        calibOffsets( calOffsets ),
         foundPoints( lineFoundPts ),
         diagRowSums( rowSumDiag ),
         diag1stDeriv( oneDerivDiag ),
@@ -411,6 +463,7 @@ public:
         foundMovePts.clear();
         foundPoints.clear();
         offsetMovePts.clear();
+        calibOffsets.clear();
         diagRowSums.clear();
         diag1stDeriv.clear();
         diag2ndDeriv.clear();
@@ -424,6 +477,7 @@ public:
     FindPointSet refMovePts;                ///< Line between the move targets at the time of calibration
     FindPointSet foundMovePts;              ///< Line between the move targets at the time of the current line find
     FindPointSet offsetMovePts;             ///< Offset between the moveRef and the moveFound lines
+    CalibOffset calibOffsets;               ///< Calibration offset center and angle (along with original center and angle)
     std::vector< cv::Point2d > foundPoints; ///< Water line points used to calculate the found water level line
     std::vector< std::vector< cv::Point > > diagRowSums;   ///< Row sums diagnostic lines
     std::vector< std::vector< cv::Point > > diag1stDeriv;  ///< 1st deriv diagnostic lines
@@ -449,7 +503,7 @@ public:
      * @param params    Find line parameters
      * @param result    Find line results
      */
-    FindData( const CalibModel settings,
+    FindData( const CalibModelBowtie settings,
               const FindLineParams params,
               const FindLineResult result ) :
         calibSettings( settings ),
@@ -467,7 +521,7 @@ public:
         findlineResult.clear();
     }
 
-    CalibModel calibSettings;       ///< Calibration settings
+    CalibModelBowtie calibSettings;       ///< Calibration settings
     FindLineParams findlineParams;  ///< Find line parameters
     FindLineResult findlineResult;  ///< Find line results
 };

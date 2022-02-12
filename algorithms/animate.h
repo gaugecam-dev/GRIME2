@@ -13,6 +13,7 @@
 #define ANIMATE_H
 
 #include "gc_types.h"
+#include <string>
 #include <opencv2/core.hpp>
 #include "gifanim/gifanim.h"
 

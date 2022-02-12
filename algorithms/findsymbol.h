@@ -8,97 +8,43 @@
 namespace gc
 {
 
-static const int SYMBOL_TEMPL_WIDTH = 64;
-static const double SYMBOL_TEMPL_ANGLE_MAX = 7.5;
+static const double SYMBOL_TEMPL_ANGLE_MAX = 17.5;
 static const double SYMBOL_TEMPL_ANGLE_INC = 0.5;
-static const int SYMBOL_SEARCH_IMAGE_WIDTH_START = 640;
-static const int SYMBOL_SEARCH_IMAGE_WIDTH_END = 1024;
-static const int SYMBOL_SEARCH_IMAGE_WIDTH_INC = 32;
 
-class SymbolCandidate
+class TemplateFindItem
 {
 public:
-    SymbolCandidate() :
-        area( -1.0 ),
-        elongation( -1.0 )
-    {}
+    /**
+     * @brief Constructor initializes properties to invalid values
+     */
+    TemplateFindItem() : pt( cv::Point2d( -1.0, -1.0 ) ), score( -1.0 ) {}
 
-    SymbolCandidate( std::vector< cv::Point > &vecPts, double contourArea, double contourElongation ) :
-        contour( vecPts ),
-        area( contourArea ),
-        elongation( contourElongation )
-    {}
+    /**
+     * @brief Constructor initializes properties to user specified values
+     * @param point Position of the center of the found bowtie
+     * @param scoreVal Score of the template match for the found item
+     */
+    TemplateFindItem( const cv::Point2d point, const double scoreVal ) :
+        pt( point ), score( scoreVal ) {}
 
-    void clear()
-    {
-        contour.clear();
-        area = -1.0;
-        elongation = -1.0;
-    }
+    /**
+     * @brief Destructor
+     */
+    ~TemplateFindItem() {}
 
-    std::vector< cv::Point > contour;
-    double area;
-    double elongation;
-};
-class SymbolLine
-{
-public:
-    SymbolLine() :
-        pt1( cv::Point2d( -1.0, -1.0 ) ),
-        pt2( cv::Point2d( -1.0, -1.0 ) )
-    {}
-
-    SymbolLine( const cv::Point2d point1, const cv::Point2d point2 ) :
-        pt1( point1 ),
-        pt2( point2 )
-    {}
-
-    void clear()
-    {
-        pt1 = cv::Point2d( -1.0, -1.0 );
-        pt2 = cv::Point2d( -1.0, -1.0 );
-    }
-
-    cv::Point2d pt1;
-    cv::Point2d pt2;
+    cv::Point2d pt; /**< Position of the center of the found bowtie */
+    double score;   /**< Score of the template match for the found bowtie */
 };
 
-class SymbolOctagonLines
-{
-public:
-    SymbolOctagonLines() {}
-
-    void clear()
-    {
-        top.clear();
-        topRight.clear();
-        right.clear();
-        botRight.clear();
-        bot.clear();
-        botLeft.clear();
-        left.clear();
-        topLeft.clear();
-    }
-
-    SymbolLine top;
-    SymbolLine topRight;
-    SymbolLine right;
-    SymbolLine botRight;
-    SymbolLine bot;
-    SymbolLine botLeft;
-    SymbolLine left;
-    SymbolLine topLeft;
-};
 
 class FindSymbol
 {
 public:
     FindSymbol();
-    GC_STATUS Load( const std::string jsonCalFilepath );
-    GC_STATUS Save( const std::string jsonCalFilepath );
-    GC_STATUS Calibrate( const cv::Mat &img, const double octoSideLength );
-    GC_STATUS PixelToWorld( const cv::Point2d ptPixel, cv::Point2d &ptWorld );
-    GC_STATUS WorldToPixel( const cv::Point2d ptWorld, cv::Point2d &ptPixel );
+    GC_STATUS Calibrate( const cv::Mat &img, const cv::Scalar hsvRange_1_start, const cv::Scalar hsvRange_1_end,
+                         const cv::Scalar hsvRange_2_start = cv::Scalar( -1 ), const cv::Scalar hsvRange_2_end = cv::Scalar( -1 ) );
+    GC_STATUS CreateTemplates( const cv::Mat &img, const cv::Rect templateRect, const cv::Rect searchRect );
+    GC_STATUS FindTargets( const cv::Mat &img, const cv::Rect targetRoi, const double minScore, const std::string resultFilepath );
     GC_STATUS DrawCalibration( const cv::Mat &img, cv::Mat &result, const bool drawCalib, const bool drawMoveROIs, const bool drawSearchROI );
     void clear();
 
@@ -113,21 +59,20 @@ public:
 private:
     cv::Mat matHomogPixToWorld;
     cv::Mat matHomogWorldToPix;
-    SymbolCalibModel model;
+    CalibModelSymbol model;
 
-    GC_STATUS FindRed( const cv::Mat &img, cv::Mat1b &redMask, std::vector< SymbolCandidate > &symbolCandidates );
+    cv::Rect searchROI;
+    std::vector< cv::Mat > templates;
+    std::vector< TemplateFindItem > matchItems;
+
+    GC_STATUS FindColorRange( const cv::Mat &img, cv::Mat1b &mask, const cv::Scalar hsvRange_1_start,
+                              const cv::Scalar hsvRange_1_end , const cv::Scalar hsvRange_2_start, const cv::Scalar hsvRange_2_end );
     GC_STATUS RotateImage( const cv::Mat &src, cv::Mat &dst, const double angle );
-    GC_STATUS GetNonZeroPoints( cv::Mat &img, std::vector< cv::Point > &pts );
-    GC_STATUS GetLineEndPoints( cv::Mat &mask, const cv::Rect rect, cv::Point2d &pt1, cv::Point2d &pt2 );
-    GC_STATUS LineIntersection( const SymbolLine line1, const SymbolLine line2, cv::Point2d &r );
-    GC_STATUS FindCorners( const cv::Mat &mask, const std::vector< cv::Point > &contour, SymbolOctagonLines &octoLines );
-    GC_STATUS FindDiagonals( const cv::Mat &mask, const std::vector< cv::Point > &contour, SymbolOctagonLines &octoLines );
-    GC_STATUS CalcCorners( const SymbolOctagonLines octoLines, std::vector< cv::Point2d > &symbolCorners );
-    GC_STATUS CalcOctoWorldPoints( const double sideLength, std::vector< cv::Point2d > &pts );
-    GC_STATUS CalcMoveSearchROI( const cv::Size imgSz, const std::vector< cv::Point2d > symbolCorners, cv::Rect &rect );
-    GC_STATUS CalcSearchLines( const cv::Size imgSz, const std::vector< cv::Point2d > symbolCorners, std::vector< LineEnds > &searchLines );
     GC_STATUS Calibrate( const std::vector< cv::Point2d > &pixelPts, const std::vector< cv::Point2d > &worldPts );
-    GC_STATUS CalcPointOnLine( const SymbolLine linePts, const double dist, cv::Point2d &pt );
+    GC_STATUS MatchTemplate( const int index, const cv::Mat &img, const cv::Rect targetRoi, const double minScore, const int numToFind );
+    GC_STATUS MatchRefine( const int index, const cv::Mat &img, const cv::Rect targetRoi,
+                           const double minScore, const int numToFind, TemplateFindItem &item );
+    GC_STATUS SubpixelPointRefine( const cv::Mat &matchSpace, const cv::Point ptMax, cv::Point2d &ptResult );
 };
 
 } // namespace gc
