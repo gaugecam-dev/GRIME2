@@ -64,7 +64,7 @@ void CalibBowtie::clear()
     // m_worldToPixParams.clear();
 }
 GC_STATUS CalibBowtie::Calibrate( const vector< Point2d > pixelPts, const vector< Point2d > worldPts, const std::string &controlJson,
-                                  const Size gridSize, const Size imgSize, double &rmseDist, double &rmseX, double &rmseY  )
+                                  const Size gridSize, const Size imgSize )
 {
     GC_STATUS retVal = GC_OK;
     if ( pixelPts.size() != worldPts.size() || pixelPts.empty() || worldPts.empty() ||
@@ -467,7 +467,7 @@ GC_STATUS CalibBowtie::MoveRefPoint( cv::Point2d &lftRefPt, cv::Point2d &rgtRefP
     }
     return retVal;
 }
-GC_STATUS CalibBowtie::Load( const string &jsonCalibString, double &rmseDist, double &rmseX, double &rmseY )
+GC_STATUS CalibBowtie::Load( const string &jsonCalibString )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -571,7 +571,7 @@ GC_STATUS CalibBowtie::Load( const string &jsonCalibString, double &rmseDist, do
 
                 Mat matIn, matOut;
                 retVal = Calibrate( m_model.pixelPoints, m_model.worldPoints, m_model.controlJson,
-                                    m_model.gridSize, m_model.imgSize, rmseDist, rmseX, rmseY );
+                                    m_model.gridSize, m_model.imgSize );
             }
 #ifdef LOG_CALIB_VALUES
             FILE_LOG( logINFO ) << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;

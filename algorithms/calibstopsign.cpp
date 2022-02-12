@@ -57,7 +57,7 @@ void CalibStopSign::clear()
 }
 // symbolPoints are clockwise ordered with 0 being the topmost left point
 GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double octoSideLength, const std::string &controlJson,
-                                    std::vector< Point > &searchLineCorners, double &rmseDist, double &rmseX, double &rmseY )
+                                    std::vector< Point > &searchLineCorners )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -101,7 +101,7 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double octoSideLen
                             retVal = CalcOctoWorldPoints( octoSideLength, model.worldPoints );
                             if ( GC_OK == retVal )
                             {
-                                retVal = Calibrate( model.pixelPoints, model.worldPoints, rmseDist, rmseX, rmseY );
+                                retVal = Calibrate( model.pixelPoints, model.worldPoints );
                                 if ( GC_OK == retVal )
                                 {
                                     retVal = CalcSearchLines( img, searchLineCorners, model.searchLines );
@@ -177,8 +177,7 @@ GC_STATUS CalibStopSign::CalcCenterAngle( const std::vector< cv::Point2d > &pts,
 
     return retVal;
 }
-GC_STATUS CalibStopSign::Calibrate(const std::vector< cv::Point2d > &pixelPts, const std::vector< cv::Point2d > &worldPts,
-                                   double &rmseEuclidDist, double &rmseX, double &rmseY )
+GC_STATUS CalibStopSign::Calibrate(const std::vector< cv::Point2d > &pixelPts, const std::vector< cv::Point2d > &worldPts )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -338,7 +337,7 @@ GC_STATUS CalibStopSign::CalcSearchLines( const Mat &img, vector< Point > &searc
 
     return retVal;
 }
-GC_STATUS CalibStopSign::Load( const std::string jsonCalFilepath, double &rmseEuclidDist, double &rmseX, double &rmseY )
+GC_STATUS CalibStopSign::Load( const std::string jsonCalFilepath )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -418,7 +417,7 @@ GC_STATUS CalibStopSign::Load( const std::string jsonCalFilepath, double &rmseEu
                 model.controlJson = ptreeTop.get< string >( "control_json", "{}" );
 
                 Mat matIn, matOut;
-                retVal = Calibrate( model.pixelPoints, model.worldPoints, rmseEuclidDist, rmseX, rmseY );
+                retVal = Calibrate( model.pixelPoints, model.worldPoints );
             }
 #ifdef LOG_CALIB_VALUES
             FILE_LOG( logINFO ) << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;

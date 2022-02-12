@@ -446,6 +446,9 @@ public:
         diagRowSums( rowSumDiag ),
         diag1stDeriv( oneDerivDiag ),
         diag2ndDeriv( twoDerivDiag ),
+        calibReprojectOffset_x( -9999999.0 ),
+        calibReprojectOffset_y( -9999999.0 ),
+        calibReprojectOffset_dist( -9999999.0 ),
         msgs( messages )
     {
     }
@@ -467,6 +470,9 @@ public:
         diagRowSums.clear();
         diag1stDeriv.clear();
         diag2ndDeriv.clear();
+        calibReprojectOffset_x = -9999999.0;
+        calibReprojectOffset_y = -9999999.0;
+        calibReprojectOffset_dist = -9999999.0;
         msgs.clear();
     }
 
@@ -482,6 +488,9 @@ public:
     std::vector< std::vector< cv::Point > > diagRowSums;   ///< Row sums diagnostic lines
     std::vector< std::vector< cv::Point > > diag1stDeriv;  ///< 1st deriv diagnostic lines
     std::vector< std::vector< cv::Point > > diag2ndDeriv;  ///< 2nd deriv diagnostic lines
+    double calibReprojectOffset_x;          ///< Reprojection offset x
+    double calibReprojectOffset_y;          ///< Reprojection offset y
+    double calibReprojectOffset_dist;       ///< Reprojection offset Euclidean distance
     std::vector< std::string > msgs;        ///< Vector of strings with messages about the line find
 };
 

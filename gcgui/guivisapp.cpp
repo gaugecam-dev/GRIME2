@@ -602,20 +602,8 @@ GC_STATUS GuiVisApp::CreateAnimation( const std::string imageFolder, const std::
 }
 GC_STATUS GuiVisApp::LoadCalib( const std::string calibJson )
 {
-    double rmseDist, rmseX, rmseY;
-    GC_STATUS retVal = m_visApp.LoadCalib( calibJson, rmseDist, rmseX, rmseY );
+    GC_STATUS retVal = m_visApp.LoadCalib( calibJson );
     sigMessage( string( "Load calibration: " ) + ( GC_OK == retVal ? "SUCCESS" : "FAILURE" ) );
-    if ( GC_OK == retVal )
-    {
-        char msg[ 256 ];
-        sprintf( msg, "X=%0.3e\nY=%0.3e\nEuclid. dist=%0.3e", rmseX, rmseY, rmseDist );
-        sigMessage( string( "Calibration: SUCCESS\n" ) +
-                    string( "~~~~~~~~~~~~~~~~~\n" ) +
-                    string( "Reprojection RMSE\n" +
-                    string( "~~~~~~~~~~~~~~~~~\n" ) +
-                    string( msg ) +
-                    string( "\n~~~~~~~~~~~~~~~~~\n" ) ) );
-    }
     return retVal;
 }
 GC_STATUS GuiVisApp::Calibrate( const std::string imgFilepath, const string jsonControl )
@@ -913,8 +901,7 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
 
     try
     {
-        double rmseDist, rmseX, rmseY;
-        retVal = m_visApp.LoadCalib( params.calibFilepath, rmseDist, rmseX, rmseY );
+        retVal = m_visApp.LoadCalib( params.calibFilepath );
         if ( GC_OK != retVal )
         {
             sigMessage( "Failed to load calib for find line folder run" );
