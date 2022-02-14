@@ -352,7 +352,7 @@ GC_STATUS CalibStopSign::Load( const std::string jsonCalFilepath )
         {
             stringstream ss;
             ss << jsonCalFilepath;
-            cout << endl << endl << ss.str() << endl;
+            // cout << endl << endl << ss.str() << endl;
             property_tree::ptree ptreeTop;
             property_tree::json_parser::read_json( ss, ptreeTop );
 

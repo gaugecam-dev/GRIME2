@@ -97,7 +97,7 @@ GC_STATUS CalibExecutive::Calibrate( const cv::Mat &img, const std::string jsonP
 
         stringstream ss;
         ss << jsonParams;
-        cout << ss.str() << endl;
+        // cout << ss.str() << endl;
 
         pt::ptree top_level;
         pt::json_parser::read_json( ss, top_level );
@@ -166,7 +166,7 @@ GC_STATUS CalibExecutive::Calibrate( const cv::Mat &img, const std::string jsonP
                 rmseDist = rmseX = rmseY = -9999999.0;
                 FILE_LOG( logWARNING ) << "[CalibBowtie::Calibrate] Could not calculate RMSE";
                 retVal = GC_OK;
-             }
+            }
         }
     }
     catch( boost::exception &e )

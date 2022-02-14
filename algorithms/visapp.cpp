@@ -686,6 +686,7 @@ GC_STATUS VisApp::WriteFindlineResultToCSV( const std::string resultCSV, const s
                 csvFile << "timestamp,";
                 csvFile << "waterLevel,";
                 csvFile << "waterLevelAdjusted,";
+                csvFile << "xRMSE, yRMSE, EuclidDistRMSE,";
 
                 csvFile << "calcLinePts-angle,";
                 csvFile << "calcLinePts-lftPixel-x,"; csvFile << "calcLinePts-lftPixel-y,";
@@ -734,6 +735,10 @@ GC_STATUS VisApp::WriteFindlineResultToCSV( const std::string resultCSV, const s
             csvFile << fixed << setprecision( 3 );
             csvFile << result.calcLinePts.ctrWorld.y << ",";
             csvFile << result.waterLevelAdjusted.y << ",";
+
+            csvFile << result.calibReprojectOffset_x << ",";
+            csvFile << result.calibReprojectOffset_y << ",";
+            csvFile << result.calibReprojectOffset_dist << ",";
 
             csvFile << result.calcLinePts.angleWorld << ",";
             csvFile << result.calcLinePts.lftPixel.x << ","; csvFile << result.calcLinePts.lftPixel.y << ",";
