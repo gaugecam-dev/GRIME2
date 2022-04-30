@@ -58,8 +58,8 @@ public:
     int FormBowtieCalibJsonString( const std::string csvFilepath, const std::string jsonResultFilepath,
                                    const bool useSearchROI, const QRect rectROI, std::string &json );
     int FormStopsignCalibJsonString( const std::string csvFilepath, const std::string jsonResultFilepath,
-                                     const bool useSearchROI, const QRect rectROI,
-                                     const bool fromFacetLength, const double facetLength,
+                                     const bool useSearchROI, const QRect rectROI, const bool fromFacetLength,
+                                     const double facetLength, const bool isRedStopsign,
                                      const LineSearchPoly searchPoly, std::string &json );
 
     int TestAgainstFindLines( const QPoint pt, const QSize displaySize, const int capturePos,

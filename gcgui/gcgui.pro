@@ -36,9 +36,9 @@ win32 {
     DEFINES += NOMINMAX
     DEFINES += WIN32_LEAN_AND_MEAN
     DEFINES += _WIN32_WINNT=0x0501
-    OPENCV_INCLUDES = c:/opencv/opencv_451/include
-    OPENCV_LIBS = C:/opencv/opencv_451/x64/lib/vc19
-    BOOST_INCLUDES = C:/Boost/include/boost-1_74
+    OPENCV_INCLUDES = c:/opencv/opencv_455/include
+    OPENCV_LIBS = C:/opencv/opencv_455/x64/lib/vc19
+    BOOST_INCLUDES = C:/Boost/include/boost-1_78
     BOOST_LIBS = C:/Boost/lib
 }
 
@@ -112,28 +112,28 @@ else {
             -L$$OPENCV_LIBS
 
     CONFIG(debug, debug|release) {
-        LIBS += -lopencv_core451d \
-                -lopencv_imgproc451d \
-                -lopencv_imgcodecs451d \
-                -lopencv_videoio451d \
-                -lopencv_video451d \
-                -lopencv_calib3d451d \
-                -llibboost_filesystem-vc142-mt-gd-x64-1_74 \
-                -llibboost_date_time-vc142-mt-gd-x64-1_74 \
-                -llibboost_system-vc142-mt-gd-x64-1_74 \
-                -llibboost_chrono-vc142-mt-gd-x64-1_74 \
+        LIBS += -lopencv_core455d \
+	        -lopencv_imgproc455d \
+		-lopencv_imgcodecs455d \
+		-lopencv_videoio455d \
+		-lopencv_video455d \
+		-lopencv_calib3d455d \
+		-llibboost_filesystem-vc142-mt-gd-x64-1_78 \
+		-llibboost_date_time-vc142-mt-gd-x64-1_78 \
+		-llibboost_system-vc142-mt-gd-x64-1_78 \
+		-llibboost_chrono-vc142-mt-gd-x64-1_78 \
                 -ladvapi32
     } else {
-        LIBS += -lopencv_core451 \
-                -lopencv_imgproc451 \
-                -lopencv_imgcodecs451 \
-                -lopencv_videoio451 \
-                -lopencv_video451 \
-                -lopencv_calib3d451 \
-                -llibboost_filesystem-vc142-mt-x64-1_74 \
-                -llibboost_date_time-vc142-mt-x64-1_74 \
-                -llibboost_system-vc142-mt-x64-1_74 \
-                -llibboost_chrono-vc142-mt-x64-1_74 \
+        LIBS += -lopencv_core455 \
+	        -lopencv_imgproc455 \
+		-lopencv_imgcodecs455 \
+		-lopencv_videoio455 \
+		-lopencv_video455 \
+		-lopencv_calib3d455 \
+		-llibboost_filesystem-vc142-mt-x64-1_78 \
+		-llibboost_date_time-vc142-mt-x64-1_78 \
+		-llibboost_system-vc142-mt-x64-1_78 \
+		-llibboost_chrono-vc142-mt-x64-1_78 \
                 -ladvapi32
     }
 }

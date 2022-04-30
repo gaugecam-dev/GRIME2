@@ -71,7 +71,7 @@ MainWindow::MainWindow(QWidget *parent) :
     m_pRubberBand( nullptr ),
     m_rectROI( QRect( 0, 0, MAX_IMAGE_SIZE.width, MAX_IMAGE_SIZE.height ) ),
     m_rectRubberBand( QRect( 0, 0, MAX_IMAGE_SIZE.width, MAX_IMAGE_SIZE.height ) ),
-    m_searchPolyImage( LineSearchPoly( QPoint( 50, 50 ), QPoint( 100, 50 ),
+    m_lineSearchPoly( LineSearchPoly( QPoint( 50, 50 ), QPoint( 100, 50 ),
                                        QPoint( 100, 100 ),  QPoint( 50, 100 ) ) )
 {
     qRegisterMetaType< std::string >();
@@ -140,6 +140,9 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->scrollArea_ImgDisplay->setBackgroundRole( QPalette::Dark );
     ui->scrollArea_ImgDisplay->setWidgetResizable( false );
     ui->scrollArea_ImgDisplay->setWidget( m_pLabelImgDisplay );
+
+    ui->label_stopSignColor->setAutoFillBackground(true);
+    SetStopsignColor( Scalar( 0, 0, 255 ) );
 
     int ret = ReadSettings( __SETTINGS_FILEPATH.c_str() );
     if ( 0 != ret )
@@ -347,14 +350,14 @@ int MainWindow::ReadSettings( const QString filepath )
         int y2 = pSettings->value( "lineOneY2", 120 ).toInt();
         m_lineOne = QLine( QPoint( x1, y1 ), QPoint( x2, y2 ) );
 
-        m_searchPolyImage.lftTop.setX( pSettings->value( "polyLftTopX", 10 ).toInt() );
-        m_searchPolyImage.lftTop.setY( pSettings->value( "polyLftTopY", 10 ).toInt() );
-        m_searchPolyImage.rgtTop.setX( pSettings->value( "polyRgtTopX", 120 ).toInt() );
-        m_searchPolyImage.rgtTop.setY( pSettings->value( "polyRgtTopY", 10 ).toInt() );
-        m_searchPolyImage.lftBot.setX( pSettings->value( "polyLftBotX", 120 ).toInt() );
-        m_searchPolyImage.lftBot.setY( pSettings->value( "polyLftBotY", 120 ).toInt() );
-        m_searchPolyImage.rgtBot.setX( pSettings->value( "polyRgtBotX", 10 ).toInt() );
-        m_searchPolyImage.rgtBot.setY( pSettings->value( "polyRgtBotY", 120 ).toInt() );
+        m_lineSearchPoly.lftTop.setX( pSettings->value( "polyLftTopX", 10 ).toInt() );
+        m_lineSearchPoly.lftTop.setY( pSettings->value( "polyLftTopY", 10 ).toInt() );
+        m_lineSearchPoly.rgtTop.setX( pSettings->value( "polyRgtTopX", 120 ).toInt() );
+        m_lineSearchPoly.rgtTop.setY( pSettings->value( "polyRgtTopY", 10 ).toInt() );
+        m_lineSearchPoly.lftBot.setX( pSettings->value( "polyLftBotX", 120 ).toInt() );
+        m_lineSearchPoly.lftBot.setY( pSettings->value( "polyLftBotY", 120 ).toInt() );
+        m_lineSearchPoly.rgtBot.setX( pSettings->value( "polyRgtBotX", 10 ).toInt() );
+        m_lineSearchPoly.rgtBot.setY( pSettings->value( "polyRgtBotY", 120 ).toInt() );
 
         m_folderLoadImages = pSettings->value( "loadFolder", "." ).toString();
         m_folderSaveImages = pSettings->value( "saveFolder", "." ).toString();
@@ -370,6 +373,9 @@ int MainWindow::ReadSettings( const QString filepath )
         pSettings->value( "useWholeImage", true ).toBool() ? ui->radioButton_calibSearchWholeImage->setChecked( true ) : ui->radioButton_calibSearchROI->setChecked( true );
         pSettings->value( "useFacetLength", true ).toBool() ? ui->radioButton_stopsignFacetLength->setChecked( true ) : ui->radioButton_stopsignFromFile->setChecked( true );
         ui->doubleSpinBox_stopSignFacetLength->setValue( pSettings->value( "stopSignFacetLength", 7.1875 ).toDouble() );
+        ui->checkBox_isRedStopsign->setChecked( pSettings->value( "stopSignIsRed", true ).toBool() );
+        ui->spinBox_colorRangeMin->setValue( pSettings->value( "stopSignColorRangeMin", 10 ).toInt() );
+        ui->spinBox_colorRangeMax->setValue( pSettings->value( "stopSignColorRangeMax", 10 ).toInt() );
 
         ui->lineEdit_findLineTopFolder->setText( pSettings->value( "findLineFolder", QString( __CONFIGURATION_FOLDER.c_str() ) ).toString() );
         ui->lineEdit_findLine_resultCSVFile->setText( pSettings->value( "findLineCSVOutPath", QString( __CONFIGURATION_FOLDER.c_str() ) + "waterlevel.csv" ).toString() );
@@ -438,14 +444,14 @@ int MainWindow::WriteSettings( const QString filepath )
         pSettings->setValue( "lineOneX2", m_lineOne.p2().x() );
         pSettings->setValue( "lineOneY2", m_lineOne.p2().y() );
 
-        pSettings->setValue( "polyLftTopX", m_searchPolyImage.lftTop.x() );
-        pSettings->setValue( "polyLftTopY", m_searchPolyImage.lftTop.y() );
-        pSettings->setValue( "polyRgtTopX", m_searchPolyImage.rgtTop.x() );
-        pSettings->setValue( "polyRgtTopY", m_searchPolyImage.rgtTop.y() );
-        pSettings->setValue( "polyLftBotX", m_searchPolyImage.lftBot.x() );
-        pSettings->setValue( "polyLftBotY", m_searchPolyImage.lftBot.y() );
-        pSettings->setValue( "polyRgtBotX", m_searchPolyImage.rgtBot.x() );
-        pSettings->setValue( "polyRgtBotY", m_searchPolyImage.rgtBot.y() );
+        pSettings->setValue( "polyLftTopX", m_lineSearchPoly.lftTop.x() );
+        pSettings->setValue( "polyLftTopY", m_lineSearchPoly.lftTop.y() );
+        pSettings->setValue( "polyRgtTopX", m_lineSearchPoly.rgtTop.x() );
+        pSettings->setValue( "polyRgtTopY", m_lineSearchPoly.rgtTop.y() );
+        pSettings->setValue( "polyLftBotX", m_lineSearchPoly.lftBot.x() );
+        pSettings->setValue( "polyLftBotY", m_lineSearchPoly.lftBot.y() );
+        pSettings->setValue( "polyRgtBotX", m_lineSearchPoly.rgtBot.x() );
+        pSettings->setValue( "polyRgtBotY", m_lineSearchPoly.rgtBot.y() );
 
         pSettings->setValue( "loadFolder", m_folderLoadImages );
         pSettings->setValue( "saveFolder", m_folderSaveImages );
@@ -461,6 +467,9 @@ int MainWindow::WriteSettings( const QString filepath )
         pSettings->setValue( "useWholeImage", ui->radioButton_calibSearchWholeImage->isChecked() );
         pSettings->setValue( "useFacetLength", ui->radioButton_stopsignFacetLength->isChecked() );
         pSettings->setValue( "stopSignFacetLength", ui->doubleSpinBox_stopSignFacetLength->value() );
+        pSettings->setValue( "stopSignIsRed", ui->checkBox_isRedStopsign->isChecked() );
+        pSettings->setValue( "stopSignColorRangeMin", ui->spinBox_colorRangeMin->value() );
+        pSettings->setValue( "stopSignColorRangeMax", ui->spinBox_colorRangeMax->value() );
 
         pSettings->setValue( "findLineFolder", ui->lineEdit_findLineTopFolder->text() );
         pSettings->setValue( "findLineCSVOutPath", ui->lineEdit_findLine_resultCSVFile->text() );
@@ -628,20 +637,20 @@ int MainWindow::UpdatePixmap()
                 pen1.setColor( Qt::blue );
                 painter.setPen( pen1 );
 
-                painter.drawLine( QLine( m_searchPolyImage.lftTop, m_searchPolyImage.rgtTop ) );
-                painter.drawLine( QLine( m_searchPolyImage.rgtTop, m_searchPolyImage.rgtBot ) );
-                painter.drawLine( QLine( m_searchPolyImage.rgtBot, m_searchPolyImage.lftBot ) );
-                painter.drawLine( QLine( m_searchPolyImage.lftBot, m_searchPolyImage.lftTop ) );
+                painter.drawLine( QLine( m_lineSearchPoly.lftTop, m_lineSearchPoly.rgtTop ) );
+                painter.drawLine( QLine( m_lineSearchPoly.rgtTop, m_lineSearchPoly.rgtBot ) );
+                painter.drawLine( QLine( m_lineSearchPoly.rgtBot, m_lineSearchPoly.lftBot ) );
+                painter.drawLine( QLine( m_lineSearchPoly.lftBot, m_lineSearchPoly.lftTop ) );
 
                 pen1.setWidth( 3 );
                 pen1.setColor( Qt::red );
                 painter.setBrush( Qt::red );
                 painter.setPen( pen1 );
 
-                painter.drawEllipse( m_searchPolyImage.lftTop, endRadius, endRadius );
-                painter.drawEllipse( m_searchPolyImage.rgtTop, endRadius, endRadius );
-                painter.drawEllipse( m_searchPolyImage.rgtBot, endRadius, endRadius );
-                painter.drawEllipse( m_searchPolyImage.lftBot, endRadius, endRadius );
+                painter.drawEllipse( m_lineSearchPoly.lftTop, endRadius, endRadius );
+                painter.drawEllipse( m_lineSearchPoly.rgtTop, endRadius, endRadius );
+                painter.drawEllipse( m_lineSearchPoly.rgtBot, endRadius, endRadius );
+                painter.drawEllipse( m_lineSearchPoly.lftBot, endRadius, endRadius );
             }
             m_pLabelImgDisplay->setPixmap( pixmap );
         }
@@ -671,7 +680,7 @@ int MainWindow::ScaleImage()
         }
         else if ( ui->actionSetSearchPoly->isChecked() )
         {
-            m_searchPolyImage =  m_searchPolyImage;
+            m_lineSearchPoly =  m_lineSearchPoly;
         }
         UpdatePixmapTarget();
     }
@@ -735,7 +744,7 @@ void MainWindow::mousePressEvent( QMouseEvent *pEvent )
     }
     else if ( ui->actionSetSearchPoly->isChecked() )
     {
-        int ret = m_roiAdjust.EvalPolyCapturePt( m_searchPolyImage, pt, m_scaleFactor, sensitivityRadius, m_nCapturePos, m_ptCapture );
+        int ret = m_roiAdjust.EvalPolyCapturePt( m_lineSearchPoly, pt, m_scaleFactor, sensitivityRadius, m_nCapturePos, m_ptCapture );
         m_bCaptured = ( ( 0 >= m_nCapturePos ) || ( 0 != ret ) ) ? false : true;
     }
     else if ( ui->actionSetRuler->isChecked() )
@@ -788,7 +797,7 @@ void MainWindow::mouseMoveEvent( QMouseEvent *pEvent )
         else if ( ui->actionSetSearchPoly->isChecked() )
         {
             int ret = m_roiAdjust.TestAgainstPoly( pt, m_pLabelImgDisplay->size(),
-                                                   m_searchPolyImage, m_nCapturePos, m_scaleFactor, m_ptCapture );
+                                                   m_lineSearchPoly, m_nCapturePos, m_scaleFactor, m_ptCapture );
             if ( 0 == ret )
             {
                 UpdatePixmap();
@@ -821,7 +830,7 @@ void MainWindow::mouseReleaseEvent( QMouseEvent * )
             }
             else if ( ui->actionSetSearchPoly->isChecked() )
             {
-                m_searchPolyImage = m_searchPolyImage;
+                m_lineSearchPoly = m_lineSearchPoly;
             }
         }
         m_bCaptured = false;
@@ -990,6 +999,34 @@ void MainWindow::UpdateRegionButton()
     ui->pushButton_resetSearchRegion->setEnabled( enableResetRegionButton );
     ScaleImage();
 }
+void MainWindow::on_pushButton_setStopSignColor_clicked()
+{
+    cv::Scalar color;
+    GC_STATUS retVal = m_visApp.GetROIColor( cv::Rect( m_rectROI.x(), m_rectROI.y(),
+                                                       m_rectROI.width(), m_rectROI.height() ), color );
+    if ( GC_OK == retVal )
+    {
+        cv::Scalar hsv;
+        retVal = m_visApp.SetStopsignColor( color, ui->spinBox_colorRangeMin->value(), ui->spinBox_colorRangeMin->value(), hsv ); // to set the color for which to search
+        if ( GC_OK == retVal )
+        {
+            string hsvMsg = "  h=";
+            hsvMsg += to_string( cvRound( hsv.val[0] ) );
+            hsvMsg +="\n  s=";
+            hsvMsg += to_string( cvRound( hsv.val[1] ) );
+            hsvMsg +="\n  v=";
+            hsvMsg += to_string( cvRound( hsv.val[2] ) );
+            ui->label_stopSignColor->setText( QString( hsvMsg.c_str() ) );
+            SetStopsignColor( color ); // to show in the gui
+        }
+    }
+}
+void MainWindow::SetStopsignColor( cv::Scalar newColor )
+{
+    QPalette pal = ui->label_stopSignColor->palette();
+    pal.setColor( QPalette::Window, QColor( newColor.val[ 2 ], newColor.val[ 1 ], newColor.val[ 0 ] ) );
+    ui->label_stopSignColor->setPalette( pal );
+}
 void MainWindow::on_actionSetROI_toggled( bool ) { UpdateRegionButton(); }
 void MainWindow::on_actionSetSearchPoly_toggled( bool ) { UpdateRegionButton(); }
 void MainWindow::on_actionSetRuler_toggled( bool ) { UpdateRegionButton(); }
@@ -1128,7 +1165,8 @@ void MainWindow::on_pushButton_visionCalibrate_clicked()
                                                        ui->radioButton_calibSearchROI->isChecked(), m_rectROI,
                                                        ui->radioButton_stopsignFacetLength->isChecked(),
                                                        ui->doubleSpinBox_stopSignFacetLength->value(),
-                                                       m_searchPolyImage, jsonControlStr );
+                                                       ui->checkBox_isRedStopsign->isChecked(),
+                                                       m_lineSearchPoly, jsonControlStr );
     }
     else
     {
@@ -1195,7 +1233,7 @@ void MainWindow::on_pushButton_resetSearchRegion_clicked()
         int height = imgSize.height >> 1;
         int lft = imgSize.width / 10;
         int top = imgSize.height / 10;
-        m_searchPolyImage = LineSearchPoly( QPoint( lft, top ), QPoint( lft + width, top ),
+        m_lineSearchPoly = LineSearchPoly( QPoint( lft, top ), QPoint( lft + width, top ),
                                             QPoint( lft + width, top + height ), QPoint( lft, top + height ) );
         ScaleImage();
     }

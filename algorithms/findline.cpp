@@ -87,14 +87,8 @@ GC_STATUS FindLine::Find( const Mat &img, const vector< LineEnds > &lines, FindL
     {
         try
         {
-            // clean-up a little
-            Mat scratch;
-            Mat kern = getStructuringElement( MORPH_RECT, Size( 1, 9 ) );
-            dilate( img, scratch, kern, Point( -1, -1 ), 3 );
-            erode( scratch, scratch, kern, Point( -1, -1 ), 3 );
-
-            Mat outImg;
 #ifdef DEBUG_FIND_LINE
+            Mat outImg;
             if ( CV_8UC1 == img.type() )
                 cvtColor( img, outImg, COLOR_GRAY2BGR );
             else if ( CV_8UC3 == img.type() )
@@ -105,53 +99,86 @@ GC_STATUS FindLine::Find( const Mat &img, const vector< LineEnds > &lines, FindL
                 retVal = GC_ERR;
             }
 #endif
-            size_t start;
-            Point2d linePt;
-            vector< uint > rowSums;
-            string timestamp = result.timestamp;
-            result.timestamp = timestamp;
-            size_t linesPerSwath = lines.size() / 10;
-            for ( size_t i = 0; i < 10; ++i )
+
+            Mat inImg;
+            if ( CV_8UC3 == img.type() )
+                cvtColor( img, inImg, COLOR_BGR2GRAY );
+            else if ( CV_8UC1 == img.type() )
+                inImg = img.clone();
+            else
             {
-                start = i * linesPerSwath;
-                retVal = EvaluateSwath( scratch, lines, start, start + linesPerSwath, linePt, result );
-                if ( GC_OK == retVal )
-                    result.foundPoints.push_back( linePt );
+                FILE_LOG( logERROR ) << "[FindLine::Find] Invalid image type for find. Must be 8-bit gray or 8-bit bgr";
+                retVal = GC_ERR;
             }
 
-#ifdef DEBUG_FIND_LINE
-            bool isOK = imwrite( DEBUG_RESULT_FOLDER + "rowsums.png", outImg );
-            if ( !isOK )
-            {
-                FILE_LOG( logERROR ) << "[FindLine::Find] Could not write debug image " << DEBUG_RESULT_FOLDER << "rowsums.png";
-            }
-#endif
-
-#if 1
-            FindPointSet findPtSet;
-            double xCenter = ( lines[ 0 ].bot.x + lines[ lines.size() - 1 ].bot.x ) / 2.0;
-            retVal = FitLineRANSAC( result.foundPoints, result.calcLinePts, xCenter, scratch );
             if ( GC_OK == retVal )
             {
-                result.findSuccess = true;
-            }
-#else
-            Vec4d lineVec;
-            double xCenter = ( lines[ 0 ].bot.x + lines[ lines.size() - 1 ].bot.x ) / 2.0;
-            fitLine( result.foundPoints, lineVec, DIST_L12, 0.0, 0.01, 0.01 );
-            result.calcLinePts.lftPixel.x = lineVec[ 2 ] + ( lineVec[ 0 ] * -lineVec[ 2 ] );
-            result.calcLinePts.lftPixel.y = lineVec[ 3 ] + ( lineVec[ 1 ] * -lineVec[ 2 ] );
-            result.calcLinePts.rgtPixel.x = lineVec[ 2 ] + ( lineVec[ 0 ] * ( img.cols - lineVec[ 2 ] - 1 ) );
-            result.calcLinePts.rgtPixel.y = lineVec[ 3 ] + ( lineVec[ 1 ] * ( img.cols - lineVec[ 2 ] - 1 ) );
-            result.calcLinePts.ctrPixel.x = lineVec[ 2 ] + ( lineVec[ 0 ] * ( xCenter - lineVec[ 2 ] ) );
-            result.calcLinePts.ctrPixel.y = lineVec[ 3 ] + ( lineVec[ 1 ] * ( xCenter - lineVec[ 2 ] ) );
-            result.findSuccess = true;
+                // clean-up a little
+                Mat scratch;
+                retVal = Preprocess( inImg, scratch );
+                if ( GC_OK == retVal )
+                {
+                    size_t start;
+                    Point2d linePt;
+                    vector< uint > rowSums;
+                    string timestamp = result.timestamp;
+                    result.timestamp = timestamp;
+                    size_t linesPerSwath = lines.size() / 10;
+                    for ( size_t i = 0; i < 10; ++i )
+                    {
+                        start = i * linesPerSwath;
+                        retVal = EvaluateSwath( scratch, lines, start, start + linesPerSwath, linePt, result );
+                        if ( GC_OK == retVal )
+                            result.foundPoints.push_back( linePt );
+                    }
+
+#ifdef DEBUG_FIND_LINE
+                    bool isOK = imwrite( DEBUG_RESULT_FOLDER + "rowsums.png", outImg );
+                    if ( !isOK )
+                    {
+                        FILE_LOG( logERROR ) << "[FindLine::Find] Could not write debug image " << DEBUG_RESULT_FOLDER << "rowsums.png";
+                    }
 #endif
+
+                    FindPointSet findPtSet;
+                    double xCenter = ( lines[ 0 ].bot.x + lines[ lines.size() - 1 ].bot.x ) / 2.0;
+                    retVal = FitLineRANSAC( result.foundPoints, result.calcLinePts, xCenter, scratch );
+                    if ( GC_OK == retVal )
+                    {
+                        result.findSuccess = true;
+                    }
+                }
+            }
         }
         catch( cv::Exception &e )
         {
             result.findSuccess = false;
             FILE_LOG( logERROR ) << "[FindLine::Find] " << e.what();
+            retVal = GC_EXCEPT;
+        }
+    }
+
+    return retVal;
+}
+GC_STATUS FindLine::Preprocess( const cv::Mat &src, cv::Mat &dst )
+{
+    GC_STATUS retVal = GC_OK;
+    if ( src.empty() )
+    {
+        FILE_LOG( logERROR ) << "[FindLine::Preprocess] Not possible to preprocess an empty image";
+        retVal = GC_ERR;
+    }
+    else
+    {
+        try
+        {
+            Mat kern = getStructuringElement( MORPH_RECT, Size( 1, 9 ) );
+            dilate( src, dst, kern, Point( -1, -1 ), 3 );
+            erode( dst, dst, kern, Point( -1, -1 ), 3 );
+        }
+        catch( cv::Exception &e )
+        {
+            FILE_LOG( logERROR ) << "[FindLine::Preprocess] " << e.what();
             retVal = GC_EXCEPT;
         }
     }

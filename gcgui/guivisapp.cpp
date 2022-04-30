@@ -600,6 +600,48 @@ GC_STATUS GuiVisApp::CreateAnimation( const std::string imageFolder, const std::
     //    sigMessage( string( "Create animation: " ) + ( GC_OK == retVal ? "SUCCESS" : "FAILURE" ) );
     return retVal;
 }
+GC_STATUS GuiVisApp::SetStopsignColor( const cv::Scalar color, const int minRange, const int maxRange, cv::Scalar &hsv )
+{
+    GC_STATUS retVal = m_visApp.SetStopsignColor( color, static_cast< double >( minRange ) / 100.0,
+                                                  static_cast< double >( maxRange ) / 100.0, hsv );
+    return retVal;
+}
+GC_STATUS GuiVisApp::GetROIColor( const cv::Rect roi, cv::Scalar &color )
+{
+    GC_STATUS retVal = GC_OK;
+    if ( m_matColor.empty() )
+    {
+        retVal = GC_ERR;
+        sigMessage( string( "GetRoiColor: No image available" ) );
+    }
+    else if ( roi.x < 0 || roi.y < 0 ||
+              roi.x + roi.width > m_matColor.cols ||
+              roi.y + roi.height > m_matColor.rows )
+    {
+        retVal = GC_ERR;
+        sigMessage( string( "GetRoiColor: Invalid region of interested selected" ) );
+    }
+    else
+    {
+        try
+        {
+            vector< Mat > chans;
+            cv::split( m_matColor( roi ), chans );
+            double b = mean( chans[ 0 ] ).val[ 0 ];
+            double g = mean( chans[ 1 ] ).val[ 0 ];
+            double r = mean( chans[ 2 ] ).val[ 0 ];
+            color = Scalar( b, g, r );
+        }
+        catch( std::exception &e )
+        {
+            sigMessage( string( "GetRoiColor: Exception" ) );
+            FILE_LOG( logERROR ) << "[VisApp::GetROIColor] " << e.what();
+            retVal = GC_EXCEPT;
+        }
+    }
+
+    return retVal;
+}
 GC_STATUS GuiVisApp::LoadCalib( const std::string calibJson )
 {
     GC_STATUS retVal = m_visApp.LoadCalib( calibJson );

@@ -13,6 +13,7 @@ class CalibExecParams
 public:
     CalibExecParams() :
         stopSignFacetLength( -1.0 ),
+        isRedStopsign( false ),
         drawCalib( false ),
         drawMoveSearchROIs( false ),
         drawWaterLineSearchROI( false ),
@@ -28,6 +29,7 @@ public:
         calibType.clear();
         worldPtCSVFilepath.clear();
         stopSignFacetLength = -1.0;
+        isRedStopsign = false;
         calibResultJsonFilepath.clear();
         drawCalib = false;
         drawMoveSearchROIs = false;
@@ -42,6 +44,7 @@ public:
     string calibType;
     string worldPtCSVFilepath;
     double stopSignFacetLength;
+    bool isRedStopsign;
     string calibResultJsonFilepath;
     bool drawCalib;
     bool drawMoveSearchROIs;
@@ -81,6 +84,7 @@ public:
                                    std::vector< cv::Point2d > &pixPtsFound, std::vector< cv::Point2d > &worldPts,
                                    std::vector< cv::Point2d > &pixPtsReverse );
     GC_STATUS MoveRefPoint( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt );
+    GC_STATUS SetStopsignColor( const cv::Scalar color, const double minRange, const double maxRange, cv::Scalar &hsv );
 
     CalibModelBowtie &CalibBowtieModel() { return bowTie.Model(); }
     CalibModelSymbol &CalibSymbolModel() { return stopSign.Model(); }

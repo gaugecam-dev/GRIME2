@@ -322,8 +322,8 @@ int RoiAdjust::FormBowtieCalibJsonString( const std::string csvFilepath, const s
     return ret;
 }
 int RoiAdjust::FormStopsignCalibJsonString( const std::string csvFilepath, const std::string jsonResultFilepath,
-                                            const bool useSearchROI, const QRect rectROI,
-                                            const bool fromFacetLength, const double facetLength,
+                                            const bool useSearchROI, const QRect rectROI, const bool fromFacetLength,
+                                            const double facetLength, const bool isRedStopsign,
                                             const LineSearchPoly searchPoly, std::string &json )
 {
     int ret = 0;
@@ -341,6 +341,14 @@ int RoiAdjust::FormStopsignCalibJsonString( const std::string csvFilepath, const
     json += "\"drawCalib\": 0, ";
     json += "\"drawMoveSearchROIs\": 0, ";
     json += "\"drawWaterLineSearchROI\": 0, ";
+    if ( isRedStopsign )
+    {
+        json += "\"isRedStopsign\": 1, ";
+    }
+    else
+    {
+        json += "\"isRedStopsign\": 0, ";
+    }
     if ( useSearchROI )
     {
         json += "\"targetRoi_x\": " + std::to_string( rectROI.x() ) + ", ";

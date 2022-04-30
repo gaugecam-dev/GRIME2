@@ -14,8 +14,8 @@
 #include <algorithm>
 #include <iterator>
 
-#ifdef DEBUG_FIND_CALIB_SYMBOL
-#undef DEBUG_FIND_CALIB_SYMBOL
+#ifndef DEBUG_FIND_CALIB_SYMBOL
+#define DEBUG_FIND_CALIB_SYMBOL
 #include <iostream>
 #include <opencv2/imgcodecs.hpp>
 #include <boost/filesystem.hpp>
@@ -57,7 +57,7 @@ void CalibStopSign::clear()
 }
 // symbolPoints are clockwise ordered with 0 being the topmost left point
 GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double octoSideLength, const std::string &controlJson,
-                                    std::vector< Point > &searchLineCorners )
+                                    std::vector< Point > &searchLineCorners, bool isRedStopsign )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -66,7 +66,7 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double octoSideLen
         std::vector< StopSignCandidate > candidates;
 
         cv::Mat1b mask;
-        retVal = FindRed( img, mask, candidates );
+        retVal = FindColor( img, mask, candidates, isRedStopsign );
         if ( GC_OK == retVal )
         {
             OctagonLines octoLines;
@@ -566,7 +566,8 @@ GC_STATUS CalibStopSign::CalcOctoWorldPoints( const double sideLength, std::vect
 
     return retVal;
 }
-GC_STATUS CalibStopSign::FindRed( const cv::Mat &img, cv::Mat1b &redMask, std::vector< StopSignCandidate > &symbolCandidates )
+GC_STATUS CalibStopSign::FindColor( const cv::Mat &img, cv::Mat1b &mask,
+                                    std::vector< StopSignCandidate > &symbolCandidates, bool isRed )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -587,19 +588,28 @@ GC_STATUS CalibStopSign::FindRed( const cv::Mat &img, cv::Mat1b &redMask, std::v
             Mat3b hsv;
             cvtColor( img, hsv, COLOR_BGR2HSV );
 
-            Mat1b mask1, mask2;
-            inRange( hsv, Scalar( 0, 70, 50 ), Scalar( 10, 255, 255 ), mask1 );
-            inRange( hsv, Scalar( 170, 70, 50 ), Scalar( 180, 255, 255 ), mask2 );
+            if ( isRed ) // red -- has beginning and end
+            {
+                Mat1b mask1, mask2;
+                inRange( hsv, Scalar( 0, 70, 50 ), Scalar( 10, 255, 255 ), mask1 );
+                inRange( hsv, Scalar( 170, 70, 50 ), Scalar( 180, 255, 255 ), mask2 );
+                mask = mask1 | mask2;
+            }
+            else // generic -- does not cross beginning or end
+            {
+                inRange( hsv, hsvLow, hsvHigh, mask );
+            }
+            imwrite( "/var/tmp/water/img.png", img );
+            imwrite( "/var/tmp/water/stopsign_mask.png", mask );
 
-            redMask = mask1 | mask2;
 
             vector< vector< Point > > contours;
-            findContours( redMask, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE );
+            findContours( mask, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE );
 
 #ifdef DEBUG_FIND_CALIB_SYMBOL
             Mat color;
             img.copyTo( color );
-            imwrite( DEBUG_RESULT_FOLDER + "red_mask.png", redMask );
+            imwrite( DEBUG_RESULT_FOLDER + "red_mask.png", mask );
 #endif
 
             Moments m;
@@ -1130,6 +1140,101 @@ GC_STATUS CalibStopSign::WorldToPixel( const Point2d ptWorld, Point2d &ptPixel )
 
     return retVal;
 }
+GC_STATUS BGR_2_HSV( const cv::Scalar color, cv::Scalar &hsv )
+{
+    GC_STATUS retVal = GC_OK;
+    if ( color.channels < 3 )
+    {
+        FILE_LOG( logERROR ) << "[CalibStopSign::SetStopsignColor] Invalid color (not enough channels)";
+        retVal = GC_ERR;
+    }
+    else
+    {
+        double b = color.val[ 0 ] / 255.0;
+        double g = color.val[ 1 ] / 255.0;
+        double r = color.val[ 2 ] / 255.0;
+
+        double v = b;
+        if ( g > v || r > v )
+        {
+            v = r > g ? r : g;
+        }
+
+        double minVal = b;
+        if ( g < minVal || r < minVal )
+        {
+            minVal = r < g ? r : g;
+        }
+
+        double s = v;
+        if ( 0.0 != v )
+        {
+            s = ( v - minVal ) / v;
+        }
+
+        double h = 0.0;
+        if ( v == r )
+        {
+            h = 60.0 * ( g - b ) / ( v - minVal );
+        }
+        else if ( v == g )
+        {
+            h = 120.0 + 60.0 * ( b - r ) / ( v - minVal );
+        }
+        else if ( v == b )
+        {
+            h = 240.0 + 60.0 * ( r - g ) / ( v - minVal );
+        }
+
+        if ( 0.0 > h )
+        {
+            h += 360.0;
+        }
+
+        h /= 2.0;
+        s *= 255.0;
+        v *= 255.0;
+
+        hsv = Scalar( h, s, v );
+    }
+    return retVal;
+}
+GC_STATUS CalibStopSign::SetStopsignColor( const cv::Scalar color, const double minRange, const double maxRange, cv::Scalar &hsv )
+{
+    GC_STATUS retVal = GC_OK;
+
+    try
+    {
+        if ( color.channels < 3 )
+        {
+            FILE_LOG( logERROR ) << "[CalibStopSign::SetStopsignColor] Invalid color (not enough channels)";
+            retVal = GC_ERR;
+        }
+        else
+        {
+            retVal = BGR_2_HSV( color, hsv );
+            if ( GC_OK == retVal )
+            {
+                double minH = std::max( 0.0, ( 1.0 - minRange ) * hsv.val[ 0 ] );
+                double minS = std::max( 0.0, ( 1.0 - minRange ) * hsv.val[ 1 ] );
+                double minV = std::max( 0.0, ( 1.0 - minRange ) * hsv.val[ 2 ] );
+                hsvLow = Scalar( minH, minS, minV );
+
+                double maxH = std::min( 255.0, ( 1.0 + minRange ) * hsv.val[ 0 ] );
+                double maxS = std::min( 255.0, ( 1.0 + minRange ) * hsv.val[ 1 ] );
+                double maxV = std::min( 255.0, ( 1.0 + minRange ) * hsv.val[ 2 ] );
+                hsvHigh = Scalar( maxH, maxS, maxV );
+            }
+        }
+    }
+    catch( Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[CalibStopSign::SetStopsignColor] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+
+    return retVal;
+}
 GC_STATUS CalibStopSign::DrawOverlay( const cv::Mat &img, cv::Mat &result, const bool drawCalib,
                                       const bool drawMoveROIs, const bool drawSearchROI )
 {
@@ -1163,6 +1268,14 @@ GC_STATUS CalibStopSign::DrawOverlay( const cv::Mat &img, cv::Mat &result, const
                 retVal = GC_ERR;
             }
 
+            double dim = static_cast< double >( std::max( result.cols, result.rows ) );
+            int lineWidth = max( 1, cvRound( dim / 900.0 ) );
+            int targetRadius = lineWidth * 5;
+            int textOffset = cvRound( static_cast< double >( result.rows ) / 6.6666667 );
+            int circleSize =  std::max( 5, cvRound( static_cast< double >( result.rows ) / 120.0 ) );
+            int textStroke = std::max( 1, cvRound( static_cast< double >( result.rows ) / 300.0 ) );
+            double fontScale = 1.0 + static_cast< double >( result.rows ) / 1200.0;
+
             if ( model.pixelPoints.empty() )
             {
                 FILE_LOG( logERROR ) << "[CalibStopSign::DrawCalibration] No symbol points to draw";
@@ -1170,10 +1283,6 @@ GC_STATUS CalibStopSign::DrawOverlay( const cv::Mat &img, cv::Mat &result, const
             }
             else if ( GC_OK == retVal )
             {
-                double dim = static_cast< double >( std::max( result.cols, result.rows ) );
-                int lineWidth = max( 1, cvRound( dim / 900.0 ) );
-                int targetRadius = lineWidth * 5;
-
                 if ( drawCalib )
                 {
                     line( result, Point( model.pixelPoints[ 0 ].x - targetRadius, model.pixelPoints[ 0 ].y ),
@@ -1272,6 +1381,10 @@ GC_STATUS CalibStopSign::DrawOverlay( const cv::Mat &img, cv::Mat &result, const
                     }
                     else
                     {
+                        line( result, model.searchLines[ 0 ].top, model.searchLines[ 0 ].bot, Scalar( 255, 0, 0 ), textStroke );
+                        line( result, model.searchLines[ 0 ].top, model.searchLines[ model.searchLines.size() - 1 ].top, Scalar( 255, 0, 0 ), textStroke );
+                        line( result, model.searchLines[ model.searchLines.size() - 1 ].top, model.searchLines[ model.searchLines.size() - 1 ].bot, Scalar( 255, 0, 0 ), textStroke );
+                        line( result, model.searchLines[ 0 ].bot, model.searchLines[ model.searchLines.size() - 1 ].bot, Scalar( 255, 0, 0 ), textStroke );
                     }
                 }
             }

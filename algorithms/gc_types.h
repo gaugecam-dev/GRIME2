@@ -530,7 +530,7 @@ public:
         findlineResult.clear();
     }
 
-    CalibModelBowtie calibSettings;       ///< Calibration settings
+    CalibModelBowtie calibSettings; ///< Calibration settings
     FindLineParams findlineParams;  ///< Find line parameters
     FindLineResult findlineResult;  ///< Find line results
 };

@@ -121,6 +121,7 @@ public:
      */
 
     // TODO: Fix doxygen
+    GC_STATUS SetStopsignColor( const cv::Scalar color, const double minRange, const double maxRange, cv::Scalar &hsv );
     GC_STATUS DrawCalibOverlay( const cv::Mat matIn, cv::Mat &imgMatOut );
     GC_STATUS DrawCalibOverlay( const cv::Mat matIn, cv::Mat &imgMatOut,
                                 const bool drawCalib, const bool drawMoveROIs, const bool drawSearchROI );

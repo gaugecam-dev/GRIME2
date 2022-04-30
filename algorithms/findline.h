@@ -133,6 +133,14 @@ public:
      */
     GC_STATUS SetMoveTargetROI( const cv::Mat &img, const cv::Rect rectLeft, const cv::Rect rectRight );
 
+    /**
+     * @brief Preprocessing of image to remove biofouling and other noise, and stabilize the water line
+     * @param src Source image
+     * @param dst Destination image
+     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
+     */
+    GC_STATUS Preprocess( const cv::Mat &src, cv::Mat &dst );
+
 private:
     double m_minLineFindAngle;
     double m_maxLineFindAngle;

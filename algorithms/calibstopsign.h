@@ -90,10 +90,13 @@ public:
     GC_STATUS Load( const std::string jsonCalFilepath );
     GC_STATUS Save( const std::string jsonCalFilepath );
     GC_STATUS Calibrate( const cv::Mat &img, const double octoSideLength, const std::string &controlJson,
-                         std::vector< cv::Point > &searchLineCorners );
+                         std::vector< cv::Point > &searchLineCorners, bool isRedStopsign );
     GC_STATUS PixelToWorld( const cv::Point2d ptPixel, cv::Point2d &ptWorld );
     GC_STATUS WorldToPixel( const cv::Point2d ptWorld, cv::Point2d &ptPixel );
     GC_STATUS DrawOverlay( const cv::Mat &img, cv::Mat &result, const bool drawCalib, const bool drawMoveROIs, const bool drawSearchROI );
+    GC_STATUS SetStopsignColor( const cv::Scalar color, const double minRange, const double maxRange, cv::Scalar &hsv );
+    GC_STATUS SetStopsignRed( const double minRange, const double maxRange );
+
     void clear();
 
     /**
@@ -111,8 +114,12 @@ private:
     cv::Mat matHomogPixToWorld;
     cv::Mat matHomogWorldToPix;
     CalibModelSymbol model;
+    cv::Scalar hsvLow;
+    cv::Scalar hsvHigh;
+    cv::Scalar hsvLow2;
+    cv::Scalar hsvHigh2;
 
-    GC_STATUS FindRed( const cv::Mat &img, cv::Mat1b &redMask, std::vector< StopSignCandidate > &symbolCandidates );
+    GC_STATUS FindColor( const cv::Mat &img, cv::Mat1b &redMask, std::vector< StopSignCandidate > &symbolCandidates, bool isRed = false );
     GC_STATUS RotateImage( const cv::Mat &src, cv::Mat &dst, const double angle );
     GC_STATUS GetNonZeroPoints( cv::Mat &img, std::vector< cv::Point > &pts );
     GC_STATUS GetLineEndPoints( cv::Mat &mask, const cv::Rect rect, cv::Point2d &pt1, cv::Point2d &pt2 );
