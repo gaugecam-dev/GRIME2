@@ -89,8 +89,8 @@ public:
     CalibStopSign();
     GC_STATUS Load( const std::string jsonCalFilepath );
     GC_STATUS Save( const std::string jsonCalFilepath );
-    GC_STATUS Calibrate( const cv::Mat &img, const double octoSideLength, const std::string &controlJson,
-                         std::vector< cv::Point > &searchLineCorners, bool isRedStopsign );
+    GC_STATUS Calibrate( const cv::Mat &img, const double octoSideLength, const cv::Rect rect,
+                         const std::string &controlJson, std::vector< cv::Point > &searchLineCorners, bool isRedStopsign );
     GC_STATUS PixelToWorld( const cv::Point2d ptPixel, cv::Point2d &ptWorld );
     GC_STATUS WorldToPixel( const cv::Point2d ptWorld, cv::Point2d &ptPixel );
     GC_STATUS DrawOverlay( const cv::Mat &img, cv::Mat &result, const bool drawCalib, const bool drawMoveROIs, const bool drawSearchROI );
@@ -108,7 +108,7 @@ public:
     CalibModelSymbol &Model() { return model; }
     GC_STATUS GetSearchRegionBoundingRect( cv::Rect &rect );
 
-    cv::Rect &TargetRoi() { return model.wholeTargetRegion; }
+    cv::Rect &TargetRoi() { return model.targetSearchRegion; }
 
 private:
     cv::Mat matHomogPixToWorld;
@@ -128,9 +128,9 @@ private:
     GC_STATUS FindDiagonals( const cv::Mat &mask, const std::vector< cv::Point > &contour, OctagonLines &octoLines );
     GC_STATUS CalcCorners( const OctagonLines octoLines, std::vector< cv::Point2d > &symbolCorners );
     GC_STATUS CalcOctoWorldPoints( const double sideLength, std::vector< cv::Point2d > &pts );
-    GC_STATUS CalcMoveSearchROI( const cv::Size imgSz, const std::vector< cv::Point2d > symbolCorners, cv::Rect &rect );
+    GC_STATUS CalcMoveSearchROI( const std::vector< cv::Point2d > symbolCorners, cv::Rect &rect );
     GC_STATUS CalcSearchLines( const cv::Mat &img, std::vector< cv::Point > &searchLineCorners, std::vector< LineEnds > &searchLines );
-    GC_STATUS Calibrate( const std::vector< cv::Point2d > &pixelPts, const std::vector< cv::Point2d > &worldPts );
+    GC_STATUS CreateCalibration( const std::vector< cv::Point2d > &pixelPts, const std::vector< cv::Point2d > &worldPts );
     GC_STATUS GetLineEquation( const cv::Point2d pt1, const cv::Point2d pt2, double &slope, double &intercept );
     GC_STATUS CalcCenterAngle( const std::vector< cv::Point2d > &pts, cv::Point2d &center, double &angle );
 };

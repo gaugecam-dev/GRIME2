@@ -593,19 +593,20 @@ int MainWindow::UpdatePixmap()
 
         if ( 0 == ret )
         {
-            IMG_DISPLAY_OVERLAYS overlays = static_cast< IMG_DISPLAY_OVERLAYS >(
-                        ( ui->checkBox_showCalib->isChecked() ? CALIB : OVERLAYS_NONE ) +
-                        ( ui->checkBox_showFindLine->isChecked() ? FINDLINE : OVERLAYS_NONE ) +
-                        ( ui->checkBox_showRowSums->isChecked() ? DIAG_ROWSUMS : OVERLAYS_NONE ) +
-                        ( ui->checkBox_showDerivOne->isChecked() ? DIAG_1ST_DERIV : OVERLAYS_NONE ) +
-                        ( ui->checkBox_showDerivTwo->isChecked() ? DIAG_2ND_DERIV : OVERLAYS_NONE ) +
-                        ( ui->checkBox_showRANSAC->isChecked() ? DIAG_RANSAC : OVERLAYS_NONE ) +
-                        ( ui->checkBox_showMoveROIs->isChecked() ? MOVE_ROIS : OVERLAYS_NONE ) +
-                        ( ui->checkBox_showMoveFind->isChecked() ? MOVE_FIND : OVERLAYS_NONE ) +
-                        ( ui->checkBox_showSearchROI->isChecked() ? SEARCH_ROI : OVERLAYS_NONE ) );
+            int overlays = ui->checkBox_showCalib->isChecked() ? CALIB : OVERLAYS_NONE;
+            overlays += ui->checkBox_showFindLine->isChecked() ? FINDLINE : OVERLAYS_NONE;
+            overlays += ui->checkBox_showRowSums->isChecked() ? DIAG_ROWSUMS : OVERLAYS_NONE;
+            overlays += ui->checkBox_showDerivOne->isChecked() ? DIAG_1ST_DERIV : OVERLAYS_NONE;
+            overlays += ui->checkBox_showDerivTwo->isChecked() ? DIAG_2ND_DERIV : OVERLAYS_NONE;
+            overlays += ui->checkBox_showRANSAC->isChecked() ? DIAG_RANSAC : OVERLAYS_NONE;
+            overlays += ui->checkBox_showMoveROIs->isChecked() ? MOVE_ROIS : OVERLAYS_NONE;
+            overlays += ui->checkBox_showMoveFind->isChecked() ? MOVE_FIND : OVERLAYS_NONE;
+            overlays += ui->checkBox_showSearchROI->isChecked() ? SEARCH_ROI : OVERLAYS_NONE;
+
             gc::GC_STATUS retVal = m_visApp.GetImage( cv::Size( m_pQImg->width(), m_pQImg->height() ),
                                                       static_cast< size_t >( m_pQImg->bytesPerLine() ),
-                                                      CV_8UC4, m_pQImg->scanLine( 0 ), nColorType, overlays );
+                                                      CV_8UC4, m_pQImg->scanLine( 0 ), nColorType,
+                                                      static_cast< IMG_DISPLAY_OVERLAYS >( overlays ) );
             if ( GC_OK != retVal )
             {
                 ui->statusBar->showMessage( QString( "Paint event failed with color " ) + QString::fromStdString( to_string( nColorType ) ) );
@@ -1013,30 +1014,26 @@ void MainWindow::on_pushButton_setStopSignColor_clicked()
                                                        m_rectROI.width(), m_rectROI.height() ), color );
     if ( GC_OK == retVal )
     {
-        cv::Scalar hsv;
-        retVal = m_visApp.SetStopsignColor( color, ui->spinBox_colorRangeMin->value(), ui->spinBox_colorRangeMin->value(), hsv ); // to set the color for which to search
-        if ( GC_OK == retVal )
-        {
-            SetStopsignColor( color ); // to show in the gui
-        }
+        SetStopsignColor( color ); // to show in the gui
     }
 }
-void MainWindow::SetStopsignColor( QColor newColor )
+void MainWindow::on_checkBox_isRedStopsign_toggled( bool )
 {
-    SetStopsignColor( cv::Scalar( newColor.blue(), newColor.green(), newColor.red() ) );
+    if ( ui->checkBox_isRedStopsign->isChecked() )
+    {
+        SetStopsignColor( cv::Scalar( 0, 0, 255 ) );
+    }
 }
+void MainWindow::SetStopsignColor( QColor newColor ) { SetStopsignColor( cv::Scalar( newColor.blue(), newColor.green(), newColor.red() ) ); }
 void MainWindow::SetStopsignColor( cv::Scalar newColor )
 {
     cv::Scalar hsv;
     GC_STATUS retVal = m_visApp.SetStopsignColor( newColor, ui->spinBox_colorRangeMin->value(), ui->spinBox_colorRangeMin->value(), hsv ); // to set the color for which to search
     if ( GC_OK == retVal )
     {
-        string hsvMsg = "  h=";
-        hsvMsg += to_string( cvRound( hsv.val[0] ) );
-        hsvMsg +="\n  s=";
-        hsvMsg += to_string( cvRound( hsv.val[1] ) );
-        hsvMsg +="\n  v=";
-        hsvMsg += to_string( cvRound( hsv.val[2] ) );
+        string hsvMsg = "  h=" + to_string( cvRound( hsv.val[0] ) );
+        hsvMsg +="\n  s=" + to_string( cvRound( hsv.val[1] ) );
+        hsvMsg +="\n  v=" + to_string( cvRound( hsv.val[2] ) );
         ui->label_stopSignColor->setText( QString( hsvMsg.c_str() ) );
     }
     m_stopSignColor = QColor( newColor.val[ 2 ], newColor.val[ 1 ], newColor.val[ 0 ] );

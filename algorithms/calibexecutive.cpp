@@ -310,8 +310,8 @@ GC_STATUS CalibExecutive::CalibrateStopSign( const cv::Mat &img, const string &c
             searchLineCorners.push_back( paramsCurrent.lineSearch_lftBot );
             searchLineCorners.push_back( paramsCurrent.lineSearch_rgtBot );
 
-            retVal = stopSign.Calibrate( img, paramsCurrent.stopSignFacetLength, controlJson,
-                                         searchLineCorners, paramsCurrent.isRedStopsign );
+            retVal = stopSign.Calibrate( img, paramsCurrent.stopSignFacetLength, paramsCurrent.targetSearchROI,
+                                         controlJson, searchLineCorners, paramsCurrent.isRedStopsign );
             if ( GC_OK == retVal )
             {
                 retVal = stopSign.Save( paramsCurrent.calibResultJsonFilepath );

@@ -27,6 +27,7 @@ static const double MIN_SYMBOL_CONTOUR_AREA = 1500;
 static const int MIN_SYMBOL_CONTOUR_LENGTH = 7;
 static const double MAX_SYMBOL_CONTOUR_ELONG = 1.5;
 static const double MIN_SEARCH_LINE_LENGTH = 120.0;
+static const double MOVE_ROI_RATIO_INCREASE = 0.15;
 using namespace cv;
 using namespace std;
 using namespace boost;
@@ -56,17 +57,28 @@ void CalibStopSign::clear()
     model.clear();
 }
 // symbolPoints are clockwise ordered with 0 being the topmost left point
-GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double octoSideLength, const std::string &controlJson,
-                                    std::vector< Point > &searchLineCorners, bool isRedStopsign )
+GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double octoSideLength, const cv::Rect rect,
+                                    const std::string &controlJson, std::vector< Point > &searchLineCorners, bool isRedStopsign )
 {
     GC_STATUS retVal = GC_OK;
     try
     {
         clear();
         std::vector< StopSignCandidate > candidates;
+        bool useRoi = -1 != rect.x &&
+                -1 != rect.y &&
+                -1 != rect.width &&
+                -1 != rect.height;
 
         cv::Mat1b mask;
-        retVal = FindColor( img, mask, candidates, isRedStopsign );
+        if ( useRoi )
+        {
+            retVal = FindColor( img( rect ), mask, candidates, isRedStopsign );
+        }
+        else
+        {
+            retVal = FindColor( img, mask, candidates, isRedStopsign );
+        }
         if ( GC_OK == retVal )
         {
             OctagonLines octoLines;
@@ -86,7 +98,14 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double octoSideLen
                         {
 #ifdef DEBUG_FIND_CALIB_SYMBOL
                             Mat color;
-                            img.copyTo( color );
+                            if ( useRoi )
+                            {
+                                img( rect ).copyTo( color );
+                            }
+                            else
+                            {
+                                img.copyTo( color );
+                            }
                             for ( size_t i = 0; i < model.pixelPoints.size(); ++i )
                             {
                                 line( color, Point( model.pixelPoints[ i ].x - 10, model.pixelPoints[ i ].y ),
@@ -98,16 +117,29 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double octoSideLen
                             }
                             imwrite( DEBUG_RESULT_FOLDER + "___FINAL.png", color );
 #endif
+                            if ( useRoi )
+                            {
+                                Point2d offset = Point2d( rect.x, rect.y );
+                                for ( size_t i = 0; i < model.pixelPoints.size(); ++i )
+                                {
+                                    model.pixelPoints[ i ] += offset;
+                                }
+                            }
                             retVal = CalcOctoWorldPoints( octoSideLength, model.worldPoints );
                             if ( GC_OK == retVal )
                             {
-                                retVal = Calibrate( model.pixelPoints, model.worldPoints );
+                                retVal = CreateCalibration( model.pixelPoints, model.worldPoints );
                                 if ( GC_OK == retVal )
                                 {
                                     retVal = CalcSearchLines( img, searchLineCorners, model.searchLines );
                                     if ( GC_OK == retVal )
                                     {
                                         retVal = CalcCenterAngle( model.worldPoints, model.center, model.angle );
+                                        if ( GC_OK == retVal )
+                                        {
+                                            model.imgSize = img.size();
+                                            retVal = CalcMoveSearchROI( model.pixelPoints, model.targetSearchRegion );
+                                        }
                                     }
                                 }
                             }
@@ -177,7 +209,7 @@ GC_STATUS CalibStopSign::CalcCenterAngle( const std::vector< cv::Point2d > &pts,
 
     return retVal;
 }
-GC_STATUS CalibStopSign::Calibrate(const std::vector< cv::Point2d > &pixelPts, const std::vector< cv::Point2d > &worldPts )
+GC_STATUS CalibStopSign::CreateCalibration(const std::vector< cv::Point2d > &pixelPts, const std::vector< cv::Point2d > &worldPts )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -249,7 +281,7 @@ GC_STATUS CalibStopSign::GetSearchRegionBoundingRect( cv::Rect &rect )
     {
         if ( model.searchLines.empty() )
         {
-            FILE_LOG( logERROR ) << "[CalibBowtie::GetSearchRegionBoundingRect] System not calibrated";
+            FILE_LOG( logERROR ) << "[CalibStopSign::GetSearchRegionBoundingRect] System not calibrated";
             retVal = GC_ERR;
         }
         else
@@ -259,6 +291,54 @@ GC_STATUS CalibStopSign::GetSearchRegionBoundingRect( cv::Rect &rect )
             int right = std::max( model.searchLines[ model.searchLines.size() - 1 ].top.x, model.searchLines[ model.searchLines.size() - 1 ].bot.x );
             int bottom = std::max( model.searchLines[ 0 ].bot.y, model.searchLines[ model.searchLines.size() - 1 ].bot.y );
             rect = Rect( left, top, right - left, bottom - top );
+        }
+    }
+    catch( Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[CalibStopSign::GetSearchRegionBoundingRect] " << e.what();
+        return GC_EXCEPT;
+    }
+    return retVal;
+}
+GC_STATUS CalibStopSign::CalcMoveSearchROI( const std::vector< cv::Point2d > symbolCorners, cv::Rect &rect )
+{
+    GC_STATUS retVal = GC_OK;
+
+    try
+    {
+        double x_min = numeric_limits< double >::max();
+        double x_max = -numeric_limits< double >::max();
+        double y_min = numeric_limits< double >::max();
+        double y_max = -numeric_limits< double >::max();
+        for ( size_t i = 0; i < symbolCorners.size(); ++i )
+        {
+            if ( symbolCorners[ i ].x < x_min )
+                x_min = symbolCorners[ i ].x;
+            if ( symbolCorners[ i ].x > x_max )
+                x_max = symbolCorners[ i ].x;
+            if ( symbolCorners[ i ].y < y_min )
+                y_min = symbolCorners[ i ].y;
+            if ( symbolCorners[ i ].y > y_max )
+                y_max = symbolCorners[ i ].y;
+        }
+        x_min = std::max( 0.0, x_min );
+        x_max = std::min( model.imgSize.width - 1.0, x_max );
+        y_min = std::max( 0.0, y_min );
+        y_max = std::min( model.imgSize.height - 1.0, y_max );
+
+        double x_margin = ( x_max - x_min ) * MOVE_ROI_RATIO_INCREASE;
+        double y_margin = ( y_max - y_min ) * MOVE_ROI_RATIO_INCREASE;
+
+        x_min = std::max( 0.0, x_min - x_margin );
+        x_max = std::min( model.imgSize.width - 1.0, x_max + x_margin );
+        y_min = std::max( 0.0, y_min - y_margin );
+        y_max = std::min( model.imgSize.height - 1.0, y_max + y_margin );
+
+        rect = Rect( x_min, y_min, x_max - x_min, y_max - y_min );
+        if ( 0.0 > rect.x || 0.0 > rect.y || 50.0 > rect.width || 50.0 > rect.height )
+        {
+            FILE_LOG( logERROR ) << "[CalibStopSign::CalcMoveSearchROI] Invalid move search ROI";
+            retVal = GC_ERR;
         }
     }
     catch( Exception &e )
@@ -375,10 +455,10 @@ GC_STATUS CalibStopSign::Load( const std::string jsonCalFilepath )
             }
 
             const property_tree::ptree &ptreeMoveSearch = ptreeTop.get_child( "TargetSearchRegion" );
-            model.wholeTargetRegion.x =      ptreeMoveSearch.get< int >( "x", 0 );
-            model.wholeTargetRegion.y =      ptreeMoveSearch.get< int >( "y", 0 );
-            model.wholeTargetRegion.width =  ptreeMoveSearch.get< int >( "width", 0 );
-            model.wholeTargetRegion.height = ptreeMoveSearch.get< int >( "height", 0 );
+            model.targetSearchRegion.x =      ptreeMoveSearch.get< int >( "x", 0 );
+            model.targetSearchRegion.y =      ptreeMoveSearch.get< int >( "y", 0 );
+            model.targetSearchRegion.width =  ptreeMoveSearch.get< int >( "width", 0 );
+            model.targetSearchRegion.height = ptreeMoveSearch.get< int >( "height", 0 );
 
             Point ptTop, ptBot;
             model.searchLines.clear();
@@ -417,7 +497,7 @@ GC_STATUS CalibStopSign::Load( const std::string jsonCalFilepath )
                 model.controlJson = ptreeTop.get< string >( "control_json", "{}" );
 
                 Mat matIn, matOut;
-                retVal = Calibrate( model.pixelPoints, model.worldPoints );
+                retVal = CreateCalibration( model.pixelPoints, model.worldPoints );
             }
 #ifdef LOG_CALIB_VALUES
             FILE_LOG( logINFO ) << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
@@ -486,10 +566,10 @@ GC_STATUS CalibStopSign::Save( const std::string jsonCalFilepath )
                 fileStream << "  \"TargetSearchRegion\": " << endl;
                 fileStream << "  {" << endl;
                 fileStream << fixed << setprecision( 0 );
-                fileStream << "      \"x\": " <<      model.wholeTargetRegion.x << ", " << \
-                                    "\"y\": " <<      model.wholeTargetRegion.y << ", " << \
-                                    "\"width\": " <<  model.wholeTargetRegion.width << ", " << \
-                                    "\"height\": " << model.wholeTargetRegion.height << endl;
+                fileStream << "      \"x\": " <<      model.targetSearchRegion.x << ", " << \
+                                    "\"y\": " <<      model.targetSearchRegion.y << ", " << \
+                                    "\"width\": " <<  model.targetSearchRegion.width << ", " << \
+                                    "\"height\": " << model.targetSearchRegion.height << endl;
                 fileStream << "  }," << endl;
                 fileStream << "  \"SearchLines\": [" << endl;
                 for ( size_t i = 0; i < model.searchLines.size() - 1; ++i )
@@ -1368,7 +1448,7 @@ GC_STATUS CalibStopSign::DrawOverlay( const cv::Mat &img, cv::Mat &result, const
                 }
                 if ( drawMoveROIs )
                 {
-                    // rectangle( result, model.wholeTargetRegion,  );
+                    rectangle( result, model.targetSearchRegion, Scalar( 255, 0, 0 ), textStroke );
                 }
                 if ( drawSearchROI )
                 {

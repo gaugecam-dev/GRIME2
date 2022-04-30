@@ -165,7 +165,7 @@ public:
      */
     CalibModelSymbol() :
         imgSize( cv::Size( -1, -1 ) ),
-        wholeTargetRegion( cv::Rect( -1, -1, -1, -1 ) ),
+        targetSearchRegion( cv::Rect( -1, -1, -1, -1 ) ),
         center( cv::Point2d( -1.0, -1.0 ) ),
         angle( -9999999.0 )
     {}
@@ -191,7 +191,7 @@ public:
         pixelPoints( pixelPts ),
         worldPoints( worldPts ),
         searchLines( lineEndPts ),
-        wholeTargetRegion( symbolSearchROI ),
+        targetSearchRegion( symbolSearchROI ),
         center( centerPoint ),
         angle( symbolAngle )
     {}
@@ -206,7 +206,7 @@ public:
         pixelPoints.clear();
         worldPoints.clear();
         searchLines.clear();
-        wholeTargetRegion = cv::Rect( -1, -1, -1, -1 );
+        targetSearchRegion = cv::Rect( -1, -1, -1, -1 );
         center = cv::Point2d( -1.0, -1.0 );
         angle = -9999999.0;
     }
@@ -216,7 +216,7 @@ public:
     std::vector< cv::Point2d > pixelPoints; ///< Vector of pixel points ordered to match the world point vector
     std::vector< cv::Point2d > worldPoints; ///< Vector of world points ordered to match the pixel point vector
     std::vector< LineEnds > searchLines;    ///< Vector of search lines to be searched for the water line
-    cv::Rect wholeTargetRegion;             ///< Region within which to perform line and move search
+    cv::Rect targetSearchRegion;             ///< Region within which to perform line and move search
     cv::Point2d center;                     ///< Center of symbol
     double angle;                           ///< Angle of symbol
 };
