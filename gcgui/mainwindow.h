@@ -127,6 +127,7 @@ private:
     QRect m_rectRubberBand;
     QPoint m_ptCapture;
     LineSearchPoly m_lineSearchPoly;
+    QColor m_stopSignColor;
 
     // vision application
     GuiVisApp m_visApp;
@@ -156,6 +157,7 @@ private:
     void UpdateRegionButton();
     void UpdateRulerMeasurement();
     void SetStopsignColor( cv::Scalar newColor );
+    void SetStopsignColor( QColor newColor );
     int ReadSettings( const QString filepath = "" );
     int WriteSettings(const QString filepath = "" );
     size_t GetImagesPathsFromFolder(  const QString strPath );

@@ -141,8 +141,6 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->scrollArea_ImgDisplay->setWidgetResizable( false );
     ui->scrollArea_ImgDisplay->setWidget( m_pLabelImgDisplay );
 
-    ui->label_stopSignColor->setAutoFillBackground(true);
-    SetStopsignColor( Scalar( 0, 0, 255 ) );
 
     int ret = ReadSettings( __SETTINGS_FILEPATH.c_str() );
     if ( 0 != ret )
@@ -161,6 +159,9 @@ MainWindow::MainWindow(QWidget *parent) :
     {
         ui->textEdit_msgs->append( "Could not load calibration from " + ui->lineEdit_calibVisionResult_json->text() );
     }
+
+    ui->label_stopSignColor->setAutoFillBackground( true );
+    SetStopsignColor( m_stopSignColor );
 
     createActions();
     createConnections();
@@ -376,6 +377,9 @@ int MainWindow::ReadSettings( const QString filepath )
         ui->checkBox_isRedStopsign->setChecked( pSettings->value( "stopSignIsRed", true ).toBool() );
         ui->spinBox_colorRangeMin->setValue( pSettings->value( "stopSignColorRangeMin", 10 ).toInt() );
         ui->spinBox_colorRangeMax->setValue( pSettings->value( "stopSignColorRangeMax", 10 ).toInt() );
+        m_stopSignColor = QColor( pSettings->value( "stopSignRed", 255 ).toInt(),
+                                  pSettings->value( "stopSignGreen", 0 ).toInt(),
+                                  pSettings->value( "stopSignBlue", 0 ).toInt() );
 
         ui->lineEdit_findLineTopFolder->setText( pSettings->value( "findLineFolder", QString( __CONFIGURATION_FOLDER.c_str() ) ).toString() );
         ui->lineEdit_findLine_resultCSVFile->setText( pSettings->value( "findLineCSVOutPath", QString( __CONFIGURATION_FOLDER.c_str() ) + "waterlevel.csv" ).toString() );
@@ -470,6 +474,9 @@ int MainWindow::WriteSettings( const QString filepath )
         pSettings->setValue( "stopSignIsRed", ui->checkBox_isRedStopsign->isChecked() );
         pSettings->setValue( "stopSignColorRangeMin", ui->spinBox_colorRangeMin->value() );
         pSettings->setValue( "stopSignColorRangeMax", ui->spinBox_colorRangeMax->value() );
+        pSettings->setValue( "stopSignRed", m_stopSignColor.red() );
+        pSettings->setValue( "stopSignGreen", m_stopSignColor.green() );
+        pSettings->setValue( "stopSignBlue", m_stopSignColor.blue() );
 
         pSettings->setValue( "findLineFolder", ui->lineEdit_findLineTopFolder->text() );
         pSettings->setValue( "findLineCSVOutPath", ui->lineEdit_findLine_resultCSVFile->text() );
@@ -1010,19 +1017,29 @@ void MainWindow::on_pushButton_setStopSignColor_clicked()
         retVal = m_visApp.SetStopsignColor( color, ui->spinBox_colorRangeMin->value(), ui->spinBox_colorRangeMin->value(), hsv ); // to set the color for which to search
         if ( GC_OK == retVal )
         {
-            string hsvMsg = "  h=";
-            hsvMsg += to_string( cvRound( hsv.val[0] ) );
-            hsvMsg +="\n  s=";
-            hsvMsg += to_string( cvRound( hsv.val[1] ) );
-            hsvMsg +="\n  v=";
-            hsvMsg += to_string( cvRound( hsv.val[2] ) );
-            ui->label_stopSignColor->setText( QString( hsvMsg.c_str() ) );
             SetStopsignColor( color ); // to show in the gui
         }
     }
 }
+void MainWindow::SetStopsignColor( QColor newColor )
+{
+    SetStopsignColor( cv::Scalar( newColor.blue(), newColor.green(), newColor.red() ) );
+}
 void MainWindow::SetStopsignColor( cv::Scalar newColor )
 {
+    cv::Scalar hsv;
+    GC_STATUS retVal = m_visApp.SetStopsignColor( newColor, ui->spinBox_colorRangeMin->value(), ui->spinBox_colorRangeMin->value(), hsv ); // to set the color for which to search
+    if ( GC_OK == retVal )
+    {
+        string hsvMsg = "  h=";
+        hsvMsg += to_string( cvRound( hsv.val[0] ) );
+        hsvMsg +="\n  s=";
+        hsvMsg += to_string( cvRound( hsv.val[1] ) );
+        hsvMsg +="\n  v=";
+        hsvMsg += to_string( cvRound( hsv.val[2] ) );
+        ui->label_stopSignColor->setText( QString( hsvMsg.c_str() ) );
+    }
+    m_stopSignColor = QColor( newColor.val[ 2 ], newColor.val[ 1 ], newColor.val[ 0 ] );
     QPalette pal = ui->label_stopSignColor->palette();
     pal.setColor( QPalette::Window, QColor( newColor.val[ 2 ], newColor.val[ 1 ], newColor.val[ 0 ] ) );
     ui->label_stopSignColor->setPalette( pal );
