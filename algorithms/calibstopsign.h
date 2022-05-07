@@ -97,6 +97,13 @@ public:
     GC_STATUS SetStopsignColor( const cv::Scalar color, const double minRange, const double maxRange, cv::Scalar &hsv );
     GC_STATUS SetStopsignRed( const double minRange, const double maxRange );
 
+    /**
+     * @brief Returns one of the move reference points
+     * @param isLeft true=Return the left point, false=Return the right point
+     * @return A cv::Point2d object that holds the specified move reference point
+     */
+    GC_STATUS MoveRefPoint( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt );
+
     void clear();
 
     /**

@@ -565,12 +565,10 @@ GC_STATUS CalibExecutive::MoveRefPoint( cv::Point2d &lftRefPt, cv::Point2d &rgtR
         retVal = MoveRefPointBowTie( lftRefPt, rgtRefPt );
     }
     // TODO: StopSign placeholder (pull it back in)
-#if 0
     else if ( "StopSign" == paramsCurrent.calibType )
     {
         retVal = MoveRefPointStopSign( lftRefPt, rgtRefPt );
     }
-#endif
     else
     {
         FILE_LOG( logERROR ) << "[FindLine::FindMoveTargets] No valid calibration type currently set";
@@ -584,15 +582,11 @@ GC_STATUS CalibExecutive::MoveRefPointBowTie( cv::Point2d &lftRefPt, cv::Point2d
     GC_STATUS retVal = bowTie.MoveRefPoint( lftRefPt, rgtRefPt );
     return retVal;
 }
-// TODO: Fill in MoveRefPointStopSign()
-// TODO: This method currently only handles translation and not rotation
-#if 0
 GC_STATUS CalibExecutive::MoveRefPointStopSign( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt )
 {
-    GC_STATUS retVal = GC_OK;
+    GC_STATUS retVal = stopSign.MoveRefPoint( lftRefPt, rgtRefPt );
     return retVal;
 }
-#endif
 
 GC_STATUS CalibExecutive::CalculateRMSE( const cv::Mat &img, double &rmseEuclideanDist, double &rmseX, double &rmseY )
 {

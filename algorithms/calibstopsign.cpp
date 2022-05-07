@@ -36,6 +36,8 @@ namespace gc
 {
 
 static double elongation( Moments m );
+static double DISTANCE( Point2d a, Point2d b ) { return sqrt( ( b.x - a.x ) * ( b.x - a.x ) +
+                                                              ( b.y - a.y ) * ( b.y - a.y ) ); }
 
 CalibStopSign::CalibStopSign()
 {
@@ -247,6 +249,22 @@ GC_STATUS CalibStopSign::CreateCalibration(const std::vector< cv::Point2d > &pix
 
     return retVal;
 }
+GC_STATUS CalibStopSign::MoveRefPoint( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt )
+{
+    GC_STATUS retVal = GC_OK;
+    Point2d pt( numeric_limits< double >::min(), numeric_limits< double >::min() );
+    if ( 8 != model.pixelPoints.size() )
+    {
+        FILE_LOG( logERROR ) << "[CalibStopSign::MoveRefPoint] Cannot retrieve move reference point from an uncalibrated system";
+        retVal = GC_ERR;
+    }
+    else
+    {
+        lftRefPt = model.pixelPoints[ 0 ];
+        rgtRefPt = model.pixelPoints[ 1 ];
+    }
+    return retVal;
+}
 GC_STATUS CalibStopSign::GetLineEquation( const cv::Point2d pt1, const cv::Point2d pt2, double &slope, double &intercept )
 {
     GC_STATUS retVal = GC_OK;
@@ -400,6 +418,16 @@ GC_STATUS CalibStopSign::CalcSearchLines( const Mat &img, vector< Point > &searc
                         botX += botInc;
                         topY = slopeTop * topX + interceptTop;
                         botY = slopeBot * botX + interceptBot;
+                        if ( MIN_SEARCH_LINE_LENGTH > DISTANCE( Point2d( topX, topY ), Point2d( botX, botY ) ) )
+                        {
+                            FILE_LOG( logERROR ) << "[CalibStopSign::CalcSearchLines] Search region not tall enough";
+                            retVal = GC_ERR;
+                            break;
+                        }
+                        if ( GC_ERR == retVal )
+                        {
+                            break;
+                        }
                         searchLines.push_back( LineEnds( Point2d( topX, topY ), Point2d( botX, botY ) ) );
                     }
                     searchLines.push_back( LineEnds( rgtTop, rgtBot ) );
@@ -1300,9 +1328,9 @@ GC_STATUS CalibStopSign::SetStopsignColor( const cv::Scalar color, const double 
                 double minV = std::max( 0.0, ( 1.0 - minRange ) * hsv.val[ 2 ] );
                 hsvLow = Scalar( minH, minS, minV );
 
-                double maxH = std::min( 255.0, ( 1.0 + minRange ) * hsv.val[ 0 ] );
-                double maxS = std::min( 255.0, ( 1.0 + minRange ) * hsv.val[ 1 ] );
-                double maxV = std::min( 255.0, ( 1.0 + minRange ) * hsv.val[ 2 ] );
+                double maxH = std::min( 255.0, ( 1.0 + maxRange ) * hsv.val[ 0 ] );
+                double maxS = std::min( 255.0, ( 1.0 + maxRange ) * hsv.val[ 1 ] );
+                double maxV = std::min( 255.0, ( 1.0 + maxRange ) * hsv.val[ 2 ] );
                 hsvHigh = Scalar( maxH, maxS, maxV );
             }
         }
@@ -1351,8 +1379,6 @@ GC_STATUS CalibStopSign::DrawOverlay( const cv::Mat &img, cv::Mat &result, const
             double dim = static_cast< double >( std::max( result.cols, result.rows ) );
             int lineWidth = max( 1, cvRound( dim / 900.0 ) );
             int targetRadius = lineWidth * 5;
-            int textOffset = cvRound( static_cast< double >( result.rows ) / 6.6666667 );
-            int circleSize =  std::max( 5, cvRound( static_cast< double >( result.rows ) / 120.0 ) );
             int textStroke = std::max( 1, cvRound( static_cast< double >( result.rows ) / 300.0 ) );
             double fontScale = 1.0 + static_cast< double >( result.rows ) / 1200.0;
 
@@ -1426,7 +1452,7 @@ GC_STATUS CalibStopSign::DrawOverlay( const cv::Mat &img, cv::Mat &result, const
                                                 {
                                                     isFirst = false;
                                                     sprintf( msg, "%.1f cm", r );
-                                                    putText( result, msg, Point( 10, pt1.y - 10 ), FONT_HERSHEY_PLAIN, static_cast< double >( lineWidth ) / 1.5, Scalar( 0, 0, 255 ), lineWidth );
+                                                    putText( result, msg, Point( 10, pt1.y - 10 ), FONT_HERSHEY_PLAIN, fontScale, Scalar( 0, 0, 255 ), lineWidth );
                                                 }
                                                 retVal = WorldToPixel( Point2d( c + incX, r ), pt2 );
                                                 if ( GC_OK == retVal )
@@ -1454,7 +1480,7 @@ GC_STATUS CalibStopSign::DrawOverlay( const cv::Mat &img, cv::Mat &result, const
                 {
                     if ( model.searchLines.empty() )
                     {
-                        putText( result, "NO SEARCH REGION SET", Point( 50, result.cols - 100 ), FONT_HERSHEY_PLAIN, 2.7, Scalar( 0, 0, 255 ), 3 );
+                        putText( result, "NO SEARCH REGION SET", Point( 50, result.cols - 100 ), FONT_HERSHEY_PLAIN, fontScale, Scalar( 0, 0, 255 ), 3 );
                         rectangle( result, Rect( 100, 100, result.cols - 200, result.rows - 200 ), Scalar( 0, 0, 255 ), 3 );
                         line( result, Point( 100, 100 ), Point( result.cols - 200, result.rows - 200 ), Scalar( 0, 0, 255 ), 3 );
                         line( result, Point( 100, result.rows - 200 ), Point( result.cols - 200, 100 ), Scalar( 0, 0, 255 ), 3 );

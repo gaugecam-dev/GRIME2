@@ -686,10 +686,6 @@ int MainWindow::ScaleImage()
             m_pRubberBand->setGeometry( m_rectRubberBand );
             m_pRubberBand->show();
         }
-        else if ( ui->actionSetSearchPoly->isChecked() )
-        {
-            m_lineSearchPoly =  m_lineSearchPoly;
-        }
         UpdatePixmapTarget();
     }
     return ret;
@@ -835,10 +831,6 @@ void MainWindow::mouseReleaseEvent( QMouseEvent * )
                 m_rectROI.setTop( qRound( static_cast< double >( m_rectRubberBand.top() ) / m_scaleFactor ) );
                 m_rectROI.setRight( qRound( static_cast< double >( m_rectRubberBand.right() ) / m_scaleFactor ) );
                 m_rectROI.setBottom( qRound( static_cast< double >( m_rectRubberBand.bottom() ) / m_scaleFactor ) );
-            }
-            else if ( ui->actionSetSearchPoly->isChecked() )
-            {
-                m_lineSearchPoly = m_lineSearchPoly;
             }
         }
         m_bCaptured = false;

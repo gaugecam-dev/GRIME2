@@ -652,7 +652,7 @@ GC_STATUS FindLine::CalculateRowSumsLines( const vector< uint > rowSums, const v
                     maxVal = rowSums[ i ];
             }
 
-            int beg = min( lines[ 0 ].top.x, lines[ 0 ].bot.x ) - 180;
+            int beg = min( lines[ 0 ].top.x, lines[ 0 ].bot.x ); // + width_poly;
             // double wide = static_cast< double >( min( lines[ lines.size() - 1 ].top.x, lines[ lines.size() - 1 ].bot.x ) - beg - 3 );
             double wide = 64.0;
 
@@ -694,7 +694,7 @@ GC_STATUS FindLine::CalculateRowSumsLines( const vector< uint > rowSums, const v
             }
             else
             {
-                beg += 120;
+                beg += 35;
                 y = lines[ 0 ].top.y + 1;
                 rowSumsPts.clear();
 
@@ -731,7 +731,7 @@ GC_STATUS FindLine::CalculateRowSumsLines( const vector< uint > rowSums, const v
                 }
                 else
                 {
-                    beg += 150;
+                    beg += 70;
                     y = lines[ 0 ].top.y + 1;
                     rowSumsPts.clear();
 

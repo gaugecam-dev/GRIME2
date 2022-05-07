@@ -216,7 +216,7 @@ public:
     std::vector< cv::Point2d > pixelPoints; ///< Vector of pixel points ordered to match the world point vector
     std::vector< cv::Point2d > worldPoints; ///< Vector of world points ordered to match the pixel point vector
     std::vector< LineEnds > searchLines;    ///< Vector of search lines to be searched for the water line
-    cv::Rect targetSearchRegion;             ///< Region within which to perform line and move search
+    cv::Rect targetSearchRegion;            ///< Region within which to perform line and move search
     cv::Point2d center;                     ///< Center of symbol
     double angle;                           ///< Angle of symbol
 };
