@@ -124,13 +124,17 @@ GC_STATUS FindLine::Find( const Mat &img, const vector< LineEnds > &lines, FindL
                     string timestamp = result.timestamp;
                     result.timestamp = timestamp;
                     size_t linesPerSwath = lines.size() / 10;
-                    for ( size_t i = 0; i < 10; ++i )
+                    for ( size_t i = 0; i < 9; ++i )
                     {
                         start = i * linesPerSwath;
                         retVal = EvaluateSwath( scratch, lines, start, start + linesPerSwath, linePt, result );
                         if ( GC_OK == retVal )
                             result.foundPoints.push_back( linePt );
                     }
+                    start = lines.size() - linesPerSwath - 1;
+                    retVal = EvaluateSwath( scratch, lines, lines.size() - linesPerSwath - 1, lines.size() - 1, linePt, result );
+                    if ( GC_OK == retVal )
+                        result.foundPoints.push_back( linePt );
 
 #ifdef DEBUG_FIND_LINE
                     bool isOK = imwrite( DEBUG_RESULT_FOLDER + "rowsums.png", outImg );
@@ -534,7 +538,7 @@ GC_STATUS FindLine::EvaluateSwath( const Mat &img, const vector< LineEnds > &lin
                                                 result.diag1stDeriv, result.diag2ndDeriv );
                 if ( GC_OK != retVal )
                 {
-                    FILE_LOG( logWARNING ) << "[FindLine::EvaluateSwath] Cannot retrieve diagnosic line points";
+                    FILE_LOG( logWARNING ) << "[FindLine::EvaluateSwath] Cannot retrieve diagnostic line points";
                     retVal = GC_OK;
                 }
                 retVal = CalcSwathPoint( swath, rowSums, resultPt );
@@ -608,6 +612,13 @@ GC_STATUS FindLine::CalcRowSums( const Mat &img, const vector< LineEnds > &lines
     {
         try
         {
+            Mat color;
+            cvtColor( img, color, COLOR_GRAY2BGR );
+            line( color, lines[ 0 ].top, lines[ 0 ].bot, Scalar( 0, 0, 255 ), 3 );
+            line( color, lines[ lines.size() - 1 ].top, lines[ lines.size() - 1 ].bot, Scalar( 0, 0, 255 ), 3 );
+            // imwrite( "/var/tmp/water/orig.png", color );
+
+
             rowSums.clear();
             vector< uint > rowSumsTemp;
             int height = lines[ 0 ].bot.y - lines[ 0 ].top.y;

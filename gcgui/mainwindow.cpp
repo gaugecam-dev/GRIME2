@@ -1020,7 +1020,8 @@ void MainWindow::SetStopsignColor( QColor newColor ) { SetStopsignColor( cv::Sca
 void MainWindow::SetStopsignColor( cv::Scalar newColor )
 {
     cv::Scalar hsv;
-    GC_STATUS retVal = m_visApp.SetStopsignColor( newColor, ui->spinBox_colorRangeMin->value(), ui->spinBox_colorRangeMin->value(), hsv ); // to set the color for which to search
+    GC_STATUS retVal = m_visApp.SetStopsignColor( newColor, ui->spinBox_colorRangeMin->value(),
+                                                  ui->spinBox_colorRangeMin->value(), hsv ); // to set the color for which to search
     if ( GC_OK == retVal )
     {
         string hsvMsg = "  h=" + to_string( cvRound( hsv.val[0] ) );

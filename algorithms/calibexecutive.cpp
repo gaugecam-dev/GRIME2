@@ -311,7 +311,7 @@ GC_STATUS CalibExecutive::CalibrateStopSign( const cv::Mat &img, const string &c
             searchLineCorners.push_back( paramsCurrent.lineSearch_rgtBot );
 
             retVal = stopSign.Calibrate( img, paramsCurrent.stopSignFacetLength, paramsCurrent.targetSearchROI,
-                                         controlJson, searchLineCorners, paramsCurrent.isRedStopsign );
+                                         controlJson, searchLineCorners );
             if ( GC_OK == retVal )
             {
                 retVal = stopSign.Save( paramsCurrent.calibResultJsonFilepath );
@@ -515,13 +515,10 @@ GC_STATUS CalibExecutive::FindMoveTargets( const Mat &img, FindPointSet &ptsFoun
     {
         retVal = FindMoveTargetsBowTie( img, ptsFound );
     }
-    // TODO: StopSign placeholder (pull it back in)
-#if 0
     else if ( "StopSign" == paramsCurrent.calibType )
     {
         retVal = FindMoveTargetsStopSign( img, ptsFound );
     }
-#endif
     else
     {
         FILE_LOG( logERROR ) << "[FindLine::FindMoveTargets] No valid calibration type currently set";
@@ -531,15 +528,12 @@ GC_STATUS CalibExecutive::FindMoveTargets( const Mat &img, FindPointSet &ptsFoun
     return retVal;
 }
 
-// TODO: Fill in FindMoveTargetsStopSign()
 // TODO: This method currently only handles translation and not rotation
-#if 0
 GC_STATUS CalibExecutive::FindMoveTargetsStopSign( const Mat &img, FindPointSet &ptsFound )
 {
-    GC_STATUS retVal = GC_OK;
+    GC_STATUS retVal = stopSign.FindMoveTarget( img, ptsFound );
     return retVal;
 }
-#endif
 
 GC_STATUS CalibExecutive::FindMoveTargetsBowTie( const Mat &img, FindPointSet &ptsFound )
 {
@@ -564,7 +558,6 @@ GC_STATUS CalibExecutive::MoveRefPoint( cv::Point2d &lftRefPt, cv::Point2d &rgtR
     {
         retVal = MoveRefPointBowTie( lftRefPt, rgtRefPt );
     }
-    // TODO: StopSign placeholder (pull it back in)
     else if ( "StopSign" == paramsCurrent.calibType )
     {
         retVal = MoveRefPointStopSign( lftRefPt, rgtRefPt );

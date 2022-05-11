@@ -84,6 +84,7 @@ public:
                                    std::vector< cv::Point2d > &pixPtsFound, std::vector< cv::Point2d > &worldPts,
                                    std::vector< cv::Point2d > &pixPtsReverse );
     GC_STATUS MoveRefPoint( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt );
+    GC_STATUS SetStopsignColorRed();
     GC_STATUS SetStopsignColor( const cv::Scalar color, const double minRange, const double maxRange, cv::Scalar &hsv );
 
     CalibModelBowtie &CalibBowtieModel() { return bowTie.Model(); }

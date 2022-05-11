@@ -60,7 +60,7 @@ void CalibStopSign::clear()
 }
 // symbolPoints are clockwise ordered with 0 being the topmost left point
 GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double octoSideLength, const cv::Rect rect,
-                                    const std::string &controlJson, std::vector< Point > &searchLineCorners, bool isRedStopsign )
+                                    const std::string &controlJson, std::vector< Point > &searchLineCorners )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -73,14 +73,7 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double octoSideLen
                 -1 != rect.height;
 
         cv::Mat1b mask;
-        if ( useRoi )
-        {
-            retVal = FindColor( img( rect ), mask, candidates, isRedStopsign );
-        }
-        else
-        {
-            retVal = FindColor( img, mask, candidates, isRedStopsign );
-        }
+        retVal = FindColor( useRoi ? img( rect ) : img, mask, candidates );
         if ( GC_OK == retVal )
         {
             OctagonLines octoLines;
@@ -163,6 +156,98 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double octoSideLen
         else
         {
             model.controlJson = controlJson;
+        }
+    }
+    catch( cv::Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[CalibStopSign::Calibrate] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+
+    return retVal;
+}
+GC_STATUS CalibStopSign::FindMoveTarget( const cv::Mat &img, FindPointSet &findPtSet )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        findPtSet.clear();
+        std::vector< StopSignCandidate > candidates;
+
+        cv::Mat1b mask;
+        retVal = FindColor( img( model.targetSearchRegion ), mask, candidates );
+        if ( GC_OK == retVal )
+        {
+            OctagonLines octoLines;
+            Point2d ptTopLft, ptTopRgt, ptBotLft, ptBotRgt;
+            for ( size_t i = 0; i < candidates.size(); ++i )
+            {
+                OctagonLines octoLines;
+                retVal = FindCorners( mask, candidates[ i ].contour, octoLines );
+                if ( GC_OK == retVal )
+                {
+                    vector< Point > corners;
+                    retVal = FindDiagonals( mask, candidates[ i ].contour, octoLines );
+                    if ( GC_OK == retVal )
+                    {
+                        std::vector< cv::Point2d > pixPts;
+                        retVal = CalcCorners( octoLines, pixPts );
+                        if ( GC_OK == retVal )
+                        {
+                            findPtSet.lftPixel = pixPts[ 0 ];
+                            findPtSet.rgtPixel = pixPts[ 1 ];
+                            findPtSet.ctrPixel = Point2d( ( pixPts[ 0 ].x + pixPts[ 1 ].x ) / 2.0,
+                                                          ( pixPts[ 0 ].y + pixPts[ 1 ].y ) / 2.0 );
+
+                            retVal = PixelToWorld( findPtSet.lftPixel, findPtSet.lftWorld );
+                            if ( GC_OK == retVal )
+                            {
+                                retVal = PixelToWorld( findPtSet.rgtPixel, findPtSet.rgtWorld );
+                                if ( GC_OK == retVal )
+                                {
+                                    retVal = PixelToWorld( findPtSet.ctrPixel, findPtSet.ctrWorld );
+                                    if ( GC_OK == retVal )
+                                    {
+                                        findPtSet.anglePixel = atan2( findPtSet.rgtPixel.y - findPtSet.lftPixel.y,
+                                                                      findPtSet.rgtPixel.x - findPtSet.lftPixel.x ) * ( 180.0 / CV_PI );
+                                        findPtSet.angleWorld = atan2( findPtSet.rgtWorld.y - findPtSet.lftWorld.y,
+                                                                      findPtSet.rgtWorld.x - findPtSet.lftWorld.x ) * ( 180.0 / CV_PI );
+                                    }
+                                }
+                            }
+                            if ( GC_OK == retVal )
+                            {
+#ifdef DEBUG_FIND_CALIB_SYMBOL
+                                Mat color;
+                                img( model.targetSearchRegion ).copyTo( color );
+                                line( color, Point( model.pixelPoints[ 0 ].x - 10, model.pixelPoints[ i ].y ),
+                                             Point( model.pixelPoints[ 1 ].x + 10, model.pixelPoints[ i ].y ),
+                                      Scalar( 0, 255, 0 ), 3 );
+                                line( color, Point( pixPts[ 0 ].x - 10, pixPts[ i ].y ),
+                                             Point( pixPts[ 1 ].x + 10, pixPts[ i ].y ),
+                                      Scalar( 0, 0, 1 ), 1 );
+                                imwrite( DEBUG_RESULT_FOLDER + "___target_move.png", color );
+#endif
+                                Point2d offset = Point2d( model.targetSearchRegion.x, model.targetSearchRegion.y );
+                                for ( size_t i = 0; i < model.pixelPoints.size(); ++i )
+                                {
+                                    model.pixelPoints[ i ] += offset;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if ( model.pixelPoints.empty() || model.worldPoints.empty() || model.searchLines.empty() )
+        {
+            FILE_LOG( logERROR ) << "[CalibStopSign::Calibrate] No valid calibration for drawing";
+            retVal = GC_ERR;
+        }
+        else if ( matHomogPixToWorld.empty() || matHomogWorldToPix.empty() )
+        {
+            FILE_LOG( logERROR ) << "[CalibStopSign::Calibrate] System not calibrated";
+            retVal = GC_ERR;
         }
     }
     catch( cv::Exception &e )
@@ -675,7 +760,7 @@ GC_STATUS CalibStopSign::CalcOctoWorldPoints( const double sideLength, std::vect
     return retVal;
 }
 GC_STATUS CalibStopSign::FindColor( const cv::Mat &img, cv::Mat1b &mask,
-                                    std::vector< StopSignCandidate > &symbolCandidates, bool isRed )
+                                    std::vector< StopSignCandidate > &symbolCandidates )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -696,19 +781,19 @@ GC_STATUS CalibStopSign::FindColor( const cv::Mat &img, cv::Mat1b &mask,
             Mat3b hsv;
             cvtColor( img, hsv, COLOR_BGR2HSV );
 
-            if ( isRed ) // red -- has beginning and end
+            if ( -900 > hsvLow2.val[ 0 ] ) // red -- has beginning and end
             {
                 Mat1b mask1, mask2;
-                inRange( hsv, Scalar( 0, 70, 50 ), Scalar( 10, 255, 255 ), mask1 );
-                inRange( hsv, Scalar( 170, 70, 50 ), Scalar( 180, 255, 255 ), mask2 );
+                inRange( hsv, hsvLow, hsvHigh, mask1 );
+                inRange( hsv, hsvLow2, hsvHigh2, mask2 );
                 mask = mask1 | mask2;
             }
             else // generic -- does not cross beginning or end
             {
                 inRange( hsv, hsvLow, hsvHigh, mask );
             }
-            imwrite( "/var/tmp/water/img.png", img );
-            imwrite( "/var/tmp/water/stopsign_mask.png", mask );
+            // imwrite( "/var/tmp/water/img.png", img );
+            // imwrite( "/var/tmp/water/stopsign_mask.png", mask );
 
 
             vector< vector< Point > > contours;
@@ -1320,18 +1405,32 @@ GC_STATUS CalibStopSign::SetStopsignColor( const cv::Scalar color, const double 
         }
         else
         {
-            retVal = BGR_2_HSV( color, hsv );
-            if ( GC_OK == retVal )
+            if ( ( 0 == color.val[ 0 ] ) &&
+                 ( 0 == color.val[ 0 ] ) &&
+                 ( 0 == color.val[ 0 ] ) )
             {
-                double minH = std::max( 0.0, ( 1.0 - minRange ) * hsv.val[ 0 ] );
-                double minS = std::max( 0.0, ( 1.0 - minRange ) * hsv.val[ 1 ] );
-                double minV = std::max( 0.0, ( 1.0 - minRange ) * hsv.val[ 2 ] );
-                hsvLow = Scalar( minH, minS, minV );
+                hsvLow = Scalar( 0, 70, 50 );
+                hsvHigh = Scalar( 10, 255, 255 );
+                hsvLow2 = Scalar( 170, 70, 50 );
+                hsvHigh2 = Scalar( 180, 255, 255 );
+            }
+            else
+            {
+                retVal = BGR_2_HSV( color, hsv );
+                if ( GC_OK == retVal )
+                {
+                    double minH = std::max( 0.0, ( 1.0 - minRange ) * hsv.val[ 0 ] );
+                    double minS = std::max( 0.0, ( 1.0 - minRange ) * hsv.val[ 1 ] );
+                    double minV = std::max( 0.0, ( 1.0 - minRange ) * hsv.val[ 2 ] );
+                    hsvLow = Scalar( minH, minS, minV );
+                    hsvLow2 = Scalar( -999, -999, -999 );
 
-                double maxH = std::min( 255.0, ( 1.0 + maxRange ) * hsv.val[ 0 ] );
-                double maxS = std::min( 255.0, ( 1.0 + maxRange ) * hsv.val[ 1 ] );
-                double maxV = std::min( 255.0, ( 1.0 + maxRange ) * hsv.val[ 2 ] );
-                hsvHigh = Scalar( maxH, maxS, maxV );
+                    double maxH = std::min( 255.0, ( 1.0 + maxRange ) * hsv.val[ 0 ] );
+                    double maxS = std::min( 255.0, ( 1.0 + maxRange ) * hsv.val[ 1 ] );
+                    double maxV = std::min( 255.0, ( 1.0 + maxRange ) * hsv.val[ 2 ] );
+                    hsvHigh = Scalar( maxH, maxS, maxV );
+                    hsvHigh2 = Scalar( -999, -999, -999 );
+                }
             }
         }
     }
