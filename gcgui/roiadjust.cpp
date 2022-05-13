@@ -282,8 +282,8 @@ int RoiAdjust::AdjustPointPoly( const QSize displaySize, double const scale, Lin
 
     return ret;
 }
-int RoiAdjust::FormBowtieCalibJsonString( const std::string csvFilepath, const std::string jsonResultFilepath,
-                                          const bool useSearchROI, const QRect rectROI, std::string &json )
+int RoiAdjust::FormBowtieCalibJsonString( const std::string csvFilepath, const std::string jsonResultFilepath, const bool useSearchROI,
+                                          const QRect rectROI, const int moveSearchROIGrowPercent, std::string &json )
 {
     int ret = 0;
 
@@ -292,6 +292,7 @@ int RoiAdjust::FormBowtieCalibJsonString( const std::string csvFilepath, const s
     json = "{\"calibType\": \"BowTie\", ";
     json += "\"calibWorldPt_csv\": \"" + csvFilepath + "\", ";
     json += "\"stopSignFacetLength\": -1.0, ";
+    json += "\"moveSearchROIGrowPercent\": " + std::to_string( moveSearchROIGrowPercent ) + ", ";
     json += "\"drawCalib\": 0, ";
     json += "\"drawMoveSearchROIs\": 0, ";
     json += "\"drawWaterLineSearchROI\": 0, ";
@@ -322,8 +323,8 @@ int RoiAdjust::FormBowtieCalibJsonString( const std::string csvFilepath, const s
     return ret;
 }
 int RoiAdjust::FormStopsignCalibJsonString( const std::string csvFilepath, const std::string jsonResultFilepath,
-                                            const bool useSearchROI, const QRect rectROI, const bool fromFacetLength,
-                                            const double facetLength, const bool isRedStopsign,
+                                            const bool useSearchROI, const QRect rectROI, const int moveSearchROIGrowPercent,
+                                            const bool fromFacetLength, const double facetLength, const bool isRedStopsign,
                                             const LineSearchPoly searchPoly, std::string &json )
 {
     int ret = 0;
@@ -338,6 +339,7 @@ int RoiAdjust::FormStopsignCalibJsonString( const std::string csvFilepath, const
     {
         json += "\"stopSignFacetLength\": -1.0, }";
     }
+    json += "\"moveSearchROIGrowPercent\": " + std::to_string( moveSearchROIGrowPercent ) + ", ";
     json += "\"drawCalib\": 0, ";
     json += "\"drawMoveSearchROIs\": 0, ";
     json += "\"drawWaterLineSearchROI\": 0, ";

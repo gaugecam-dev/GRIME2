@@ -101,6 +101,7 @@ public:
         gridSize( cv::Size( -1, -1 ) ),
         moveSearchRegionLft( cv::Rect( -1, -1, -1, -1 ) ),
         moveSearchRegionRgt( cv::Rect( -1, -1, -1, -1 ) ),
+        moveSearchROIMultiplier( 0.0 ),
         wholeTargetRegion( cv::Rect( -1, -1, -1, -1 ) )
     {}
 
@@ -119,7 +120,8 @@ public:
                 std::vector< cv::Point2d > worldPts,
                 std::vector< LineEnds > lineEndPts,
                 cv::Rect mvSrchROILft,
-                cv::Rect mvSrchROIRgt ) :
+                cv::Rect mvSrchROIRgt,
+                double moveSearchROIMultiply ) :
         imgSize( imageSize ),
         gridSize( gridSz ),
         pixelPoints( pixelPts ),
@@ -127,6 +129,7 @@ public:
         searchLines( lineEndPts ),
         moveSearchRegionLft( mvSrchROILft ),
         moveSearchRegionRgt( mvSrchROIRgt ),
+        moveSearchROIMultiplier( moveSearchROIMultiply ),
         wholeTargetRegion( cv::Rect( -1, -1, -1, -1 ) )
     {}
 
@@ -143,6 +146,7 @@ public:
         searchLines.clear();
         moveSearchRegionLft = cv::Rect( -1, -1, -1, -1 );
         moveSearchRegionRgt = cv::Rect( -1, -1, -1, -1 );
+        moveSearchROIMultiplier = 0.0;
         wholeTargetRegion = cv::Rect( -1, -1, -1, -1 );
     }
 
@@ -154,6 +158,7 @@ public:
     std::vector< LineEnds > searchLines;    ///< Vector of search lines to be searched for the water line
     cv::Rect moveSearchRegionLft;           ///< Left move search region (to search for top-left bowtie)
     cv::Rect moveSearchRegionRgt;           ///< Right move search region (to search for top-right bowtie)
+    double moveSearchROIMultiplier;         ///< Move search region multiplier (based on nominal)
     cv::Rect wholeTargetRegion;             ///< Region within which to perform line and move search
 };
 
@@ -166,6 +171,7 @@ public:
     CalibModelSymbol() :
         imgSize( cv::Size( -1, -1 ) ),
         targetSearchRegion( cv::Rect( -1, -1, -1, -1 ) ),
+        moveSearchROIMultiplier( 0.0 ),
         center( cv::Point2d( -1.0, -1.0 ) ),
         angle( -9999999.0 )
     {}
@@ -185,6 +191,7 @@ public:
                       std::vector< cv::Point2d > worldPts,
                       std::vector< LineEnds > lineEndPts,
                       cv::Rect symbolSearchROI,
+                      double moveSearchROIMultiply,
                       cv::Point2d centerPoint,
                       double symbolAngle ) :
         imgSize( imageSize ),
@@ -192,6 +199,7 @@ public:
         worldPoints( worldPts ),
         searchLines( lineEndPts ),
         targetSearchRegion( symbolSearchROI ),
+        moveSearchROIMultiplier( moveSearchROIMultiply ),
         center( centerPoint ),
         angle( symbolAngle )
     {}
@@ -207,6 +215,7 @@ public:
         worldPoints.clear();
         searchLines.clear();
         targetSearchRegion = cv::Rect( -1, -1, -1, -1 );
+        moveSearchROIMultiplier = 0.0;
         center = cv::Point2d( -1.0, -1.0 );
         angle = -9999999.0;
     }
@@ -217,6 +226,7 @@ public:
     std::vector< cv::Point2d > worldPoints; ///< Vector of world points ordered to match the pixel point vector
     std::vector< LineEnds > searchLines;    ///< Vector of search lines to be searched for the water line
     cv::Rect targetSearchRegion;            ///< Region within which to perform line and move search
+    double moveSearchROIMultiplier;         ///< Move search region multiplier (based on nominal)
     cv::Point2d center;                     ///< Center of symbol
     double angle;                           ///< Angle of symbol
 };

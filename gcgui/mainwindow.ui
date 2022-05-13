@@ -1167,16 +1167,6 @@ metadata</string>
                        </property>
                       </widget>
                      </item>
-                     <item>
-                      <widget class="QRadioButton" name="radioButton_calibStaffGauge">
-                       <property name="enabled">
-                        <bool>false</bool>
-                       </property>
-                       <property name="text">
-                        <string>Staff gauge</string>
-                       </property>
-                      </widget>
-                     </item>
                     </layout>
                    </widget>
                   </item>
@@ -1385,31 +1375,7 @@ metadata</string>
                       </widget>
                      </item>
                      <item>
-                      <widget class="QRadioButton" name="radioButton_calibSearchWholeImage">
-                       <property name="sizePolicy">
-                        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                         <horstretch>0</horstretch>
-                         <verstretch>0</verstretch>
-                        </sizepolicy>
-                       </property>
-                       <property name="font">
-                        <font>
-                         <pointsize>9</pointsize>
-                        </font>
-                       </property>
-                       <property name="toolTip">
-                        <string>Search only currently specified region of interest (ROI)</string>
-                       </property>
-                       <property name="text">
-                        <string>Use whole image</string>
-                       </property>
-                       <property name="checked">
-                        <bool>true</bool>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <widget class="QRadioButton" name="radioButton_calibSearchROI">
+                      <widget class="QCheckBox" name="checkBox_calibSearchROI">
                        <property name="sizePolicy">
                         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                          <horstretch>0</horstretch>
@@ -1428,6 +1394,40 @@ metadata</string>
                         <string>Use ROI</string>
                        </property>
                       </widget>
+                     </item>
+                     <item>
+                      <layout class="QHBoxLayout" name="horizontalLayout_26">
+                       <item>
+                        <widget class="QLabel" name="label_9">
+                         <property name="font">
+                          <font>
+                           <pointsize>9</pointsize>
+                          </font>
+                         </property>
+                         <property name="text">
+                          <string>Move search ROI size</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item>
+                        <widget class="QSpinBox" name="spinBox_moveSearchROIGrowPercent">
+                         <property name="font">
+                          <font>
+                           <pointsize>9</pointsize>
+                          </font>
+                         </property>
+                         <property name="minimum">
+                          <number>0</number>
+                         </property>
+                         <property name="maximum">
+                          <number>100</number>
+                         </property>
+                         <property name="value">
+                          <number>0</number>
+                         </property>
+                        </widget>
+                       </item>
+                      </layout>
                      </item>
                      <item>
                       <widget class="QPushButton" name="pushButton_resetSearchRegion">
@@ -1449,7 +1449,7 @@ metadata</string>
                         <string>Resets the calibration search region so that it is visible in the current field of view</string>
                        </property>
                        <property name="text">
-                        <string>Reset</string>
+                        <string>Set ROI to default</string>
                        </property>
                       </widget>
                      </item>

@@ -77,13 +77,14 @@ public:
      * @brief Create a calibration model from a set of associated pixel and world coordinate points
      * @param pixelPts A vector holding the pixel coordinate points (ordered to match the world points)
      * @param worldPts A vector holding the world coordinate points (ordered to match the pixel points)
+     * @param moveSearchROIMultiplier A multiplier to handle more or less camera movement detection
      * @param gridSize The dimensions of the point array (2x4 for standard GaugeCam target)
      * @param imgSize The dimensions of the calibrated image
      * @param resultFilepath Optional filepath for the creation of an image with the calibration overlay
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
     GC_STATUS Calibrate( const std::vector< cv::Point2d > pixelPts, const std::vector< cv::Point2d > worldPts,
-                         const std::string &controlJson, const cv::Size gridSize, const cv::Size imgSize );
+                         const double moveSearchROIMultiplier, const std::string &controlJson, const cv::Size gridSize, const cv::Size imgSize );
     /**
      * @brief Load a calibration model from a json file
      *

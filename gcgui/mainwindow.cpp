@@ -239,10 +239,10 @@ void MainWindow::createConnections()
     connect( ui->checkBox_showSearchROI, &QCheckBox::stateChanged, this, &MainWindow::UpdatePixmapTarget );
     connect( ui->checkBox_createFindLine_csvResultsFile, &QCheckBox::stateChanged, this, &MainWindow::UpdateGUIEnables );
     connect( ui->checkBox_createFindLine_annotatedResults, &QCheckBox::stateChanged, this, &MainWindow::UpdateGUIEnables );
+    connect( ui->checkBox_calibSearchROI, &QRadioButton::toggled, this, &MainWindow::UpdateCalibSearchRegion );
     connect( ui->actionToggleControls, &QAction::toggled, this, &MainWindow::UpdateGUIEnables );
     connect( ui->radioButton_calibBowtie, &QRadioButton::toggled, this, &MainWindow::UpdateCalibType );
     connect( ui->radioButton_stopsignFromFile, &QRadioButton::toggled, this, &MainWindow::UpdateCalibType );
-    connect( ui->radioButton_calibSearchROI, &QRadioButton::toggled, this, &MainWindow::UpdateCalibSearchRegion );
 
     connect( this, SIGNAL( sig_visAppMessage(QString) ), this, SLOT( do_visAppMessage(QString) ) );
     connect( this, SIGNAL( sig_updateProgess(int) ),     this, SLOT( do_updateProgress(int) ) );
@@ -371,9 +371,10 @@ int MainWindow::ReadSettings( const QString filepath )
         ui->lineEdit_calibVisionTarget_csv->setText( pSettings->value( "calibCSVFileIn", QString( __CONFIGURATION_FOLDER.c_str() ) + "calibration_target_world_coordinates.csv" ).toString() );
         ui->lineEdit_calibVisionResult_json->setText( pSettings->value( "calibJsonFileOut", QString( __CONFIGURATION_FOLDER.c_str() ) + "calib.json" ).toString() );
         pSettings->value( "calibTypeIsBowtie", true ).toBool() ? ui->radioButton_calibBowtie->setChecked( true ) : ui->radioButton_calibStopSign->setChecked( true );
-        pSettings->value( "useWholeImage", true ).toBool() ? ui->radioButton_calibSearchWholeImage->setChecked( true ) : ui->radioButton_calibSearchROI->setChecked( true );
+        ui->checkBox_calibSearchROI->setChecked( !pSettings->value( "useWholeImage", true ).toBool() );
         pSettings->value( "useFacetLength", true ).toBool() ? ui->radioButton_stopsignFacetLength->setChecked( true ) : ui->radioButton_stopsignFromFile->setChecked( true );
         ui->doubleSpinBox_stopSignFacetLength->setValue( pSettings->value( "stopSignFacetLength", 7.1875 ).toDouble() );
+        ui->spinBox_moveSearchROIGrowPercent->setValue( pSettings->value( "moveSearchROIGrowPercent", 0 ).toInt() );
         ui->checkBox_isRedStopsign->setChecked( pSettings->value( "stopSignIsRed", true ).toBool() );
         ui->spinBox_colorRangeMin->setValue( pSettings->value( "stopSignColorRangeMin", 10 ).toInt() );
         ui->spinBox_colorRangeMax->setValue( pSettings->value( "stopSignColorRangeMax", 10 ).toInt() );
@@ -468,9 +469,10 @@ int MainWindow::WriteSettings( const QString filepath )
         pSettings->setValue( "calibCSVFileIn", ui->lineEdit_calibVisionTarget_csv->text() );
         pSettings->setValue( "calibJsonFileOut", ui->lineEdit_calibVisionResult_json->text() );
         pSettings->setValue( "calibTypeIsBowtie", ui->radioButton_calibBowtie->isChecked() );
-        pSettings->setValue( "useWholeImage", ui->radioButton_calibSearchWholeImage->isChecked() );
+        pSettings->setValue( "useWholeImage", !ui->checkBox_calibSearchROI->isChecked() );
         pSettings->setValue( "useFacetLength", ui->radioButton_stopsignFacetLength->isChecked() );
         pSettings->setValue( "stopSignFacetLength", ui->doubleSpinBox_stopSignFacetLength->value() );
+        pSettings->setValue( "moveSearchROIGrowPercent", ui->spinBox_moveSearchROIGrowPercent->value() );
         pSettings->setValue( "stopSignIsRed", ui->checkBox_isRedStopsign->isChecked() );
         pSettings->setValue( "stopSignColorRangeMin", ui->spinBox_colorRangeMin->value() );
         pSettings->setValue( "stopSignColorRangeMax", ui->spinBox_colorRangeMax->value() );
@@ -514,7 +516,7 @@ void MainWindow::ZoomTo( const int width, const int height )
 }
 void MainWindow::UpdateCalibSearchRegion()
 {
-    if ( ui->radioButton_calibSearchROI->isChecked() )
+    if ( ui->checkBox_calibSearchROI->isChecked() )
     {
         QString msg;
         ui->label_calibCurrentROI->setText(
@@ -1163,13 +1165,15 @@ void MainWindow::on_pushButton_visionCalibrate_clicked()
     {
         ret = m_roiAdjust.FormBowtieCalibJsonString( ui->lineEdit_calibVisionTarget_csv->text().toStdString(),
                                                      ui->lineEdit_calibVisionResult_json->text().toStdString(),
-                                                     ui->radioButton_calibSearchROI->isChecked(), m_rectROI, jsonControlStr );
+                                                     ui->checkBox_calibSearchROI->isChecked(), m_rectROI,
+                                                     ui->spinBox_moveSearchROIGrowPercent->value() + 100, jsonControlStr );
     }
     else if ( ui->radioButton_calibStopSign->isChecked() )
     {
         ret = m_roiAdjust.FormStopsignCalibJsonString( ui->lineEdit_calibVisionTarget_csv->text().toStdString(),
                                                        ui->lineEdit_calibVisionResult_json->text().toStdString(),
-                                                       ui->radioButton_calibSearchROI->isChecked(), m_rectROI,
+                                                       ui->checkBox_calibSearchROI->isChecked(), m_rectROI,
+                                                       ui->spinBox_moveSearchROIGrowPercent->value() + 100,
                                                        ui->radioButton_stopsignFacetLength->isChecked(),
                                                        ui->doubleSpinBox_stopSignFacetLength->value(),
                                                        ui->checkBox_isRedStopsign->isChecked(),

@@ -13,7 +13,7 @@ class CalibExecParams
 public:
     CalibExecParams() :
         stopSignFacetLength( -1.0 ),
-        isRedStopsign( false ),
+        moveSearchROIGrowPercent( 0 ),
         drawCalib( false ),
         drawMoveSearchROIs( false ),
         drawWaterLineSearchROI( false ),
@@ -29,7 +29,7 @@ public:
         calibType.clear();
         worldPtCSVFilepath.clear();
         stopSignFacetLength = -1.0;
-        isRedStopsign = false;
+        moveSearchROIGrowPercent = 0;
         calibResultJsonFilepath.clear();
         drawCalib = false;
         drawMoveSearchROIs = false;
@@ -44,7 +44,7 @@ public:
     string calibType;
     string worldPtCSVFilepath;
     double stopSignFacetLength;
-    bool isRedStopsign;
+    int moveSearchROIGrowPercent;
     string calibResultJsonFilepath;
     bool drawCalib;
     bool drawMoveSearchROIs;

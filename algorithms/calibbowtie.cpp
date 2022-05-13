@@ -63,7 +63,8 @@ void CalibBowtie::clear()
     m_matHomogWorldToPix = Mat();
     // m_worldToPixParams.clear();
 }
-GC_STATUS CalibBowtie::Calibrate( const vector< Point2d > pixelPts, const vector< Point2d > worldPts, const std::string &controlJson,
+GC_STATUS CalibBowtie::Calibrate( const vector< Point2d > pixelPts, const vector< Point2d > worldPts,
+                                  const double moveSearchROIMultiplier, const std::string &controlJson,
                                   const Size gridSize, const Size imgSize )
 {
     GC_STATUS retVal = GC_OK;
@@ -91,31 +92,37 @@ GC_STATUS CalibBowtie::Calibrate( const vector< Point2d > pixelPts, const vector
             m_matHomogPixToWorld = findHomography( m_model.pixelPoints, m_model.worldPoints );
             invert( m_matHomogPixToWorld, m_matHomogWorldToPix );
 
-            // Mat homogWorldToPix;
-            // invert( m_matHomogPixToWorld, homogWorldToPix );
-            // m_worldToPixParams.clear();
-            // m_worldToPixParams.push_back( homogWorldToPix.at< double >( 0, 0 ) );
-            // m_worldToPixParams.push_back( homogWorldToPix.at< double >( 0, 1 ) );
-            // m_worldToPixParams.push_back( homogWorldToPix.at< double >( 0, 2 ) );
-            // m_worldToPixParams.push_back( homogWorldToPix.at< double >( 1, 0 ) );
-            // m_worldToPixParams.push_back( homogWorldToPix.at< double >( 1, 1 ) );
-            // m_worldToPixParams.push_back( homogWorldToPix.at< double >( 1, 2 ) );
-            // m_worldToPixParams.push_back( homogWorldToPix.at< double >( 2, 0 ) );
-            // m_worldToPixParams.push_back( homogWorldToPix.at< double >( 2, 1 ) );
-            // m_worldToPixParams.push_back( homogWorldToPix.at< double >( 2, 2 ) );
 
             retVal = CalcSearchSwaths();
             if ( GC_OK == retVal )
             {
+                m_model.moveSearchROIMultiplier = moveSearchROIMultiplier;
                 m_model.moveSearchRegionLft = Rect( std::max( 0, cvRound( m_model.pixelPoints[ 0 ].x ) - GC_BOWTIE_TEMPLATE_DIM ),
                                                     std::max( 0, cvRound( m_model.pixelPoints[ 0 ].y )- GC_BOWTIE_TEMPLATE_DIM ),
                                                     std::min( imgSize.width - cvRound( m_model.pixelPoints[ 0 ].x ), GC_BOWTIE_TEMPLATE_DIM * 2 ),
                                                     std::min( imgSize.height - cvRound( m_model.pixelPoints[ 0 ].y ), GC_BOWTIE_TEMPLATE_DIM * 2 ) );
+                if ( 0.0 < moveSearchROIMultiplier )
+                {
+                    int lftWidth = cvRound( moveSearchROIMultiplier * static_cast< double >( m_model.moveSearchRegionLft.width ) );
+                    int lftHeight = cvRound( moveSearchROIMultiplier * static_cast< double >( m_model.moveSearchRegionLft.height ) );
+                    int lftX = std::max( 0, m_model.moveSearchRegionLft.x - ( lftWidth - m_model.moveSearchRegionLft.width ) / 2 );
+                    int lftY = std::max( 0, m_model.moveSearchRegionLft.y - ( lftHeight - m_model.moveSearchRegionLft.height ) / 2 );
+                    m_model.moveSearchRegionLft = Rect( lftX, lftY, std::min( imgSize.width - lftX, lftWidth ), std::min( imgSize.height - lftY, lftHeight ) );
+                }
+
                 size_t idx = static_cast< size_t >( m_model.gridSize.width - 1 );
                 m_model.moveSearchRegionRgt = Rect( std::max( 0, cvRound( m_model.pixelPoints[ idx ].x ) - GC_BOWTIE_TEMPLATE_DIM ),
-                                                    std::max( 0, cvRound( m_model.pixelPoints[ idx ].y )- GC_BOWTIE_TEMPLATE_DIM ),
+                                                    std::max( 0, cvRound( m_model.pixelPoints[ idx ].y ) - GC_BOWTIE_TEMPLATE_DIM ),
                                                     std::min( imgSize.width - cvRound( m_model.pixelPoints[ idx ].x ), GC_BOWTIE_TEMPLATE_DIM * 2 ),
                                                     std::min( imgSize.height - cvRound( m_model.pixelPoints[ idx ].y ), GC_BOWTIE_TEMPLATE_DIM * 2 ) );
+                if ( 0.0 < moveSearchROIMultiplier )
+                {
+                    int rgtWidth = cvRound( moveSearchROIMultiplier * static_cast< double >( m_model.moveSearchRegionRgt.width ) );
+                    int rgtHeight = cvRound( moveSearchROIMultiplier * static_cast< double >( m_model.moveSearchRegionRgt.height ) );
+                    int rgtX = std::max( 0, m_model.moveSearchRegionRgt.x - ( rgtWidth - m_model.moveSearchRegionRgt.width ) / 2 );
+                    int rgtY = std::max( 0, m_model.moveSearchRegionRgt.y - ( rgtHeight - m_model.moveSearchRegionRgt.height ) / 2 );
+                    m_model.moveSearchRegionRgt = Rect( rgtX, rgtY, std::min( imgSize.width - rgtX, rgtWidth ), std::min( imgSize.height - rgtY, rgtHeight ) );
+                }
 
                 int width = std::max( cvRound( m_model.pixelPoints[ idx ].x - m_model.pixelPoints[ 0 ].x ),
                                       cvRound( m_model.pixelPoints[ m_model.pixelPoints.size() - 1 ].x - m_model.pixelPoints[ m_model.pixelPoints.size() - 2 ].x ) );
@@ -487,6 +494,7 @@ GC_STATUS CalibBowtie::Load( const string &jsonCalibString )
 
             m_model.imgSize.width = ptreeTop.get< int >( "imageWidth", 0 );
             m_model.imgSize.height = ptreeTop.get< int >( "imageHeight", 0 );
+            m_model.moveSearchROIMultiplier = ptreeTop.get< double >( "moveSearchROIMultiplier", 0.0 );
             property_tree::ptree ptreeCalib = ptreeTop.get_child( "PixelToWorld" );
 
             Point2d ptTemp;
@@ -570,8 +578,8 @@ GC_STATUS CalibBowtie::Load( const string &jsonCalibString )
                 m_model.controlJson = ptreeTop.get< string >( "control_json", "{}" );
 
                 Mat matIn, matOut;
-                retVal = Calibrate( m_model.pixelPoints, m_model.worldPoints, m_model.controlJson,
-                                    m_model.gridSize, m_model.imgSize );
+                retVal = Calibrate( m_model.pixelPoints, m_model.worldPoints, m_model.moveSearchROIMultiplier,
+                                    m_model.controlJson, m_model.gridSize, m_model.imgSize );
             }
 #ifdef LOG_CALIB_VALUES
             FILE_LOG( logINFO ) << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
@@ -616,6 +624,7 @@ GC_STATUS CalibBowtie::Save( const string jsonCalFilepath )
                 fileStream << "  \"calibType\":\"BowTie\"" << "," << endl;
                 fileStream << "  \"imageWidth\":" << m_model.imgSize.width << "," << endl;
                 fileStream << "  \"imageHeight\":" << m_model.imgSize.height << "," << endl;
+                fileStream << "  \"moveSearchROIMultiplier\":" << m_model.moveSearchROIMultiplier << "," << endl;
                 fileStream << "  \"PixelToWorld\": " << endl;
                 fileStream << "  {" << endl;
                 fileStream << "    \"columns\": " << m_model.gridSize.width << "," << endl;
@@ -727,7 +736,11 @@ GC_STATUS CalibBowtie::CalcSearchSwaths()
 
             m_model.searchLines.clear();
             Point2d ptTop = Point2d( topLftX, topLftY );
+#if 1
             Point2d ptBot = Point2d( botLftX, botLftY );
+#else // FOR JESSICA
+            Point2d ptBot = Point2d( botLftX, botLftY - 70 );  // FOR JESSICA
+#endif
             for ( int i = 0; i <= widthTop; ++i )
             {
                 m_model.searchLines.push_back( LineEnds( Point( cvRound( ptTop.x ), cvRound( ptTop.y ) ),

@@ -60,7 +60,8 @@ void CalibStopSign::clear()
 }
 // symbolPoints are clockwise ordered with 0 being the topmost left point
 GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double octoSideLength, const cv::Rect rect,
-                                    const std::string &controlJson, std::vector< Point > &searchLineCorners )
+                                    const double moveSearchROIMultiplier, const std::string &controlJson,
+                                    std::vector< Point > &searchLineCorners )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -133,7 +134,9 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double octoSideLen
                                         if ( GC_OK == retVal )
                                         {
                                             model.imgSize = img.size();
-                                            retVal = CalcMoveSearchROI( model.pixelPoints, model.targetSearchRegion );
+                                            model.moveSearchROIMultiplier = moveSearchROIMultiplier;
+                                            retVal = CalcMoveSearchROI( img.size(), model.pixelPoints,
+                                                                        model.targetSearchRegion, moveSearchROIMultiplier );
                                         }
                                     }
                                 }
@@ -403,7 +406,8 @@ GC_STATUS CalibStopSign::GetSearchRegionBoundingRect( cv::Rect &rect )
     }
     return retVal;
 }
-GC_STATUS CalibStopSign::CalcMoveSearchROI( const std::vector< cv::Point2d > symbolCorners, cv::Rect &rect )
+GC_STATUS CalibStopSign::CalcMoveSearchROI( const cv::Size imgSize, const std::vector< cv::Point2d > symbolCorners,
+                                            cv::Rect &rect, const double moveSearchROIMultiplier )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -442,6 +446,14 @@ GC_STATUS CalibStopSign::CalcMoveSearchROI( const std::vector< cv::Point2d > sym
         {
             FILE_LOG( logERROR ) << "[CalibStopSign::CalcMoveSearchROI] Invalid move search ROI";
             retVal = GC_ERR;
+        }
+        if ( 0.0 < moveSearchROIMultiplier )
+        {
+            int lftWidth = cvRound( moveSearchROIMultiplier * static_cast< double >( rect.width ) );
+            int lftHeight = cvRound( moveSearchROIMultiplier * static_cast< double >( rect.height ) );
+            int lftX = std::min( 0, rect.x - ( lftWidth - rect.width ) / 2 );
+            int lftY = std::min( 0, rect.y - ( lftHeight - rect.height ) / 2 );
+            rect = Rect( lftX, lftY, std::min( imgSize.width - lftX, lftWidth ), std::min( imgSize.height - lftY, lftHeight ) );
         }
     }
     catch( Exception &e )
@@ -551,6 +563,7 @@ GC_STATUS CalibStopSign::Load( const std::string jsonCalFilepath )
 
             model.imgSize.width = ptreeTop.get< int >( "imageWidth", 0 );
             model.imgSize.height = ptreeTop.get< int >( "imageHeight", 0 );
+            model.moveSearchROIMultiplier = ptreeTop.get< double >( "moveSearchROIMultiplier", 0.0 );
             property_tree::ptree ptreeCalib = ptreeTop.get_child( "PixelToWorld" );
 
             Point2d ptTemp;
@@ -659,6 +672,7 @@ GC_STATUS CalibStopSign::Save( const std::string jsonCalFilepath )
                 fileStream << "  \"calibType\":\"StopSign\"" << "," << endl;
                 fileStream << "  \"imageWidth\":" << model.imgSize.width << "," << endl;
                 fileStream << "  \"imageHeight\":" << model.imgSize.height << "," << endl;
+                fileStream << "  \"moveSearchROIMultiplier\":" << model.moveSearchROIMultiplier * 100.0 << "," << endl;
                 fileStream << "  \"PixelToWorld\": " << endl;
                 fileStream << "  {" << endl;
                 fileStream << "    \"points\": [" << endl;
