@@ -304,11 +304,8 @@ GC_STATUS CalibExecutive::CalibrateStopSign( const cv::Mat &img, const string &c
         }
         else
         {
-            vector< Point > searchLineCorners;
-            searchLineCorners.push_back( paramsCurrent.lineSearch_lftTop );
-            searchLineCorners.push_back( paramsCurrent.lineSearch_rgtTop );
-            searchLineCorners.push_back( paramsCurrent.lineSearch_lftBot );
-            searchLineCorners.push_back( paramsCurrent.lineSearch_rgtBot );
+            vector< Point > searchLineCorners = { paramsCurrent.lineSearch_lftTop, paramsCurrent.lineSearch_rgtTop,
+                                                  paramsCurrent.lineSearch_lftBot, paramsCurrent.lineSearch_rgtBot };
 
             retVal = stopSign.Calibrate( img, paramsCurrent.stopSignFacetLength,
                                          paramsCurrent.targetSearchROI,
@@ -383,9 +380,12 @@ GC_STATUS CalibExecutive::CalibrateBowTie( const cv::Mat &img, const std::string
                                     worldPtArray.push_back( worldCoords[ i ][ j ] );
                                 }
                             }
+                            vector< Point > searchLineCorners = { paramsCurrent.lineSearch_lftTop, paramsCurrent.lineSearch_rgtTop,
+                                                                  paramsCurrent.lineSearch_lftBot, paramsCurrent.lineSearch_rgtBot };
+
                             retVal = bowTie.Calibrate( pixPtArray, worldPtArray,
                                                        static_cast< double >( paramsCurrent.moveSearchROIGrowPercent ) / 100.0,
-                                                       controlJson, Size( 2, 4 ), img.size() );
+                                                       controlJson, Size( 2, 4 ), img.size(), searchLineCorners );
                             if ( GC_OK == retVal )
                             {
                                 retVal = bowTie.Save( paramsCurrent.calibResultJsonFilepath );
@@ -481,11 +481,11 @@ std::vector< LineEnds > &CalibExecutive::SearchLines()
 {
     if ( "BowTie" == paramsCurrent.calibType )
     {
-        return bowTie.SearchLines();
+        return bowTie.SearchLineSet();
     }
     else if ( "StopSign" == paramsCurrent.calibType )
     {
-        return stopSign.SearchLines();
+        return stopSign.SearchLineSet();
     }
     FILE_LOG( logERROR ) << "[CalibExecutive::SearchLines] No calibration type currently set";
     return nullSearchLines;

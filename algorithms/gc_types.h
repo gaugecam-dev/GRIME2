@@ -126,7 +126,7 @@ public:
         gridSize( gridSz ),
         pixelPoints( pixelPts ),
         worldPoints( worldPts ),
-        searchLines( lineEndPts ),
+        searchLineSet( lineEndPts ),
         moveSearchRegionLft( mvSrchROILft ),
         moveSearchRegionRgt( mvSrchROIRgt ),
         moveSearchROIMultiplier( moveSearchROIMultiply ),
@@ -143,7 +143,7 @@ public:
         gridSize = cv::Size( -1, -1 );
         pixelPoints.clear();
         worldPoints.clear();
-        searchLines.clear();
+        searchLineSet.clear();
         moveSearchRegionLft = cv::Rect( -1, -1, -1, -1 );
         moveSearchRegionRgt = cv::Rect( -1, -1, -1, -1 );
         moveSearchROIMultiplier = 0.0;
@@ -155,7 +155,7 @@ public:
     cv::Size gridSize;                      ///< Dimensions of the calibration grid
     std::vector< cv::Point2d > pixelPoints; ///< Vector of pixel points ordered to match the world point vector
     std::vector< cv::Point2d > worldPoints; ///< Vector of world points ordered to match the pixel point vector
-    std::vector< LineEnds > searchLines;    ///< Vector of search lines to be searched for the water line
+    std::vector< LineEnds > searchLineSet;  ///< Vector of search lines to be searched for the water line
     cv::Rect moveSearchRegionLft;           ///< Left move search region (to search for top-left bowtie)
     cv::Rect moveSearchRegionRgt;           ///< Right move search region (to search for top-right bowtie)
     double moveSearchROIMultiplier;         ///< Move search region multiplier (based on nominal)
@@ -197,7 +197,7 @@ public:
         imgSize( imageSize ),
         pixelPoints( pixelPts ),
         worldPoints( worldPts ),
-        searchLines( lineEndPts ),
+        searchLineSet( lineEndPts ),
         targetSearchRegion( symbolSearchROI ),
         moveSearchROIMultiplier( moveSearchROIMultiply ),
         center( centerPoint ),
@@ -213,7 +213,7 @@ public:
         imgSize = cv::Size( -1, -1 );
         pixelPoints.clear();
         worldPoints.clear();
-        searchLines.clear();
+        searchLineSet.clear();
         targetSearchRegion = cv::Rect( -1, -1, -1, -1 );
         moveSearchROIMultiplier = 0.0;
         center = cv::Point2d( -1.0, -1.0 );
@@ -224,7 +224,7 @@ public:
     cv::Size imgSize;                       ///< Dimensions of the calibration image
     std::vector< cv::Point2d > pixelPoints; ///< Vector of pixel points ordered to match the world point vector
     std::vector< cv::Point2d > worldPoints; ///< Vector of world points ordered to match the pixel point vector
-    std::vector< LineEnds > searchLines;    ///< Vector of search lines to be searched for the water line
+    std::vector< LineEnds > searchLineSet;  ///< Vector of search lines to be searched for the water line
     cv::Rect targetSearchRegion;            ///< Region within which to perform line and move search
     double moveSearchROIMultiplier;         ///< Move search region multiplier (based on nominal)
     cv::Point2d center;                     ///< Center of symbol

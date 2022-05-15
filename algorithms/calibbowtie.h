@@ -84,7 +84,8 @@ public:
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
     GC_STATUS Calibrate( const std::vector< cv::Point2d > pixelPts, const std::vector< cv::Point2d > worldPts,
-                         const double moveSearchROIMultiplier, const std::string &controlJson, const cv::Size gridSize, const cv::Size imgSize );
+                         const double moveSearchROIMultiplier, const std::string &controlJson, const cv::Size gridSize,
+                         const cv::Size imgSize, std::vector< cv::Point > &searchLineCorners );
     /**
      * @brief Load a calibration model from a json file
      *
@@ -190,7 +191,7 @@ public:
      * @brief Returns a vector of search lines along which an image is search for a water level line.
      * @return A vector of LineEnds that represent search lines
      */
-    std::vector< LineEnds > &SearchLines() { return m_model.searchLines; }
+    std::vector< LineEnds > &SearchLineSet() { return m_model.searchLineSet; }
 
     /**
      * @brief Returns the current "whole target region" within which the calibration takes place.
@@ -213,8 +214,6 @@ private:
     // std::vector< double > m_worldToPixParams;
 
     CalibModelBowtie m_model;
-
-    GC_STATUS CalcSearchSwaths();
 };
 
 }   // namespace gc

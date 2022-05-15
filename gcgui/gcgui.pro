@@ -53,6 +53,7 @@ SOURCES += \
 	../algorithms/findline.cpp \
 	../algorithms/gifanim/gifanim.cpp \
 	../algorithms/metadata.cpp \
+    ../algorithms/searchlines.cpp \
         ../algorithms/visapp.cpp \
         guivisapp.cpp \
         main.cpp \
@@ -72,6 +73,7 @@ HEADERS += \
 	../algorithms/gifanim/gifanim.h \
         ../algorithms/log.h \
         ../algorithms/metadata.h \
+    ../algorithms/searchlines.h \
         ../algorithms/timestampconvert.h \
         ../algorithms/visapp.h \
         ../algorithms/wincmd.h \

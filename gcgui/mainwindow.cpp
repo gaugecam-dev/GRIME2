@@ -1166,7 +1166,8 @@ void MainWindow::on_pushButton_visionCalibrate_clicked()
         ret = m_roiAdjust.FormBowtieCalibJsonString( ui->lineEdit_calibVisionTarget_csv->text().toStdString(),
                                                      ui->lineEdit_calibVisionResult_json->text().toStdString(),
                                                      ui->checkBox_calibSearchROI->isChecked(), m_rectROI,
-                                                     ui->spinBox_moveSearchROIGrowPercent->value() + 100, jsonControlStr );
+                                                     ui->spinBox_moveSearchROIGrowPercent->value() + 100,
+                                                     m_lineSearchPoly, jsonControlStr );
     }
     else if ( ui->radioButton_calibStopSign->isChecked() )
     {

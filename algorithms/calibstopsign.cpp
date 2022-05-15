@@ -13,9 +13,10 @@
 #include <iostream>
 #include <algorithm>
 #include <iterator>
+#include "searchlines.h"
 
-#ifndef DEBUG_FIND_CALIB_SYMBOL
-#define DEBUG_FIND_CALIB_SYMBOL
+#ifdef DEBUG_FIND_CALIB_SYMBOL
+#undef DEBUG_FIND_CALIB_SYMBOL
 #include <iostream>
 #include <opencv2/imgcodecs.hpp>
 #include <boost/filesystem.hpp>
@@ -26,7 +27,6 @@ static const double MIN_SYMBOL_CONTOUR_SIZE = 50;
 static const double MIN_SYMBOL_CONTOUR_AREA = 1500;
 static const int MIN_SYMBOL_CONTOUR_LENGTH = 7;
 static const double MAX_SYMBOL_CONTOUR_ELONG = 1.5;
-static const double MIN_SEARCH_LINE_LENGTH = 120.0;
 static const double MOVE_ROI_RATIO_INCREASE = 0.15;
 using namespace cv;
 using namespace std;
@@ -36,8 +36,6 @@ namespace gc
 {
 
 static double elongation( Moments m );
-static double DISTANCE( Point2d a, Point2d b ) { return sqrt( ( b.x - a.x ) * ( b.x - a.x ) +
-                                                              ( b.y - a.y ) * ( b.y - a.y ) ); }
 
 CalibStopSign::CalibStopSign()
 {
@@ -127,7 +125,8 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double octoSideLen
                                 retVal = CreateCalibration( model.pixelPoints, model.worldPoints );
                                 if ( GC_OK == retVal )
                                 {
-                                    retVal = CalcSearchLines( img, searchLineCorners, model.searchLines );
+                                    SearchLines searchLines;
+                                    retVal = searchLines.CalcSearchLines( searchLineCorners, model.searchLineSet );
                                     if ( GC_OK == retVal )
                                     {
                                         retVal = CalcCenterAngle( model.worldPoints, model.center, model.angle );
@@ -146,7 +145,7 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double octoSideLen
                 }
             }
         }
-        if ( model.pixelPoints.empty() || model.worldPoints.empty() || model.searchLines.empty() )
+        if ( model.pixelPoints.empty() || model.worldPoints.empty() || model.searchLineSet.empty() )
         {
             FILE_LOG( logERROR ) << "[CalibStopSign::Calibrate] No valid calibration for drawing";
             retVal = GC_ERR;
@@ -242,7 +241,7 @@ GC_STATUS CalibStopSign::FindMoveTarget( const cv::Mat &img, FindPointSet &findP
                 }
             }
         }
-        if ( model.pixelPoints.empty() || model.worldPoints.empty() || model.searchLines.empty() )
+        if ( model.pixelPoints.empty() || model.worldPoints.empty() || model.searchLineSet.empty() )
         {
             FILE_LOG( logERROR ) << "[CalibStopSign::Calibrate] No valid calibration for drawing";
             retVal = GC_ERR;
@@ -353,49 +352,22 @@ GC_STATUS CalibStopSign::MoveRefPoint( cv::Point2d &lftRefPt, cv::Point2d &rgtRe
     }
     return retVal;
 }
-GC_STATUS CalibStopSign::GetLineEquation( const cv::Point2d pt1, const cv::Point2d pt2, double &slope, double &intercept )
-{
-    GC_STATUS retVal = GC_OK;
-
-    try
-    {
-        double deltaX = pt2.x - pt1.x;
-        double deltaY = pt2.y - pt1.y;
-        if ( numeric_limits< double >::epsilon() > deltaX )
-        {
-            FILE_LOG( logERROR ) << "[CalibStopSign::GetLineEquation] Invalid points: pt1 and pt2 cannot have the same value of X";
-            retVal = GC_ERR;
-        }
-        else
-        {
-            slope = deltaY / deltaX;
-            intercept = pt2.y - slope * pt2.x;
-        }
-    }
-    catch( Exception &e )
-    {
-        FILE_LOG( logERROR ) << "[CalibStopSign::GetLineEquation] " << e.what();
-        retVal = GC_EXCEPT;
-    }
-
-    return retVal;
-}
 GC_STATUS CalibStopSign::GetSearchRegionBoundingRect( cv::Rect &rect )
 {
     GC_STATUS retVal = GC_OK;
     try
     {
-        if ( model.searchLines.empty() )
+        if ( model.searchLineSet.empty() )
         {
             FILE_LOG( logERROR ) << "[CalibStopSign::GetSearchRegionBoundingRect] System not calibrated";
             retVal = GC_ERR;
         }
         else
         {
-            int left = std::min( model.searchLines[ 0 ].top.x, model.searchLines[ 0 ].bot.x );
-            int top = std::min( model.searchLines[ 0 ].top.y, model.searchLines[ model.searchLines.size() - 1 ].top.y );
-            int right = std::max( model.searchLines[ model.searchLines.size() - 1 ].top.x, model.searchLines[ model.searchLines.size() - 1 ].bot.x );
-            int bottom = std::max( model.searchLines[ 0 ].bot.y, model.searchLines[ model.searchLines.size() - 1 ].bot.y );
+            int left = std::min( model.searchLineSet[ 0 ].top.x, model.searchLineSet[ 0 ].bot.x );
+            int top = std::min( model.searchLineSet[ 0 ].top.y, model.searchLineSet[ model.searchLineSet.size() - 1 ].top.y );
+            int right = std::max( model.searchLineSet[ model.searchLineSet.size() - 1 ].top.x, model.searchLineSet[ model.searchLineSet.size() - 1 ].bot.x );
+            int bottom = std::max( model.searchLineSet[ 0 ].bot.y, model.searchLineSet[ model.searchLineSet.size() - 1 ].bot.y );
             rect = Rect( left, top, right - left, bottom - top );
         }
     }
@@ -463,85 +435,6 @@ GC_STATUS CalibStopSign::CalcMoveSearchROI( const cv::Size imgSize, const std::v
     }
     return retVal;
 }
-GC_STATUS CalibStopSign::CalcSearchLines( const Mat &img, vector< Point > &searchLineCorners, std::vector< LineEnds > &searchLines )
-{
-    GC_STATUS retVal = GC_OK;
-
-    try
-    {
-        if ( img.empty() )
-        {
-            FILE_LOG( logERROR ) << "[CalibStopSign::CalcSearchLines] Invalid input image";
-            retVal = GC_ERR;
-        }
-        else if ( 4 != searchLineCorners.size() )
-        {
-            FILE_LOG( logERROR ) << "[CalibStopSign::CalcSearchLines] Invalid search line corner point count. Must be 4";
-            retVal = GC_ERR;
-        }
-        else
-        {
-            sort( searchLineCorners.begin(), searchLineCorners.end(), []( Point const &a, Point const &b ) { return ( a.y < b.y ); } );
-
-            const Point lftTop = searchLineCorners[ searchLineCorners[ 0 ].x > searchLineCorners[ 1 ].x ? 1 : 0 ];
-            const Point rgtTop = searchLineCorners[ searchLineCorners[ 0 ].x > searchLineCorners[ 1 ].x ? 0 : 1 ];
-            const Point lftBot = searchLineCorners[ searchLineCorners[ 2 ].x > searchLineCorners[ 3 ].x ? 3 : 2 ];
-            const Point rgtBot = searchLineCorners[ searchLineCorners[ 2 ].x > searchLineCorners[ 3 ].x ? 2 : 3 ];
-
-            searchLines.clear();
-            searchLines.push_back( LineEnds( lftTop, lftBot ) );
-
-            int widthTop = rgtTop.x - lftTop.x;
-            int widthBot = rgtBot.x - lftBot.x;
-            int width = std::max( widthTop, widthBot );
-            double topInc = static_cast< double >( widthTop ) / static_cast< double >( width );
-            double botInc = static_cast< double >( widthBot ) / static_cast< double >( width );
-
-            double slopeTop, interceptTop;
-            retVal = GetLineEquation( lftTop, rgtTop, slopeTop, interceptTop );
-            if ( GC_OK == retVal )
-            {
-                double slopeBot, interceptBot;
-                retVal = GetLineEquation( lftBot, rgtBot, slopeBot, interceptBot );
-                if ( GC_OK == retVal )
-                {
-                    double topY, botY;
-                    double topX = static_cast< double >( lftTop.x );
-                    double botX = static_cast< double >( lftBot.x );
-
-                    for ( int i = 0; i < width; ++i )
-                    {
-                        topX += topInc;
-                        botX += botInc;
-                        topY = slopeTop * topX + interceptTop;
-                        botY = slopeBot * botX + interceptBot;
-                        if ( MIN_SEARCH_LINE_LENGTH > DISTANCE( Point2d( topX, topY ), Point2d( botX, botY ) ) )
-                        {
-                            FILE_LOG( logERROR ) << "[CalibStopSign::CalcSearchLines] Search region not tall enough";
-                            retVal = GC_ERR;
-                            break;
-                        }
-                        if ( GC_ERR == retVal )
-                        {
-                            break;
-                        }
-                        searchLines.push_back( LineEnds( Point2d( topX, topY ), Point2d( botX, botY ) ) );
-                    }
-                    searchLines.push_back( LineEnds( rgtTop, rgtBot ) );
-                }
-            }
-        }
-
-        return retVal;
-    }
-    catch( Exception &e )
-    {
-        FILE_LOG( logERROR ) << "[CalibStopSign::CalcSearchLines] " << e.what();
-        retVal = GC_EXCEPT;
-    }
-
-    return retVal;
-}
 GC_STATUS CalibStopSign::Load( const std::string jsonCalFilepath )
 {
     GC_STATUS retVal = GC_OK;
@@ -587,14 +480,14 @@ GC_STATUS CalibStopSign::Load( const std::string jsonCalFilepath )
             model.targetSearchRegion.height = ptreeMoveSearch.get< int >( "height", 0 );
 
             Point ptTop, ptBot;
-            model.searchLines.clear();
+            model.searchLineSet.clear();
             BOOST_FOREACH( property_tree::ptree::value_type &node, ptreeTop.get_child( "SearchLines" ) )
             {
                 ptTop.x = node.second.get< int >( "topX", std::numeric_limits< int >::min() );
                 ptTop.y = node.second.get< int >( "topY", std::numeric_limits< int >::min() );
                 ptBot.x = node.second.get< int >( "botX", std::numeric_limits< int >::min() );
                 ptBot.y = node.second.get< int >( "botY", std::numeric_limits< int >::min() );
-                model.searchLines.push_back( LineEnds( ptTop, ptBot ) );
+                model.searchLineSet.push_back( LineEnds( ptTop, ptBot ) );
             }
 
 #ifdef LOG_CALIB_VALUES
@@ -651,7 +544,7 @@ GC_STATUS CalibStopSign::Save( const std::string jsonCalFilepath )
     GC_STATUS retVal = GC_OK;
 
     if ( model.pixelPoints.empty() || model.worldPoints.empty() ||
-         model.pixelPoints.size() != model.worldPoints.size() || model.searchLines.empty() )
+         model.pixelPoints.size() != model.worldPoints.size() || model.searchLineSet.empty() )
     {
         FILE_LOG( logERROR ) << "[CalibStopSign::Save] Empty cal point vector(s). Saves not possible without a calibrated object";
         retVal = GC_ERR;
@@ -699,17 +592,17 @@ GC_STATUS CalibStopSign::Save( const std::string jsonCalFilepath )
                                     "\"height\": " << model.targetSearchRegion.height << endl;
                 fileStream << "  }," << endl;
                 fileStream << "  \"SearchLines\": [" << endl;
-                for ( size_t i = 0; i < model.searchLines.size() - 1; ++i )
+                for ( size_t i = 0; i < model.searchLineSet.size() - 1; ++i )
                 {
-                    fileStream << "      { \"topX\": " << model.searchLines[ i ].top.x << ", " << \
-                                          "\"topY\": " << model.searchLines[ i ].top.y << ", " << \
-                                          "\"botX\": " << model.searchLines[ i ].bot.x << ", " << \
-                                          "\"botY\": " << model.searchLines[ i ].bot.y << " }," << endl;
+                    fileStream << "      { \"topX\": " << model.searchLineSet[ i ].top.x << ", " << \
+                                          "\"topY\": " << model.searchLineSet[ i ].top.y << ", " << \
+                                          "\"botX\": " << model.searchLineSet[ i ].bot.x << ", " << \
+                                          "\"botY\": " << model.searchLineSet[ i ].bot.y << " }," << endl;
                 }
-                fileStream << "      { \"topX\": " << model.searchLines[ model.searchLines.size() - 1 ].top.x << ", " << \
-                                      "\"topY\": " << model.searchLines[ model.searchLines.size() - 1 ].top.y << ", " << \
-                                      "\"botX\": " << model.searchLines[ model.searchLines.size() - 1 ].bot.x << ", " << \
-                                      "\"botY\": " << model.searchLines[ model.searchLines.size() - 1 ].bot.y << " }" << endl;
+                fileStream << "      { \"topX\": " << model.searchLineSet[ model.searchLineSet.size() - 1 ].top.x << ", " << \
+                                      "\"topY\": " << model.searchLineSet[ model.searchLineSet.size() - 1 ].top.y << ", " << \
+                                      "\"botX\": " << model.searchLineSet[ model.searchLineSet.size() - 1 ].bot.x << ", " << \
+                                      "\"botY\": " << model.searchLineSet[ model.searchLineSet.size() - 1 ].bot.y << " }" << endl;
                 fileStream << "  ]," << endl;
 
                 string escaped;
@@ -1591,7 +1484,7 @@ GC_STATUS CalibStopSign::DrawOverlay( const cv::Mat &img, cv::Mat &result, const
                 }
                 if ( drawSearchROI )
                 {
-                    if ( model.searchLines.empty() )
+                    if ( model.searchLineSet.empty() )
                     {
                         putText( result, "NO SEARCH REGION SET", Point( 50, result.cols - 100 ), FONT_HERSHEY_PLAIN, fontScale, Scalar( 0, 0, 255 ), 3 );
                         rectangle( result, Rect( 100, 100, result.cols - 200, result.rows - 200 ), Scalar( 0, 0, 255 ), 3 );
@@ -1600,10 +1493,10 @@ GC_STATUS CalibStopSign::DrawOverlay( const cv::Mat &img, cv::Mat &result, const
                     }
                     else
                     {
-                        line( result, model.searchLines[ 0 ].top, model.searchLines[ 0 ].bot, Scalar( 255, 0, 0 ), textStroke );
-                        line( result, model.searchLines[ 0 ].top, model.searchLines[ model.searchLines.size() - 1 ].top, Scalar( 255, 0, 0 ), textStroke );
-                        line( result, model.searchLines[ model.searchLines.size() - 1 ].top, model.searchLines[ model.searchLines.size() - 1 ].bot, Scalar( 255, 0, 0 ), textStroke );
-                        line( result, model.searchLines[ 0 ].bot, model.searchLines[ model.searchLines.size() - 1 ].bot, Scalar( 255, 0, 0 ), textStroke );
+                        line( result, model.searchLineSet[ 0 ].top, model.searchLineSet[ 0 ].bot, Scalar( 255, 0, 0 ), textStroke );
+                        line( result, model.searchLineSet[ 0 ].top, model.searchLineSet[ model.searchLineSet.size() - 1 ].top, Scalar( 255, 0, 0 ), textStroke );
+                        line( result, model.searchLineSet[ model.searchLineSet.size() - 1 ].top, model.searchLineSet[ model.searchLineSet.size() - 1 ].bot, Scalar( 255, 0, 0 ), textStroke );
+                        line( result, model.searchLineSet[ 0 ].bot, model.searchLineSet[ model.searchLineSet.size() - 1 ].bot, Scalar( 255, 0, 0 ), textStroke );
                     }
                 }
             }

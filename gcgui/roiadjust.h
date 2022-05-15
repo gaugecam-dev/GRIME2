@@ -55,8 +55,9 @@ class RoiAdjust
 public:
     RoiAdjust();
 
-    int FormBowtieCalibJsonString( const std::string csvFilepath, const std::string jsonResultFilepath, const bool useSearchROI,
-                                   const QRect rectROI, const int moveSearchROIGrowPercent, std::string &json );
+    int FormBowtieCalibJsonString( const std::string csvFilepath, const std::string jsonResultFilepath,
+                                   const bool useSearchROI, const QRect rectROI, const int moveSearchROIGrowPercent,
+                                   const LineSearchPoly searchPoly, std::string &json );
     int FormStopsignCalibJsonString( const std::string csvFilepath, const std::string jsonResultFilepath,
                                      const bool useSearchROI, const QRect rectROI, const int moveSearchROIGrowPercent,
                                      const bool fromFacetLength, const double facetLength, const bool isRedStopsign,

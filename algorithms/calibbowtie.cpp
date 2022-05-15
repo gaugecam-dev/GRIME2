@@ -16,7 +16,6 @@
 
 #include "log.h"
 #include "calibbowtie.h"
-#include "findline.h"
 #include <vector>
 #include <limits>
 #include <cmath>
@@ -30,9 +29,11 @@
 #include <boost/exception/exception.hpp>
 #include <boost/exception/diagnostic_information.hpp>
 #include <boost/format.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/imgproc.hpp>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/imgcodecs.hpp>
+#include "findline.h"
+#include "searchlines.h"
 
 #ifdef __DEBUG_CALIB
 #undef __DEBUG_CALIB
@@ -63,9 +64,9 @@ void CalibBowtie::clear()
     m_matHomogWorldToPix = Mat();
     // m_worldToPixParams.clear();
 }
-GC_STATUS CalibBowtie::Calibrate( const vector< Point2d > pixelPts, const vector< Point2d > worldPts,
-                                  const double moveSearchROIMultiplier, const std::string &controlJson,
-                                  const Size gridSize, const Size imgSize )
+GC_STATUS CalibBowtie::Calibrate( const std::vector< cv::Point2d > pixelPts, const std::vector< cv::Point2d > worldPts,
+                                  const double moveSearchROIMultiplier, const std::string &controlJson, const cv::Size gridSize,
+                                  const cv::Size imgSize, std::vector< cv::Point > &searchLineCorners )
 {
     GC_STATUS retVal = GC_OK;
     if ( pixelPts.size() != worldPts.size() || pixelPts.empty() || worldPts.empty() ||
@@ -92,8 +93,11 @@ GC_STATUS CalibBowtie::Calibrate( const vector< Point2d > pixelPts, const vector
             m_matHomogPixToWorld = findHomography( m_model.pixelPoints, m_model.worldPoints );
             invert( m_matHomogPixToWorld, m_matHomogWorldToPix );
 
-
-            retVal = CalcSearchSwaths();
+            if ( !searchLineCorners.empty() )
+            {
+                SearchLines searchLines;
+                retVal = searchLines.CalcSearchLines( searchLineCorners, m_model.searchLineSet );
+            }
             if ( GC_OK == retVal )
             {
                 m_model.moveSearchROIMultiplier = moveSearchROIMultiplier;
@@ -144,7 +148,7 @@ GC_STATUS CalibBowtie::Calibrate( const vector< Point2d > pixelPts, const vector
 
                 m_model.wholeTargetRegion = Rect( left, top, width, height );
             }
-            if ( m_model.pixelPoints.empty() || m_model.worldPoints.empty() || m_model.searchLines.empty() )
+            if ( m_model.pixelPoints.empty() || m_model.worldPoints.empty() || m_model.searchLineSet.empty() )
             {
                 FILE_LOG( logERROR ) << "[CalibBowtie::Calibrate] No valid calibration for drawing";
                 retVal = GC_ERR;
@@ -172,17 +176,17 @@ GC_STATUS CalibBowtie::GetSearchRegionBoundingRect( cv::Rect &rect )
     GC_STATUS retVal = GC_OK;
     try
     {
-        if ( m_model.searchLines.empty() )
+        if ( m_model.searchLineSet.empty() )
         {
             FILE_LOG( logERROR ) << "[CalibBowtie::GetSearchRegionBoundingRect] System not calibrated";
             retVal = GC_ERR;
         }
         else
         {
-            int left = std::min( m_model.searchLines[ 0 ].top.x, m_model.searchLines[ 0 ].bot.x );
-            int top = std::min( m_model.searchLines[ 0 ].top.y, m_model.searchLines[ m_model.searchLines.size() - 1 ].top.y );
-            int right = std::max( m_model.searchLines[ m_model.searchLines.size() - 1 ].top.x, m_model.searchLines[ m_model.searchLines.size() - 1 ].bot.x );
-            int bottom = std::max( m_model.searchLines[ 0 ].bot.y, m_model.searchLines[ m_model.searchLines.size() - 1 ].bot.y );
+            int left = std::min( m_model.searchLineSet[ 0 ].top.x, m_model.searchLineSet[ 0 ].bot.x );
+            int top = std::min( m_model.searchLineSet[ 0 ].top.y, m_model.searchLineSet[ m_model.searchLineSet.size() - 1 ].top.y );
+            int right = std::max( m_model.searchLineSet[ m_model.searchLineSet.size() - 1 ].top.x, m_model.searchLineSet[ m_model.searchLineSet.size() - 1 ].bot.x );
+            int bottom = std::max( m_model.searchLineSet[ 0 ].bot.y, m_model.searchLineSet[ m_model.searchLineSet.size() - 1 ].bot.y );
             rect = Rect( left, top, right - left, bottom - top );
         }
     }
@@ -213,7 +217,7 @@ GC_STATUS CalibBowtie::DrawOverlay( const cv::Mat img, cv::Mat &imgOut, const bo
             retVal = GC_ERR;
         }
 
-        if ( m_model.pixelPoints.empty() || m_model.worldPoints.empty() || m_model.searchLines.empty() )
+        if ( m_model.pixelPoints.empty() || m_model.worldPoints.empty() || m_model.searchLineSet.empty() )
         {
             FILE_LOG( logERROR ) << "[CalibBowtie::DrawOverlay] No valid calibration for drawing";
             retVal = GC_ERR;
@@ -239,17 +243,17 @@ GC_STATUS CalibBowtie::DrawOverlay( const cv::Mat img, cv::Mat &imgOut, const bo
 
             if ( drawSearchROI )
             {
-                if ( m_model.searchLines.empty() )
+                if ( m_model.searchLineSet.empty() )
                 {
                     FILE_LOG( logWARNING ) << "[CalibBowtie::Calibrate] Search lines not calculated properly so they cannot be drawn";
                     retVal = GC_WARN;
                 }
                 else
                 {
-                    line( imgOut, m_model.searchLines[ 0 ].top, m_model.searchLines[ 0 ].bot, Scalar( 255, 0, 0 ), textStroke );
-                    line( imgOut, m_model.searchLines[ 0 ].top, m_model.searchLines[ m_model.searchLines.size() - 1 ].top, Scalar( 255, 0, 0 ), textStroke );
-                    line( imgOut, m_model.searchLines[ m_model.searchLines.size() - 1 ].top, m_model.searchLines[ m_model.searchLines.size() - 1 ].bot, Scalar( 255, 0, 0 ), textStroke );
-                    line( imgOut, m_model.searchLines[ 0 ].bot, m_model.searchLines[ m_model.searchLines.size() - 1 ].bot, Scalar( 255, 0, 0 ), textStroke );
+                    line( imgOut, m_model.searchLineSet[ 0 ].top, m_model.searchLineSet[ 0 ].bot, Scalar( 255, 0, 0 ), textStroke );
+                    line( imgOut, m_model.searchLineSet[ 0 ].top, m_model.searchLineSet[ m_model.searchLineSet.size() - 1 ].top, Scalar( 255, 0, 0 ), textStroke );
+                    line( imgOut, m_model.searchLineSet[ m_model.searchLineSet.size() - 1 ].top, m_model.searchLineSet[ m_model.searchLineSet.size() - 1 ].bot, Scalar( 255, 0, 0 ), textStroke );
+                    line( imgOut, m_model.searchLineSet[ 0 ].bot, m_model.searchLineSet[ m_model.searchLineSet.size() - 1 ].bot, Scalar( 255, 0, 0 ), textStroke );
                 }
             }
 
@@ -541,14 +545,14 @@ GC_STATUS CalibBowtie::Load( const string &jsonCalibString )
             }
 
             Point ptTop, ptBot;
-            m_model.searchLines.clear();
+            m_model.searchLineSet.clear();
             BOOST_FOREACH( property_tree::ptree::value_type &node, ptreeTop.get_child( "SearchLines" ) )
             {
                 ptTop.x = node.second.get< int >( "topX", std::numeric_limits< int >::min() );
                 ptTop.y = node.second.get< int >( "topY", std::numeric_limits< int >::min() );
                 ptBot.x = node.second.get< int >( "botX", std::numeric_limits< int >::min() );
                 ptBot.y = node.second.get< int >( "botY", std::numeric_limits< int >::min() );
-                m_model.searchLines.push_back( LineEnds( ptTop, ptBot ) );
+                m_model.searchLineSet.push_back( LineEnds( ptTop, ptBot ) );
             }
 
 #ifdef LOG_CALIB_VALUES
@@ -578,8 +582,9 @@ GC_STATUS CalibBowtie::Load( const string &jsonCalibString )
                 m_model.controlJson = ptreeTop.get< string >( "control_json", "{}" );
 
                 Mat matIn, matOut;
+                vector< Point > searchLineCorners = {};
                 retVal = Calibrate( m_model.pixelPoints, m_model.worldPoints, m_model.moveSearchROIMultiplier,
-                                    m_model.controlJson, m_model.gridSize, m_model.imgSize );
+                                    m_model.controlJson, m_model.gridSize, m_model.imgSize, searchLineCorners );
             }
 #ifdef LOG_CALIB_VALUES
             FILE_LOG( logINFO ) << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
@@ -608,7 +613,7 @@ GC_STATUS CalibBowtie::Save( const string jsonCalFilepath )
 
     if ( m_model.pixelPoints.empty() || m_model.worldPoints.empty() ||
          m_model.pixelPoints.size() != m_model.worldPoints.size() ||
-         2 > m_model.gridSize.width || 4 > m_model.gridSize.height || m_model.searchLines.empty() )
+         2 > m_model.gridSize.width || 4 > m_model.gridSize.height || m_model.searchLineSet.empty() )
     {
         FILE_LOG( logERROR ) << "[CalibBowtie::Save] Invalid calib grid dimension(s) or empty cal point vector(s)";
         retVal = GC_ERR;
@@ -664,17 +669,17 @@ GC_STATUS CalibBowtie::Save( const string jsonCalFilepath )
                                     "\"height\": " << m_model.wholeTargetRegion.height << " }" << endl;
                 fileStream << "  }," << endl;
                 fileStream << "  \"SearchLines\": [" << endl;
-                for ( size_t i = 0; i < m_model.searchLines.size() - 1; ++i )
+                for ( size_t i = 0; i < m_model.searchLineSet.size() - 1; ++i )
                 {
-                    fileStream << "      { \"topX\": " << m_model.searchLines[ i ].top.x << ", " << \
-                                          "\"topY\": " << m_model.searchLines[ i ].top.y << ", " << \
-                                          "\"botX\": " << m_model.searchLines[ i ].bot.x << ", " << \
-                                          "\"botY\": " << m_model.searchLines[ i ].bot.y << " }," << endl;
+                    fileStream << "      { \"topX\": " << m_model.searchLineSet[ i ].top.x << ", " << \
+                                          "\"topY\": " << m_model.searchLineSet[ i ].top.y << ", " << \
+                                          "\"botX\": " << m_model.searchLineSet[ i ].bot.x << ", " << \
+                                          "\"botY\": " << m_model.searchLineSet[ i ].bot.y << " }," << endl;
                 }
-                fileStream << "      { \"topX\": " << m_model.searchLines[ m_model.searchLines.size() - 1 ].top.x << ", " << \
-                                      "\"topY\": " << m_model.searchLines[ m_model.searchLines.size() - 1 ].top.y << ", " << \
-                                      "\"botX\": " << m_model.searchLines[ m_model.searchLines.size() - 1 ].bot.x << ", " << \
-                                      "\"botY\": " << m_model.searchLines[ m_model.searchLines.size() - 1 ].bot.y << " }" << endl;
+                fileStream << "      { \"topX\": " << m_model.searchLineSet[ m_model.searchLineSet.size() - 1 ].top.x << ", " << \
+                                      "\"topY\": " << m_model.searchLineSet[ m_model.searchLineSet.size() - 1 ].top.y << ", " << \
+                                      "\"botX\": " << m_model.searchLineSet[ m_model.searchLineSet.size() - 1 ].bot.x << ", " << \
+                                      "\"botY\": " << m_model.searchLineSet[ m_model.searchLineSet.size() - 1 ].bot.y << " }" << endl;
                 fileStream << "  ]," << endl;
 
                 string escaped;
@@ -705,68 +710,13 @@ GC_STATUS CalibBowtie::Save( const string jsonCalFilepath )
 
     return retVal;
 }
-GC_STATUS CalibBowtie::CalcSearchSwaths()
-{
-    GC_STATUS retVal = GC_OK;
-
-    if ( m_model.pixelPoints.empty() || m_model.worldPoints.empty() ||
-         m_model.pixelPoints.size() != m_model.worldPoints.size() ||
-         2 > m_model.gridSize.width || 4 > m_model.gridSize.height )
-    {
-        FILE_LOG( logERROR ) << "[CalibBowtie::CalcSearchSwaths] Invalid calib grid dimension(s) or empty cal point vector(s)";
-        retVal = GC_ERR;
-    }
-    else
-    {
-        try
-        {
-            int widthTop = cvRound( ( m_model.pixelPoints[ static_cast< size_t >( m_model.gridSize.width ) - 1 ].x - m_model.pixelPoints[ 0 ].x )  / 3.0 );
-            double widthBot = ( m_model.pixelPoints[ static_cast< size_t >( m_model.gridSize.width * m_model.gridSize.height ) - 1 ].x -
-                                m_model.pixelPoints[ static_cast< size_t >( m_model.gridSize.width * ( m_model.gridSize.height - 1 ) ) ].x ) / 3.0;
-            int height = cvRound( ( m_model.pixelPoints[ static_cast< size_t >( m_model.gridSize.width * ( m_model.gridSize.height - 1 ) ) ].y - m_model.pixelPoints[ 0 ].y ) * 1.25 );
-            double topLftX = m_model.pixelPoints[ 0 ].x + static_cast< double >( widthTop );
-            double topLftY = m_model.pixelPoints[ 0 ].y - ( static_cast< double >( height ) / 8.0 ) + static_cast< double >( height >> 4 );
-            double botLftX = m_model.pixelPoints[ static_cast< size_t >( m_model.gridSize.width * ( m_model.gridSize.height - 1 ) ) ].x + static_cast< double >( widthBot );
-            double botLftY = m_model.pixelPoints[ static_cast< size_t >( m_model.gridSize.width * ( m_model.gridSize.height - 1 ) ) ].y + static_cast< double >( height ) / 8.0 + static_cast< double >( height >> 4 );
-            botLftY = std::min( botLftY, static_cast< double >( m_model.imgSize.height - 1 ) );
-
-            double xInc = 1.0;
-            double xIncBot = widthBot / static_cast< double >( widthTop );
-            double yInc = ( m_model.pixelPoints[ static_cast< size_t >( m_model.gridSize.width ) - 1 ].y - m_model.pixelPoints[ 0 ].y ) / ( static_cast< double >( height ) * 3.0 );
-
-            m_model.searchLines.clear();
-            Point2d ptTop = Point2d( topLftX, topLftY );
-#if 1
-            Point2d ptBot = Point2d( botLftX, botLftY );
-#else // FOR JESSICA
-            Point2d ptBot = Point2d( botLftX, botLftY - 70 );  // FOR JESSICA
-#endif
-            for ( int i = 0; i <= widthTop; ++i )
-            {
-                m_model.searchLines.push_back( LineEnds( Point( cvRound( ptTop.x ), cvRound( ptTop.y ) ),
-                                                         Point( cvRound( ptBot.x ), cvRound( ptBot.y ) ) ) );
-                ptTop.x += xInc;
-                ptTop.y += yInc;
-                ptBot.x += xIncBot;
-                ptBot.y += yInc;
-            }
-        }
-        catch( boost::exception &e )
-        {
-            FILE_LOG( logERROR ) << "[CalibBowtie::CalcSearchSwaths] " << diagnostic_information( e );
-            retVal = GC_EXCEPT;
-        }
-    }
-
-    return retVal;
-}
 string CalibBowtie::ModelJsonString()
 {
     stringstream ss;
 
     if ( m_model.pixelPoints.empty() || m_model.worldPoints.empty() ||
          m_model.pixelPoints.size() != m_model.worldPoints.size() ||
-         2 > m_model.gridSize.width || 4 > m_model.gridSize.height || m_model.searchLines.empty() )
+         2 > m_model.gridSize.width || 4 > m_model.gridSize.height || m_model.searchLineSet.empty() )
     {
         FILE_LOG( logERROR ) << "[CalibBowtie::SettingsJsonString] Invalid calib grid dimension(s) or empty cal point vector(s)";
     }
@@ -807,17 +757,17 @@ string CalibBowtie::ModelJsonString()
                                 "\"height\": " << m_model.moveSearchRegionRgt.height << " }" << endl;
             ss << "  }," << endl;
             ss << "  \"SearchLines\": [" << endl;
-            for ( size_t i = 0; i < m_model.searchLines.size() - 1; ++i )
+            for ( size_t i = 0; i < m_model.searchLineSet.size() - 1; ++i )
             {
-                ss << "      { \"topX\": " << m_model.searchLines[ i ].top.x << ", " << \
-                                      "\"topY\": " << m_model.searchLines[ i ].top.y << ", " << \
-                                      "\"botX\": " << m_model.searchLines[ i ].bot.x << ", " << \
-                                      "\"botY\": " << m_model.searchLines[ i ].bot.y << " }," << endl;
+                ss << "      { \"topX\": " << m_model.searchLineSet[ i ].top.x << ", " << \
+                                      "\"topY\": " << m_model.searchLineSet[ i ].top.y << ", " << \
+                                      "\"botX\": " << m_model.searchLineSet[ i ].bot.x << ", " << \
+                                      "\"botY\": " << m_model.searchLineSet[ i ].bot.y << " }," << endl;
             }
-            ss << "      { \"topX\": " << m_model.searchLines[ m_model.searchLines.size() - 1 ].top.x << ", " << \
-                                  "\"topY\": " << m_model.searchLines[ m_model.searchLines.size() - 1 ].top.y << ", " << \
-                                  "\"botX\": " << m_model.searchLines[ m_model.searchLines.size() - 1 ].bot.x << ", " << \
-                                  "\"botY\": " << m_model.searchLines[ m_model.searchLines.size() - 1 ].bot.y << " }" << endl;
+            ss << "      { \"topX\": " << m_model.searchLineSet[ m_model.searchLineSet.size() - 1 ].top.x << ", " << \
+                                  "\"topY\": " << m_model.searchLineSet[ m_model.searchLineSet.size() - 1 ].top.y << ", " << \
+                                  "\"botX\": " << m_model.searchLineSet[ m_model.searchLineSet.size() - 1 ].bot.x << ", " << \
+                                  "\"botY\": " << m_model.searchLineSet[ m_model.searchLineSet.size() - 1 ].bot.y << " }" << endl;
             ss << "  ]" << endl;
             ss << "}" << endl;
         }

@@ -111,7 +111,7 @@ public:
      * @brief Returns a vector of search lines along which an image is search for a water level line.
      * @return A vector of LineEnds that represent search lines
      */
-    std::vector< LineEnds > &SearchLines() { return model.searchLines; }
+    std::vector< LineEnds > &SearchLineSet() { return model.searchLineSet; }
     std::string ControlJson() { return model.controlJson; }
     CalibModelSymbol &Model() { return model; }
     GC_STATUS GetSearchRegionBoundingRect( cv::Rect &rect );
