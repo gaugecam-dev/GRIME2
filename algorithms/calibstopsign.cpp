@@ -230,11 +230,6 @@ GC_STATUS CalibStopSign::FindMoveTarget( const cv::Mat &img, FindPointSet &findP
                                       Scalar( 0, 0, 1 ), 1 );
                                 imwrite( DEBUG_RESULT_FOLDER + "___target_move.png", color );
 #endif
-                                Point2d offset = Point2d( model.targetSearchRegion.x, model.targetSearchRegion.y );
-                                for ( size_t i = 0; i < model.pixelPoints.size(); ++i )
-                                {
-                                    model.pixelPoints[ i ] += offset;
-                                }
                             }
                         }
                     }
