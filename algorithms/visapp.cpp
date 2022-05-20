@@ -204,7 +204,6 @@ GC_STATUS VisApp::CalcFindLine( const Mat &img, FindLineResult &result )
         snprintf( buffer, 256, "Timestamp: %s", result.timestamp.c_str() );
         result.msgs.push_back( buffer );
 
-        FindPointSet offsetPts;
         vector< LineEnds > searchLinesAdj;
 #if 1
         retVal = m_calibExec.MoveRefPoint( result.refMovePts.lftPixel, result.refMovePts.rgtPixel );

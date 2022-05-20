@@ -196,10 +196,10 @@ GC_STATUS CalibStopSign::FindMoveTarget( const cv::Mat &img, FindPointSet &findP
                         retVal = CalcCorners( octoLines, pixPts );
                         if ( GC_OK == retVal )
                         {
-                            findPtSet.lftPixel = pixPts[ 0 ];
-                            findPtSet.rgtPixel = pixPts[ 1 ];
-                            findPtSet.ctrPixel = Point2d( ( pixPts[ 0 ].x + pixPts[ 1 ].x ) / 2.0,
-                                                          ( pixPts[ 0 ].y + pixPts[ 1 ].y ) / 2.0 );
+                            findPtSet.lftPixel = pixPts[ 0 ] + Point2d( model.targetSearchRegion.x, model.targetSearchRegion.y );
+                            findPtSet.rgtPixel = pixPts[ 1 ] + Point2d( model.targetSearchRegion.x, model.targetSearchRegion.y );
+                            findPtSet.ctrPixel = Point2d( ( findPtSet.lftPixel.x + findPtSet.rgtPixel.x ) / 2.0,
+                                                          ( findPtSet.lftPixel.y + findPtSet.rgtPixel.y ) / 2.0 );
 
                             retVal = PixelToWorld( findPtSet.lftPixel, findPtSet.lftWorld );
                             if ( GC_OK == retVal )
