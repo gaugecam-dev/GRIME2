@@ -175,6 +175,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->widget_overlayCheckboxes->hide();
     UpdateGUIEnables();
     UpdateCalibType();
+    UpdateCalibSearchRegion();
 }
 MainWindow::~MainWindow()
 {
@@ -242,7 +243,6 @@ void MainWindow::createConnections()
     connect( ui->checkBox_calibSearchROI, &QRadioButton::toggled, this, &MainWindow::UpdateCalibSearchRegion );
     connect( ui->actionToggleControls, &QAction::toggled, this, &MainWindow::UpdateGUIEnables );
     connect( ui->radioButton_calibBowtie, &QRadioButton::toggled, this, &MainWindow::UpdateCalibType );
-    connect( ui->radioButton_stopsignFromFile, &QRadioButton::toggled, this, &MainWindow::UpdateCalibType );
 
     connect( this, SIGNAL( sig_visAppMessage(QString) ), this, SLOT( do_visAppMessage(QString) ) );
     connect( this, SIGNAL( sig_updateProgess(int) ),     this, SLOT( do_updateProgress(int) ) );
@@ -372,10 +372,8 @@ int MainWindow::ReadSettings( const QString filepath )
         ui->lineEdit_calibVisionResult_json->setText( pSettings->value( "calibJsonFileOut", QString( __CONFIGURATION_FOLDER.c_str() ) + "calib.json" ).toString() );
         pSettings->value( "calibTypeIsBowtie", true ).toBool() ? ui->radioButton_calibBowtie->setChecked( true ) : ui->radioButton_calibStopSign->setChecked( true );
         ui->checkBox_calibSearchROI->setChecked( !pSettings->value( "useWholeImage", true ).toBool() );
-        pSettings->value( "useFacetLength", true ).toBool() ? ui->radioButton_stopsignFacetLength->setChecked( true ) : ui->radioButton_stopsignFromFile->setChecked( true );
         ui->doubleSpinBox_stopSignFacetLength->setValue( pSettings->value( "stopSignFacetLength", 7.1875 ).toDouble() );
         ui->spinBox_moveSearchROIGrowPercent->setValue( pSettings->value( "moveSearchROIGrowPercent", 0 ).toInt() );
-        ui->checkBox_isRedStopsign->setChecked( pSettings->value( "stopSignIsRed", true ).toBool() );
         ui->spinBox_colorRangeMin->setValue( pSettings->value( "stopSignColorRangeMin", 10 ).toInt() );
         ui->spinBox_colorRangeMax->setValue( pSettings->value( "stopSignColorRangeMax", 10 ).toInt() );
         m_stopSignColor = QColor( pSettings->value( "stopSignRed", 255 ).toInt(),
@@ -470,10 +468,8 @@ int MainWindow::WriteSettings( const QString filepath )
         pSettings->setValue( "calibJsonFileOut", ui->lineEdit_calibVisionResult_json->text() );
         pSettings->setValue( "calibTypeIsBowtie", ui->radioButton_calibBowtie->isChecked() );
         pSettings->setValue( "useWholeImage", !ui->checkBox_calibSearchROI->isChecked() );
-        pSettings->setValue( "useFacetLength", ui->radioButton_stopsignFacetLength->isChecked() );
         pSettings->setValue( "stopSignFacetLength", ui->doubleSpinBox_stopSignFacetLength->value() );
         pSettings->setValue( "moveSearchROIGrowPercent", ui->spinBox_moveSearchROIGrowPercent->value() );
-        pSettings->setValue( "stopSignIsRed", ui->checkBox_isRedStopsign->isChecked() );
         pSettings->setValue( "stopSignColorRangeMin", ui->spinBox_colorRangeMin->value() );
         pSettings->setValue( "stopSignColorRangeMax", ui->spinBox_colorRangeMax->value() );
         pSettings->setValue( "stopSignRed", m_stopSignColor.red() );
@@ -519,9 +515,9 @@ void MainWindow::UpdateCalibSearchRegion()
     if ( ui->checkBox_calibSearchROI->isChecked() )
     {
         QString msg;
-        ui->label_calibCurrentROI->setText(
-                    msg.asprintf( "x=%d y=%d\nw=%d h=%d", m_rectROI.x(), m_rectROI.y(),
-                                 m_rectROI.width(), m_rectROI.height() ) );
+        ui->label_calibCurrentROI->setText( msg.asprintf( "x=%d  y=%d  w=%d  h=%d",
+                                                          m_rectROI.x(), m_rectROI.y(),
+                                                          m_rectROI.width(), m_rectROI.height() ) );
     }
     else
     {
@@ -532,25 +528,16 @@ void MainWindow::UpdateCalibType()
 {
     if ( ui->radioButton_calibBowtie->isChecked() )
     {
-        ui->groupBox_stopsignCalibMethods->setEnabled( false );
+        ui->groupBox_calibStopsignColor->setEnabled( false );
         ui->lineEdit_calibVisionTarget_csv->setEnabled( true );
         ui->toolButton_calibVisionTarget_csv_browse->setEnabled( true );
     }
     else
     {
-        ui->groupBox_stopsignCalibMethods->setEnabled( true );
-        if ( ui->radioButton_stopsignFromFile->isChecked() )
-        {
-            ui->doubleSpinBox_stopSignFacetLength->setEnabled( false );
-            ui->lineEdit_calibVisionTarget_csv->setEnabled( true );
-            ui->toolButton_calibVisionTarget_csv_browse->setEnabled( true );
-        }
-        else
-        {
-            ui->doubleSpinBox_stopSignFacetLength->setEnabled( true );
-            ui->lineEdit_calibVisionTarget_csv->setEnabled( false );
-            ui->toolButton_calibVisionTarget_csv_browse->setEnabled( false );
-        }
+        ui->groupBox_calibStopsignColor->setEnabled( true );
+        ui->doubleSpinBox_stopSignFacetLength->setEnabled( true );
+        ui->lineEdit_calibVisionTarget_csv->setEnabled( false );
+        ui->toolButton_calibVisionTarget_csv_browse->setEnabled( false );
     }
 }
 void MainWindow::UpdateGUIEnables()
@@ -1011,12 +998,9 @@ void MainWindow::on_pushButton_setStopSignColor_clicked()
         SetStopsignColor( color ); // to show in the gui
     }
 }
-void MainWindow::on_checkBox_isRedStopsign_toggled( bool )
+void MainWindow::on_pushButton_setStopsignRed_clicked()
 {
-    if ( ui->checkBox_isRedStopsign->isChecked() )
-    {
-        SetStopsignColor( cv::Scalar( 0, 0, 255 ) );
-    }
+    SetStopsignColor( cv::Scalar( 0, 0, 255 ) );
 }
 void MainWindow::SetStopsignColor( QColor newColor ) { SetStopsignColor( cv::Scalar( newColor.blue(), newColor.green(), newColor.red() ) ); }
 void MainWindow::SetStopsignColor( cv::Scalar newColor )
@@ -1027,8 +1011,8 @@ void MainWindow::SetStopsignColor( cv::Scalar newColor )
     if ( GC_OK == retVal )
     {
         string hsvMsg = "  h=" + to_string( cvRound( hsv.val[0] ) );
-        hsvMsg +="\n  s=" + to_string( cvRound( hsv.val[1] ) );
-        hsvMsg +="\n  v=" + to_string( cvRound( hsv.val[2] ) );
+        hsvMsg +="  s=" + to_string( cvRound( hsv.val[1] ) );
+        hsvMsg +="  v=" + to_string( cvRound( hsv.val[2] ) );
         ui->label_stopSignColor->setText( QString( hsvMsg.c_str() ) );
     }
     m_stopSignColor = QColor( newColor.val[ 2 ], newColor.val[ 1 ], newColor.val[ 0 ] );
@@ -1175,9 +1159,7 @@ void MainWindow::on_pushButton_visionCalibrate_clicked()
                                                        ui->lineEdit_calibVisionResult_json->text().toStdString(),
                                                        ui->checkBox_calibSearchROI->isChecked(), m_rectROI,
                                                        ui->spinBox_moveSearchROIGrowPercent->value() + 100,
-                                                       ui->radioButton_stopsignFacetLength->isChecked(),
                                                        ui->doubleSpinBox_stopSignFacetLength->value(),
-                                                       ui->checkBox_isRedStopsign->isChecked(),
                                                        m_lineSearchPoly, jsonControlStr );
     }
     else

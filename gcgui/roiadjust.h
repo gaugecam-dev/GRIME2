@@ -60,8 +60,7 @@ public:
                                    const LineSearchPoly searchPoly, std::string &json );
     int FormStopsignCalibJsonString( const std::string csvFilepath, const std::string jsonResultFilepath,
                                      const bool useSearchROI, const QRect rectROI, const int moveSearchROIGrowPercent,
-                                     const bool fromFacetLength, const double facetLength, const bool isRedStopsign,
-                                     const LineSearchPoly searchPoly, std::string &json );
+                                     const double facetLength, const LineSearchPoly searchPoly, std::string &json );
 
     int TestAgainstFindLines( const QPoint pt, const QSize displaySize, const int capturePos,
                               const double scale, QPoint &ptCapture, QLine &lineOne );

@@ -325,33 +325,17 @@ int RoiAdjust::FormBowtieCalibJsonString( const std::string csvFilepath, const s
 }
 int RoiAdjust::FormStopsignCalibJsonString( const std::string csvFilepath, const std::string jsonResultFilepath,
                                             const bool useSearchROI, const QRect rectROI, const int moveSearchROIGrowPercent,
-                                            const bool fromFacetLength, const double facetLength, const bool isRedStopsign,
-                                            const LineSearchPoly searchPoly, std::string &json )
+                                            const double facetLength, const LineSearchPoly searchPoly, std::string &json )
 {
     int ret = 0;
 
     json = "{\"calibType\": \"StopSign\", ";
     json += "\"calibWorldPt_csv\": \"" + csvFilepath + "\", ";
-    if ( fromFacetLength )
-    {
-        json += "\"stopSignFacetLength\": " + std::to_string( facetLength ) + ", ";
-    }
-    else
-    {
-        json += "\"stopSignFacetLength\": -1.0, }";
-    }
+    json += "\"stopSignFacetLength\": " + std::to_string( facetLength ) + ", ";
     json += "\"moveSearchROIGrowPercent\": " + std::to_string( moveSearchROIGrowPercent ) + ", ";
     json += "\"drawCalib\": 0, ";
     json += "\"drawMoveSearchROIs\": 0, ";
     json += "\"drawWaterLineSearchROI\": 0, ";
-    if ( isRedStopsign )
-    {
-        json += "\"isRedStopsign\": 1, ";
-    }
-    else
-    {
-        json += "\"isRedStopsign\": 0, ";
-    }
     if ( useSearchROI )
     {
         json += "\"targetRoi_x\": " + std::to_string( rectROI.x() ) + ", ";
