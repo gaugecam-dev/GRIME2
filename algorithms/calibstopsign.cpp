@@ -423,8 +423,8 @@ GC_STATUS CalibStopSign::CalcMoveSearchROI( const cv::Size imgSize, const std::v
         {
             int lftWidth = cvRound( moveSearchROIMultiplier * static_cast< double >( rect.width ) );
             int lftHeight = cvRound( moveSearchROIMultiplier * static_cast< double >( rect.height ) );
-            int lftX = std::min( 0, rect.x - ( lftWidth - rect.width ) / 2 );
-            int lftY = std::min( 0, rect.y - ( lftHeight - rect.height ) / 2 );
+            int lftX = std::max( 0, rect.x - ( lftWidth - rect.width ) / 2 );
+            int lftY = std::max( 0, rect.y - ( lftHeight - rect.height ) / 2 );
             rect = Rect( lftX, lftY, std::min( imgSize.width - lftX, lftWidth ), std::min( imgSize.height - lftY, lftHeight ) );
         }
     }

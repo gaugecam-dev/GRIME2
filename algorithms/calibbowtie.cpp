@@ -582,7 +582,8 @@ GC_STATUS CalibBowtie::Load( const string &jsonCalibString )
                 m_model.controlJson = ptreeTop.get< string >( "control_json", "{}" );
 
                 Mat matIn, matOut;
-                vector< Point > searchLineCorners = {};
+                vector< Point > searchLineCorners = { m_model.searchLineSet[ 0 ].top, m_model.searchLineSet[ m_model.searchLineSet.size() - 1 ].top,
+                                                      m_model.searchLineSet[ 0 ].bot, m_model.searchLineSet[ m_model.searchLineSet.size() - 1 ].bot };
                 retVal = Calibrate( m_model.pixelPoints, m_model.worldPoints, m_model.moveSearchROIMultiplier,
                                     m_model.controlJson, m_model.gridSize, m_model.imgSize, searchLineCorners );
             }

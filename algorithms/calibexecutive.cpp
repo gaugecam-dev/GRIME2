@@ -307,9 +307,8 @@ GC_STATUS CalibExecutive::CalibrateStopSign( const cv::Mat &img, const string &c
             vector< Point > searchLineCorners = { paramsCurrent.lineSearch_lftTop, paramsCurrent.lineSearch_rgtTop,
                                                   paramsCurrent.lineSearch_lftBot, paramsCurrent.lineSearch_rgtBot };
 
-            retVal = stopSign.Calibrate( img, paramsCurrent.stopSignFacetLength,
-                                         paramsCurrent.targetSearchROI,
-                                         paramsCurrent.moveSearchROIGrowPercent,
+            retVal = stopSign.Calibrate( img, paramsCurrent.stopSignFacetLength, paramsCurrent.targetSearchROI,
+                                         static_cast< double >( paramsCurrent.moveSearchROIGrowPercent ) / 100.0,
                                          controlJson, searchLineCorners );
             if ( GC_OK == retVal )
             {

@@ -20,8 +20,8 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/imgcodecs.hpp>
 
-#ifdef DEBUG_FIND_LINE
-#undef DEBUG_FIND_LINE
+#ifndef DEBUG_FIND_LINE
+#define DEBUG_FIND_LINE
 #include <iostream>
 #include <boost/filesystem.hpp>
 #ifdef WIN32
@@ -132,11 +132,13 @@ GC_STATUS FindLine::Find( const Mat &img, const vector< LineEnds > &lines, FindL
                             result.foundPoints.push_back( linePt );
                     }
                     start = lines.size() - linesPerSwath - 1;
-                    retVal = EvaluateSwath( scratch, lines, lines.size() - linesPerSwath - 1, lines.size() - 1, linePt, result );
+                    retVal = EvaluateSwath( scratch, lines, start, lines.size() - 1, linePt, result );
                     if ( GC_OK == retVal )
                         result.foundPoints.push_back( linePt );
 
 #ifdef DEBUG_FIND_LINE
+                    line( outImg, lines[ 0 ].top, lines[ 0 ].bot, Scalar( 0, 255, 255 ), 3 );
+                    line( outImg, lines[ lines.size() - 1 ].top, lines[ lines.size() - 1 ].bot, Scalar( 0, 255, 255 ), 3 );
                     bool isOK = imwrite( DEBUG_RESULT_FOLDER + "rowsums.png", outImg );
                     if ( !isOK )
                     {

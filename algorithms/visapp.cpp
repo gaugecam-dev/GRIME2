@@ -219,8 +219,6 @@ GC_STATUS VisApp::CalcFindLine( const Mat &img, FindLineResult &result )
             }
             else
             {
-                result.msgs.push_back( "FindStatus: " + string( GC_OK == retVal ? "SUCCESS" : "FAIL" ) );
-
                 retVal = m_calibExec.FindMoveTargets( img, result.foundMovePts );
                 if ( GC_OK != retVal )
                 {
@@ -364,6 +362,7 @@ GC_STATUS VisApp::CalcFindLine( const Mat &img, FindLineResult &result )
             }
             else
             {
+                result.msgs.push_back( "FindStatus: " + string( GC_OK == retVal ? "SUCCESS" : "FAIL" ) );
                 retVal = PixelToWorld( result.calcLinePts );
                 if ( GC_OK != retVal )
                 {
