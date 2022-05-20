@@ -20,8 +20,8 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/imgcodecs.hpp>
 
-#ifndef DEBUG_FIND_LINE
-#define DEBUG_FIND_LINE
+#ifdef DEBUG_FIND_LINE
+#undef DEBUG_FIND_LINE
 #include <iostream>
 #include <boost/filesystem.hpp>
 #ifdef WIN32
