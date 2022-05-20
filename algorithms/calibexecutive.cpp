@@ -105,7 +105,7 @@ GC_STATUS CalibExecutive::Calibrate( const cv::Mat &img, const std::string jsonP
         paramsCurrent.calibType = top_level.get< string >( "calibType", "" );
         paramsCurrent.worldPtCSVFilepath = top_level.get< string >( "calibWorldPt_csv", "" );
         paramsCurrent.stopSignFacetLength = top_level.get< double >( "stopSignFacetLength", -1.0 );
-        paramsCurrent.moveSearchROIGrowPercent = top_level.get< double >( "moveSearchROIGrowPercent", 0 );
+        paramsCurrent.moveSearchROIGrowPercent = top_level.get< int >( "moveSearchROIGrowPercent", 0 );
         paramsCurrent.calibResultJsonFilepath = top_level.get< string >( "calibResult_json", "" );
         paramsCurrent.drawCalib = 1 == top_level.get< int >( "drawCalib", 0 );
         paramsCurrent.drawMoveSearchROIs = 1 == top_level.get< int >( "drawMoveSearchROIs", 0 );

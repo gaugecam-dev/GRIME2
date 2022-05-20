@@ -24,6 +24,7 @@ SOURCES += \
 	../algorithms/findline.cpp \
 	../algorithms/gifanim/gifanim.cpp \
 	../algorithms/metadata.cpp \
+        ../algorithms/searchlines.cpp \
         ../algorithms/visapp.cpp \
         main.cpp
 
@@ -41,6 +42,7 @@ HEADERS += \
     ../algorithms/log.h \
     ../algorithms/metadata.h \
     ../algorithms/timestampconvert.h \
+    ../algorithms/searchlines.h \
     ../algorithms/visapp.h \
     ../gcgui/wincmd.h \
     arghandler.h

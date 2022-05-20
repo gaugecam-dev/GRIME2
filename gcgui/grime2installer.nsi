@@ -7,11 +7,11 @@
 !endif
 
 !ifndef INSTALLFILEPATH_OPENCV
-!define INSTALLFILEPATH_OPENCV "..\thirdparty\opencv\opencv_451\bin\vc19"
+!define INSTALLFILEPATH_OPENCV "..\thirdparty\opencv\opencv_455\bin\vc19"
 !endif
 
 ; !ifndef INSTALLFILEPATH_BOOST
-; !define INSTALLFILEPATH_BOOST "..\thirdparty\boost\boost_1_74_0\vc141\bin"
+; !define INSTALLFILEPATH_BOOST "..\thirdparty\boost\boost_1_78_0\vc141\bin"
 ; !endif
 
 ; !ifndef INSTALLFILEPATH_FFMPEG
@@ -128,22 +128,22 @@ Section "GaugeCam Files" grime2
   File "${INSTALLFILEPATH_QT}\Qt5Core.dll"
   File "${INSTALLFILEPATH_QT}\Qt5Gui.dll"
   File "${INSTALLFILEPATH_QT}\Qt5Widgets.dll"
-  File "${INSTALLFILEPATH_OPENCV}\opencv_core451.dll"
-  File "${INSTALLFILEPATH_OPENCV}\opencv_dnn451.dll"
-  File "${INSTALLFILEPATH_OPENCV}\opencv_imgproc451.dll"
-  File "${INSTALLFILEPATH_OPENCV}\opencv_imgcodecs451.dll"
-  File "${INSTALLFILEPATH_OPENCV}\opencv_videoio451.dll"
-  File "${INSTALLFILEPATH_OPENCV}\opencv_video451.dll"
-  File "${INSTALLFILEPATH_OPENCV}\opencv_calib3d451.dll"
-  File "${INSTALLFILEPATH_OPENCV}\opencv_flann451.dll"
-  File "${INSTALLFILEPATH_OPENCV}\opencv_features2d451.dll"
+  File "${INSTALLFILEPATH_OPENCV}\opencv_core455.dll"
+  ; File "${INSTALLFILEPATH_OPENCV}\opencv_dnn455.dll"
+  File "${INSTALLFILEPATH_OPENCV}\opencv_imgproc455.dll"
+  File "${INSTALLFILEPATH_OPENCV}\opencv_imgcodecs455.dll"
+  File "${INSTALLFILEPATH_OPENCV}\opencv_videoio455.dll"
+  File "${INSTALLFILEPATH_OPENCV}\opencv_video455.dll"
+  File "${INSTALLFILEPATH_OPENCV}\opencv_calib3d455.dll"
+  File "${INSTALLFILEPATH_OPENCV}\opencv_flann455.dll"
+  File "${INSTALLFILEPATH_OPENCV}\opencv_features2d455.dll"
   ; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ; now linked statically
   ; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ; File "${INSTALLFILEPATH_BOOST}\boost_system-vc141-mt-x64-1_74.dll"
-  ; File "${INSTALLFILEPATH_BOOST}\boost_chrono-vc141-mt-x64-1_74.dll"
-  ; File "${INSTALLFILEPATH_BOOST}\boost_date_time-vc141-mt-x64-1_74.dll"
-  ; File "${INSTALLFILEPATH_BOOST}\boost_filesystem-vc141-mt-x64-1_74.dll"
+  ; File "${INSTALLFILEPATH_BOOST}\boost_system-vc141-mt-x64-1_78.dll"
+  ; File "${INSTALLFILEPATH_BOOST}\boost_chrono-vc141-mt-x64-1_78.dll"
+  ; File "${INSTALLFILEPATH_BOOST}\boost_date_time-vc141-mt-x64-1_78.dll"
+  ; File "${INSTALLFILEPATH_BOOST}\boost_filesystem-vc141-mt-x64-1_78.dll"
   ; File "${INSTALLFILEPATH_FFMPEG}\ffmpeg.exe"
 
   ; add shortcuts
