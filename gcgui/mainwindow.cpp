@@ -141,7 +141,6 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->scrollArea_ImgDisplay->setWidgetResizable( false );
     ui->scrollArea_ImgDisplay->setWidget( m_pLabelImgDisplay );
 
-
     int ret = ReadSettings( __SETTINGS_FILEPATH.c_str() );
     if ( 0 != ret )
     {
@@ -371,6 +370,7 @@ int MainWindow::ReadSettings( const QString filepath )
         ui->lineEdit_calibVisionTarget_csv->setText( pSettings->value( "calibCSVFileIn", QString( __CONFIGURATION_FOLDER.c_str() ) + "calibration_target_world_coordinates.csv" ).toString() );
         ui->lineEdit_calibVisionResult_json->setText( pSettings->value( "calibJsonFileOut", QString( __CONFIGURATION_FOLDER.c_str() ) + "calib.json" ).toString() );
         pSettings->value( "calibTypeIsBowtie", true ).toBool() ? ui->radioButton_calibBowtie->setChecked( true ) : ui->radioButton_calibStopSign->setChecked( true );
+        pSettings->value( "calibStopSignOnce", false ).toBool() ? ui->radioButton_stopsignCalibOnce->setChecked( true ) : ui->radioButton_stopsignCalibContinuous->setChecked( true );
         ui->checkBox_calibSearchROI->setChecked( !pSettings->value( "useWholeImage", true ).toBool() );
         ui->doubleSpinBox_stopSignFacetLength->setValue( pSettings->value( "stopSignFacetLength", 7.1875 ).toDouble() );
         ui->spinBox_moveSearchROIGrowPercent->setValue( pSettings->value( "moveSearchROIGrowPercent", 0 ).toInt() );
@@ -467,6 +467,7 @@ int MainWindow::WriteSettings( const QString filepath )
         pSettings->setValue( "calibCSVFileIn", ui->lineEdit_calibVisionTarget_csv->text() );
         pSettings->setValue( "calibJsonFileOut", ui->lineEdit_calibVisionResult_json->text() );
         pSettings->setValue( "calibTypeIsBowtie", ui->radioButton_calibBowtie->isChecked() );
+        pSettings->setValue( "calibStopSignOnce", ui->radioButton_stopsignCalibOnce->isChecked() );
         pSettings->setValue( "useWholeImage", !ui->checkBox_calibSearchROI->isChecked() );
         pSettings->setValue( "stopSignFacetLength", ui->doubleSpinBox_stopSignFacetLength->value() );
         pSettings->setValue( "moveSearchROIGrowPercent", ui->spinBox_moveSearchROIGrowPercent->value() );
@@ -1305,6 +1306,22 @@ void MainWindow::on_pushButton_findLineCurrentImage_clicked()
         params.timeStampFormat = ui->lineEdit_timestampFormat->text().toStdString();
         params.timeStampType = ui->radioButton_dateTimeInFilename->isChecked() ? FROM_FILENAME : FROM_EXIF;
         params.timeStampStartPos = ui->spinBox_timeStringPosZero->value();
+        params.isStopSignCalib = ui->radioButton_calibStopSign->isChecked();
+        params.isCalibContinuous = ui->radioButton_stopsignCalibContinuous->isChecked();
+        params.calibControlString.clear();
+        if ( params.isStopSignCalib && params.isCalibContinuous )
+        {
+            int ret = m_roiAdjust.FormStopsignCalibJsonString( ui->lineEdit_calibVisionTarget_csv->text().toStdString(),
+                                                               ui->lineEdit_calibVisionResult_json->text().toStdString(),
+                                                               ui->checkBox_calibSearchROI->isChecked(), m_rectROI,
+                                                               ui->spinBox_moveSearchROIGrowPercent->value() + 100,
+                                                               ui->doubleSpinBox_stopSignFacetLength->value(),
+                                                               m_lineSearchPoly, params.calibControlString );
+            if ( 0 != ret )
+            {
+                ui->statusBar->showMessage( "Find line: FAILURE -- could not create stopsign calib control string" );
+            }
+        }
 
         FindLineResult result;
         retVal = m_visApp.CalcLine( params, result );

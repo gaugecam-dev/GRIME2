@@ -587,14 +587,28 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result 
                         retVal = GC_ERR;
                     }
                 }
-                if ( params.calibFilepath != m_calibFilepath && GC_OK == retVal )
+                if ( params.isCalibContinuous && params.isStopSignCalib )
                 {
-                    retVal = m_calibExec.Load( params.calibFilepath );
+                    double rmseDist, rmseX, rmseY;
+                    retVal = m_calibExec.Calibrate( img, params.calibControlString, rmseDist, rmseX, rmseY );
                     if ( GC_OK != retVal )
                     {
-                        result.msgs.push_back( "Could not load calibration" );
+                        result.msgs.push_back( "Could not perform stopsign calibration" );
                         FILE_LOG( logERROR ) << "[VisApp::CalcLine] Could not load calibration=" << params.calibFilepath ;
                         retVal = GC_ERR;
+                    }
+                }
+                else
+                {
+                    if ( params.calibFilepath != m_calibFilepath && GC_OK == retVal )
+                    {
+                        retVal = m_calibExec.Load( params.calibFilepath );
+                        if ( GC_OK != retVal )
+                        {
+                            result.msgs.push_back( "Could not load calibration" );
+                            FILE_LOG( logERROR ) << "[VisApp::CalcLine] Could not load calibration=" << params.calibFilepath ;
+                            retVal = GC_ERR;
+                        }
                     }
                 }
                 if ( GC_OK == retVal)

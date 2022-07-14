@@ -1156,7 +1156,7 @@ metadata</string>
                     </widget>
                    </item>
                    <item>
-                    <widget class="QRadioButton" name="radioButton_calibStopSign_2">
+                    <widget class="QRadioButton" name="radioButton_calibFevans">
                      <property name="enabled">
                       <bool>false</bool>
                      </property>
@@ -1298,6 +1298,37 @@ metadata</string>
                    <string>Stop sign</string>
                   </property>
                   <layout class="QVBoxLayout" name="verticalLayout_14">
+                   <item>
+                    <layout class="QHBoxLayout" name="horizontalLayout_3">
+                     <item>
+                      <widget class="QRadioButton" name="radioButton_stopsignCalibContinuous">
+                       <property name="font">
+                        <font>
+                         <pointsize>9</pointsize>
+                        </font>
+                       </property>
+                       <property name="text">
+                        <string>Calibrate each image</string>
+                       </property>
+                       <property name="checked">
+                        <bool>true</bool>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QRadioButton" name="radioButton_stopsignCalibOnce">
+                       <property name="font">
+                        <font>
+                         <pointsize>9</pointsize>
+                        </font>
+                       </property>
+                       <property name="text">
+                        <string>Single calibration (at load time)</string>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </item>
                    <item>
                     <layout class="QHBoxLayout" name="horizontalLayout_18">
                      <item>

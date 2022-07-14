@@ -273,7 +273,9 @@ public:
         resultCSVPath( resultCSVFilepath ),
         timeStampType( tmStampType ),
         timeStampStartPos( tmStampStartPos ),
-        timeStampFormat( tmStampFormat )
+        timeStampFormat( tmStampFormat ),
+        isCalibContinuous( false ),
+        isStopSignCalib( true )
     {}
 
     void clear()
@@ -287,6 +289,9 @@ public:
         timeStampStartPos = -1;
         timeStampFormat.clear();
         calibFilepath.clear();
+        isCalibContinuous = false;
+        isStopSignCalib = true;
+        calibControlString.clear();
     }
 
     // timestamp in ISO 8601 DateTime format
@@ -300,6 +305,9 @@ public:
     GC_TIMESTAMP_TYPE timeStampType;    ///< Specifies where to get timestamp (filename, exif, or dateTimeOriginal)
     int timeStampStartPos;              ///< start position of timestamp string in filename (not whole path)
     std::string timeStampFormat;        ///< Format of the timestamp string, e.g. YYYY-MM-DDThh:mm::ss
+    bool isCalibContinuous;             ///< Stopsign calibration only -- calibrate in every image
+    bool isStopSignCalib;               ///< True = stopsign, false = bowtie
+    std::string calibControlString;     ///< Calibration string needed for continuous stopsign calibration
 };
 
 /**

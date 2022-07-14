@@ -126,6 +126,7 @@ private:
     cv::Scalar hsvHigh;
     cv::Scalar hsvLow2;
     cv::Scalar hsvHigh2;
+    cv::Mat stopSignEdgeTemplate;
 
     GC_STATUS FindColor( const cv::Mat &img, cv::Mat1b &redMask, std::vector< StopSignCandidate > &symbolCandidates );
     GC_STATUS RotateImage( const cv::Mat &src, cv::Mat &dst, const double angle );
@@ -142,6 +143,7 @@ private:
     GC_STATUS CreateCalibration( const std::vector< cv::Point2d > &pixelPts, const std::vector< cv::Point2d > &worldPts );
     GC_STATUS GetLineEquation( const cv::Point2d pt1, const cv::Point2d pt2, double &slope, double &intercept );
     GC_STATUS CalcCenterAngle( const std::vector< cv::Point2d > &pts, cv::Point2d &center, double &angle );
+    // GC_STATUS CreateStopSignTemplate( const std::vector< cv::Point2d > &corners, cv::Mat &stopSignEdgeTempl );
 };
 
 } // namespace gc

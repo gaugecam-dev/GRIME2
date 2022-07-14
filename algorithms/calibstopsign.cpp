@@ -20,7 +20,7 @@
 #include <iostream>
 #include <opencv2/imgcodecs.hpp>
 #include <boost/filesystem.hpp>
-static const std::string DEBUG_RESULT_FOLDER = "/var/tmp/water/";
+static const std::string DEBUG_FOLDER = "/var/tmp/water/";
 #endif
 
 static const double MIN_SYMBOL_CONTOUR_SIZE = 50;
@@ -40,12 +40,12 @@ static double elongation( Moments m );
 CalibStopSign::CalibStopSign()
 {
 #ifdef DEBUG_FIND_CALIB_SYMBOL
-    if ( !filesystem::exists( DEBUG_RESULT_FOLDER ) )
+    if ( !filesystem::exists( DEBUG_FOLDER ) )
     {
-        bool bRet = filesystem::create_directories( DEBUG_RESULT_FOLDER );
+        bool bRet = filesystem::create_directories( DEBUG_FOLDER );
         if ( !bRet )
         {
-            FILE_LOG( logWARNING ) << "[CalibStopSign::CalibStopSign] Could not create debug folder " << DEBUG_RESULT_FOLDER;
+            FILE_LOG( logWARNING ) << "[CalibStopSign::CalibStopSign] Could not create debug folder " << DEBUG_FOLDER;
         }
     }
 #endif
@@ -109,7 +109,7 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double octoSideLen
                                              Point( model.pixelPoints[ i ].x, model.pixelPoints[ i ].y + 10 ),
                                       Scalar( 0, 255, 255 ), 1 );
                             }
-                            imwrite( DEBUG_RESULT_FOLDER + "___FINAL.png", color );
+                            imwrite( DEBUG_FOLDER + "___FINAL.png", color );
 #endif
                             if ( useRoi )
                             {
@@ -125,6 +125,44 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double octoSideLen
                                 retVal = CreateCalibration( model.pixelPoints, model.worldPoints );
                                 if ( GC_OK == retVal )
                                 {
+#ifdef DEBUG_FIND_CALIB_SYMBOL
+                                    Mat temp_img;
+                                    img.copyTo( temp_img );
+                                    // cvtColor( img, temp_img, COLOR_GRAY2BGR );
+                                    line( temp_img, searchLineCorners[ 0 ], searchLineCorners[ 1 ], Scalar( 0, 0, 255 ), 7 );
+                                    line( temp_img, searchLineCorners[ 0 ], searchLineCorners[ 2 ], Scalar( 0, 255, 255 ), 7 );
+                                    line( temp_img, searchLineCorners[ 3 ], searchLineCorners[ 1 ], Scalar( 0, 255, 0 ), 7 );
+                                    line( temp_img, searchLineCorners[ 3 ], searchLineCorners[ 2 ], Scalar( 255, 0, 0 ), 7 );
+                                    imwrite( "/var/tmp/water/test_search_roi_0.png", temp_img );
+#endif
+                                    int topWidth = searchLineCorners[ 1 ].x - searchLineCorners[ 0 ].x;
+                                    int botWidth = searchLineCorners[ 3 ].x - searchLineCorners[ 2 ].x;
+                                    int lftHeight = searchLineCorners[ 2 ].y - searchLineCorners[ 0 ].y;
+
+                                    int lftOffsetX = searchLineCorners[ 0 ].x - searchLineCorners[ 2 ].x;
+                                    int topOffsetY = searchLineCorners[ 0 ].y - searchLineCorners[ 1 ].y;
+                                    int botOffsetY = searchLineCorners[ 2 ].y - searchLineCorners[ 3 ].y;
+
+                                    searchLineCorners[ 0 ].x = model.pixelPoints[ 5 ].x;
+                                    searchLineCorners[ 0 ].y = model.pixelPoints[ 5 ].y + 30;
+                                    searchLineCorners[ 1 ].x = searchLineCorners[ 0 ].x + topWidth;
+                                    searchLineCorners[ 1 ].y = searchLineCorners[ 0 ].y - topOffsetY;
+
+                                    searchLineCorners[ 2 ].x = searchLineCorners[ 0 ].x - lftOffsetX;
+                                    searchLineCorners[ 2 ].y = searchLineCorners[ 0 ].y + lftHeight;
+                                    searchLineCorners[ 3 ].x = searchLineCorners[ 2 ].x + botWidth;
+                                    searchLineCorners[ 3 ].y = searchLineCorners[ 2 ].y - botOffsetY;
+
+#ifdef DEBUG_FIND_CALIB_SYMBOL
+                                    img.copyTo( temp_img );
+                                    // cvtColor( img, temp_img, COLOR_GRAY2BGR );
+                                    line( temp_img, searchLineCorners[ 0 ], searchLineCorners[ 1 ], Scalar( 0, 0, 255 ), 7 );
+                                    line( temp_img, searchLineCorners[ 0 ], searchLineCorners[ 2 ], Scalar( 0, 255, 255 ), 7 );
+                                    line( temp_img, searchLineCorners[ 3 ], searchLineCorners[ 1 ], Scalar( 0, 255, 0 ), 7 );
+                                    line( temp_img, searchLineCorners[ 3 ], searchLineCorners[ 2 ], Scalar( 255, 0, 0 ), 7 );
+                                    imwrite( "/var/tmp/water/test_search_roi_1.png", temp_img );
+#endif
+
                                     SearchLines searchLines;
                                     retVal = searchLines.CalcSearchLines( searchLineCorners, model.searchLineSet );
                                     if ( GC_OK == retVal )
@@ -136,6 +174,10 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double octoSideLen
                                             model.moveSearchROIMultiplier = moveSearchROIMultiplier;
                                             retVal = CalcMoveSearchROI( img.size(), model.pixelPoints,
                                                                         model.targetSearchRegion, moveSearchROIMultiplier );
+                                            // if ( GC_OK == retVal )
+                                            // {
+                                            //     retVal = CreateStopSignTemplate( model.pixelPoints, stopSignEdgeTemplate );
+                                            // }
                                         }
                                     }
                                 }
@@ -168,6 +210,45 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double octoSideLen
 
     return retVal;
 }
+//GC_STATUS CalibStopSign::CreateStopSignTemplate( const std::vector< cv::Point2d > &corners, cv::Mat &stopSignEdgeTempl )
+//{
+//    GC_STATUS retVal = GC_OK;
+//    try
+//    {
+//        Point2d ptMin( 1000000, 1000000 ), ptMax( -1000000, -1000000 );
+//        vector< Point > ptsAdj;
+//        for ( size_t i = 0; i < corners.size(); ++i )
+//        {
+//            if ( corners[ i ].x > ptMax.x )
+//                ptMax.x = corners[ i ].x;
+//            if ( corners[ i ].x < ptMin.x )
+//                ptMin.x = corners[ i ].x;
+//            if ( corners[ i ].y > ptMax.y )
+//                ptMax.y = corners[ i ].y;
+//            if ( corners[ i ].y < ptMin.y )
+//                ptMin.y = corners[ i ].y;
+//        }
+//        Rect stpSgnRect( ptMin.x, ptMin.y, ptMax.x - ptMin.x, ptMax.y - ptMin.y );
+
+//        for ( size_t i = 0; i < corners.size(); ++i )
+//        {
+//            ptsAdj.push_back( corners[ i ] - Point2d( stpSgnRect.x - 10, stpSgnRect.y - 10 ) );
+//        }
+//        stopSignEdgeTempl = Mat::zeros( Size( stpSgnRect.width + 20, stpSgnRect.height + 20 ), CV_8UC1 );
+
+//        polylines( stopSignEdgeTempl, ptsAdj, true, Scalar( 255 ), 5 );
+//#ifdef DEBUG_FIND_CALIB_SYMBOL
+//        imwrite( DEBUG_FOLDER + "ssTempl.png", stopSignEdgeTempl );
+//#endif
+//    }
+//    catch( cv::Exception &e )
+//    {
+//        FILE_LOG( logERROR ) << "[CalibStopSign::CreateStopSignTemplate] " << e.what();
+//        retVal = GC_EXCEPT;
+//    }
+
+//    return retVal;
+//}
 GC_STATUS CalibStopSign::FindMoveTarget( const cv::Mat &img, FindPointSet &findPtSet )
 {
     GC_STATUS retVal = GC_OK;
@@ -228,7 +309,7 @@ GC_STATUS CalibStopSign::FindMoveTarget( const cv::Mat &img, FindPointSet &findP
                                 line( color, Point( pixPts[ 0 ].x - 10, pixPts[ i ].y ),
                                              Point( pixPts[ 1 ].x + 10, pixPts[ i ].y ),
                                       Scalar( 0, 0, 1 ), 1 );
-                                imwrite( DEBUG_RESULT_FOLDER + "___target_move.png", color );
+                                imwrite( DEBUG_FOLDER + "___target_move.png", color );
 #endif
                             }
                         }
@@ -704,7 +785,7 @@ GC_STATUS CalibStopSign::FindColor( const cv::Mat &img, cv::Mat1b &mask,
 #ifdef DEBUG_FIND_CALIB_SYMBOL
             Mat color;
             img.copyTo( color );
-            imwrite( DEBUG_RESULT_FOLDER + "red_mask.png", mask );
+            imwrite( DEBUG_FOLDER + "red_mask.png", mask );
 #endif
 
             Moments m;
@@ -740,7 +821,7 @@ GC_STATUS CalibStopSign::FindColor( const cv::Mat &img, cv::Mat1b &mask,
 #ifdef DEBUG_FIND_CALIB_SYMBOL
             else
             {
-                imwrite( DEBUG_RESULT_FOLDER + "candidates.png", color );
+                imwrite( DEBUG_FOLDER + "candidates.png", color );
             }
 #endif
         }
@@ -776,7 +857,7 @@ GC_STATUS CalibStopSign::FindCorners( const cv::Mat &mask, const std::vector< cv
 #ifdef DEBUG_FIND_CALIB_SYMBOL
             Mat color;
             cvtColor( mask, color, COLOR_GRAY2BGR );
-            imwrite( DEBUG_RESULT_FOLDER + "candidate_contour.png", edges );
+            imwrite( DEBUG_FOLDER + "candidate_contour.png", edges );
 #endif
             Rect bb = boundingRect( contour );
             int swathSize = bb.height / 5;
@@ -785,7 +866,7 @@ GC_STATUS CalibStopSign::FindCorners( const cv::Mat &mask, const std::vector< cv
             line( scratch, rotRect.center, Point( 0, rotRect.center.y ), Scalar( 255 ), swathSize );
             scratch &= edges;
 #ifdef DEBUG_FIND_CALIB_SYMBOL
-            imwrite( DEBUG_RESULT_FOLDER + "left_edge_pts_swath.png", scratch );
+            imwrite( DEBUG_FOLDER + "left_edge_pts_swath.png", scratch );
 #endif
 
             int top = rotRect.center.y - swathSize / 2;
@@ -861,7 +942,7 @@ GC_STATUS CalibStopSign::FindCorners( const cv::Mat &mask, const std::vector< cv
                 }
             }
 #ifdef DEBUG_FIND_CALIB_SYMBOL
-            imwrite( DEBUG_RESULT_FOLDER + "symbol_edges.png", color );
+            imwrite( DEBUG_FOLDER + "symbol_edges.png", color );
 #endif
         }
     }
@@ -982,7 +1063,7 @@ GC_STATUS CalibStopSign::FindDiagonals( const cv::Mat &mask, const std::vector< 
 #ifdef DEBUG_FIND_CALIB_SYMBOL
             Mat color;
             cvtColor( mask, color, COLOR_GRAY2BGR );
-            imwrite( DEBUG_RESULT_FOLDER + "candidate_contour.png", edges );
+            imwrite( DEBUG_FOLDER + "candidate_contour.png", edges );
 #endif
             Rect bb = boundingRect( contour );
             int swathSize = bb.height / 5;
@@ -991,7 +1072,7 @@ GC_STATUS CalibStopSign::FindDiagonals( const cv::Mat &mask, const std::vector< 
             line( scratch, rotRect.center, octoLines.top.pt1, Scalar( 255 ), swathSize );
             scratch &= edges;
 #ifdef DEBUG_FIND_CALIB_SYMBOL
-            imwrite( DEBUG_RESULT_FOLDER + "top_left_edge_pts_swath.png", scratch );
+            imwrite( DEBUG_FOLDER + "top_left_edge_pts_swath.png", scratch );
 #endif
 
             Rect rect( octoLines.top.pt1.x, octoLines.top.pt1.y, rotRect.center.x - octoLines.top.pt1.x,
@@ -1004,7 +1085,7 @@ GC_STATUS CalibStopSign::FindDiagonals( const cv::Mat &mask, const std::vector< 
                 line( scratch, rotRect.center, octoLines.top.pt2, Scalar( 255 ), swathSize );
                 scratch &= edges;
 #ifdef DEBUG_FIND_CALIB_SYMBOL
-                imwrite( DEBUG_RESULT_FOLDER + "top_right_edge_pts_swath.png", scratch );
+                imwrite( DEBUG_FOLDER + "top_right_edge_pts_swath.png", scratch );
 #endif
 
                 rect = Rect( rotRect.center.x, octoLines.top.pt2.y, octoLines.top.pt2.x - rotRect.center.x,
@@ -1017,7 +1098,7 @@ GC_STATUS CalibStopSign::FindDiagonals( const cv::Mat &mask, const std::vector< 
                     line( scratch, rotRect.center, octoLines.bot.pt2, Scalar( 255 ), swathSize );
                     scratch &= edges;
 #ifdef DEBUG_FIND_CALIB_SYMBOL
-                    imwrite( DEBUG_RESULT_FOLDER + "bot_left_edge_pts_swath.png", scratch );
+                    imwrite( DEBUG_FOLDER + "bot_left_edge_pts_swath.png", scratch );
 #endif
 
                     rect = Rect( octoLines.bot.pt2.x, rotRect.center.y, rotRect.center.x - octoLines.bot.pt2.x,
@@ -1029,7 +1110,7 @@ GC_STATUS CalibStopSign::FindDiagonals( const cv::Mat &mask, const std::vector< 
                         line( scratch, rotRect.center, octoLines.bot.pt1, Scalar( 255 ), swathSize );
                         scratch &= edges;
 #ifdef DEBUG_FIND_CALIB_SYMBOL
-                        imwrite( DEBUG_RESULT_FOLDER + "bot_right_edge_pts_swath.png", scratch );
+                        imwrite( DEBUG_FOLDER + "bot_right_edge_pts_swath.png", scratch );
 #endif
 
                         rect = Rect( rotRect.center.x, rotRect.center.y, octoLines.bot.pt1.x - rotRect.center.x,
@@ -1049,7 +1130,7 @@ GC_STATUS CalibStopSign::FindDiagonals( const cv::Mat &mask, const std::vector< 
                 }
             }
 #ifdef DEBUG_FIND_CALIB_SYMBOL
-            imwrite( DEBUG_RESULT_FOLDER + "symbol_edges_diagonal.png", color );
+            imwrite( DEBUG_FOLDER + "symbol_edges_diagonal.png", color );
 #endif
         }
     }
@@ -1069,8 +1150,8 @@ GC_STATUS CalibStopSign::GetLineEndPoints( cv::Mat &mask, const cv::Rect rect, c
     {
         Mat search = mask( rect );
 #ifdef DEBUG_FIND_CALIB_SYMBOL
-        imwrite( DEBUG_RESULT_FOLDER + "pt_search_img.png", mask );
-        imwrite( DEBUG_RESULT_FOLDER + "pt_search_rect.png", search );
+        imwrite( DEBUG_FOLDER + "pt_search_img.png", mask );
+        imwrite( DEBUG_FOLDER + "pt_search_rect.png", search );
 #endif
 
         vector< Point > pts;
@@ -1086,7 +1167,7 @@ GC_STATUS CalibStopSign::GetLineEndPoints( cv::Mat &mask, const cv::Rect rect, c
             Mat color;
             cvtColor( mask, color, COLOR_GRAY2BGR );
             drawContours( color, vector< vector< Point > >( 1, pts ), -1, Scalar( 0, 255, 255 ), 1 );
-            imwrite( DEBUG_RESULT_FOLDER + "pt_search_pts.png", color );
+            imwrite( DEBUG_FOLDER + "pt_search_pts.png", color );
 #endif
 
             Vec4d lne;
@@ -1133,7 +1214,7 @@ GC_STATUS CalibStopSign::GetLineEndPoints( cv::Mat &mask, const cv::Rect rect, c
             }
 #ifdef DEBUG_FIND_CALIB_SYMBOL
             line( color, pt1, pt2, Scalar( 0, 255, 0 ), 1 );
-            imwrite( DEBUG_RESULT_FOLDER + "pt_search_line.png", color );
+            imwrite( DEBUG_FOLDER + "pt_search_line.png", color );
 #endif
         }
     }
