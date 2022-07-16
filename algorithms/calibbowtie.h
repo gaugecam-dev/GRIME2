@@ -202,6 +202,7 @@ public:
     cv::Rect &TargetRoi() { return m_model.wholeTargetRegion; }
 
     // TODO: Add doxygen comments
+    GC_STATUS GetCalibParams( std::string &calibParams );
     GC_STATUS GetSearchRegionBoundingRect( cv::Rect &rect );
     CalibModelBowtie &Model() { return m_model; }
     std::string ControlJson() { return m_model.controlJson; }

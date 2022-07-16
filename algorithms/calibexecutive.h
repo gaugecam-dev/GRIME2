@@ -88,7 +88,8 @@ public:
     CalibModelSymbol &CalibSymbolModel() { return stopSign.Model(); }
     std::vector< LineEnds > &SearchLines();
     cv::Rect &TargetRoi();
-    std::string &GetCalibType() { return paramsCurrent.calibType; }
+    std::string &GetCalibType() { return paramsCurrent.calibType; } // BowTie or StopSign
+    GC_STATUS GetCalibParams( std::string &calibParams );
 
 private:
     CalibBowtie bowTie;
@@ -101,7 +102,6 @@ private:
     GC_STATUS CalibrateBowTie( const cv::Mat &img, const string &controlJson );
     GC_STATUS CalibrateStopSign( const cv::Mat &img, const string &controlJson );
     GC_STATUS FindMoveTargetsBowTie( const cv::Mat &img, FindPointSet &ptsFound );
-    GC_STATUS FindMoveTargetsStopSign( const cv::Mat &img, FindPointSet &ptsFound );
     GC_STATUS MoveRefPointBowTie( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt );
     GC_STATUS MoveRefPointStopSign( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt );
     GC_STATUS ReadWorldCoordsFromCSVBowTie( const string csvFilepath, vector< vector< cv::Point2d > > &worldCoords );

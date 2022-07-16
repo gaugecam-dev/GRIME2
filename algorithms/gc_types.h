@@ -171,7 +171,6 @@ public:
     CalibModelSymbol() :
         imgSize( cv::Size( -1, -1 ) ),
         targetSearchRegion( cv::Rect( -1, -1, -1, -1 ) ),
-        moveSearchROIMultiplier( 0.0 ),
         center( cv::Point2d( -1.0, -1.0 ) ),
         angle( -9999999.0 )
     {}
@@ -191,7 +190,6 @@ public:
                       std::vector< cv::Point2d > worldPts,
                       std::vector< LineEnds > lineEndPts,
                       cv::Rect symbolSearchROI,
-                      double moveSearchROIMultiply,
                       cv::Point2d centerPoint,
                       double symbolAngle ) :
         imgSize( imageSize ),
@@ -199,7 +197,6 @@ public:
         worldPoints( worldPts ),
         searchLineSet( lineEndPts ),
         targetSearchRegion( symbolSearchROI ),
-        moveSearchROIMultiplier( moveSearchROIMultiply ),
         center( centerPoint ),
         angle( symbolAngle )
     {}
@@ -215,7 +212,6 @@ public:
         worldPoints.clear();
         searchLineSet.clear();
         targetSearchRegion = cv::Rect( -1, -1, -1, -1 );
-        moveSearchROIMultiplier = 0.0;
         center = cv::Point2d( -1.0, -1.0 );
         angle = -9999999.0;
     }
@@ -226,7 +222,6 @@ public:
     std::vector< cv::Point2d > worldPoints; ///< Vector of world points ordered to match the pixel point vector
     std::vector< LineEnds > searchLineSet;  ///< Vector of search lines to be searched for the water line
     cv::Rect targetSearchRegion;            ///< Region within which to perform line and move search
-    double moveSearchROIMultiplier;         ///< Move search region multiplier (based on nominal)
     cv::Point2d center;                     ///< Center of symbol
     double angle;                           ///< Angle of symbol
 };
@@ -274,8 +269,8 @@ public:
         timeStampType( tmStampType ),
         timeStampStartPos( tmStampStartPos ),
         timeStampFormat( tmStampFormat ),
-        isCalibContinuous( false ),
-        isStopSignCalib( true )
+        isStopSignCalib( true ),
+        stopSignZeroOffset( 0.0 )
     {}
 
     void clear()
@@ -289,8 +284,8 @@ public:
         timeStampStartPos = -1;
         timeStampFormat.clear();
         calibFilepath.clear();
-        isCalibContinuous = false;
         isStopSignCalib = true;
+        stopSignZeroOffset = 0.0;
         calibControlString.clear();
     }
 
@@ -305,8 +300,8 @@ public:
     GC_TIMESTAMP_TYPE timeStampType;    ///< Specifies where to get timestamp (filename, exif, or dateTimeOriginal)
     int timeStampStartPos;              ///< start position of timestamp string in filename (not whole path)
     std::string timeStampFormat;        ///< Format of the timestamp string, e.g. YYYY-MM-DDThh:mm::ss
-    bool isCalibContinuous;             ///< Stopsign calibration only -- calibrate in every image
     bool isStopSignCalib;               ///< True = stopsign, false = bowtie
+    double stopSignZeroOffset;          ///< Offset from bottom left stop sign point to stage=0.0
     std::string calibControlString;     ///< Calibration string needed for continuous stopsign calibration
 };
 
@@ -362,6 +357,21 @@ public:
         ctrWorld = cv::Point2d( MIN_DEFAULT_DBL, MIN_DEFAULT_DBL );
         rgtPixel = cv::Point2d( MIN_DEFAULT_DBL, MIN_DEFAULT_DBL );
         rgtWorld = cv::Point2d( MIN_DEFAULT_DBL, MIN_DEFAULT_DBL );
+    }
+
+    /**
+     * @brief Set values to zero for continuous calibration
+     */
+    void setZero()
+    {
+        anglePixel = 0.0;
+        angleWorld = 0.0;
+        lftPixel = cv::Point2d( 0.0, 0.0 );
+        lftWorld = cv::Point2d( 0.0, 0.0 );
+        ctrPixel = cv::Point2d( 0.0, 0.0 );
+        ctrWorld = cv::Point2d( 0.0, 0.0 );
+        rgtPixel = cv::Point2d( 0.0, 0.0 );
+        rgtWorld = cv::Point2d( 0.0, 0.0 );
     }
 
     double anglePixel;      ///< Angle of the found line (pixels)

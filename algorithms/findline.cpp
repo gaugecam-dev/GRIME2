@@ -78,10 +78,11 @@ GC_STATUS FindLine::SetLineFindAngleBounds( const double minAngle, const double 
 GC_STATUS FindLine::Find( const Mat &img, const vector< LineEnds > &lines, FindLineResult &result )
 {
     result.findSuccess = false;
-    GC_STATUS retVal = lines.empty() || img.empty() ? GC_ERR : GC_OK;
-    if ( GC_OK != retVal )
+    GC_STATUS retVal = GC_OK;
+    if ( lines.empty() || img.empty() )
     {
         FILE_LOG( logERROR ) << "[FindLine::Find] Cannot find lines with no search lines defined or in a NULL image";
+        retVal = GC_ERR;
     }
     else
     {

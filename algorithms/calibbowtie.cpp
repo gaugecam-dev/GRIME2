@@ -64,6 +64,29 @@ void CalibBowtie::clear()
     m_matHomogWorldToPix = Mat();
     // m_worldToPixParams.clear();
 }
+GC_STATUS CalibBowtie::GetCalibParams( std::string &calibParams )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        stringstream ss;
+        ss.precision( 3 );
+        ss << "BOW TIE CALIBRATION" << endl << endl;
+        ss << "Association points" << endl;
+        for ( size_t i = 0; i < m_model.pixelPoints.size(); ++i )
+        {
+            ss << "pixel x=" << m_model.pixelPoints[ i ].x << " y=" << m_model.pixelPoints[ i ].y;
+            ss << "  world x=" << m_model.worldPoints[ i ].x << " y=" << m_model.worldPoints[ i ].y << endl;
+        }
+        calibParams = ss.str();
+    }
+    catch( const std::exception &e )
+    {
+        FILE_LOG( logERROR ) << "[CalibBowtie::GetCalibParams] " << e.what();
+        retVal = GC_ERR;
+    }
+    return retVal;
+}
 GC_STATUS CalibBowtie::Calibrate( const std::vector< cv::Point2d > pixelPts, const std::vector< cv::Point2d > worldPts,
                                   const double moveSearchROIMultiplier, const std::string &controlJson, const cv::Size gridSize,
                                   const cv::Size imgSize, std::vector< cv::Point > &searchLineCorners )

@@ -50,6 +50,24 @@ void CalibExecutive::clear()
     bowTie.clear();
     stopSign.clear();
 }
+GC_STATUS CalibExecutive::GetCalibParams( std::string &calibParams )
+{
+    GC_STATUS retVal = GC_OK;
+    if ( "BowTie" == GetCalibType() )
+    {
+        retVal = bowTie.GetCalibParams( calibParams );
+    }
+    if ( "StopSign" == GetCalibType() )
+    {
+        retVal = stopSign.GetCalibParams( calibParams );
+    }
+    else
+    {
+        FILE_LOG( logERROR ) << "[CalibExecutive::Recalibrate] No calibration defined" ;
+        retVal = GC_ERR;
+    }
+    return retVal;
+}
 GC_STATUS CalibExecutive::Recalibrate( const Mat &img, const std::string calibType,
                                        double &rmseDist, double &rmseX, double &rmseY )
 {
@@ -247,6 +265,32 @@ GC_STATUS CalibExecutive::WorldToPixel( const cv::Point2d worldPt, cv::Point2d &
     }
     return retVal;
 }
+GC_STATUS CalibStopSign::GetSearchRegionBoundingRect( cv::Rect &rect )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        if ( model.searchLineSet.empty() )
+        {
+            FILE_LOG( logERROR ) << "[CalibStopSign::GetSearchRegionBoundingRect] System not calibrated";
+            retVal = GC_ERR;
+        }
+        else
+        {
+            int left = std::min( model.searchLineSet[ 0 ].top.x, model.searchLineSet[ 0 ].bot.x );
+            int top = std::min( model.searchLineSet[ 0 ].top.y, model.searchLineSet[ model.searchLineSet.size() - 1 ].top.y );
+            int right = std::max( model.searchLineSet[ model.searchLineSet.size() - 1 ].top.x, model.searchLineSet[ model.searchLineSet.size() - 1 ].bot.x );
+            int bottom = std::max( model.searchLineSet[ 0 ].bot.y, model.searchLineSet[ model.searchLineSet.size() - 1 ].bot.y );
+            rect = Rect( left, top, right - left, bottom - top );
+        }
+    }
+    catch( Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[CalibStopSign::GetSearchRegionBoundingRect] " << e.what();
+        return GC_EXCEPT;
+    }
+    return retVal;
+}
 GC_STATUS CalibExecutive::ReadWorldCoordsFromCSVBowTie( const string csvFilepath, vector< vector< Point2d > > &worldCoords )
 {
     GC_STATUS retVal = GC_OK;
@@ -308,7 +352,6 @@ GC_STATUS CalibExecutive::CalibrateStopSign( const cv::Mat &img, const string &c
                                                   paramsCurrent.lineSearch_lftBot, paramsCurrent.lineSearch_rgtBot };
 
             retVal = stopSign.Calibrate( img, paramsCurrent.stopSignFacetLength, paramsCurrent.targetSearchROI,
-                                         static_cast< double >( paramsCurrent.moveSearchROIGrowPercent ) / 100.0,
                                          controlJson, searchLineCorners );
             if ( GC_OK == retVal )
             {
@@ -520,7 +563,8 @@ GC_STATUS CalibExecutive::FindMoveTargets( const Mat &img, FindPointSet &ptsFoun
     }
     else if ( "StopSign" == paramsCurrent.calibType )
     {
-        retVal = FindMoveTargetsStopSign( img, ptsFound );
+        FILE_LOG( logERROR ) << "[FindLine::FindMoveTargets] Not needed (calibration in every image)";
+        retVal = GC_ERR;
     }
     else
     {
@@ -528,13 +572,6 @@ GC_STATUS CalibExecutive::FindMoveTargets( const Mat &img, FindPointSet &ptsFoun
         retVal = GC_ERR;
     }
 
-    return retVal;
-}
-
-// TODO: This method currently only handles translation and not rotation
-GC_STATUS CalibExecutive::FindMoveTargetsStopSign( const Mat &img, FindPointSet &ptsFound )
-{
-    GC_STATUS retVal = stopSign.FindMoveTarget( img, ptsFound );
     return retVal;
 }
 
@@ -561,10 +598,6 @@ GC_STATUS CalibExecutive::MoveRefPoint( cv::Point2d &lftRefPt, cv::Point2d &rgtR
     {
         retVal = MoveRefPointBowTie( lftRefPt, rgtRefPt );
     }
-    else if ( "StopSign" == paramsCurrent.calibType )
-    {
-        retVal = MoveRefPointStopSign( lftRefPt, rgtRefPt );
-    }
     else
     {
         FILE_LOG( logERROR ) << "[FindLine::FindMoveTargets] No valid calibration type currently set";
@@ -578,12 +611,6 @@ GC_STATUS CalibExecutive::MoveRefPointBowTie( cv::Point2d &lftRefPt, cv::Point2d
     GC_STATUS retVal = bowTie.MoveRefPoint( lftRefPt, rgtRefPt );
     return retVal;
 }
-GC_STATUS CalibExecutive::MoveRefPointStopSign( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt )
-{
-    GC_STATUS retVal = stopSign.MoveRefPoint( lftRefPt, rgtRefPt );
-    return retVal;
-}
-
 GC_STATUS CalibExecutive::CalculateRMSE( const cv::Mat &img, double &rmseEuclideanDist, double &rmseX, double &rmseY )
 {
     GC_STATUS retVal = GC_OK;

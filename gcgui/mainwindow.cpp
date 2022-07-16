@@ -370,7 +370,6 @@ int MainWindow::ReadSettings( const QString filepath )
         ui->lineEdit_calibVisionTarget_csv->setText( pSettings->value( "calibCSVFileIn", QString( __CONFIGURATION_FOLDER.c_str() ) + "calibration_target_world_coordinates.csv" ).toString() );
         ui->lineEdit_calibVisionResult_json->setText( pSettings->value( "calibJsonFileOut", QString( __CONFIGURATION_FOLDER.c_str() ) + "calib.json" ).toString() );
         pSettings->value( "calibTypeIsBowtie", true ).toBool() ? ui->radioButton_calibBowtie->setChecked( true ) : ui->radioButton_calibStopSign->setChecked( true );
-        pSettings->value( "calibStopSignOnce", false ).toBool() ? ui->radioButton_stopsignCalibOnce->setChecked( true ) : ui->radioButton_stopsignCalibContinuous->setChecked( true );
         ui->checkBox_calibSearchROI->setChecked( !pSettings->value( "useWholeImage", true ).toBool() );
         ui->doubleSpinBox_stopSignFacetLength->setValue( pSettings->value( "stopSignFacetLength", 7.1875 ).toDouble() );
         ui->spinBox_moveSearchROIGrowPercent->setValue( pSettings->value( "moveSearchROIGrowPercent", 0 ).toInt() );
@@ -467,7 +466,6 @@ int MainWindow::WriteSettings( const QString filepath )
         pSettings->setValue( "calibCSVFileIn", ui->lineEdit_calibVisionTarget_csv->text() );
         pSettings->setValue( "calibJsonFileOut", ui->lineEdit_calibVisionResult_json->text() );
         pSettings->setValue( "calibTypeIsBowtie", ui->radioButton_calibBowtie->isChecked() );
-        pSettings->setValue( "calibStopSignOnce", ui->radioButton_stopsignCalibOnce->isChecked() );
         pSettings->setValue( "useWholeImage", !ui->checkBox_calibSearchROI->isChecked() );
         pSettings->setValue( "stopSignFacetLength", ui->doubleSpinBox_stopSignFacetLength->value() );
         pSettings->setValue( "moveSearchROIGrowPercent", ui->spinBox_moveSearchROIGrowPercent->value() );
@@ -1307,9 +1305,9 @@ void MainWindow::on_pushButton_findLineCurrentImage_clicked()
         params.timeStampType = ui->radioButton_dateTimeInFilename->isChecked() ? FROM_FILENAME : FROM_EXIF;
         params.timeStampStartPos = ui->spinBox_timeStringPosZero->value();
         params.isStopSignCalib = ui->radioButton_calibStopSign->isChecked();
-        params.isCalibContinuous = ui->radioButton_stopsignCalibContinuous->isChecked();
+        params.stopSignZeroOffset = ui->doubleSpinBox_stopSignZeroOffset->value();
         params.calibControlString.clear();
-        if ( params.isStopSignCalib && params.isCalibContinuous )
+        if ( params.isStopSignCalib )
         {
             int ret = m_roiAdjust.FormStopsignCalibJsonString( ui->lineEdit_calibVisionTarget_csv->text().toStdString(),
                                                                ui->lineEdit_calibVisionResult_json->text().toStdString(),
@@ -1430,6 +1428,19 @@ void MainWindow::on_pushButton_showImageMetadata_clicked()
             ui->textEdit_msgs->setText( data.c_str() );
             ui->textEdit_msgs->append( QString( GC_OK == retVal ? "SUCCESS" : "SOME OR ALL METADATA NOT AVAILABLE" ) );
         }
+    }
+}
+void MainWindow::on_pushButton_showCalibration_clicked()
+{
+    std::string calibParams;
+    GC_STATUS retVal = m_visApp.GetCalibParams( calibParams );
+    if ( GC_OK != retVal )
+    {
+        ui->statusBar->showMessage( "Could not retrive calibraion parameters" );
+    }
+    else
+    {
+        ui->textEdit_msgs->setText( QString( calibParams.c_str() ) );
     }
 }
 void MainWindow::ClearTable()

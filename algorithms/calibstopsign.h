@@ -89,21 +89,14 @@ public:
     CalibStopSign();
     GC_STATUS Load( const std::string jsonCalFilepath );
     GC_STATUS Save( const std::string jsonCalFilepath );
-    GC_STATUS Calibrate( const cv::Mat &img, const double octoSideLength, const cv::Rect rect,
-                         const double moveSearchROIMultiplier, const std::string &controlJson,
+    GC_STATUS Calibrate( const cv::Mat &img, const double octoSideLength,
+                         const cv::Rect rect, const std::string &controlJson,
                          std::vector< cv::Point > &searchLineCorners );
     GC_STATUS PixelToWorld( const cv::Point2d ptPixel, cv::Point2d &ptWorld );
     GC_STATUS WorldToPixel( const cv::Point2d ptWorld, cv::Point2d &ptPixel );
     GC_STATUS DrawOverlay( const cv::Mat &img, cv::Mat &result, const bool drawCalib, const bool drawMoveROIs, const bool drawSearchROI );
     GC_STATUS SetStopsignColor( const cv::Scalar color, const double minRange, const double maxRange, cv::Scalar &hsv );
-    GC_STATUS FindMoveTarget( const cv::Mat &img, FindPointSet &findPtSet );
-
-    /**
-     * @brief Returns one of the move reference points
-     * @param isLeft true=Return the left point, false=Return the right point
-     * @return A cv::Point2d object that holds the specified move reference point
-     */
-    GC_STATUS MoveRefPoint( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt );
+    GC_STATUS GetCalibParams( std::string &calibParams );
 
     void clear();
 
@@ -126,7 +119,6 @@ private:
     cv::Scalar hsvHigh;
     cv::Scalar hsvLow2;
     cv::Scalar hsvHigh2;
-    cv::Mat stopSignEdgeTemplate;
 
     GC_STATUS FindColor( const cv::Mat &img, cv::Mat1b &redMask, std::vector< StopSignCandidate > &symbolCandidates );
     GC_STATUS RotateImage( const cv::Mat &src, cv::Mat &dst, const double angle );
@@ -137,13 +129,10 @@ private:
     GC_STATUS FindDiagonals( const cv::Mat &mask, const std::vector< cv::Point > &contour, OctagonLines &octoLines );
     GC_STATUS CalcCorners( const OctagonLines octoLines, std::vector< cv::Point2d > &symbolCorners );
     GC_STATUS CalcOctoWorldPoints( const double sideLength, std::vector< cv::Point2d > &pts );
-    GC_STATUS CalcMoveSearchROI( const cv::Size imgSize, const std::vector< cv::Point2d > symbolCorners,
-                                 cv::Rect &rect , const double moveSearchROIMultiplier );
     GC_STATUS CalcSearchLines( const cv::Mat &img, std::vector< cv::Point > &searchLineCorners, std::vector< LineEnds > &searchLines );
     GC_STATUS CreateCalibration( const std::vector< cv::Point2d > &pixelPts, const std::vector< cv::Point2d > &worldPts );
     GC_STATUS GetLineEquation( const cv::Point2d pt1, const cv::Point2d pt2, double &slope, double &intercept );
     GC_STATUS CalcCenterAngle( const std::vector< cv::Point2d > &pts, cv::Point2d &center, double &angle );
-    // GC_STATUS CreateStopSignTemplate( const std::vector< cv::Point2d > &corners, cv::Mat &stopSignEdgeTempl );
 };
 
 } // namespace gc

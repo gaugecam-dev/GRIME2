@@ -90,6 +90,7 @@ private slots:
     void on_pushButton_findLine_processFolder_clicked();
     void on_pushButton_findLine_stopFolderProcess_clicked();
     void on_pushButton_showImageMetadata_clicked();
+    void on_pushButton_showCalibration_clicked();
     void on_pushButton_createAnimation_clicked();
     void on_pushButton_animationStop_clicked();
     void on_pushButton_setStopSignColor_clicked();

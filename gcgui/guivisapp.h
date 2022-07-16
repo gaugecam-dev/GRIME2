@@ -94,6 +94,7 @@ public:
     GC_STATUS LoadCalib( const std::string calibJson );
     GC_STATUS Calibrate( const std::string imgFilepath, const string jsonControl );
     GC_STATUS PixelToWorld( const cv::Point2d pixelPt, cv::Point2d &worldPt );
+    GC_STATUS GetCalibParams( std::string &calibParams );
 
     // findline app methods
     GC_STATUS GetMetadata( const std::string imgFilepath, std::string &data );

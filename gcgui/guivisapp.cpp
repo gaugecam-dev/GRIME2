@@ -642,6 +642,12 @@ GC_STATUS GuiVisApp::GetROIColor( const cv::Rect roi, cv::Scalar &color )
 
     return retVal;
 }
+GC_STATUS GuiVisApp::GetCalibParams( std::string &calibParams )
+{
+    GC_STATUS retVal = m_visApp.GetCalibParams( calibParams );
+    sigMessage( string( "Get calibration parameters: " ) + ( GC_OK == retVal ? "SUCCESS" : "FAILURE" ) );
+    return retVal;
+}
 GC_STATUS GuiVisApp::LoadCalib( const std::string calibJson )
 {
     GC_STATUS retVal = m_visApp.LoadCalib( calibJson );

@@ -56,10 +56,32 @@ void CalibStopSign::clear()
     matHomogWorldToPix = Mat();
     model.clear();
 }
+GC_STATUS CalibStopSign::GetCalibParams( std::string &calibParams )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        stringstream ss;
+        ss.precision( 3 );
+        ss << "STOP SIGN CALIBRATION" << endl << endl;
+        ss << "Association points" << endl;
+        for ( size_t i = 0; i < model.pixelPoints.size(); ++i )
+        {
+            ss << "pixel x=" << model.pixelPoints[ i ].x << " y=" << model.pixelPoints[ i ].y;
+            ss << "  world x=" << model.worldPoints[ i ].x << " y=" << model.worldPoints[ i ].y << endl;
+        }
+        calibParams = ss.str();
+    }
+    catch( const std::exception &e )
+    {
+        FILE_LOG( logERROR ) << "[CalibStopSign::GetCalibParams] " << e.what();
+        retVal = GC_ERR;
+    }
+    return retVal;
+}
 // symbolPoints are clockwise ordered with 0 being the topmost left point
 GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double octoSideLength, const cv::Rect rect,
-                                    const double moveSearchROIMultiplier, const std::string &controlJson,
-                                    std::vector< Point > &searchLineCorners )
+                                    const std::string &controlJson, std::vector< Point > &searchLineCorners )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -122,6 +144,8 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double octoSideLen
                             retVal = CalcOctoWorldPoints( octoSideLength, model.worldPoints );
                             if ( GC_OK == retVal )
                             {
+                                cout << model.pixelPoints << endl << endl;
+                                cout << model.worldPoints << endl;
                                 retVal = CreateCalibration( model.pixelPoints, model.worldPoints );
                                 if ( GC_OK == retVal )
                                 {
@@ -171,13 +195,6 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double octoSideLen
                                         if ( GC_OK == retVal )
                                         {
                                             model.imgSize = img.size();
-                                            model.moveSearchROIMultiplier = moveSearchROIMultiplier;
-                                            retVal = CalcMoveSearchROI( img.size(), model.pixelPoints,
-                                                                        model.targetSearchRegion, moveSearchROIMultiplier );
-                                            // if ( GC_OK == retVal )
-                                            // {
-                                            //     retVal = CreateStopSignTemplate( model.pixelPoints, stopSignEdgeTemplate );
-                                            // }
                                         }
                                     }
                                 }
@@ -200,132 +217,6 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double octoSideLen
         else
         {
             model.controlJson = controlJson;
-        }
-    }
-    catch( cv::Exception &e )
-    {
-        FILE_LOG( logERROR ) << "[CalibStopSign::Calibrate] " << e.what();
-        retVal = GC_EXCEPT;
-    }
-
-    return retVal;
-}
-//GC_STATUS CalibStopSign::CreateStopSignTemplate( const std::vector< cv::Point2d > &corners, cv::Mat &stopSignEdgeTempl )
-//{
-//    GC_STATUS retVal = GC_OK;
-//    try
-//    {
-//        Point2d ptMin( 1000000, 1000000 ), ptMax( -1000000, -1000000 );
-//        vector< Point > ptsAdj;
-//        for ( size_t i = 0; i < corners.size(); ++i )
-//        {
-//            if ( corners[ i ].x > ptMax.x )
-//                ptMax.x = corners[ i ].x;
-//            if ( corners[ i ].x < ptMin.x )
-//                ptMin.x = corners[ i ].x;
-//            if ( corners[ i ].y > ptMax.y )
-//                ptMax.y = corners[ i ].y;
-//            if ( corners[ i ].y < ptMin.y )
-//                ptMin.y = corners[ i ].y;
-//        }
-//        Rect stpSgnRect( ptMin.x, ptMin.y, ptMax.x - ptMin.x, ptMax.y - ptMin.y );
-
-//        for ( size_t i = 0; i < corners.size(); ++i )
-//        {
-//            ptsAdj.push_back( corners[ i ] - Point2d( stpSgnRect.x - 10, stpSgnRect.y - 10 ) );
-//        }
-//        stopSignEdgeTempl = Mat::zeros( Size( stpSgnRect.width + 20, stpSgnRect.height + 20 ), CV_8UC1 );
-
-//        polylines( stopSignEdgeTempl, ptsAdj, true, Scalar( 255 ), 5 );
-//#ifdef DEBUG_FIND_CALIB_SYMBOL
-//        imwrite( DEBUG_FOLDER + "ssTempl.png", stopSignEdgeTempl );
-//#endif
-//    }
-//    catch( cv::Exception &e )
-//    {
-//        FILE_LOG( logERROR ) << "[CalibStopSign::CreateStopSignTemplate] " << e.what();
-//        retVal = GC_EXCEPT;
-//    }
-
-//    return retVal;
-//}
-GC_STATUS CalibStopSign::FindMoveTarget( const cv::Mat &img, FindPointSet &findPtSet )
-{
-    GC_STATUS retVal = GC_OK;
-    try
-    {
-        findPtSet.clear();
-        std::vector< StopSignCandidate > candidates;
-
-        cv::Mat1b mask;
-        retVal = FindColor( img( model.targetSearchRegion ), mask, candidates );
-        if ( GC_OK == retVal )
-        {
-            OctagonLines octoLines;
-            Point2d ptTopLft, ptTopRgt, ptBotLft, ptBotRgt;
-            for ( size_t i = 0; i < candidates.size(); ++i )
-            {
-                OctagonLines octoLines;
-                retVal = FindCorners( mask, candidates[ i ].contour, octoLines );
-                if ( GC_OK == retVal )
-                {
-                    vector< Point > corners;
-                    retVal = FindDiagonals( mask, candidates[ i ].contour, octoLines );
-                    if ( GC_OK == retVal )
-                    {
-                        std::vector< cv::Point2d > pixPts;
-                        retVal = CalcCorners( octoLines, pixPts );
-                        if ( GC_OK == retVal )
-                        {
-                            findPtSet.lftPixel = pixPts[ 0 ] + Point2d( model.targetSearchRegion.x, model.targetSearchRegion.y );
-                            findPtSet.rgtPixel = pixPts[ 1 ] + Point2d( model.targetSearchRegion.x, model.targetSearchRegion.y );
-                            findPtSet.ctrPixel = Point2d( ( findPtSet.lftPixel.x + findPtSet.rgtPixel.x ) / 2.0,
-                                                          ( findPtSet.lftPixel.y + findPtSet.rgtPixel.y ) / 2.0 );
-
-                            retVal = PixelToWorld( findPtSet.lftPixel, findPtSet.lftWorld );
-                            if ( GC_OK == retVal )
-                            {
-                                retVal = PixelToWorld( findPtSet.rgtPixel, findPtSet.rgtWorld );
-                                if ( GC_OK == retVal )
-                                {
-                                    retVal = PixelToWorld( findPtSet.ctrPixel, findPtSet.ctrWorld );
-                                    if ( GC_OK == retVal )
-                                    {
-                                        findPtSet.anglePixel = atan2( findPtSet.rgtPixel.y - findPtSet.lftPixel.y,
-                                                                      findPtSet.rgtPixel.x - findPtSet.lftPixel.x ) * ( 180.0 / CV_PI );
-                                        findPtSet.angleWorld = atan2( findPtSet.rgtWorld.y - findPtSet.lftWorld.y,
-                                                                      findPtSet.rgtWorld.x - findPtSet.lftWorld.x ) * ( 180.0 / CV_PI );
-                                    }
-                                }
-                            }
-                            if ( GC_OK == retVal )
-                            {
-#ifdef DEBUG_FIND_CALIB_SYMBOL
-                                Mat color;
-                                img( model.targetSearchRegion ).copyTo( color );
-                                line( color, Point( model.pixelPoints[ 0 ].x - 10, model.pixelPoints[ i ].y ),
-                                             Point( model.pixelPoints[ 1 ].x + 10, model.pixelPoints[ i ].y ),
-                                      Scalar( 0, 255, 0 ), 3 );
-                                line( color, Point( pixPts[ 0 ].x - 10, pixPts[ i ].y ),
-                                             Point( pixPts[ 1 ].x + 10, pixPts[ i ].y ),
-                                      Scalar( 0, 0, 1 ), 1 );
-                                imwrite( DEBUG_FOLDER + "___target_move.png", color );
-#endif
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        if ( model.pixelPoints.empty() || model.worldPoints.empty() || model.searchLineSet.empty() )
-        {
-            FILE_LOG( logERROR ) << "[CalibStopSign::Calibrate] No valid calibration for drawing";
-            retVal = GC_ERR;
-        }
-        else if ( matHomogPixToWorld.empty() || matHomogWorldToPix.empty() )
-        {
-            FILE_LOG( logERROR ) << "[CalibStopSign::Calibrate] System not calibrated";
-            retVal = GC_ERR;
         }
     }
     catch( cv::Exception &e )
@@ -412,105 +303,6 @@ GC_STATUS CalibStopSign::CreateCalibration(const std::vector< cv::Point2d > &pix
 
     return retVal;
 }
-GC_STATUS CalibStopSign::MoveRefPoint( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt )
-{
-    GC_STATUS retVal = GC_OK;
-    Point2d pt( numeric_limits< double >::min(), numeric_limits< double >::min() );
-    if ( 8 != model.pixelPoints.size() )
-    {
-        FILE_LOG( logERROR ) << "[CalibStopSign::MoveRefPoint] Cannot retrieve move reference point from an uncalibrated system";
-        retVal = GC_ERR;
-    }
-    else
-    {
-        lftRefPt = model.pixelPoints[ 0 ];
-        rgtRefPt = model.pixelPoints[ 1 ];
-    }
-    return retVal;
-}
-GC_STATUS CalibStopSign::GetSearchRegionBoundingRect( cv::Rect &rect )
-{
-    GC_STATUS retVal = GC_OK;
-    try
-    {
-        if ( model.searchLineSet.empty() )
-        {
-            FILE_LOG( logERROR ) << "[CalibStopSign::GetSearchRegionBoundingRect] System not calibrated";
-            retVal = GC_ERR;
-        }
-        else
-        {
-            int left = std::min( model.searchLineSet[ 0 ].top.x, model.searchLineSet[ 0 ].bot.x );
-            int top = std::min( model.searchLineSet[ 0 ].top.y, model.searchLineSet[ model.searchLineSet.size() - 1 ].top.y );
-            int right = std::max( model.searchLineSet[ model.searchLineSet.size() - 1 ].top.x, model.searchLineSet[ model.searchLineSet.size() - 1 ].bot.x );
-            int bottom = std::max( model.searchLineSet[ 0 ].bot.y, model.searchLineSet[ model.searchLineSet.size() - 1 ].bot.y );
-            rect = Rect( left, top, right - left, bottom - top );
-        }
-    }
-    catch( Exception &e )
-    {
-        FILE_LOG( logERROR ) << "[CalibStopSign::GetSearchRegionBoundingRect] " << e.what();
-        return GC_EXCEPT;
-    }
-    return retVal;
-}
-GC_STATUS CalibStopSign::CalcMoveSearchROI( const cv::Size imgSize, const std::vector< cv::Point2d > symbolCorners,
-                                            cv::Rect &rect, const double moveSearchROIMultiplier )
-{
-    GC_STATUS retVal = GC_OK;
-
-    try
-    {
-        double x_min = numeric_limits< double >::max();
-        double x_max = -numeric_limits< double >::max();
-        double y_min = numeric_limits< double >::max();
-        double y_max = -numeric_limits< double >::max();
-        for ( size_t i = 0; i < symbolCorners.size(); ++i )
-        {
-            if ( symbolCorners[ i ].x < x_min )
-                x_min = symbolCorners[ i ].x;
-            if ( symbolCorners[ i ].x > x_max )
-                x_max = symbolCorners[ i ].x;
-            if ( symbolCorners[ i ].y < y_min )
-                y_min = symbolCorners[ i ].y;
-            if ( symbolCorners[ i ].y > y_max )
-                y_max = symbolCorners[ i ].y;
-        }
-        x_min = std::max( 0.0, x_min );
-        x_max = std::min( model.imgSize.width - 1.0, x_max );
-        y_min = std::max( 0.0, y_min );
-        y_max = std::min( model.imgSize.height - 1.0, y_max );
-
-        double x_margin = ( x_max - x_min ) * MOVE_ROI_RATIO_INCREASE;
-        double y_margin = ( y_max - y_min ) * MOVE_ROI_RATIO_INCREASE;
-
-        x_min = std::max( 0.0, x_min - x_margin );
-        x_max = std::min( model.imgSize.width - 1.0, x_max + x_margin );
-        y_min = std::max( 0.0, y_min - y_margin );
-        y_max = std::min( model.imgSize.height - 1.0, y_max + y_margin );
-
-        rect = Rect( x_min, y_min, x_max - x_min, y_max - y_min );
-        if ( 0.0 > rect.x || 0.0 > rect.y || 50.0 > rect.width || 50.0 > rect.height )
-        {
-            FILE_LOG( logERROR ) << "[CalibStopSign::CalcMoveSearchROI] Invalid move search ROI";
-            retVal = GC_ERR;
-        }
-        if ( 0.0 < moveSearchROIMultiplier )
-        {
-            int lftWidth = cvRound( moveSearchROIMultiplier * static_cast< double >( rect.width ) );
-            int lftHeight = cvRound( moveSearchROIMultiplier * static_cast< double >( rect.height ) );
-            int lftX = std::max( 0, rect.x - ( lftWidth - rect.width ) / 2 );
-            int lftY = std::max( 0, rect.y - ( lftHeight - rect.height ) / 2 );
-            rect = Rect( lftX, lftY, std::min( imgSize.width - lftX, lftWidth ), std::min( imgSize.height - lftY, lftHeight ) );
-        }
-    }
-    catch( Exception &e )
-    {
-        FILE_LOG( logERROR ) << "[CalibStopSign::GetSearchRegionBoundingRect] " << e.what();
-        return GC_EXCEPT;
-    }
-    return retVal;
-}
 GC_STATUS CalibStopSign::Load( const std::string jsonCalFilepath )
 {
     GC_STATUS retVal = GC_OK;
@@ -532,7 +324,6 @@ GC_STATUS CalibStopSign::Load( const std::string jsonCalFilepath )
 
             model.imgSize.width = ptreeTop.get< int >( "imageWidth", 0 );
             model.imgSize.height = ptreeTop.get< int >( "imageHeight", 0 );
-            model.moveSearchROIMultiplier = ptreeTop.get< double >( "moveSearchROIMultiplier", 0.0 );
             property_tree::ptree ptreeCalib = ptreeTop.get_child( "PixelToWorld" );
 
             Point2d ptTemp;
@@ -641,7 +432,6 @@ GC_STATUS CalibStopSign::Save( const std::string jsonCalFilepath )
                 fileStream << "  \"calibType\":\"StopSign\"" << "," << endl;
                 fileStream << "  \"imageWidth\":" << model.imgSize.width << "," << endl;
                 fileStream << "  \"imageHeight\":" << model.imgSize.height << "," << endl;
-                fileStream << "  \"moveSearchROIMultiplier\":" << model.moveSearchROIMultiplier * 100.0 << "," << endl;
                 fileStream << "  \"PixelToWorld\": " << endl;
                 fileStream << "  {" << endl;
                 fileStream << "    \"points\": [" << endl;
@@ -716,23 +506,17 @@ GC_STATUS CalibStopSign::CalcOctoWorldPoints( const double sideLength, std::vect
     try
     {
         pts.clear();
-        double cornerLength = sideLength * sqrt( 2.0 );
-        double top = cornerLength * 2.0 + sideLength;
-        double row2 = cornerLength + sideLength;
-        double row3 = cornerLength;
-        double bot = 0.0;
-        double lft = 0.0;
-        double col2 = cornerLength;
-        double col3 = cornerLength + sideLength;
-        double rgt = cornerLength * 2.0 + sideLength;
-        pts.push_back( Point2d( col2, top ) );
-        pts.push_back( Point2d( col3, top ) );
-        pts.push_back( Point2d( rgt, row2 ) );
-        pts.push_back( Point2d( rgt, row3 ) );
-        pts.push_back( Point2d( col3, bot ) );
-        pts.push_back( Point2d( col2, bot ) );
-        pts.push_back( Point2d( lft, row3 ) );
-        pts.push_back( Point2d( lft, row2 ) );
+        double cornerLength = sqrt( sideLength * sideLength / 2.0 );
+
+        pts.push_back( Point2d( 0.0, cornerLength + cornerLength + sideLength ) );
+        pts.push_back( Point2d( sideLength, cornerLength + cornerLength + sideLength ) );
+        pts.push_back( Point2d( sideLength + cornerLength, + cornerLength + sideLength ) );
+        pts.push_back( Point2d( sideLength + cornerLength, +cornerLength ) );
+        pts.push_back( Point2d( sideLength, 0.0 ) );
+        pts.push_back( Point2d( 0.0, 0.0 ) );
+        pts.push_back( Point2d( -cornerLength, cornerLength ) );
+        pts.push_back( Point2d( -cornerLength, cornerLength + sideLength ) );
+
     }
     catch( std::exception &e )
     {
