@@ -23,11 +23,10 @@
 static const std::string DEBUG_FOLDER = "/var/tmp/water/";
 #endif
 
-static const double MIN_SYMBOL_CONTOUR_SIZE = 50;
+static const double MIN_SYMBOL_CONTOUR_SIZE = 30;
 static const double MIN_SYMBOL_CONTOUR_AREA = 1500;
 static const int MIN_SYMBOL_CONTOUR_LENGTH = 7;
 static const double MAX_SYMBOL_CONTOUR_ELONG = 1.5;
-static const double MOVE_ROI_RATIO_INCREASE = 0.15;
 using namespace cv;
 using namespace std;
 using namespace boost;
@@ -144,8 +143,6 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double octoSideLen
                             retVal = CalcOctoWorldPoints( octoSideLength, model.worldPoints );
                             if ( GC_OK == retVal )
                             {
-                                cout << model.pixelPoints << endl << endl;
-                                cout << model.worldPoints << endl;
                                 retVal = CreateCalibration( model.pixelPoints, model.worldPoints );
                                 if ( GC_OK == retVal )
                                 {
@@ -225,6 +222,85 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double octoSideLen
         retVal = GC_EXCEPT;
     }
 
+    return retVal;
+}
+GC_STATUS CalibStopSign::AdjustStopSignForRotation( const Size imgSize, const FindPointSet &calcLinePts, double &offsetAngle )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        double stopSignAngle = atan2( ( model.pixelPoints[ 4 ].y - model.pixelPoints[ 5 ].y ),
+                                      ( model.pixelPoints[ 4 ].x - model.pixelPoints[ 5 ].x ) ) * ( 180.0 / CV_PI );
+        double waterLineAngle = atan2( ( calcLinePts.lftPixel.y - calcLinePts.rgtPixel.y ),
+                                       ( calcLinePts.lftPixel.x - calcLinePts.rgtPixel.x ) ) * ( 180.0 / CV_PI );
+        if ( 90.0 < stopSignAngle )
+            stopSignAngle += -180.0;
+        if ( 90.0 < waterLineAngle )
+            waterLineAngle += -180.0;
+
+        // cout << "Stop sign angle=" << stopSignAngle << " Waterline angle=" << waterLineAngle << endl;
+
+        offsetAngle = stopSignAngle - waterLineAngle;
+
+        Mat mask = Mat::zeros( imgSize, CV_8UC1 );
+
+        vector< Point > contour;
+        for ( size_t i = 0; i < model.pixelPoints.size(); ++i )
+        {
+            contour.push_back( model.pixelPoints[ i ] );
+        }
+        contour.push_back( model.pixelPoints[ 0 ] );
+
+
+        drawContours( mask, vector< vector< Point > >( 1, contour ), -1, Scalar( 255 ), FILLED );
+        // circle( mask, model.pixelPoints[ 5 ], 13, Scalar( 128 ), 3 );
+        // line( mask, calcLinePts.lftPixel, calcLinePts.rgtPixel, Scalar( 255 ), 5 );
+        // putText( mask, "ORIGINAL", Point( model.pixelPoints[ 7 ].x, model.pixelPoints[ 0 ].y - 70 ), FONT_HERSHEY_PLAIN, 3.0, Scalar( 255 ), 3 );
+        // imwrite( "/var/tmp/water/stopsign_angle_original.png", mask );
+        // rectangle( mask, Rect( model.pixelPoints[ 7 ].x - 10, 0, 500, model.pixelPoints[ 0 ].y - 10 ), Scalar( 0 ), FILLED );
+
+        // line( mask, calcLinePts.lftPixel, calcLinePts.rgtPixel, Scalar( 0 ), 7 );
+
+        Mat rotMatrix = cv::getRotationMatrix2D( model.pixelPoints[ 5 ], offsetAngle, 1.0 );
+        warpAffine( mask, mask, rotMatrix, mask.size() );
+
+        // line( mask, calcLinePts.lftPixel, calcLinePts.rgtPixel, Scalar( 255 ), 5 );
+        // putText( mask, "ADJUSTED", Point( model.pixelPoints[ 7 ].x, model.pixelPoints[ 0 ].y - 70 ), FONT_HERSHEY_PLAIN, 3.0, Scalar( 255 ), 3 );
+
+        // imwrite( "/var/tmp/water/stopsign_angle_adjusted.png", mask );
+
+        vector< vector< Point > > contours;
+        findContours( mask, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE );
+
+        if ( contours.empty() )
+        {
+            FILE_LOG( logERROR ) << "[CalibStopSign::AdjustStopSignForRotation] Could not find rotate adjusted stop sign";
+            retVal = GC_ERR;
+        }
+        else
+        {
+            OctagonLines octoLines;
+            retVal = FindCorners( mask, contours[ 0 ], octoLines );
+            if ( GC_OK == retVal )
+            {
+                retVal = FindDiagonals( mask, contours[ 0 ], octoLines );
+                if ( GC_OK == retVal )
+                {
+                    vector< Point2d > adjustedCorners;
+                    retVal = CalcCorners( octoLines, adjustedCorners );
+                    if ( GC_OK == retVal )
+                    {
+                        retVal = CreateCalibration( model.pixelPoints, adjustedCorners );
+                    }
+                }
+            }
+        }
+    }
+    catch( const std::exception &e )
+    {
+        FILE_LOG( logERROR ) << "[CalibStopSign::AdjustStopSignForRotation] " << diagnostic_information( e );
+        retVal = GC_EXCEPT;
+    }
     return retVal;
 }
 GC_STATUS CalibStopSign::CalcCenterAngle( const std::vector< cv::Point2d > &pts, cv::Point2d &center, double &angle )
@@ -547,7 +623,6 @@ GC_STATUS CalibStopSign::FindColor( const cv::Mat &img, cv::Mat1b &mask,
         {
             Mat3b hsv;
             cvtColor( img, hsv, COLOR_BGR2HSV );
-
             if ( -900 > hsvLow2.val[ 0 ] ) // red -- has beginning and end
             {
                 Mat1b mask1, mask2;
@@ -562,6 +637,10 @@ GC_STATUS CalibStopSign::FindColor( const cv::Mat &img, cv::Mat1b &mask,
             // imwrite( "/var/tmp/water/img.png", img );
             // imwrite( "/var/tmp/water/stopsign_mask.png", mask );
 
+            GaussianBlur( mask, mask, Size( 7, 7 ), 3.0 );
+#ifdef DEBUG_FIND_CALIB_SYMBOL
+            imwrite( DEBUG_FOLDER + "gaussian.png", mask );
+#endif
 
             vector< vector< Point > > contours;
             findContours( mask, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE );

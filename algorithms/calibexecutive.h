@@ -83,6 +83,7 @@ public:
     GC_STATUS MoveRefPoint( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt );
     GC_STATUS SetStopsignColorRed();
     GC_STATUS SetStopsignColor( const cv::Scalar color, const double minRange, const double maxRange, cv::Scalar &hsv );
+    GC_STATUS AdjustStopSignForRotation( const cv::Size imgSize, const FindPointSet &calcLinePts, double &offsetAngle );
 
     CalibModelBowtie &CalibBowtieModel() { return bowTie.Model(); }
     CalibModelSymbol &CalibSymbolModel() { return stopSign.Model(); }

@@ -20,8 +20,8 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/imgcodecs.hpp>
 
-#ifdef DEBUG_FIND_LINE
-#undef DEBUG_FIND_LINE
+#ifndef DEBUG_FIND_LINE
+#define DEBUG_FIND_LINE
 #include <iostream>
 #include <boost/filesystem.hpp>
 #ifdef WIN32
@@ -119,6 +119,9 @@ GC_STATUS FindLine::Find( const Mat &img, const vector< LineEnds > &lines, FindL
                 retVal = Preprocess( inImg, scratch );
                 if ( GC_OK == retVal )
                 {
+#ifdef DEBUG_FIND_LINE
+                    bool isOK = imwrite( DEBUG_RESULT_FOLDER + "preprocess.png", scratch );
+#endif
                     size_t start;
                     Point2d linePt;
                     vector< uint > rowSums;
@@ -140,7 +143,7 @@ GC_STATUS FindLine::Find( const Mat &img, const vector< LineEnds > &lines, FindL
 #ifdef DEBUG_FIND_LINE
                     line( outImg, lines[ 0 ].top, lines[ 0 ].bot, Scalar( 0, 255, 255 ), 3 );
                     line( outImg, lines[ lines.size() - 1 ].top, lines[ lines.size() - 1 ].bot, Scalar( 0, 255, 255 ), 3 );
-                    bool isOK = imwrite( DEBUG_RESULT_FOLDER + "rowsums.png", outImg );
+                    isOK = imwrite( DEBUG_RESULT_FOLDER + "rowsums.png", outImg );
                     if ( !isOK )
                     {
                         FILE_LOG( logERROR ) << "[FindLine::Find] Could not write debug image " << DEBUG_RESULT_FOLDER << "rowsums.png";
@@ -179,9 +182,10 @@ GC_STATUS FindLine::Preprocess( const cv::Mat &src, cv::Mat &dst )
     {
         try
         {
+            GaussianBlur( src, dst, Size( 3, 3 ), 3.0 );
             Mat kern = getStructuringElement( MORPH_RECT, Size( 1, 9 ) );
-            dilate( src, dst, kern, Point( -1, -1 ), 3 );
-            erode( dst, dst, kern, Point( -1, -1 ), 3 );
+            dilate( dst, dst, kern, Point( -1, -1 ), 2 );
+            erode( dst, dst, kern, Point( -1, -1 ), 2 );
         }
         catch( cv::Exception &e )
         {
@@ -295,9 +299,6 @@ GC_STATUS FindLine::FitLineRANSAC( const std::vector< Point2d > &pts, FindPointS
             retVal = GC_EXCEPT;
         }
     }
-#ifdef DEBUG_FIND_LINE
-    cout << "FindLine::Find() retVal=" << retVal << endl;
-#endif
     return retVal;
 }
 GC_STATUS FindLine::GetSlopeIntercept( const Point2d one, const Point2d two, double &slope, double &intercept )
@@ -372,11 +373,11 @@ GC_STATUS FindLine::GetRandomNumbers( const int low_bound, const int high_bound,
                 retVal = GC_ERR;
             }
 
-#ifdef DEBUG_FIND_LINE
-            for ( size_t i = 0; i < static_cast< size_t >( cnt_to_generate ); ++i )
-                std::cout << numbers[ i ] << ", ";
-            std::cout << endl;
-#endif
+//#ifdef DEBUG_FIND_LINE
+//            for ( size_t i = 0; i < static_cast< size_t >( cnt_to_generate ); ++i )
+//                std::cout << numbers[ i ] << ", ";
+//            std::cout << endl;
+//#endif
         }
     }
     catch( std::exception &e )

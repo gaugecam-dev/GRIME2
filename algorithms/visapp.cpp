@@ -291,49 +291,59 @@ GC_STATUS VisApp::CalcFindLine( const Mat &img, FindLineResult &result )
             }
             else
             {
-                result.msgs.push_back( "FindStatus: " + string( GC_OK == retVal ? "SUCCESS" : "FAIL" ) );
-                retVal = PixelToWorld( result.calcLinePts );
-                if ( GC_OK != retVal )
+                if ( "StopSign" == m_calibExec.GetCalibType() )
                 {
-                    result.msgs.push_back( "Could not calculate world coordinates for found line points" );
+                    retVal = m_calibExec.AdjustStopSignForRotation( img.size(), result.calcLinePts, result.symbolToWaterLineAngle );
                 }
-                else
+                if ( GC_OK == retVal )
                 {
-                    result.calcLinePts.angleWorld = atan2( result.calcLinePts.rgtWorld.y - result.calcLinePts.lftWorld.y,
-                                                           result.calcLinePts.rgtWorld.x - result.calcLinePts.lftWorld.x ) * ( 180.0 / CV_PI );
-                    snprintf( buffer, 256, "Angle: %.3f", result.calcLinePts.angleWorld );
-                    result.msgs.push_back( buffer );
-
-                    snprintf( buffer, 256, "Level: %.3f", result.calcLinePts.ctrWorld.y );
-                    result.msgs.push_back( buffer );
-
-                    result.waterLevelAdjusted.x = result.calcLinePts.ctrWorld.x + result.offsetMovePts.ctrWorld.x;
-                    result.waterLevelAdjusted.y = result.calcLinePts.ctrWorld.y + result.offsetMovePts.ctrWorld.y;
-
-                    Point2d reprojectPt;
-                    retVal = WorldToPixel( result.calcLinePts.ctrWorld, reprojectPt );
-                    if ( GC_OK == retVal )
+                    result.msgs.push_back( "FindStatus: " + string( GC_OK == retVal ? "SUCCESS" : "FAIL" ) );
+                    retVal = PixelToWorld( result.calcLinePts );
+                    if ( GC_OK != retVal )
                     {
-                        result.calibReprojectOffset_x = result.calcLinePts.ctrPixel.x - reprojectPt.x;
-                        result.calibReprojectOffset_y = result.calcLinePts.ctrPixel.y - reprojectPt.y;
-                        double dist = sqrt( pow( result.calcLinePts.ctrPixel.x - reprojectPt.x, 2 ) +
-                                            pow( result.calcLinePts.ctrPixel.y - reprojectPt.y, 2 ) );
-                        result.calibReprojectOffset_dist = dist;
+                        result.msgs.push_back( "Could not calculate world coordinates for found line points" );
                     }
                     else
                     {
-                        result.calibReprojectOffset_x = -9999999.0;
-                        result.calibReprojectOffset_y = -9999999.0;
-                        result.calibReprojectOffset_dist = -9999999.0;;
+                        snprintf( buffer, 256, "stopsign/waterline angle diff: %.3f", result.symbolToWaterLineAngle );
+                        result.msgs.push_back( buffer );
+
+                        result.calcLinePts.angleWorld = atan2( result.calcLinePts.rgtWorld.y - result.calcLinePts.lftWorld.y,
+                                                               result.calcLinePts.rgtWorld.x - result.calcLinePts.lftWorld.x ) * ( 180.0 / CV_PI );
+                        snprintf( buffer, 256, "Angle: %.3f", result.calcLinePts.angleWorld );
+                        result.msgs.push_back( buffer );
+
+                        snprintf( buffer, 256, "Level: %.3f", result.calcLinePts.ctrWorld.y );
+                        result.msgs.push_back( buffer );
+
+                        result.waterLevelAdjusted.x = result.calcLinePts.ctrWorld.x + result.offsetMovePts.ctrWorld.x;
+                        result.waterLevelAdjusted.y = result.calcLinePts.ctrWorld.y + result.offsetMovePts.ctrWorld.y;
+
+                        Point2d reprojectPt;
+                        retVal = WorldToPixel( result.calcLinePts.ctrWorld, reprojectPt );
+                        if ( GC_OK == retVal )
+                        {
+                            result.calibReprojectOffset_x = result.calcLinePts.ctrPixel.x - reprojectPt.x;
+                            result.calibReprojectOffset_y = result.calcLinePts.ctrPixel.y - reprojectPt.y;
+                            double dist = sqrt( pow( result.calcLinePts.ctrPixel.x - reprojectPt.x, 2 ) +
+                                                pow( result.calcLinePts.ctrPixel.y - reprojectPt.y, 2 ) );
+                            result.calibReprojectOffset_dist = dist;
+                        }
+                        else
+                        {
+                            result.calibReprojectOffset_x = -9999999.0;
+                            result.calibReprojectOffset_y = -9999999.0;
+                            result.calibReprojectOffset_dist = -9999999.0;;
+                        }
+                        snprintf( buffer, 256, "Reproject error:" );
+                        result.msgs.push_back( buffer );
+                        snprintf( buffer, 256, "   x=%0.3e", result.calibReprojectOffset_x );
+                        result.msgs.push_back( buffer );
+                        snprintf( buffer, 256, "   y=%0.3e", result.calibReprojectOffset_y );
+                        result.msgs.push_back( buffer );
+                        snprintf( buffer, 256, "   Euclid. dist=%0.3e", result.calibReprojectOffset_dist );
+                        result.msgs.push_back( buffer );
                     }
-                    snprintf( buffer, 256, "Reproject error:" );
-                    result.msgs.push_back( buffer );
-                    snprintf( buffer, 256, "   x=%0.3e y=%0.3e",
-                              result.calibReprojectOffset_x, result.calibReprojectOffset_y );
-                    result.msgs.push_back( buffer );
-                    snprintf( buffer, 256, "   Euclid. dist=%0.3e",
-                              result.calibReprojectOffset_dist );
-                    result.msgs.push_back( buffer );
                 }
             }
         }
@@ -701,6 +711,7 @@ GC_STATUS VisApp::WriteFindlineResultToCSV( const std::string resultCSV, const s
                 csvFile << "waterLevelAdjusted,";
                 csvFile << "xRMSE, yRMSE, EuclidDistRMSE,";
 
+                csvFile << "waterLine-stopSign-angle-diff,";
                 csvFile << "calcLinePts-angle,";
                 csvFile << "calcLinePts-lftPixel-x,"; csvFile << "calcLinePts-lftPixel-y,";
                 csvFile << "calcLinePts-ctrPixel-x,"; csvFile << "calcLinePts-ctrPixel-y,";
@@ -752,6 +763,8 @@ GC_STATUS VisApp::WriteFindlineResultToCSV( const std::string resultCSV, const s
             csvFile << result.calibReprojectOffset_x << ",";
             csvFile << result.calibReprojectOffset_y << ",";
             csvFile << result.calibReprojectOffset_dist << ",";
+
+            csvFile << result.symbolToWaterLineAngle << ",";
 
             csvFile << result.calcLinePts.angleWorld << ",";
             csvFile << result.calcLinePts.lftPixel.x << ","; csvFile << result.calcLinePts.lftPixel.y << ",";

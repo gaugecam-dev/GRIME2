@@ -501,6 +501,7 @@ public:
         calibReprojectOffset_x = -9999999.0;
         calibReprojectOffset_y = -9999999.0;
         calibReprojectOffset_dist = -9999999.0;
+        symbolToWaterLineAngle = 0.0;
         msgs.clear();
     }
 
@@ -512,7 +513,8 @@ public:
     FindPointSet foundMovePts;              ///< Line between the move targets at the time of the current line find
     FindPointSet offsetMovePts;             ///< Offset between the moveRef and the moveFound lines
     CalibOffset calibOffsets;               ///< Calibration offset center and angle (along with original center and angle)
-    std::vector< cv::Point2d > foundPoints; ///< Water line points used to calculate the found water level line
+    double symbolToWaterLineAngle;          ///< Angle difference between the stop sign bottom and the waterline
+    std::vector< cv::Point2d > foundPoints; ///< Waterline points used to calculate the found water level line
     std::vector< std::vector< cv::Point > > diagRowSums;   ///< Row sums diagnostic lines
     std::vector< std::vector< cv::Point > > diag1stDeriv;  ///< 1st deriv diagnostic lines
     std::vector< std::vector< cv::Point > > diag2ndDeriv;  ///< 2nd deriv diagnostic lines

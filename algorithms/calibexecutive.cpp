@@ -203,6 +203,11 @@ GC_STATUS CalibExecutive::Calibrate( const cv::Mat &img, const std::string jsonP
     }
     return retVal;
 }
+GC_STATUS CalibExecutive::AdjustStopSignForRotation( const Size imgSize, const FindPointSet &calcLinePts, double &offsetAngle )
+{
+    GC_STATUS retVal = stopSign.AdjustStopSignForRotation( imgSize, calcLinePts, offsetAngle );
+    return retVal;
+}
 GC_STATUS CalibExecutive::DrawOverlay( const cv::Mat matIn, cv::Mat &imgMatOut )
 {
     GC_STATUS retVal = DrawOverlay( matIn, imgMatOut, paramsCurrent.drawMoveSearchROIs,
