@@ -64,7 +64,7 @@ public:
     CalibExecutive();
 
     void clear();
-    GC_STATUS Load( const std::string jsonFilepath );
+    GC_STATUS Load( const std::string jsonFilepath, const cv::Mat &img );
     GC_STATUS Calibrate( const cv::Mat &img, const std::string jsonParams,
                          double &rmseDist, double &rmseX, double &rmseY );
     GC_STATUS Calibrate( const cv::Mat &img, const std::string jsonParams, cv::Mat &imgResult,

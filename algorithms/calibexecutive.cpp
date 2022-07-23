@@ -451,7 +451,8 @@ GC_STATUS CalibExecutive::CalibrateBowTie( const cv::Mat &img, const std::string
 
     return retVal;
 }
-GC_STATUS CalibExecutive::Load( const string jsonFilepath )
+// if img != cv::Mat() then a recalibration is performed
+GC_STATUS CalibExecutive::Load( const string jsonFilepath, const Mat &img )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -496,6 +497,19 @@ GC_STATUS CalibExecutive::Load( const string jsonFilepath )
                 findCalibGrid.clear();
                 paramsCurrent.calibType = "StopSign";
                 retVal = stopSign.Load( ss.str() );
+                if ( !img.empty() )
+                {
+                    string controlJson = pt.get< string >( "control_json", "" );
+                    if ( controlJson.empty() )
+                    {
+                        FILE_LOG( logERROR ) << "[CalibExecutive::Load] Could not retrieve calib control string from " << jsonFilepath;
+                        retVal = GC_ERR;
+                    }
+                    else
+                    {
+                        retVal = CalibrateStopSign( img, controlJson );
+                    }
+                }
             }
             else if ( "NotSet" == calibTypeString )
             {

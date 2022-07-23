@@ -54,6 +54,7 @@ SOURCES += \
 	../algorithms/gifanim/gifanim.cpp \
 	../algorithms/metadata.cpp \
         ../algorithms/searchlines.cpp \
+        ../algorithms/stopsignsearch.cpp \
         ../algorithms/visapp.cpp \
         guivisapp.cpp \
         main.cpp \
@@ -74,6 +75,7 @@ HEADERS += \
         ../algorithms/log.h \
         ../algorithms/metadata.h \
         ../algorithms/searchlines.h \
+        ../algorithms/stopsignsearch.h \
         ../algorithms/timestampconvert.h \
         ../algorithms/visapp.h \
         ../algorithms/wincmd.h \

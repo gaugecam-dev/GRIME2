@@ -2,7 +2,7 @@ PROG = grime2cli
 CC = g++
 CPPFLAGS = -c -pipe -g -std=gnu++11 -Wall -Wextra -Wno-psabi -fPIC -DBOOST_ALL_NO_LIB -DBOOST_BIND_GLOBAL_PLACEHOLDERS -I../grime2cli -I. -I/usr/include -I/usr/include/opencv4
 LDFLAGS = -L/usr/lib -lopencv_core -lopencv_imgproc -lopencv_imgcodecs -lopencv_calib3d -lopencv_videoio -lopencv_video -lboost_date_time -lboost_system -lboost_filesystem -lboost_chrono
-OBJS = calibbowtie.o calibexecutive.o calibstopsign.o findcalibgrid.o findline.o gifanim.o metadata.o visapp.o animate.o main.o
+OBJS = calibbowtie.o calibexecutive.o calibstopsign.o findcalibgrid.o findline.o gifanim.o metadata.o stopsigntemplmatch.o visapp.o animate.o main.o
 
 $(PROG) : $(OBJS)
 	$(CC) -o $(PROG) $(OBJS) $(LDFLAGS)
@@ -21,7 +21,9 @@ findcalibgrid.o :
 findline.o :
 	$(CC) $(CPPFLAGS) -c ../algorithms/findline.cpp
 metadata.o :
-	$(CC) $(CPPFLAGS) -c ../algorithms/metadata.cpp
+        $(CC) $(CPPFLAGS) -c ../algorithms/metadata.cpp
+stopsigntemplmatch.o :
+        $(CC) $(CPPFLAGS) -c ../algorithms/stopsigntemplmatch.cpp
 visapp.o :
 	$(CC) $(CPPFLAGS) -c ../algorithms/visapp.cpp
 animate.o :

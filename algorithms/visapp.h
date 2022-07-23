@@ -89,9 +89,10 @@ public:
     /**
      * @brief Set the current calibration from a calibration model json file
      * @param calibJson The filepath of the calibration model json file
+     * @param img Image for stopsign recalibration--if empty, calib loaded from disk
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
-    GC_STATUS LoadCalib( const std::string calibJson );
+    GC_STATUS LoadCalib( const std::string calibJson , const cv::Mat &img );
 
     /**
      * @brief Convert world coordinates to pixel coordinates using the currently set calibration

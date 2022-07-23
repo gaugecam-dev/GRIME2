@@ -16,17 +16,18 @@ win32 {
 }
 
 SOURCES += \
-        ../algorithms/animate.cpp \
-	../algorithms/calibbowtie.cpp \
-	../algorithms/calibexecutive.cpp \
-	../algorithms/calibstopsign.cpp \
-	../algorithms/findcalibgrid.cpp \
-	../algorithms/findline.cpp \
-	../algorithms/gifanim/gifanim.cpp \
-	../algorithms/metadata.cpp \
-        ../algorithms/searchlines.cpp \
-        ../algorithms/visapp.cpp \
-        main.cpp
+    ../algorithms/animate.cpp \
+    ../algorithms/calibbowtie.cpp \
+    ../algorithms/calibexecutive.cpp \
+    ../algorithms/calibstopsign.cpp \
+    ../algorithms/findcalibgrid.cpp \
+    ../algorithms/findline.cpp \
+    ../algorithms/gifanim/gifanim.cpp \
+    ../algorithms/metadata.cpp \
+    ../algorithms/searchlines.cpp \
+    ../algorithms/stopsignsearch.cpp \
+    ../algorithms/visapp.cpp \
+    main.cpp
 
 HEADERS += \
     ../algorithms/animate.h \
@@ -43,6 +44,7 @@ HEADERS += \
     ../algorithms/metadata.h \
     ../algorithms/timestampconvert.h \
     ../algorithms/searchlines.h \
+    ../algorithms/stopsignsearch.h \
     ../algorithms/visapp.h \
     ../gcgui/wincmd.h \
     arghandler.h

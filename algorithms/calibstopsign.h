@@ -3,6 +3,7 @@
 
 #include "gc_types.h"
 #include <opencv2/core.hpp>
+#include "stopsignsearch.h"
 
 // TODO -- add doxygen comments KWC
 namespace gc
@@ -120,6 +121,7 @@ private:
     cv::Scalar hsvHigh;
     cv::Scalar hsvLow2;
     cv::Scalar hsvHigh2;
+    StopsignSearch stopsignSearch;
 
     GC_STATUS FindColor( const cv::Mat &img, cv::Mat1b &redMask, std::vector< StopSignCandidate > &symbolCandidates );
     GC_STATUS RotateImage( const cv::Mat &src, cv::Mat &dst, const double angle );

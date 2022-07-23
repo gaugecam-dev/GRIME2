@@ -69,9 +69,9 @@ VisApp::VisApp() :
         FILE_LOG( logERROR ) << "[VisApp::VisApp] Creating debug folder" << diagnostic_information( e );
     }
 }
-GC_STATUS VisApp::LoadCalib( const std::string calibJson )
+GC_STATUS VisApp::LoadCalib( const std::string calibJson, const cv::Mat &img )
 {
-    GC_STATUS retVal = m_calibExec.Load( calibJson );
+    GC_STATUS retVal = m_calibExec.Load( calibJson, img );
     return retVal;
 }
 GC_STATUS VisApp::Calibrate( const string imgFilepath, const string jsonControl,
@@ -527,22 +527,12 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result 
                         retVal = GC_ERR;
                     }
                 }
-                if ( params.isStopSignCalib )
+                if ( GC_OK == retVal )
                 {
-                    double rmseDist, rmseX, rmseY;
-                    retVal = m_calibExec.Calibrate( img, params.calibControlString, rmseDist, rmseX, rmseY );
-                    if ( GC_OK != retVal )
+                    if ( params.isStopSignCalib || ( params.calibFilepath != m_calibFilepath && !params.isStopSignCalib ) )
                     {
-                        result.msgs.push_back( "Could not perform stopsign calibration" );
-                        FILE_LOG( logERROR ) << "[VisApp::CalcLine] Could not load calibration=" << params.calibFilepath ;
-                        retVal = GC_ERR;
-                    }
-                }
-                else
-                {
-                    if ( params.calibFilepath != m_calibFilepath && GC_OK == retVal )
-                    {
-                        retVal = m_calibExec.Load( params.calibFilepath );
+                        Mat noImg = Mat();
+                        retVal = m_calibExec.Load( params.calibFilepath, params.isStopSignCalib ? img : noImg );
                         if ( GC_OK != retVal )
                         {
                             result.msgs.push_back( "Could not load calibration" );

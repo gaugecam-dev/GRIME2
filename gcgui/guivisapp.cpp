@@ -650,7 +650,7 @@ GC_STATUS GuiVisApp::GetCalibParams( std::string &calibParams )
 }
 GC_STATUS GuiVisApp::LoadCalib( const std::string calibJson )
 {
-    GC_STATUS retVal = m_visApp.LoadCalib( calibJson );
+    GC_STATUS retVal = m_visApp.LoadCalib( calibJson, m_matColor );
     sigMessage( string( "Load calibration: " ) + ( GC_OK == retVal ? "SUCCESS" : "FAILURE" ) );
     return retVal;
 }
@@ -949,114 +949,113 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
 
     try
     {
-        retVal = m_visApp.LoadCalib( params.calibFilepath );
-        if ( GC_OK != retVal )
-        {
-            sigMessage( "Failed to load calib for find line folder run" );
-        }
-        else if ( images.empty() )
-        {
-            sigMessage( "No images found" );
-            retVal = GC_ERR;
-        }
-        else
-        {
-            Mat img;
-            string msg;
-            int progressVal = 0;
-            char buffer[ 256 ];
-            bool stopped = false;
+        Mat img;
+        string msg;
+        int progressVal = 0;
+        char buffer[ 256 ];
+        bool stopped = false;
 
-            ofstream csvOut;
-            string resultFolderAdj = params.resultImagePath;
+        ofstream csvOut;
+        string resultFolderAdj = params.resultImagePath;
 
-            if ( !params.resultCSVPath.empty() )
+        if ( !params.resultCSVPath.empty() )
+        {
+            csvOut.open( params.resultCSVPath );
+            if ( !csvOut.is_open() )
             {
-                csvOut.open( params.resultCSVPath );
-                if ( !csvOut.is_open() )
+                FILE_LOG( logERROR ) << "[GuiVisApp::CalcLinesThreadFunc] Could not create CSV output file " << params.resultCSVPath;
+                retVal = GC_ERR;
+            }
+            else
+            {
+                csvOut << "filename, timestamp, status, water level, line angle, level adjustment" << endl;
+            }
+        }
+        if ( !params.resultImagePath.empty() )
+        {
+            if ( !fs::exists( params.resultImagePath ) )
+            {
+                bool bRet = fs::create_directories( params.resultImagePath );
+                if ( !bRet )
                 {
-                    FILE_LOG( logERROR ) << "[GuiVisApp::CalcLinesThreadFunc] Could not create CSV output file " << params.resultCSVPath;
+                    FILE_LOG( logERROR ) << "[GuiVisApp::CalcLinesThreadFunc] Could not create result folder " << params.resultImagePath;
                     retVal = GC_ERR;
+                }
+            }
+            else if ( !fs::is_directory( params.resultImagePath ) )
+            {
+                FILE_LOG( logERROR ) << "[GuiVisApp::CalcLinesThreadFunc] Result path is not a folder " << params.resultImagePath;
+                retVal = GC_ERR;
+            }
+        }
+
+        if ( GC_OK == retVal )
+        {
+            if ( '/' != resultFolderAdj[ resultFolderAdj.size() - 1 ] )
+                resultFolderAdj += '/';
+
+
+            FindData findData;
+            findData.findlineParams = params;
+
+            string tmStr, timestamp, resultString, graphData;
+            for ( size_t i = 0; i < images.size(); ++i )
+            {
+                if ( !m_isRunning )
+                {
+                    sigMessage( "Folder run stopped" );
+                    stopped = true;
+                    break;
                 }
                 else
                 {
-                    csvOut << "filename, timestamp, status, water level, line angle, level adjustment" << endl;
-                }
-            }
-            if ( !params.resultImagePath.empty() )
-            {
-                if ( !fs::exists( params.resultImagePath ) )
-                {
-                    bool bRet = fs::create_directories( params.resultImagePath );
-                    if ( !bRet )
+                    findData.findlineResult.clear();
+                    string filename = fs::path( images[ i ] ).filename().string();
+                    timestamp = "yyyy-mm-ddTHH:MM:SS";
+                    if ( FROM_FILENAME == params.timeStampType )
                     {
-                        FILE_LOG( logERROR ) << "[GuiVisApp::CalcLinesThreadFunc] Could not create result folder " << params.resultImagePath;
+                        retVal = GcTimestampConvert::GetTimestampFromString( fs::path( images[ i ] ).filename().string(),
+                                                                             params.timeStampStartPos, params.timeStampFormat, timestamp );
+                    }
+                    else if ( FROM_EXIF == params.timeStampType )
+                    {
+                        string timestampTemp;
+                        retVal = m_visApp.GetImageTimestamp( images[ i ], timestampTemp );
+                        if ( GC_OK == retVal )
+                        {
+                            retVal = GcTimestampConvert::GetTimestampFromString( timestampTemp, params.timeStampStartPos,
+                                                                                 params.timeStampFormat, timestamp );
+                        }
+                    }
+                    else if ( FROM_EXTERNAL == params.timeStampType )
+                    {
+                        FILE_LOG( logERROR ) << "Timestamp passed into method not yet implemented";
                         retVal = GC_ERR;
                     }
-                }
-                else if ( !fs::is_directory( params.resultImagePath ) )
-                {
-                    FILE_LOG( logERROR ) << "[GuiVisApp::CalcLinesThreadFunc] Result path is not a folder " << params.resultImagePath;
-                    retVal = GC_ERR;
-                }
-            }
 
-            if ( GC_OK == retVal )
-            {
-                if ( '/' != resultFolderAdj[ resultFolderAdj.size() - 1 ] )
-                    resultFolderAdj += '/';
-
-
-                FindData findData;
-                findData.findlineParams = params;
-
-                string tmStr, timestamp, resultString, graphData;
-                for ( size_t i = 0; i < images.size(); ++i )
-                {
-                    if ( !m_isRunning )
+                    if ( GC_OK != retVal )
                     {
-                        sigMessage( "Folder run stopped" );
-                        stopped = true;
-                        break;
+                        sigMessage( "Timestamp failure. Check source, format, and start position of timestamp" );
                     }
                     else
                     {
-                        findData.findlineResult.clear();
-                        string filename = fs::path( images[ i ] ).filename().string();
-                        timestamp = "yyyy-mm-ddTHH:MM:SS";
-                        if ( FROM_FILENAME == params.timeStampType )
+                        img = imread( images[ i ], IMREAD_COLOR );
+                        if ( img.empty() )
                         {
-                            retVal = GcTimestampConvert::GetTimestampFromString( fs::path( images[ i ] ).filename().string(),
-                                                                                 params.timeStampStartPos, params.timeStampFormat, timestamp );
-                        }
-                        else if ( FROM_EXIF == params.timeStampType )
-                        {
-                            string timestampTemp;
-                            retVal = m_visApp.GetImageTimestamp( images[ i ], timestampTemp );
-                            if ( GC_OK == retVal )
-                            {
-                                retVal = GcTimestampConvert::GetTimestampFromString( timestampTemp, params.timeStampStartPos,
-                                                                                     params.timeStampFormat, timestamp );
-                            }
-                        }
-                        else if ( FROM_EXTERNAL == params.timeStampType )
-                        {
-                            FILE_LOG( logERROR ) << "Timestamp passed into method not yet implemented";
-                            retVal = GC_ERR;
-                        }
-
-                        if ( GC_OK != retVal )
-                        {
-                            sigMessage( "Timestamp failure. Check source, format, and start position of timestamp" );
+                            sigMessage( fs::path( images[ i ] ).filename().string() + " FAILURE: Could not open image" );
                         }
                         else
                         {
-                            img = imread( images[ i ], IMREAD_GRAYSCALE );
-                            if ( img.empty() )
+                            retVal = m_visApp.LoadCalib( params.calibFilepath, img );
+                            if ( GC_OK != retVal )
                             {
-                                sigMessage( fs::path( images[ i ] ).filename().string() + " FAILURE: Could not open image" );
+                                sigMessage( "Failed to load calib for find line folder run" );
                             }
-                            else
+                            else if ( images.empty() )
+                            {
+                                sigMessage( "No images found" );
+                                retVal = GC_ERR;
+                            }
                             {
                                 if ( FROM_EXTERNAL == params.timeStampType )
                                 {
@@ -1124,18 +1123,18 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                             }
                         }
                     }
-                    progressVal = cvRound( 100.0 * static_cast< double >( i ) / static_cast< double >( images.size() ) ) + 1;
-                    sigProgress( progressVal );
                 }
-                if ( !stopped )
-                {
-                    sigMessage( "Folder run complete" );
-                    sigProgress( 100 );
-                    m_isRunning = false;
-                }
-                if ( csvOut.is_open() )
-                    csvOut.close();
+                progressVal = cvRound( 100.0 * static_cast< double >( i ) / static_cast< double >( images.size() ) ) + 1;
+                sigProgress( progressVal );
             }
+            if ( !stopped )
+            {
+                sigMessage( "Folder run complete" );
+                sigProgress( 100 );
+                m_isRunning = false;
+            }
+            if ( csvOut.is_open() )
+                csvOut.close();
         }
     }
     catch( std::exception &e )
