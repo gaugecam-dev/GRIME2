@@ -24,10 +24,11 @@ public:
 class StopSignTemplateSet
 {
 public:
-    StopSignTemplateSet() : pos( -1 ) {}
+    StopSignTemplateSet() : pointAngle( -1 ) {}
+    StopSignTemplateSet( const int ptAngle ) : pointAngle( ptAngle ) {}
 
-    int pos; // Left point of horizontal top line = 0. Clockwise.
-    std::vector< StopSignTemplate > templateSet;
+    int pointAngle;
+    std::vector< StopSignTemplate > ptTemplates;
 };
 
 class StopsignSearch
@@ -35,15 +36,17 @@ class StopsignSearch
 public:
     StopsignSearch();
 
-    void clear();
+    GC_STATUS Init( const int templateDim, const int rotateCnt );
     GC_STATUS Find( const cv::Mat &img, std::vector< cv::Point2d > &pts );
-    GC_STATUS CreatePointTemplates( const int templateDim, const int rotateCnt, std::vector< StopSignTemplate > &ptTemplates );
 
 private:
     std::vector< StopSignTemplateSet > templates;
 
-    GC_STATUS DrawCorner( const int templateDim, cv::Mat &templ, cv::Mat &mask, cv::Point2d &center );
     GC_STATUS RotateImage( const cv::Mat &src, cv::Mat &dst, const double angle );
+    GC_STATUS DrawCorner( const int templateDim, cv::Mat &templ, cv::Mat &mask, cv::Point2d &center );
+    GC_STATUS RotatePointTemplates( const size_t idx, const double angle );
+    GC_STATUS CreatePointTemplates( const int templateDim, const int rotateCnt, std::vector< StopSignTemplate > &ptTemplates );
+    GC_STATUS CreateTemplateOverlay( const std::string debugFolder );
 };
 
 } // namespace gc

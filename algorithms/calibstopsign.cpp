@@ -218,8 +218,7 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double octoSideLen
                                         if ( GC_OK == retVal )
                                         {
                                             model.imgSize = img.size();
-                                            vector< StopSignTemplate > ptTempls;
-                                            retVal = stopsignSearch.CreatePointTemplates( GC_STOPSIGN_TEMPLATE_DIM, 5, ptTempls );
+                                            retVal = stopsignSearch.Init( GC_STOPSIGN_TEMPLATE_DIM, 5 );
                                         }
                                     }
                                 }
