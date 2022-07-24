@@ -130,99 +130,108 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double octoSideLen
                     if ( GC_OK == retVal )
                     {
                         retVal = CalcCorners( octoLines, model.pixelPoints );
+                    }
+                }
+            }
+        }
+        if ( GC_OK != retVal )
+        {
+            retVal = stopsignSearch.Init( GC_STOPSIGN_TEMPLATE_DIM, 5 );
+            if ( GC_OK == retVal )
+            {
+                retVal = stopsignSearch.Find( img( rect ), model.pixelPoints );
+            }
+        }
+
+        if ( GC_OK == retVal )
+        {
+#ifdef DEBUG_FIND_CALIB_SYMBOL
+            Mat color;
+            if ( useRoi )
+            {
+                img( rect ).copyTo( color );
+            }
+            else
+            {
+                img.copyTo( color );
+            }
+            for ( size_t i = 0; i < model.pixelPoints.size(); ++i )
+            {
+                line( color, Point( model.pixelPoints[ i ].x - 10, model.pixelPoints[ i ].y ),
+                             Point( model.pixelPoints[ i ].x + 10, model.pixelPoints[ i ].y ),
+                      Scalar( 0, 255, 255 ), 1 );
+                line( color, Point( model.pixelPoints[ i ].x, model.pixelPoints[ i ].y - 10 ),
+                             Point( model.pixelPoints[ i ].x, model.pixelPoints[ i ].y + 10 ),
+                      Scalar( 0, 255, 255 ), 1 );
+            }
+            imwrite( DEBUG_FOLDER + "___FINAL.png", color );
+#endif
+            if ( useRoi )
+            {
+                Point2d offset = Point2d( rect.x, rect.y );
+                for ( size_t i = 0; i < model.pixelPoints.size(); ++i )
+                {
+                    model.pixelPoints[ i ] += offset;
+                    cout << model.pixelPoints[ i ] << endl;
+                }
+            }
+
+            retVal = CalcOctoWorldPoints( octoSideLength, model.worldPoints );
+            if ( GC_OK == retVal )
+            {
+                retVal = CreateCalibration( model.pixelPoints, model.worldPoints );
+                if ( GC_OK == retVal )
+                {
+#ifdef DEBUG_FIND_CALIB_SYMBOL
+                    Mat temp_img;
+                    img.copyTo( temp_img );
+                    // cvtColor( img, temp_img, COLOR_GRAY2BGR );
+                    line( temp_img, searchLineCorners[ 0 ], searchLineCorners[ 1 ], Scalar( 0, 0, 255 ), 7 );
+                    line( temp_img, searchLineCorners[ 0 ], searchLineCorners[ 2 ], Scalar( 0, 255, 255 ), 7 );
+                    line( temp_img, searchLineCorners[ 3 ], searchLineCorners[ 1 ], Scalar( 0, 255, 0 ), 7 );
+                    line( temp_img, searchLineCorners[ 3 ], searchLineCorners[ 2 ], Scalar( 255, 0, 0 ), 7 );
+                    imwrite( "/var/tmp/water/test_search_roi_0.png", temp_img );
+#endif
+                    if ( 0.0 <= searchLineCorners[ 0 ].x )
+                    {
+                        int topWidth = searchLineCorners[ 1 ].x - searchLineCorners[ 0 ].x;
+                        int botWidth = searchLineCorners[ 3 ].x - searchLineCorners[ 2 ].x;
+                        int lftHeight = searchLineCorners[ 2 ].y - searchLineCorners[ 0 ].y;
+
+                        int lftOffsetX = searchLineCorners[ 0 ].x - searchLineCorners[ 2 ].x;
+                        int topOffsetY = searchLineCorners[ 0 ].y - searchLineCorners[ 1 ].y;
+                        int botOffsetY = searchLineCorners[ 2 ].y - searchLineCorners[ 3 ].y;
+
+                        searchLineCorners[ 0 ].x = model.pixelPoints[ 5 ].x;
+                        searchLineCorners[ 0 ].y = model.pixelPoints[ 5 ].y + 30;
+                        searchLineCorners[ 1 ].x = searchLineCorners[ 0 ].x + topWidth;
+                        searchLineCorners[ 1 ].y = searchLineCorners[ 0 ].y - topOffsetY;
+
+                        searchLineCorners[ 2 ].x = searchLineCorners[ 0 ].x - lftOffsetX;
+                        searchLineCorners[ 2 ].y = searchLineCorners[ 0 ].y + lftHeight;
+                        searchLineCorners[ 3 ].x = searchLineCorners[ 2 ].x + botWidth;
+                        searchLineCorners[ 3 ].y = searchLineCorners[ 2 ].y - botOffsetY;
+
+#ifdef DEBUG_FIND_CALIB_SYMBOL
+                        img.copyTo( temp_img );
+                        // cvtColor( img, temp_img, COLOR_GRAY2BGR );
+                        line( temp_img, searchLineCorners[ 0 ], searchLineCorners[ 1 ], Scalar( 0, 0, 255 ), 7 );
+                        line( temp_img, searchLineCorners[ 0 ], searchLineCorners[ 2 ], Scalar( 0, 255, 255 ), 7 );
+                        line( temp_img, searchLineCorners[ 3 ], searchLineCorners[ 1 ], Scalar( 0, 255, 0 ), 7 );
+                        line( temp_img, searchLineCorners[ 3 ], searchLineCorners[ 2 ], Scalar( 255, 0, 0 ), 7 );
+                        imwrite( "/var/tmp/water/test_search_roi_1.png", temp_img );
+#endif
+
+                        SearchLines searchLines;
+                        retVal = searchLines.CalcSearchLines( searchLineCorners, model.searchLineSet );
+                    }
+
+                    if ( GC_OK == retVal )
+                    {
+                        retVal = CalcCenterAngle( model.worldPoints, model.center, model.angle );
                         if ( GC_OK == retVal )
                         {
-#ifdef DEBUG_FIND_CALIB_SYMBOL
-                            Mat color;
-                            if ( useRoi )
-                            {
-                                img( rect ).copyTo( color );
-                            }
-                            else
-                            {
-                                img.copyTo( color );
-                            }
-                            for ( size_t i = 0; i < model.pixelPoints.size(); ++i )
-                            {
-                                line( color, Point( model.pixelPoints[ i ].x - 10, model.pixelPoints[ i ].y ),
-                                             Point( model.pixelPoints[ i ].x + 10, model.pixelPoints[ i ].y ),
-                                      Scalar( 0, 255, 255 ), 1 );
-                                line( color, Point( model.pixelPoints[ i ].x, model.pixelPoints[ i ].y - 10 ),
-                                             Point( model.pixelPoints[ i ].x, model.pixelPoints[ i ].y + 10 ),
-                                      Scalar( 0, 255, 255 ), 1 );
-                            }
-                            imwrite( DEBUG_FOLDER + "___FINAL.png", color );
-#endif
-                            if ( useRoi )
-                            {
-                                Point2d offset = Point2d( rect.x, rect.y );
-                                for ( size_t i = 0; i < model.pixelPoints.size(); ++i )
-                                {
-                                    model.pixelPoints[ i ] += offset;
-                                }
-                            }
-                            retVal = CalcOctoWorldPoints( octoSideLength, model.worldPoints );
-
-                            if ( GC_OK == retVal )
-                            {
-                                retVal = CreateCalibration( model.pixelPoints, model.worldPoints );
-                                if ( GC_OK == retVal )
-                                {
-#ifdef DEBUG_FIND_CALIB_SYMBOL
-                                    Mat temp_img;
-                                    img.copyTo( temp_img );
-                                    // cvtColor( img, temp_img, COLOR_GRAY2BGR );
-                                    line( temp_img, searchLineCorners[ 0 ], searchLineCorners[ 1 ], Scalar( 0, 0, 255 ), 7 );
-                                    line( temp_img, searchLineCorners[ 0 ], searchLineCorners[ 2 ], Scalar( 0, 255, 255 ), 7 );
-                                    line( temp_img, searchLineCorners[ 3 ], searchLineCorners[ 1 ], Scalar( 0, 255, 0 ), 7 );
-                                    line( temp_img, searchLineCorners[ 3 ], searchLineCorners[ 2 ], Scalar( 255, 0, 0 ), 7 );
-                                    imwrite( "/var/tmp/water/test_search_roi_0.png", temp_img );
-#endif
-                                    if ( 0.0 <= searchLineCorners[ 0 ].x )
-                                    {
-                                        int topWidth = searchLineCorners[ 1 ].x - searchLineCorners[ 0 ].x;
-                                        int botWidth = searchLineCorners[ 3 ].x - searchLineCorners[ 2 ].x;
-                                        int lftHeight = searchLineCorners[ 2 ].y - searchLineCorners[ 0 ].y;
-
-                                        int lftOffsetX = searchLineCorners[ 0 ].x - searchLineCorners[ 2 ].x;
-                                        int topOffsetY = searchLineCorners[ 0 ].y - searchLineCorners[ 1 ].y;
-                                        int botOffsetY = searchLineCorners[ 2 ].y - searchLineCorners[ 3 ].y;
-
-                                        searchLineCorners[ 0 ].x = model.pixelPoints[ 5 ].x;
-                                        searchLineCorners[ 0 ].y = model.pixelPoints[ 5 ].y + 30;
-                                        searchLineCorners[ 1 ].x = searchLineCorners[ 0 ].x + topWidth;
-                                        searchLineCorners[ 1 ].y = searchLineCorners[ 0 ].y - topOffsetY;
-
-                                        searchLineCorners[ 2 ].x = searchLineCorners[ 0 ].x - lftOffsetX;
-                                        searchLineCorners[ 2 ].y = searchLineCorners[ 0 ].y + lftHeight;
-                                        searchLineCorners[ 3 ].x = searchLineCorners[ 2 ].x + botWidth;
-                                        searchLineCorners[ 3 ].y = searchLineCorners[ 2 ].y - botOffsetY;
-
-#ifdef DEBUG_FIND_CALIB_SYMBOL
-                                        img.copyTo( temp_img );
-                                        // cvtColor( img, temp_img, COLOR_GRAY2BGR );
-                                        line( temp_img, searchLineCorners[ 0 ], searchLineCorners[ 1 ], Scalar( 0, 0, 255 ), 7 );
-                                        line( temp_img, searchLineCorners[ 0 ], searchLineCorners[ 2 ], Scalar( 0, 255, 255 ), 7 );
-                                        line( temp_img, searchLineCorners[ 3 ], searchLineCorners[ 1 ], Scalar( 0, 255, 0 ), 7 );
-                                        line( temp_img, searchLineCorners[ 3 ], searchLineCorners[ 2 ], Scalar( 255, 0, 0 ), 7 );
-                                        imwrite( "/var/tmp/water/test_search_roi_1.png", temp_img );
-#endif
-
-                                        SearchLines searchLines;
-                                        retVal = searchLines.CalcSearchLines( searchLineCorners, model.searchLineSet );
-                                    }
-
-                                    if ( GC_OK == retVal )
-                                    {
-                                        retVal = CalcCenterAngle( model.worldPoints, model.center, model.angle );
-                                        if ( GC_OK == retVal )
-                                        {
-                                            model.imgSize = img.size();
-                                            retVal = stopsignSearch.Init( GC_STOPSIGN_TEMPLATE_DIM, 5 );
-                                        }
-                                    }
-                                }
-                            }
+                            model.imgSize = img.size();
                         }
                     }
                 }

@@ -42,6 +42,53 @@ GC_STATUS StopsignSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &
         }
         else
         {
+            Mat matIn = img;
+            if ( img.type() == CV_8UC3 )
+                cvtColor( img, matIn, COLOR_BGR2GRAY );
+
+            // GaussianBlur( matIn, matIn, Size( 5, 5 ), 3.0 );
+            medianBlur( matIn, matIn, 7 );
+
+            Mat color;
+            if ( img.type() == CV_8UC1 )
+                cvtColor( img, color, COLOR_BGR2GRAY );
+            else
+                img.copyTo( color );
+
+            pts.clear();
+            Mat response;
+            for ( size_t j = 0; j < templates.size(); ++j )
+            {
+                Point2d maxMaxPt;
+                double maxMaxVal = -9999999;
+                for ( size_t i = 0; i < templates[ j ].ptTemplates.size(); ++i )
+                {
+                    matchTemplate( matIn, templates[ j ].ptTemplates[ i ].templ, response, TM_CCORR_NORMED, templates[ j ].ptTemplates[ i ].mask );
+
+                    double maxVal;
+                    Point maxPt;
+                    minMaxLoc( response, nullptr, &maxVal, nullptr, &maxPt );
+                    if ( maxVal > maxMaxVal )
+                    {
+                        maxMaxVal = maxVal;
+                        maxMaxPt = Point2d( maxPt ) + templates[ j ].ptTemplates[ i ].offset;
+                    }
+                }
+                if ( 0.0 < maxMaxVal )
+                {
+                    pts.push_back( maxMaxPt );
+                    line( color, Point( cvRound( maxMaxPt.x - 10 ), cvRound( maxMaxPt.y ) ),
+                          Point( cvRound( maxMaxPt.x + 10 ), cvRound( maxMaxPt.y ) ), Scalar( 0, 255, 0 ), 1 );
+                    line( color, Point( cvRound( maxMaxPt.x ), cvRound( maxMaxPt.y - 10 ) ),
+                          Point( cvRound( maxMaxPt.x ), cvRound( maxMaxPt.y + 10 ) ), Scalar( 0, 255, 0 ), 1 );
+                }
+            }
+            imwrite( "/var/tmp/water/template_stopsign_find.png", color );
+        }
+        if ( 8 != pts.size() )
+        {
+            FILE_LOG( logERROR ) << "[StopsignSearch::Find] Found only " << pts.size() << " points";
+            retVal = GC_ERR;
         }
     }
     catch( const cv::Exception &e )
@@ -57,9 +104,10 @@ GC_STATUS StopsignSearch::Init( const int templateDim, const int rotateCnt )
     try
     {
         templates.clear();
-        for ( size_t i = 0; i < 8; ++i )
+        templates.push_back( StopSignTemplateSet( 0 ) );
+        for ( size_t i = 1; i < 8; ++i )
         {
-            templates.push_back( StopSignTemplateSet( i * 45 ) );
+            templates.push_back( StopSignTemplateSet( 360 - i * 45 ) );
         }
 
         retVal = CreatePointTemplates( templateDim, rotateCnt, templates[ 0 ].ptTemplates );
@@ -67,7 +115,7 @@ GC_STATUS StopsignSearch::Init( const int templateDim, const int rotateCnt )
         {
             for ( int i = 1; i < 8; ++i )
             {
-                retVal = RotatePointTemplates( i, static_cast< double >( i * 45 ) );
+                retVal = RotatePointTemplates( i, static_cast< double >( 360 - i * 45 ) );
                 if ( GC_OK != retVal )
                 {
                     break;
@@ -241,7 +289,7 @@ GC_STATUS StopsignSearch::DrawCorner( const int templateDim, cv::Mat &templ, cv:
         }
         else
         {
-            double blackLineWidth = 20.0;
+            double blackLineWidth = 10.0;
             int tempRotDim = cvRound( static_cast< double >( templateDim ) * 1.415 );
             tempRotDim += ( 0 == tempRotDim % 2 ? 1 : 0 );
             int rectTopAndLeft = ( tempRotDim - templateDim ) >> 1;
