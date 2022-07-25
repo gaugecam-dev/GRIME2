@@ -14,7 +14,8 @@ public:
     CalibExecParams() :
         stopSignFacetLength( -1.0 ),
         moveSearchROIGrowPercent( 0 ),
-        drawCalib( false ),
+        drawCalibScale( false ),
+        drawCalibGrid( false ),
         drawMoveSearchROIs( false ),
         drawWaterLineSearchROI( false ),
         targetSearchROI( cv::Rect( -1, -1, -1, -1 ) ),
@@ -31,7 +32,8 @@ public:
         stopSignFacetLength = -1.0;
         moveSearchROIGrowPercent = 0;
         calibResultJsonFilepath.clear();
-        drawCalib = false;
+        drawCalibScale = false;
+        drawCalibGrid = false;
         drawMoveSearchROIs = false;
         drawWaterLineSearchROI = false;
         targetSearchROI = cv::Rect( -1, -1, -1, -1 );
@@ -46,7 +48,8 @@ public:
     double stopSignFacetLength;
     int moveSearchROIGrowPercent;
     string calibResultJsonFilepath;
-    bool drawCalib;
+    bool drawCalibScale;
+    bool drawCalibGrid;
     bool drawMoveSearchROIs;
     bool drawWaterLineSearchROI;
     cv::Rect targetSearchROI;
@@ -77,8 +80,8 @@ public:
     GC_STATUS SetMoveSearchROIs( const cv::Mat img, const cv::Rect rectLeft, const cv::Rect rectRight );
     GC_STATUS DetectMove( std::vector< cv::Point2d > &origPos, std::vector< cv::Point2d > &newPos );
     GC_STATUS DrawOverlay( const cv::Mat matIn, cv::Mat &imgMatOut );
-    GC_STATUS DrawOverlay( const cv::Mat matIn, cv::Mat &imgMatOut,
-                           const bool drawCalib, const bool drawMoveROIs, const bool drawSearchROI );
+    GC_STATUS DrawOverlay( const cv::Mat matIn, cv::Mat &imgMatOut, const bool drawCalibScale,
+                           const bool drawCalibGrid, const bool drawMoveROIs, const bool drawSearchROI );
     GC_STATUS FindMoveTargets( const cv::Mat &img, FindPointSet &ptsFound );
     GC_STATUS MoveRefPoint( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt );
     GC_STATUS SetStopsignColorRed();

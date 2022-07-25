@@ -165,12 +165,16 @@ GC_STATUS GuiVisApp::GetImageOverlay( const IMG_BUFFERS nImgColor, const IMG_DIS
         else if ( BUF_OVERLAY == nImgColor )
         {
             m_matDisplay = m_matColor.clone();
-            if ( ( overlays & CALIB ) ||
+            if ( ( overlays & CALIB_SCALE ) ||
+                 ( overlays & CALIB_GRID ) ||
                  ( overlays & MOVE_ROIS ) ||
                  ( overlays & SEARCH_ROI ) )
             {
                 retVal = m_visApp.DrawCalibOverlay( m_matDisplay, m_matDisplay,
-                                                    overlays & CALIB, overlays & MOVE_ROIS, overlays & SEARCH_ROI );
+                                                    overlays & CALIB_SCALE,
+                                                    overlays & CALIB_GRID,
+                                                    overlays & MOVE_ROIS,
+                                                    overlays & SEARCH_ROI );
             }
             int overlayType = OVERLAYS_NONE;
             if( overlays & FINDLINE )

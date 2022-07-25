@@ -3,15 +3,15 @@
 #include <iostream>
 #include "opencv2/imgcodecs.hpp"
 
-#ifdef DEBUG_STOPSIGN_TEMPL
-#undef DEBUG_STOPSIGN_TEMPL
-static const std::string DEBUG_FOLDER = std::string( "/var/tmp/water/" );
+#ifndef DEBUG_STOPSIGN_TEMPL
+#define DEBUG_STOPSIGN_TEMPL
 #include <boost/filesystem.hpp>
 using namespace boost;
 namespace fs = filesystem;
 #endif
 
-using namespace cv;
+static const std::string DEBUG_FOLDER = std::string( "/var/tmp/water/" );
+ using namespace cv;
 using namespace std;
 
 namespace gc
@@ -46,8 +46,13 @@ GC_STATUS StopsignSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &
             if ( img.type() == CV_8UC3 )
                 cvtColor( img, matIn, COLOR_BGR2GRAY );
 
-            // GaussianBlur( matIn, matIn, Size( 5, 5 ), 3.0 );
-            medianBlur( matIn, matIn, 7 );
+            GaussianBlur( matIn, matIn, Size( 5, 5 ), 9.0 );
+            medianBlur( matIn, matIn, 17 );
+            imwrite( "/var/tmp/water/template_stopsign_gauss.png", matIn );
+
+            cv::Ptr< CLAHE > clahe = createCLAHE( 1.0 );
+            clahe->apply( matIn, matIn );
+            imwrite( "/var/tmp/water/template_stopsign_clahe.png", matIn );
 
             Mat color;
             if ( img.type() == CV_8UC1 )
@@ -310,6 +315,16 @@ GC_STATUS StopsignSearch::DrawCorner( const int templateDim, cv::Mat &templ, cv:
             contour.push_back( Point( templateDim, ( ( templateDim >> 1 ) - blackLineWidth ) ) );
             contour.push_back( Point( ( templateDim >> 1 ) - ortho_dist, ( templateDim >> 1 ) - blackLineWidth ) );
             drawContours( mask( rect ), vector< vector< Point > >( 1, contour ), -1, Scalar( 255 ), FILLED );
+            // imwrite( DEBUG_FOLDER + "mask_000.png", mask );
+
+            contour.clear();
+            contour.push_back( Point( ( templateDim >> 1 ) + ortho_dist, ( templateDim >> 1 ) + blackLineWidth ) );
+            contour.push_back( Point( 0, templateDim + opposite ) );
+            contour.push_back( Point( 0, templateDim ) );
+            contour.push_back( Point( templateDim, templateDim ) );
+            contour.push_back( Point( templateDim, ( ( templateDim >> 1 ) + blackLineWidth ) ) );
+            contour.push_back( Point( ( templateDim >> 1 ) + ortho_dist, ( templateDim >> 1 ) + blackLineWidth ) );
+            drawContours( mask( rect ), vector< vector< Point > >( 1, contour ), -1, Scalar( 0 ), FILLED );
             // imwrite( DEBUG_FOLDER + "mask_001.png", mask );
 
             contour.clear();
@@ -393,6 +408,15 @@ GC_STATUS StopsignSearch::CreateTemplateOverlay( const std::string debugFolder )
                     sprintf( buf, "%stemplate%03d_%03d.png", debugFolder.c_str(),
                              static_cast< int >( templates[ j ].pointAngle ),
                              cvRound( templates[ j ].ptTemplates[ i ].angle ) + 5 );
+
+                    line( tempColor, Point( templates[ j ].ptTemplates[ i ].offset.x - 10, templates[ j ].ptTemplates[ i ].offset.y ),
+                          Point( templates[ j ].ptTemplates[ i ].offset.x + 10, templates[ j ].ptTemplates[ i ].offset.y ), Scalar( 0, 0, 255 ), 1 );
+                    line( tempColor, Point( templates[ j ].ptTemplates[ i ].offset.x, templates[ j ].ptTemplates[ i ].offset.y - 10 ),
+                          Point( templates[ j ].ptTemplates[ i ].offset.x, templates[ j ].ptTemplates[ i ].offset.y + 10 ), Scalar( 0, 0, 255 ), 1 );
+                    line( tempColor, Point( templates[ j ].ptTemplates[ 0 ].mask.cols + templates[ j ].ptTemplates[ i ].offset.x - 10, templates[ j ].ptTemplates[ i ].offset.y ),
+                          Point( templates[ j ].ptTemplates[ 0 ].mask.cols + templates[ j ].ptTemplates[ i ].offset.x + 10, templates[ j ].ptTemplates[ i ].offset.y ), Scalar( 0, 0, 255 ), 1 );
+                    line( tempColor, Point( templates[ j ].ptTemplates[ 0 ].mask.cols + templates[ j ].ptTemplates[ i ].offset.x, templates[ j ].ptTemplates[ i ].offset.y - 10 ),
+                          Point( templates[ j ].ptTemplates[ 0 ].mask.cols + templates[ j ].ptTemplates[ i ].offset.x, templates[ j ].ptTemplates[ i ].offset.y + 10 ), Scalar( 0, 0, 255 ), 1 );
                     imwrite( buf, tempColor );
                 }
             }

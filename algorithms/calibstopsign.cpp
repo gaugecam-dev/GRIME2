@@ -1324,8 +1324,8 @@ GC_STATUS CalibStopSign::SetStopsignColor( const cv::Scalar color, const double 
 
     return retVal;
 }
-GC_STATUS CalibStopSign::DrawOverlay( const cv::Mat &img, cv::Mat &result, const bool drawCalib,
-                                      const bool drawMoveROIs, const bool drawSearchROI )
+GC_STATUS CalibStopSign::DrawOverlay( const cv::Mat &img, cv::Mat &result, const bool drawCalibScale,
+                                      const bool drawCalibGrid, const bool drawMoveROIs, const bool drawSearchROI )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -1370,7 +1370,7 @@ GC_STATUS CalibStopSign::DrawOverlay( const cv::Mat &img, cv::Mat &result, const
             }
             else if ( GC_OK == retVal )
             {
-                if ( drawCalib )
+                if ( drawCalibScale || drawCalibGrid )
                 {
                     line( result, Point( model.pixelPoints[ 0 ].x - targetRadius, model.pixelPoints[ 0 ].y ),
                                   Point( model.pixelPoints[ 0 ].x + targetRadius, model.pixelPoints[ 0 ].y ), Scalar( 0, 255, 0 ), lineWidth );
@@ -1393,56 +1393,97 @@ GC_STATUS CalibStopSign::DrawOverlay( const cv::Mat &img, cv::Mat &result, const
                     Point2d ptLftBotPix( 0.0, static_cast< double >( result.rows - 1 ) );
                     Point2d ptRgtBotPix( static_cast< double >( result.cols - 1 ), static_cast< double >( result.rows - 1 ) );
 
-                    Point2d ptLftTopW, ptRgtTopW, ptLftBotW, ptRgtBotW;
-                    retVal = PixelToWorld( ptLftTopPix, ptLftTopW );
-                    if ( GC_OK == retVal )
+                    if ( drawCalibScale )
                     {
-                        retVal = PixelToWorld( ptRgtTopPix, ptRgtTopW );
-                        if ( GC_OK == retVal )
+                        double lftX = ( model.searchLineSet[ 0 ].top.x + model.searchLineSet[ 0 ].bot.x ) / 2.0;
+                        double rgtX = ( model.searchLineSet[ model.searchLineSet.size() - 1 ].top.x + model.searchLineSet[ model.searchLineSet.size() - 1 ].bot.x ) / 2.0;
+                        double quarterLength = ( rgtX - lftX ) / 4.0;
+                        lftX += quarterLength;
+                        rgtX -= quarterLength;
+                        quarterLength = ( rgtX - lftX ) / 4.0;
+
+                        double centerPoint = ( lftX + rgtX ) / 2.0;
+                        double startPoint = ( model.searchLineSet[ 0 ].top.y + model.searchLineSet[ model.searchLineSet.size() - 1 ].top.y ) / 2.0;
+                        double endPoint = ( model.searchLineSet[ 0 ].bot.y + model.searchLineSet[ model.searchLineSet.size() - 1 ].bot.y ) / 2.0;
+
+                        char msg[ 256 ];
+                        double yPos;
+                        Point2d worldPt;
+                        double vertInc = ( endPoint - startPoint ) / 10.0;
+                        for ( int i = 0; i < 10; ++i )
                         {
-                            retVal = PixelToWorld( ptLftBotPix, ptLftBotW );
+                            yPos = startPoint + static_cast< double >( i ) * vertInc;
+                            retVal = PixelToWorld( Point2d( centerPoint, yPos ), worldPt );
                             if ( GC_OK == retVal )
                             {
-                                retVal = PixelToWorld( ptRgtBotPix, ptRgtBotW );
+                                sprintf( msg, "%.1f", worldPt.y );
+                                if ( 0 == i % 2 )
+                                {
+                                    line( result, Point2d( lftX, yPos ), Point2d( rgtX, yPos ), Scalar( 0, 255, 255 ), lineWidth );
+                                }
+                                else
+                                {
+                                    line( result, Point2d( lftX + quarterLength, yPos ),
+                                          Point2d( rgtX - quarterLength, yPos ), Scalar( 0, 255, 255 ), lineWidth );
+
+                                }
+                                putText( result, msg, Point( lftX - 120, yPos + 15 ), FONT_HERSHEY_PLAIN, fontScale, Scalar( 0, 0, 255 ), lineWidth );
+                            }
+                        }
+                    }
+                    else
+                    {
+                        Point2d ptLftTopW, ptRgtTopW, ptLftBotW, ptRgtBotW;
+                        retVal = PixelToWorld( ptLftTopPix, ptLftTopW );
+                        if ( GC_OK == retVal )
+                        {
+                            retVal = PixelToWorld( ptRgtTopPix, ptRgtTopW );
+                            if ( GC_OK == retVal )
+                            {
+                                retVal = PixelToWorld( ptLftBotPix, ptLftBotW );
                                 if ( GC_OK == retVal )
                                 {
-                                    double minXW = std::min( ptLftTopW.x, ptLftBotW.x );
-                                    double maxXW = std::max( ptRgtTopW.x, ptRgtBotW.x );
-                                    double minYW = std::min( ptLftTopW.y, ptRgtTopW.y );
-                                    double maxYW = std::max( ptLftBotW.y, ptRgtBotW.y );
-                                    if ( maxYW < minYW )
+                                    retVal = PixelToWorld( ptRgtBotPix, ptRgtBotW );
+                                    if ( GC_OK == retVal )
                                     {
-                                        swap( minYW, maxYW );
-                                    }
-
-                                    double incX = ( maxXW - minXW ) / 10.0;
-                                    double incY = ( maxYW - minYW ) / 10.0;
-
-                                    bool isFirst;
-                                    char msg[ 256 ];
-                                    Point2d pt1, pt2;
-                                    for ( double r = minYW; r < maxYW; r += incY )
-                                    {
-                                        isFirst = true;
-                                        for ( double c = minXW; c < maxXW; c += incX )
+                                        double minXW = std::min( ptLftTopW.x, ptLftBotW.x );
+                                        double maxXW = std::max( ptRgtTopW.x, ptRgtBotW.x );
+                                        double minYW = std::min( ptLftTopW.y, ptRgtTopW.y );
+                                        double maxYW = std::max( ptLftBotW.y, ptRgtBotW.y );
+                                        if ( maxYW < minYW )
                                         {
-                                            retVal = WorldToPixel( Point2d( c, r ), pt1 );
-                                            if ( GC_OK == retVal )
+                                            swap( minYW, maxYW );
+                                        }
+
+                                        double incX = ( maxXW - minXW ) / 10.0;
+                                        double incY = ( maxYW - minYW ) / 10.0;
+
+                                        bool isFirst;
+                                        char msg[ 256 ];
+                                        Point2d pt1, pt2;
+                                        for ( double r = minYW; r < maxYW; r += incY )
+                                        {
+                                            isFirst = true;
+                                            for ( double c = minXW; c < maxXW; c += incX )
                                             {
-                                                if ( isFirst )
-                                                {
-                                                    isFirst = false;
-                                                    sprintf( msg, "%.1f cm", r );
-                                                    putText( result, msg, Point( 10, pt1.y - 10 ), FONT_HERSHEY_PLAIN, fontScale, Scalar( 0, 0, 255 ), lineWidth );
-                                                }
-                                                retVal = WorldToPixel( Point2d( c + incX, r ), pt2 );
+                                                retVal = WorldToPixel( Point2d( c, r ), pt1 );
                                                 if ( GC_OK == retVal )
                                                 {
-                                                    line( result, pt1, pt2, Scalar( 0, 255, 255 ), lineWidth );
-                                                    retVal = WorldToPixel( Point2d( c, r + incY ), pt2 );
+                                                    if ( isFirst )
+                                                    {
+                                                        isFirst = false;
+                                                        sprintf( msg, "%.1f cm", r );
+                                                        putText( result, msg, Point( 10, pt1.y - 10 ), FONT_HERSHEY_PLAIN, fontScale, Scalar( 0, 0, 255 ), lineWidth );
+                                                    }
+                                                    retVal = WorldToPixel( Point2d( c + incX, r ), pt2 );
                                                     if ( GC_OK == retVal )
                                                     {
                                                         line( result, pt1, pt2, Scalar( 0, 255, 255 ), lineWidth );
+                                                        retVal = WorldToPixel( Point2d( c, r + incY ), pt2 );
+                                                        if ( GC_OK == retVal )
+                                                        {
+                                                            line( result, pt1, pt2, Scalar( 0, 255, 255 ), lineWidth );
+                                                        }
                                                     }
                                                 }
                                             }

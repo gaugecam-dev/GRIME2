@@ -125,8 +125,8 @@ public:
     GC_STATUS GetCalibParams( std::string &calibParams );
     GC_STATUS SetStopsignColor( const cv::Scalar color, const double minRange, const double maxRange, cv::Scalar &hsv );
     GC_STATUS DrawCalibOverlay( const cv::Mat matIn, cv::Mat &imgMatOut );
-    GC_STATUS DrawCalibOverlay( const cv::Mat matIn, cv::Mat &imgMatOut,
-                                const bool drawCalib, const bool drawMoveROIs, const bool drawSearchROI );
+    GC_STATUS DrawCalibOverlay( const cv::Mat matIn, cv::Mat &imgMatOut, const bool drawCalibScale,
+                                const bool drawCalibGrid, const bool drawMoveROIs, const bool drawSearchROI );
 
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // Findline methods

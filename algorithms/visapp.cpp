@@ -622,10 +622,10 @@ GC_STATUS VisApp::DrawCalibOverlay( const cv::Mat matIn, cv::Mat &imgMatOut )
     GC_STATUS retVal = m_calibExec.DrawOverlay( matIn, imgMatOut );
     return retVal;
 }
-GC_STATUS VisApp::DrawCalibOverlay( const cv::Mat matIn, cv::Mat &imgMatOut,
-                                    const bool drawCalib, const bool drawMoveROIs, const bool drawSearchROI )
+GC_STATUS VisApp::DrawCalibOverlay( const cv::Mat matIn, cv::Mat &imgMatOut, const bool drawCalibScale,
+                                    const bool drawCalibGrid, const bool drawMoveROIs, const bool drawSearchROI )
 {
-    GC_STATUS retVal = m_calibExec.DrawOverlay( matIn, imgMatOut, drawCalib, drawMoveROIs, drawSearchROI );
+    GC_STATUS retVal = m_calibExec.DrawOverlay( matIn, imgMatOut, drawCalibScale, drawCalibGrid, drawMoveROIs, drawSearchROI );
     return retVal;
 }
 GC_STATUS VisApp::DrawLineFindOverlay( const cv::Mat &img, cv::Mat &imgOut, const LineDrawType overlayTypes )

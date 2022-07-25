@@ -229,6 +229,8 @@ void MainWindow::createConnections()
 {
     connect( m_pComboBoxImageToView,  &QComboBox::currentTextChanged, this, &MainWindow::UpdatePixmapTarget );
     connect( ui->checkBox_showCalib, &QCheckBox::stateChanged, this, &MainWindow::UpdatePixmapTarget );
+    connect( ui->radioButton_calibDisplayScale, &QRadioButton::clicked, this, &MainWindow::UpdatePixmapTarget );
+    connect( ui->radioButton_calibDisplayGrid, &QRadioButton::clicked, this, &MainWindow::UpdatePixmapTarget );
     connect( ui->checkBox_showFindLine, &QCheckBox::stateChanged, this, &MainWindow::UpdatePixmapTarget );
     connect( ui->checkBox_showRowSums, &QCheckBox::stateChanged, this, &MainWindow::UpdatePixmapTarget );
     connect( ui->checkBox_showDerivOne, &QCheckBox::stateChanged, this, &MainWindow::UpdatePixmapTarget );
@@ -581,7 +583,11 @@ int MainWindow::UpdatePixmap()
 
         if ( 0 == ret )
         {
-            int overlays = ui->checkBox_showCalib->isChecked() ? CALIB : OVERLAYS_NONE;
+            int overlays = OVERLAYS_NONE;
+            if ( ui->checkBox_showCalib->isChecked() )
+            {
+                overlays += ui->radioButton_calibDisplayScale->isChecked() ? CALIB_SCALE : CALIB_GRID;
+            }
             overlays += ui->checkBox_showFindLine->isChecked() ? FINDLINE : OVERLAYS_NONE;
             overlays += ui->checkBox_showRowSums->isChecked() ? DIAG_ROWSUMS : OVERLAYS_NONE;
             overlays += ui->checkBox_showDerivOne->isChecked() ? DIAG_1ST_DERIV : OVERLAYS_NONE;
