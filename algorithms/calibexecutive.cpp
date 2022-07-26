@@ -223,7 +223,7 @@ GC_STATUS CalibExecutive::DrawOverlay( const cv::Mat matIn, cv::Mat &imgMatOut, 
     if ( "BowTie" == paramsCurrent.calibType )
     {
         CalibModelBowtie model = bowTie.GetModel();
-        retVal = bowTie.DrawOverlay( matIn, imgMatOut, drawCalibScale || drawCalibGrid, drawMoveROIs, drawSearchROI );
+        retVal = bowTie.DrawOverlay( matIn, imgMatOut, drawCalibScale, drawCalibGrid, drawMoveROIs, drawSearchROI );
     }
     else if ( "StopSign" == paramsCurrent.calibType )
     {

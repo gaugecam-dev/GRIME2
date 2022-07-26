@@ -220,8 +220,8 @@ GC_STATUS CalibBowtie::GetSearchRegionBoundingRect( cv::Rect &rect )
     }
     return retVal;
 }
-GC_STATUS CalibBowtie::DrawOverlay( const cv::Mat img, cv::Mat &imgOut, const bool drawCalib,
-                              const bool drawMoveROIs, const bool drawSearchROI )
+GC_STATUS CalibBowtie::DrawOverlay( const cv::Mat img, cv::Mat &imgOut, const bool drawCalibScale,
+                                    const bool drawCalibGrid, const bool drawMoveROIs, const bool drawSearchROI )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -280,88 +280,129 @@ GC_STATUS CalibBowtie::DrawOverlay( const cv::Mat img, cv::Mat &imgOut, const bo
                 }
             }
 
-            if ( drawCalib )
+            if ( drawCalibGrid || drawCalibScale )
             {
-                Point2d topLft, botRgt;
-                retVal = PixelToWorld( m_model.pixelPoints[ 0 ], topLft );
-                if ( GC_OK == retVal )
+                if ( drawCalibScale )
                 {
-                    retVal = PixelToWorld( m_model.pixelPoints[ m_model.pixelPoints.size() - 1 ], botRgt );
+                    double lftX = ( m_model.searchLineSet[ 0 ].top.x + m_model.searchLineSet[ 0 ].bot.x ) / 2.0;
+                    double rgtX = ( m_model.searchLineSet[ m_model.searchLineSet.size() - 1 ].top.x + m_model.searchLineSet[ m_model.searchLineSet.size() - 1 ].bot.x ) / 2.0;
+                    double quarterLength = ( rgtX - lftX ) / 4.0;
+                    lftX += quarterLength;
+                    rgtX -= quarterLength;
+                    quarterLength = ( rgtX - lftX ) / 4.0;
+
+                    double centerPoint = ( lftX + rgtX ) / 2.0;
+                    double startPoint = ( m_model.searchLineSet[ 0 ].top.y + m_model.searchLineSet[ m_model.searchLineSet.size() - 1 ].top.y ) / 2.0;
+                    double endPoint = ( m_model.searchLineSet[ 0 ].bot.y + m_model.searchLineSet[ m_model.searchLineSet.size() - 1 ].bot.y ) / 2.0;
+
+                    char msg[ 256 ];
+                    double yPos;
+                    Point2d worldPt;
+                    double vertInc = ( endPoint - startPoint ) / 10.0;
+                    for ( int i = 0; i < 10; ++i )
+                    {
+                        yPos = startPoint + static_cast< double >( i ) * vertInc;
+                        retVal = PixelToWorld( Point2d( centerPoint, yPos ), worldPt );
+                        if ( GC_OK == retVal )
+                        {
+                            sprintf( msg, "%.1f", worldPt.y );
+                            if ( 0 == i % 2 )
+                            {
+                                line( imgOut, Point2d( lftX, yPos ), Point2d( rgtX, yPos ), Scalar( 0, 255, 255 ), textStroke );
+                            }
+                            else
+                            {
+                                line( imgOut, Point2d( lftX + quarterLength, yPos ),
+                                      Point2d( rgtX - quarterLength, yPos ), Scalar( 0, 255, 255 ), textStroke );
+
+                            }
+                            putText( imgOut, msg, Point( lftX - 120, yPos + 15 ), FONT_HERSHEY_PLAIN, fontScale, Scalar( 0, 0, 255 ), textStroke );
+                        }
+                    }
+                }
+                else
+                {
+                    Point2d topLft, botRgt;
+                    retVal = PixelToWorld( m_model.pixelPoints[ 0 ], topLft );
                     if ( GC_OK == retVal )
                     {
-                        Point2d pt1, pt2;
-                        double minCol = std::min( topLft.x, botRgt.x );
-                        double maxCol = std::max( topLft.x, botRgt.x );
-                        double minRow = std::min( topLft.y, botRgt.y );
-                        double maxRow = std::max( topLft.y, botRgt.y );
-                        double rowInc = ( maxRow - minRow ) / static_cast< double >( m_model.gridSize.height + 2 );
-                        double colInc = ( maxCol - minCol ) / static_cast< double >( m_model.gridSize.width );
-                        minRow -= rowInc;
-                        maxRow += rowInc;
-                        stringstream buf;
-
-                        bool first;
-                        double row, col;
-                        int rowInt, colInt;
-                        for ( rowInt = 0, row = maxRow; row > minRow; row -= rowInc, ++rowInt )
+                        retVal = PixelToWorld( m_model.pixelPoints[ m_model.pixelPoints.size() - 1 ], botRgt );
+                        if ( GC_OK == retVal )
                         {
-                            first = true;
-                            for ( colInt = 0, col = minCol; col < maxCol; col += colInc, ++colInt )
+                            Point2d pt1, pt2;
+                            double minCol = std::min( topLft.x, botRgt.x );
+                            double maxCol = std::max( topLft.x, botRgt.x );
+                            double minRow = std::min( topLft.y, botRgt.y );
+                            double maxRow = std::max( topLft.y, botRgt.y );
+                            double rowInc = ( maxRow - minRow ) / static_cast< double >( m_model.gridSize.height + 2 );
+                            double colInc = ( maxCol - minCol ) / static_cast< double >( m_model.gridSize.width );
+                            minRow -= rowInc;
+                            maxRow += rowInc;
+                            stringstream buf;
+
+                            bool first;
+                            double row, col;
+                            int rowInt, colInt;
+                            for ( rowInt = 0, row = maxRow; row > minRow; row -= rowInc, ++rowInt )
                             {
-                                retVal = WorldToPixel( Point2d( col, row ), pt1 );
-                                if ( GC_OK == retVal )
+                                first = true;
+                                for ( colInt = 0, col = minCol; col < maxCol; col += colInc, ++colInt )
                                 {
-                                    retVal = WorldToPixel( Point2d( col + colInc, row ), pt2 );
+                                    retVal = WorldToPixel( Point2d( col, row ), pt1 );
+                                    if ( GC_OK == retVal )
+                                    {
+                                        retVal = WorldToPixel( Point2d( col + colInc, row ), pt2 );
+                                        if ( GC_OK == retVal )
+                                        {
+                                            line( imgOut, pt1, pt2, Scalar( 0, 255, 255 ), textStroke );
+                                            retVal = WorldToPixel( Point2d( col, row - rowInc ), pt2 );
+                                            if ( GC_OK == retVal && pt1.y < imgOut.rows )
+                                            {
+                                                line( imgOut, pt1, pt2, Scalar( 0, 255, 255 ), textStroke );
+                                                if ( ( ( rowInt % 2 ) == 1 ) && ( ( colInt % 2 ) == 0 ) )
+                                                    circle( imgOut, pt1, circleSize, Scalar( 0, 255, 0 ), textStroke );
+                                            }
+                                        }
+                                    }
+                                    if ( first )
+                                    {
+                                        first = false;
+                                        buf.str( string() ); buf << boost::format( "%.1f" ) % row;
+                                        putText( imgOut, buf.str(), Point( cvRound( pt1.x ) - textOffset, cvRound( pt1.y ) + 5 ),
+                                                 FONT_HERSHEY_COMPLEX, fontScale * 0.5, Scalar( 0, 255, 255 ), textStroke );
+                                    }
+                                }
+                                retVal = WorldToPixel( Point2d( maxCol, row ), pt1 );
+                                if ( GC_OK == retVal && pt1.y < imgOut.rows )
+                                {
+                                    retVal = WorldToPixel( Point2d( maxCol, row - rowInc ), pt2 );
                                     if ( GC_OK == retVal )
                                     {
                                         line( imgOut, pt1, pt2, Scalar( 0, 255, 255 ), textStroke );
-                                        retVal = WorldToPixel( Point2d( col, row - rowInc ), pt2 );
-                                        if ( GC_OK == retVal && pt1.y < imgOut.rows )
-                                        {
-                                            line( imgOut, pt1, pt2, Scalar( 0, 255, 255 ), textStroke );
-                                            if ( ( ( rowInt % 2 ) == 1 ) && ( ( colInt % 2 ) == 0 ) )
-                                                circle( imgOut, pt1, circleSize, Scalar( 0, 255, 0 ), textStroke );
-                                        }
+                                        if ( ( rowInt % 2 ) == 1 )
+                                            circle( imgOut, pt1, circleSize, Scalar( 0, 255, 0 ), textStroke );
+                                    }
+                                }
+                            }
+                            first = true;
+                            for ( double col = minCol; col < maxCol; col += colInc )
+                            {
+                                retVal = WorldToPixel( Point2d( col, minRow ), pt1 );
+                                if ( GC_OK == retVal )
+                                {
+                                    retVal = WorldToPixel( Point2d( col + colInc, minRow ), pt2 );
+                                    if ( GC_OK == retVal )
+                                    {
+                                        line( imgOut, pt1, pt2, Scalar( 0, 255, 255 ), textStroke );
                                     }
                                 }
                                 if ( first )
                                 {
                                     first = false;
-                                    buf.str( string() ); buf << boost::format( "%.1f" ) % row;
+                                    buf.str( string() ); buf << boost::format( "%.1f" ) % minRow;
                                     putText( imgOut, buf.str(), Point( cvRound( pt1.x ) - textOffset, cvRound( pt1.y ) + 5 ),
                                              FONT_HERSHEY_COMPLEX, fontScale * 0.5, Scalar( 0, 255, 255 ), textStroke );
                                 }
-                            }
-                            retVal = WorldToPixel( Point2d( maxCol, row ), pt1 );
-                            if ( GC_OK == retVal && pt1.y < imgOut.rows )
-                            {
-                                retVal = WorldToPixel( Point2d( maxCol, row - rowInc ), pt2 );
-                                if ( GC_OK == retVal )
-                                {
-                                    line( imgOut, pt1, pt2, Scalar( 0, 255, 255 ), textStroke );
-                                    if ( ( rowInt % 2 ) == 1 )
-                                        circle( imgOut, pt1, circleSize, Scalar( 0, 255, 0 ), textStroke );
-                                }
-                            }
-                        }
-                        first = true;
-                        for ( double col = minCol; col < maxCol; col += colInc )
-                        {
-                            retVal = WorldToPixel( Point2d( col, minRow ), pt1 );
-                            if ( GC_OK == retVal )
-                            {
-                                retVal = WorldToPixel( Point2d( col + colInc, minRow ), pt2 );
-                                if ( GC_OK == retVal )
-                                {
-                                    line( imgOut, pt1, pt2, Scalar( 0, 255, 255 ), textStroke );
-                                }
-                            }
-                            if ( first )
-                            {
-                                first = false;
-                                buf.str( string() ); buf << boost::format( "%.1f" ) % minRow;
-                                putText( imgOut, buf.str(), Point( cvRound( pt1.x ) - textOffset, cvRound( pt1.y ) + 5 ),
-                                         FONT_HERSHEY_COMPLEX, fontScale * 0.5, Scalar( 0, 255, 255 ), textStroke );
                             }
                         }
                     }

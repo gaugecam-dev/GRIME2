@@ -94,7 +94,13 @@ GC_STATUS StopsignSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &
                           Point( cvRound( maxMaxPt.x ), cvRound( maxMaxPt.y + 10 ) ), Scalar( 0, 255, 0 ), 1 );
                 }
             }
+            cout << endl;
+            for ( size_t i = 0; i < pts.size(); ++i )
+                cout << cvRound( pts[ i ].x ) << "  " << cvRound( pts[ i ].y ) << endl;
             retVal = RefineFind( img, pts );
+            cout << endl;
+            for ( size_t i = 0; i < pts.size(); ++i )
+                cout << cvRound( pts[ i ].x ) << "  " << cvRound( pts[ i ].y ) << endl;
             imwrite( "/var/tmp/water/template_stopsign_find.png", color );
         }
         if ( 8 != pts.size() )
@@ -229,7 +235,7 @@ GC_STATUS StopsignSearch::RefineFind( const Mat &img, vector< Point2d > &pts )
                         mask = 0;
                         line( mask, lineSet[ i ].top, lineSet[ i ].bot, Scalar( 255 ), 15 );
                         mask &= edges;
-                        imwrite( "/var/tmp/water/line_edges.png", mask );
+                        // imwrite( "/var/tmp/water/line_edges.png", mask );
                         findNonZero( mask, lineEdges );
                         for ( size_t j = 0; j < lineEdges.size(); ++j )
                         {
@@ -259,7 +265,7 @@ GC_STATUS StopsignSearch::RefineFind( const Mat &img, vector< Point2d > &pts )
                                 line( color, Point( pts[ i ].x, pts[ i ].y - 10 ), Point( pts[ i ].x, pts[ i ].y + 10 ), Scalar( 255, 0, 0 ), 1 );
                                 line( color, lineEndSet[ i ].bot, lineEndSet[ i ].top, Scalar( 0, 255, 0 ), 1 );
                             }
-                            imwrite( "/var/tmp/water/nighttime.png", color );
+                            // imwrite( "/var/tmp/water/nighttime.png", color );
                         }
                     }
                 }
@@ -395,11 +401,11 @@ GC_STATUS StopsignSearch::CreatePointTemplates( const int templateDim, const int
                     if ( GC_OK == retVal )
                     {
                         threshold( mask, mask, 127, 255, THRESH_BINARY );
-                        imwrite( "/var/tmp/mask_" + to_string( i ) + ".png", mask );
+                        // imwrite( "/var/tmp/water/mask_" + to_string( i ) + ".png", mask );
                         retVal = RotateImage( templZero, templ, static_cast< double >( 5 - i ) );
                         if ( GC_OK == retVal )
                         {
-                            imwrite( "/var/tmp/templ_" + to_string( i ) + ".png", templ );
+                            // imwrite( "/var/tmp/water/templ_" + to_string( i ) + ".png", templ );
                             ptTemplates[ i ].mask = mask.clone();
                             ptTemplates[ i ].templ = templ.clone();
                             ptTemplates[ i ].angle = static_cast< double >( 5 - i );
@@ -409,11 +415,11 @@ GC_STATUS StopsignSearch::CreatePointTemplates( const int templateDim, const int
                             if ( GC_OK == retVal )
                             {
                                 threshold( mask, mask, 127, 255, THRESH_BINARY );
-                                imwrite( "/var/tmp/mask_" + to_string( rotateCnt + i + 1 ) + ".png", mask );
+                                // imwrite( "/var/tmp/water/mask_" + to_string( rotateCnt + i + 1 ) + ".png", mask );
                                 retVal = RotateImage( templZero, templ, angle );
                                 if ( GC_OK == retVal )
                                 {
-                                    imwrite( "/var/tmp/templ_" + to_string( rotateCnt + i + 1 ) + ".png", templ );
+                                    // imwrite( "/var/tmp/water/templ_" + to_string( rotateCnt + i + 1 ) + ".png", templ );
                                     ptTemplates[ rotateCnt + i + 1 ].mask = mask.clone();
                                     ptTemplates[ rotateCnt + i + 1 ].templ = templ.clone();
                                     ptTemplates[ rotateCnt + i + 1 ].angle = angle;
@@ -430,8 +436,8 @@ GC_STATUS StopsignSearch::CreatePointTemplates( const int templateDim, const int
                 }
                 if ( GC_OK == retVal )
                 {
-                    imwrite( "/var/tmp/mask_zero.png", maskZero );
-                    imwrite( "/var/tmp/templ_zero.png", templZero );
+                    // imwrite( "/var/tmp/mask_zero.png", maskZero );
+                    // imwrite( "/var/tmp/templ_zero.png", templZero );
                     ptTemplates[ rotateCnt ].mask = maskZero.clone();
                     ptTemplates[ rotateCnt ].templ = templZero.clone();
                     ptTemplates[ rotateCnt ].angle = 0.0;
@@ -791,21 +797,24 @@ GC_STATUS StopsignSearch::CalcPointsFromLines( const std::vector< LineEnds > lin
         {
             pts.clear();
             Point2d point;
-            retVal = LineIntersection( lines[ lines.size() - 1 ], lines[ 0 ], point );
+            for ( size_t i = 1; i < lines.size(); ++i )
+            {
+                retVal = LineIntersection( lines[ i - 1 ], lines[ i ], point );
+                if ( GC_OK == retVal )
+                {
+                    pts.push_back( point );
+                }
+                else
+                {
+                    break;
+                }
+            }
             if ( GC_OK == retVal )
             {
-                pts.push_back( point );
-                for ( size_t i = 1; i < lines.size(); ++i )
+                retVal = LineIntersection( lines[ lines.size() - 1 ], lines[ 0 ], point );
+                if ( GC_OK == retVal )
                 {
-                    retVal = LineIntersection( lines[ i - 1 ], lines[ i ], point );
-                    if ( GC_OK == retVal )
-                    {
-                        pts.push_back( point );
-                    }
-                    else
-                    {
-                        break;
-                    }
+                    pts.push_back( point );
                 }
             }
         }
