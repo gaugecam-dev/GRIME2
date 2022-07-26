@@ -1,13 +1,19 @@
 #include "log.h"
 #include "stopsignsearch.h"
+#include <random>
 #include <iostream>
 #include "opencv2/imgcodecs.hpp"
+#include "bresenham.h"
 
-#ifndef DEBUG_STOPSIGN_TEMPL
-#define DEBUG_STOPSIGN_TEMPL
+#ifdef DEBUG_STOPSIGN_TEMPL
+#undef DEBUG_STOPSIGN_TEMPL
 #include <boost/filesystem.hpp>
 using namespace boost;
 namespace fs = filesystem;
+#endif
+
+#ifndef DEBUG_STOPSIGN_LINEFIT
+#define DEBUG_STOPSIGN_LINEFIT
 #endif
 
 static const std::string DEBUG_FOLDER = std::string( "/var/tmp/water/" );
@@ -88,6 +94,7 @@ GC_STATUS StopsignSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &
                           Point( cvRound( maxMaxPt.x ), cvRound( maxMaxPt.y + 10 ) ), Scalar( 0, 255, 0 ), 1 );
                 }
             }
+            retVal = RefineFind( img, pts );
             imwrite( "/var/tmp/water/template_stopsign_find.png", color );
         }
         if ( 8 != pts.size() )
@@ -99,6 +106,169 @@ GC_STATUS StopsignSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &
     catch( const cv::Exception &e )
     {
         FILE_LOG( logERROR ) << "[StopsignSearch::Find] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+    return retVal;
+}
+
+
+GC_STATUS StopsignSearch::ShortenLine( const LineEnds &a, const double newLengthPercent, LineEnds &newLine )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        double lineLength = sqrt( ( a.top.x - a.bot.x ) * ( a.top.x - a.bot.x ) +
+                                  ( a.top.y - a.bot.y ) * ( a.top.y - a.bot.y ) );
+        double newLength = lineLength * ( newLengthPercent + ( 1.0 - newLengthPercent ) / 2 );
+
+        retVal = AdjustLineLength( a, newLength, newLine );
+        if ( GC_OK == retVal )
+        {
+            newLength = lineLength * newLengthPercent;
+            retVal = AdjustLineLength( LineEnds( newLine.bot, newLine.top ), newLength, newLine );
+        }
+    }
+    catch( const cv::Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[StopsignSearch::ShortenLine] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+    return retVal;
+}
+GC_STATUS StopsignSearch::AdjustLineLength( const LineEnds &a, const double newLength, LineEnds &newLine )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        newLine.top = a.top;
+        double lenAB = sqrt( pow( a.top.x - a.bot.x, 2.0 ) + pow( a.top.y - a.bot.y, 2.0 ) );
+        newLine.bot.x = a.top.x + ( ( a.top.x - a.bot.x ) / lenAB ) * newLength;
+        newLine.bot.y = a.top.y + ( ( a.top.y - a.bot.y ) / lenAB ) * newLength;
+        newLine.bot.x = a.top.x + ( ( a.bot.x - a.top.x ) / lenAB ) * newLength;
+        newLine.bot.y = a.top.y + ( ( a.bot.y - a.top.y ) / lenAB ) * newLength;
+
+        // lenAB = sqrt(pow(A.x - B.x, 2.0) + pow(A.y - B.y, 2.0));
+        // C.x = B.x + (B.x - A.x) / lenAB * length;
+        // C.y = B.y + (B.y - A.y) / lenAB * length;
+    }
+    catch( const cv::Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[StopsignSearch::AdjustLineLength] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+    return retVal;
+}
+GC_STATUS StopsignSearch::RefineFind( const Mat &img, vector< Point2d > &pts )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        if ( img.empty() )
+        {
+            FILE_LOG( logERROR ) << "[StopsignSearch::RefineFind] Reference image empty";
+            retVal = GC_ERR;
+        }
+        else if ( 8 != pts.size() )
+        {
+            FILE_LOG( logERROR ) << "[StopsignSearch::RefineFind] Need 8 points, but got only " << pts.size();
+            retVal = GC_ERR;
+        }
+        else
+        {
+            Mat img8u;
+            if ( img.type() == CV_8UC1 )
+            {
+                img.copyTo( img8u );
+            }
+            else
+            {
+                cvtColor( img, img8u, COLOR_BGR2GRAY );
+            }
+
+            Mat edges;
+            medianBlur( img8u, edges, 7 );
+            Canny( edges, edges, 35, 70 );
+
+            LineEnds lineEnds;
+            vector< LineEnds > lineEndSet;
+            vector< Point > lineEdges;
+            Mat mask = Mat::zeros( img.size(), CV_8UC1 );
+            Mat color;
+            if ( img.type() == CV_8UC3 )
+            {
+                img.copyTo( color );
+            }
+            else
+            {
+                cvtColor( img, color, COLOR_GRAY2BGR );
+            }
+
+            LineEnds lineA;
+            vector< LineEnds > lineSet;
+            retVal = ShortenLine( LineEnds( pts[ 0 ], pts[ pts.size() - 1 ] ), 0.5, lineA );
+            if ( GC_OK == retVal )
+            {
+                lineSet.push_back( lineA );
+                for ( size_t i = 1; i < pts.size(); ++i )
+                {
+                    retVal = ShortenLine( LineEnds( pts[ i ], pts[ i - 1 ] ), 0.5, lineA );
+                    if ( GC_OK == retVal )
+                    {
+                        lineSet.push_back( lineA );
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                if ( GC_OK == retVal )
+                {
+                    for ( size_t i = 0; i < lineSet.size(); ++i )
+                    {
+                        line( color, lineSet[ i ].bot, lineSet[ i ].top, Scalar( 0, 0, 255 ), 1 );
+                        mask = 0;
+                        line( mask, lineSet[ i ].top, lineSet[ i ].bot, Scalar( 255 ), 15 );
+                        mask &= edges;
+                        imwrite( "/var/tmp/water/line_edges.png", mask );
+                        findNonZero( mask, lineEdges );
+                        for ( size_t j = 0; j < lineEdges.size(); ++j )
+                        {
+                            color.at<Vec3b>( lineEdges[ j ] )[ 0 ] = 0;
+                            color.at<Vec3b>( lineEdges[ j ] )[ 1 ] = 255;
+                            color.at<Vec3b>( lineEdges[ j ] )[ 2 ] = 255;
+                        }
+                        retVal = FitLine( lineEdges, lineEnds, img );
+                        if ( GC_OK == retVal )
+                        {
+                            lineEndSet.push_back( lineEnds );
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+
+                    if ( GC_OK == retVal )
+                    {
+                        retVal = CalcPointsFromLines( lineEndSet, pts );
+                        if ( GC_OK == retVal )
+                        {
+                            for ( size_t i = 0; i < lineEndSet.size(); ++i )
+                            {
+                                line( color, Point( pts[ i ].x - 10, pts[ i ].y ), Point( pts[ i ].x + 10, pts[ i ].y ), Scalar( 255, 0, 0 ), 1 );
+                                line( color, Point( pts[ i ].x, pts[ i ].y - 10 ), Point( pts[ i ].x, pts[ i ].y + 10 ), Scalar( 255, 0, 0 ), 1 );
+                                line( color, lineEndSet[ i ].bot, lineEndSet[ i ].top, Scalar( 0, 255, 0 ), 1 );
+                            }
+                            imwrite( "/var/tmp/water/nighttime.png", color );
+                        }
+                    }
+                }
+            }
+        }
+    }
+    catch( const cv::Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[StopsignSearch::RefineFind] " << e.what();
         retVal = GC_EXCEPT;
     }
     return retVal;
@@ -429,5 +599,224 @@ GC_STATUS StopsignSearch::CreateTemplateOverlay( const std::string debugFolder )
     }
     return retVal;
 }
+GC_STATUS StopsignSearch::FitLine( const std::vector< Point > &pts, LineEnds &lineEnds, const cv::Mat &img )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        if ( 5 > pts.size() )
+        {
+            FILE_LOG( logERROR ) << "[StopsignSearch::FitLine] At least five points are needed to fit a line";
+            retVal = GC_ERR;
+        }
+        else
+        {
+            double angle;
+            Vec4d lineVec;
+            vector< int > indices;
+            vector< double > angles;
+            vector< Point2d > ptSet;
+            vector< LineEnds > validLines;
+
+            fitLine( pts, lineVec, DIST_L2, 0.0, 0.01, 0.01 );
+            lineEnds.top.x = lineVec[ 2 ] + ( lineVec[ 0 ] * -lineVec[ 2 ] );
+            lineEnds.top.y = lineVec[ 3 ] + ( lineVec[ 1 ] * -lineVec[ 2 ] );
+            lineEnds.bot.x = lineVec[ 2 ] + ( lineVec[ 0 ] * ( img.cols - lineVec[ 2 ] - 1 ) );
+            lineEnds.bot.y = lineVec[ 3 ] + ( lineVec[ 1 ] * ( img.cols - lineVec[ 2 ] - 1 ) );
+            angle = atan2( ( lineEnds.bot.y - lineEnds.top.y ),
+                           ( lineEnds.bot.x - lineEnds.top.x ) ) * ( 180.0 / CV_PI );
+
+            double rads = angle * CV_PI / 180.0;
+            Point2d pt = Point2d( lineEnds.top.x + cos( rads ) * 100.0, lineEnds.top.y + sin( rads ) * 100 );
+
+            bool isVertical;
+            double slope, intercept;
+            retVal = GetSlopeIntercept( lineEnds.top, pt, slope, intercept, isVertical );
+            if ( GC_OK == retVal )
+            {
+                if ( isVertical )
+                {
+                    lineEnds.top.x = pt.x;
+                    lineEnds.top.y = 0;
+                    lineEnds.bot.x = pt.x;
+                    lineEnds.bot.y = img.rows - 1;
+                }
+                else
+                {
+                    lineEnds.top.x = 0.0;
+                    lineEnds.top.y = intercept;
+                    lineEnds.bot.x = static_cast< double >( img.cols ) - 1.0;
+                    lineEnds.bot.y = slope * lineEnds.bot.x + intercept;
+                    clipLine( img.size(), lineEnds.top, lineEnds.bot );
+                }
+            }
+        }
+    }
+    catch( cv::Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[StopsignSearch::FitLine] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+    return retVal;
+}
+GC_STATUS StopsignSearch::GetSlopeIntercept( const Point2d one, const Point2d two, double &slope, double &intercept, bool &isVertical )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        if ( numeric_limits< double >::epsilon() > two.x - one.x )
+        {
+            isVertical = true;
+            slope = numeric_limits< double >::max();
+            intercept = -9999999;
+        }
+        else
+        {
+            isVertical = false;
+            slope = ( two.y - one.y ) / ( two.x - one.x );
+            intercept = one.y - slope * one.x;
+        }
+    }
+    catch( std::exception &e )
+    {
+        FILE_LOG( logERROR ) << "[StopsignSearch::GetSlopeIntercept] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+    return retVal;
+}
+GC_STATUS StopsignSearch::GetRandomNumbers( const int low_bound, const int high_bound, const int cnt_to_generate,
+                                            vector< int > &numbers, const bool isFirst )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        if ( high_bound - low_bound + 1 < static_cast< int >( numbers.size() ) / 2 )
+        {
+            FILE_LOG( logERROR ) << "[StopsignSearch::GetRandomNumbers] Not enough points to find good numbers";
+            retVal = GC_ERR;
+        }
+        else
+        {
+            default_random_engine randomEngine;
+            if ( isFirst )
+            {
+                auto seed = std::chrono::system_clock::now().time_since_epoch().count(); //seed
+                randomEngine.seed( static_cast< unsigned int >( seed ) );
+            }
+
+            std::uniform_int_distribution< int > di( low_bound, high_bound ); //distribution
+
+            vector< int > tempVec;
+            for ( int i = 0; i < cnt_to_generate; ++i )
+                tempVec.push_back( 0 );
+
+            bool foundIt;
+            int tries = 10;
+            numbers.clear();
+            while ( tries > 0 && static_cast< int >( numbers.size() ) < cnt_to_generate )
+            {
+                std::generate( tempVec.begin(), tempVec.end(), [ & ]{ return di( randomEngine ); } );
+                for ( size_t i = 0; i < tempVec.size(); ++i )
+                {
+                    foundIt = false;
+                    for ( size_t j = 0; j < numbers.size(); ++j )
+                    {
+                        if ( tempVec[ i ] == numbers[ j ] )
+                        {
+                            foundIt = true;
+                            break;
+                        }
+                    }
+                    if ( !foundIt )
+                    {
+                        numbers.push_back( tempVec[ i ] );
+                        if ( static_cast< int >( numbers.size() ) >= cnt_to_generate )
+                            break;
+                    }
+                }
+                --tries;
+            }
+            if ( static_cast< int >( numbers.size() ) < cnt_to_generate )
+            {
+                FILE_LOG( logERROR ) << "[StopsignSearch::GetRandomNumbers] Not enough unique numbers found";
+                retVal = GC_ERR;
+            }
+        }
+    }
+    catch( std::exception &e )
+    {
+        FILE_LOG( logERROR ) << "[StopsignSearch::GetRandomNumbers] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+    return retVal;
+}
+GC_STATUS StopsignSearch::LineIntersection( const LineEnds line1, const LineEnds line2, cv::Point2d &r )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        Point2d x = Point2d( line2.top ) - Point2d( line1.top );
+        Point2d d1 = Point2d( line1.bot ) - Point2d( line1.top );
+        Point2d d2 = Point2d( line2.bot ) - Point2d( line2.top );
+
+        double cross = d1.x * d2.y - d1.y * d2.x;
+        if (abs(cross) < numeric_limits< double >::epsilon() )
+        {
+            FILE_LOG( logERROR ) << "[CalibStopSign::LineIntersection] Lines are parallel";
+            return GC_ERR;
+        }
+
+        double t1 = ( x.x * d2.y - x.y * d2.x ) / cross;
+        r = Point2d( line1.top ) + d1 * t1;
+    }
+    catch( std::exception &e )
+    {
+        FILE_LOG( logERROR ) << "[StopsignSearch::LineIntersection] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+    return retVal;
+}
+
+GC_STATUS StopsignSearch::CalcPointsFromLines( const std::vector< LineEnds > lines, std::vector< cv::Point2d > &pts )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        if ( 8 != lines.size() )
+        {
+            FILE_LOG( logERROR ) << "[StopsignSearch::CalcPointsFromLines] Need 8 lines, but got only " << lines.size();
+            retVal = GC_ERR;
+        }
+        else
+        {
+            pts.clear();
+            Point2d point;
+            retVal = LineIntersection( lines[ lines.size() - 1 ], lines[ 0 ], point );
+            if ( GC_OK == retVal )
+            {
+                pts.push_back( point );
+                for ( size_t i = 1; i < lines.size(); ++i )
+                {
+                    retVal = LineIntersection( lines[ i - 1 ], lines[ i ], point );
+                    if ( GC_OK == retVal )
+                    {
+                        pts.push_back( point );
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    catch( std::exception &e )
+    {
+        FILE_LOG( logERROR ) << "[StopsignSearch::CalcPointsFromLines] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+    return retVal;
+}
+
 
 } // namespace gc
