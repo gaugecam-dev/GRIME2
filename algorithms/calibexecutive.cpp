@@ -30,7 +30,8 @@ ostream &operator<<( ostream &out, CalibExecParams &params )
 
     out << "{ \"calibType\": \"" << params.calibType << "\", ";
     out << "\"calibWorldPt_csv\": \"" << params.worldPtCSVFilepath << "\", ";
-    out << "\"stopSignFacetLength\": " << params.stopSignFacetLength << ", ";
+    out << "\"facetLength\": " << params.facetLength << ", ";
+    out << "\"zeroOffset\": " << params.zeroOffset << ", ";
     out << "\"calibResult_json\": \"" << params.calibResultJsonFilepath << "\", ";
     out << "\"drawCalibScale\": " << ( params.drawCalibScale ? 1 : 0 ) << ", ";
     out << "\"drawCalibGrid\": " << ( params.drawCalibGrid ? 1 : 0 ) << ", ";
@@ -123,7 +124,8 @@ GC_STATUS CalibExecutive::Calibrate( const cv::Mat &img, const std::string jsonP
 
         paramsCurrent.calibType = top_level.get< string >( "calibType", "" );
         paramsCurrent.worldPtCSVFilepath = top_level.get< string >( "calibWorldPt_csv", "" );
-        paramsCurrent.stopSignFacetLength = top_level.get< double >( "stopSignFacetLength", -1.0 );
+        paramsCurrent.facetLength = top_level.get< double >( "facetLength", -1.0 );
+        paramsCurrent.zeroOffset = top_level.get< double >( "zeroOffset", 0.0 );
         paramsCurrent.moveSearchROIGrowPercent = top_level.get< int >( "moveSearchROIGrowPercent", 0 );
         paramsCurrent.calibResultJsonFilepath = top_level.get< string >( "calibResult_json", "" );
         paramsCurrent.drawCalibScale = 1 == top_level.get< int >( "drawCalibScale", 0 );
@@ -358,8 +360,8 @@ GC_STATUS CalibExecutive::CalibrateStopSign( const cv::Mat &img, const string &c
             vector< Point > searchLineCorners = { paramsCurrent.lineSearch_lftTop, paramsCurrent.lineSearch_rgtTop,
                                                   paramsCurrent.lineSearch_lftBot, paramsCurrent.lineSearch_rgtBot };
 
-            retVal = stopSign.Calibrate( img, paramsCurrent.stopSignFacetLength, paramsCurrent.targetSearchROI,
-                                         controlJson, searchLineCorners );
+            retVal = stopSign.Calibrate( img, paramsCurrent.facetLength, paramsCurrent.targetSearchROI,
+                                         paramsCurrent.zeroOffset, controlJson, searchLineCorners );
             if ( GC_OK == retVal )
             {
                 retVal = stopSign.Save( paramsCurrent.calibResultJsonFilepath );

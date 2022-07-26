@@ -101,8 +101,9 @@ GC_STATUS CalibStopSign::GetCalibParams( std::string &calibParams )
 }
 // symbolPoints are clockwise ordered with 0 being the topmost left point
 GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double octoSideLength, const cv::Rect rect,
-                                    const std::string &controlJson, std::vector< Point > &searchLineCorners )
+                                    const double zeroOffset, const std::string &controlJson, std::vector< Point > &searchLineCorners )
 {
+    cout << endl << controlJson << endl;
     GC_STATUS retVal = GC_OK;
     try
     {
@@ -172,14 +173,19 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double octoSideLen
                 for ( size_t i = 0; i < model.pixelPoints.size(); ++i )
                 {
                     model.pixelPoints[ i ] += offset;
-                    cout << model.pixelPoints[ i ] << endl;
                 }
             }
 
             retVal = CalcOctoWorldPoints( octoSideLength, model.worldPoints );
             if ( GC_OK == retVal )
             {
-                retVal = CreateCalibration( model.pixelPoints, model.worldPoints );
+                vector< Point2d > pointsTemp;
+                Point2d ptTemp( 0.0, zeroOffset );
+                for ( size_t i = 0; i < model.worldPoints.size(); ++i )
+                {
+                    pointsTemp.push_back( model.worldPoints[ i ] + ptTemp );
+                }
+                retVal = CreateCalibration( model.pixelPoints, pointsTemp );
                 if ( GC_OK == retVal )
                 {
 #ifdef DEBUG_FIND_CALIB_SYMBOL
@@ -623,12 +629,11 @@ GC_STATUS CalibStopSign::CalcOctoWorldPoints( const double sideLength, std::vect
         pts.push_back( Point2d( 0.0, cornerLength + cornerLength + sideLength ) );
         pts.push_back( Point2d( sideLength, cornerLength + cornerLength + sideLength ) );
         pts.push_back( Point2d( sideLength + cornerLength, + cornerLength + sideLength ) );
-        pts.push_back( Point2d( sideLength + cornerLength, +cornerLength ) );
+        pts.push_back( Point2d( sideLength + cornerLength, + cornerLength ) );
         pts.push_back( Point2d( sideLength, 0.0 ) );
         pts.push_back( Point2d( 0.0, 0.0 ) );
         pts.push_back( Point2d( -cornerLength, cornerLength ) );
         pts.push_back( Point2d( -cornerLength, cornerLength + sideLength ) );
-
     }
     catch( std::exception &e )
     {
@@ -1472,7 +1477,7 @@ GC_STATUS CalibStopSign::DrawOverlay( const cv::Mat &img, cv::Mat &result, const
                                                     if ( isFirst )
                                                     {
                                                         isFirst = false;
-                                                        sprintf( msg, "%.1f cm", r );
+                                                        sprintf( msg, "%.1f", r );
                                                         putText( result, msg, Point( 10, pt1.y - 10 ), FONT_HERSHEY_PLAIN, fontScale, Scalar( 0, 0, 255 ), lineWidth );
                                                     }
                                                     retVal = WorldToPixel( Point2d( c + incX, r ), pt2 );

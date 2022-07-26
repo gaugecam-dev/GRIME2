@@ -292,7 +292,8 @@ int RoiAdjust::FormBowtieCalibJsonString( const std::string csvFilepath, const s
 
     json = "{\"calibType\": \"BowTie\", ";
     json += "\"calibWorldPt_csv\": \"" + csvFilepath + "\", ";
-    json += "\"stopSignFacetLength\": -1.0, ";
+    json += "\"facetLength\": -1.0, ";
+    json += "\"zeroOffset\": 0.0, ";
     json += "\"moveSearchROIGrowPercent\": " + std::to_string( moveSearchROIGrowPercent ) + ", ";
     json += "\"drawCalib\": 0, ";
     json += "\"drawMoveSearchROIs\": 0, ";
@@ -325,13 +326,15 @@ int RoiAdjust::FormBowtieCalibJsonString( const std::string csvFilepath, const s
 }
 int RoiAdjust::FormStopsignCalibJsonString( const std::string csvFilepath, const std::string jsonResultFilepath,
                                             const bool useSearchROI, const QRect rectROI, const int moveSearchROIGrowPercent,
-                                            const double facetLength, const LineSearchPoly searchPoly, std::string &json )
+                                            const double facetLength, const double zeroOffset, const LineSearchPoly searchPoly,
+                                            std::string &json )
 {
     int ret = 0;
 
     json = "{\"calibType\": \"StopSign\", ";
     json += "\"calibWorldPt_csv\": \"" + csvFilepath + "\", ";
-    json += "\"stopSignFacetLength\": " + std::to_string( facetLength ) + ", ";
+    json += "\"facetLength\": " + std::to_string( facetLength ) + ", ";
+    json += "\"zeroOffset\": " + std::to_string( zeroOffset ) + ", ";
     json += "\"moveSearchROIGrowPercent\": " + std::to_string( moveSearchROIGrowPercent ) + ", ";
     json += "\"drawCalib\": 0, ";
     json += "\"drawMoveSearchROIs\": 0, ";

@@ -373,7 +373,8 @@ int MainWindow::ReadSettings( const QString filepath )
         ui->lineEdit_calibVisionResult_json->setText( pSettings->value( "calibJsonFileOut", QString( __CONFIGURATION_FOLDER.c_str() ) + "calib.json" ).toString() );
         pSettings->value( "calibTypeIsBowtie", true ).toBool() ? ui->radioButton_calibBowtie->setChecked( true ) : ui->radioButton_calibStopSign->setChecked( true );
         ui->checkBox_calibSearchROI->setChecked( !pSettings->value( "useWholeImage", true ).toBool() );
-        ui->doubleSpinBox_stopSignFacetLength->setValue( pSettings->value( "stopSignFacetLength", 7.1875 ).toDouble() );
+        ui->doubleSpinBox_stopSignFacetLength->setValue( pSettings->value( "stopSignFacetLength", 0.599 ).toDouble() );
+        ui->doubleSpinBox_stopSignZeroOffset->setValue( pSettings->value( "stopSignZeroOffset", 2.36 ).toDouble() );
         ui->spinBox_moveSearchROIGrowPercent->setValue( pSettings->value( "moveSearchROIGrowPercent", 0 ).toInt() );
         ui->spinBox_colorRangeMin->setValue( pSettings->value( "stopSignColorRangeMin", 10 ).toInt() );
         ui->spinBox_colorRangeMax->setValue( pSettings->value( "stopSignColorRangeMax", 10 ).toInt() );
@@ -470,6 +471,7 @@ int MainWindow::WriteSettings( const QString filepath )
         pSettings->setValue( "calibTypeIsBowtie", ui->radioButton_calibBowtie->isChecked() );
         pSettings->setValue( "useWholeImage", !ui->checkBox_calibSearchROI->isChecked() );
         pSettings->setValue( "stopSignFacetLength", ui->doubleSpinBox_stopSignFacetLength->value() );
+        pSettings->setValue( "stopSignZeroOffset", ui->doubleSpinBox_stopSignZeroOffset->value() );
         pSettings->setValue( "moveSearchROIGrowPercent", ui->spinBox_moveSearchROIGrowPercent->value() );
         pSettings->setValue( "stopSignColorRangeMin", ui->spinBox_colorRangeMin->value() );
         pSettings->setValue( "stopSignColorRangeMax", ui->spinBox_colorRangeMax->value() );
@@ -1165,6 +1167,7 @@ void MainWindow::on_pushButton_visionCalibrate_clicked()
                                                        ui->checkBox_calibSearchROI->isChecked(), m_rectROI,
                                                        ui->spinBox_moveSearchROIGrowPercent->value() + 100,
                                                        ui->doubleSpinBox_stopSignFacetLength->value(),
+                                                       ui->doubleSpinBox_stopSignZeroOffset->value(),
                                                        m_lineSearchPoly, jsonControlStr );
     }
     else
@@ -1320,6 +1323,7 @@ void MainWindow::on_pushButton_findLineCurrentImage_clicked()
                                                                ui->checkBox_calibSearchROI->isChecked(), m_rectROI,
                                                                ui->spinBox_moveSearchROIGrowPercent->value() + 100,
                                                                ui->doubleSpinBox_stopSignFacetLength->value(),
+                                                               ui->doubleSpinBox_stopSignZeroOffset->value(),
                                                                m_lineSearchPoly, params.calibControlString );
             if ( 0 != ret )
             {

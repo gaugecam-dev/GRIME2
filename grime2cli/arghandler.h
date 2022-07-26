@@ -38,7 +38,9 @@ public:
         targetRoi_x( -1 ),
         targetRoi_y( -1 ),
         targetRoi_width( -1 ),
-        targetRoi_height( -1 )
+        targetRoi_height( -1 ),
+        facetLength( -1.0 ),
+        zeroOffset( 0.0 )
     {}
     void clear()
     {
@@ -58,6 +60,8 @@ public:
         targetRoi_y = -1;
         targetRoi_width = -1;
         targetRoi_height = -1;
+        facetLength = -1.0;
+        zeroOffset = 0.0;
     }
     bool verbose;
     GRIME2_CLI_OP opToPerform;
@@ -75,6 +79,9 @@ public:
     int targetRoi_y;
     int targetRoi_width;
     int targetRoi_height;
+    double facetLength;
+    double zeroOffset;
+
 };
 int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
 {

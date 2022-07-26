@@ -12,7 +12,8 @@ class CalibExecParams
 {
 public:
     CalibExecParams() :
-        stopSignFacetLength( -1.0 ),
+        facetLength( -1.0 ),
+        zeroOffset( 0.0 ),
         moveSearchROIGrowPercent( 0 ),
         drawCalibScale( false ),
         drawCalibGrid( false ),
@@ -29,7 +30,8 @@ public:
     {
         calibType.clear();
         worldPtCSVFilepath.clear();
-        stopSignFacetLength = -1.0;
+        facetLength = -1.0;
+        zeroOffset = 0.0;
         moveSearchROIGrowPercent = 0;
         calibResultJsonFilepath.clear();
         drawCalibScale = false;
@@ -45,7 +47,8 @@ public:
 
     string calibType;
     string worldPtCSVFilepath;
-    double stopSignFacetLength;
+    double facetLength;
+    double zeroOffset;
     int moveSearchROIGrowPercent;
     string calibResultJsonFilepath;
     bool drawCalibScale;
