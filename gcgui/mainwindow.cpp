@@ -373,7 +373,7 @@ int MainWindow::ReadSettings( const QString filepath )
         ui->lineEdit_calibVisionResult_json->setText( pSettings->value( "calibJsonFileOut", QString( __CONFIGURATION_FOLDER.c_str() ) + "calib.json" ).toString() );
         pSettings->value( "calibTypeIsBowtie", true ).toBool() ? ui->radioButton_calibBowtie->setChecked( true ) : ui->radioButton_calibStopSign->setChecked( true );
         ui->checkBox_calibSearchROI->setChecked( !pSettings->value( "useWholeImage", true ).toBool() );
-        ui->doubleSpinBox_stopSignFacetLength->setValue( pSettings->value( "stopSignFacetLength", 0.599 ).toDouble() );
+        ui->doubleSpinBox_stopSignFacetLength->setValue( pSettings->value( "stopSignFacetLength", 0.599 ).toDouble() ); // 7.1875 inches
         ui->doubleSpinBox_stopSignZeroOffset->setValue( pSettings->value( "stopSignZeroOffset", 2.36 ).toDouble() );
         ui->spinBox_moveSearchROIGrowPercent->setValue( pSettings->value( "moveSearchROIGrowPercent", 0 ).toInt() );
         ui->spinBox_colorRangeMin->setValue( pSettings->value( "stopSignColorRangeMin", 10 ).toInt() );
