@@ -100,14 +100,17 @@ GC_STATUS CalibStopSign::GetCalibParams( std::string &calibParams )
     return retVal;
 }
 // symbolPoints are clockwise ordered with 0 being the topmost left point
-GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double octoSideLength, const cv::Rect rect,
-                                    const double zeroOffset, const std::string &controlJson, std::vector< Point > &searchLineCorners )
+GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double facetLength,
+                                    const cv::Rect rect, const double zeroOffset,
+                                    const std::string &controlJson, std::vector< Point > &searchLineCorners )
 {
     cout << endl << controlJson << endl;
     GC_STATUS retVal = GC_OK;
     try
     {
-        // clear();
+        model.facetLength = facetLength;
+        model.zeroOffset = zeroOffset;
+
         std::vector< StopSignCandidate > candidates;
         bool useRoi = -1 != rect.x &&
                 -1 != rect.y &&
@@ -176,7 +179,7 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double octoSideLen
                 }
             }
 
-            retVal = CalcOctoWorldPoints( octoSideLength, model.worldPoints );
+            retVal = CalcOctoWorldPoints( facetLength, model.worldPoints );
             if ( GC_OK == retVal )
             {
                 vector< Point2d > pointsTemp;
@@ -332,7 +335,13 @@ GC_STATUS CalibStopSign::AdjustStopSignForRotation( const Size imgSize, const Fi
                     retVal = CalcCorners( octoLines, adjustedCorners );
                     if ( GC_OK == retVal )
                     {
-                        retVal = CreateCalibration( adjustedCorners, model.worldPoints );
+                        vector< Point2d > pointsTemp;
+                        Point2d ptTemp( 0.0, model.zeroOffset );
+                        for ( size_t i = 0; i < model.worldPoints.size(); ++i )
+                        {
+                            pointsTemp.push_back( model.worldPoints[ i ] + ptTemp );
+                        }
+                        retVal = CreateCalibration( model.pixelPoints, pointsTemp );
                     }
                 }
             }
@@ -443,6 +452,8 @@ GC_STATUS CalibStopSign::Load( const std::string jsonCalFilepath )
 
             model.imgSize.width = ptreeTop.get< int >( "imageWidth", 0 );
             model.imgSize.height = ptreeTop.get< int >( "imageHeight", 0 );
+            model.facetLength = ptreeTop.get< double >( "facetLength", -1.0 );
+            model.zeroOffset = ptreeTop.get< double >( "zeroOffset", 0.0 );
             property_tree::ptree ptreeCalib = ptreeTop.get_child( "PixelToWorld" );
 
             Point2d ptTemp;
@@ -550,6 +561,8 @@ GC_STATUS CalibStopSign::Save( const std::string jsonCalFilepath )
                 fileStream << "  \"calibType\":\"StopSign\"" << "," << endl;
                 fileStream << "  \"imageWidth\":" << model.imgSize.width << "," << endl;
                 fileStream << "  \"imageHeight\":" << model.imgSize.height << "," << endl;
+                fileStream << "  \"facetLength\":" << model.facetLength << "," << endl;
+                fileStream << "  \"zeroOffset\":" << model.zeroOffset << "," << endl;
                 fileStream << "  \"PixelToWorld\": " << endl;
                 fileStream << "  {" << endl;
                 fileStream << "    \"points\": [" << endl;

@@ -90,7 +90,7 @@ public:
     CalibStopSign();
     GC_STATUS Load( const std::string jsonCalFilepath );
     GC_STATUS Save( const std::string jsonCalFilepath );
-    GC_STATUS Calibrate( const cv::Mat &img, const double octoSideLength,
+    GC_STATUS Calibrate( const cv::Mat &img, const double facetLength,
                          const cv::Rect rect, const double zeroOffset, const std::string &controlJson,
                          std::vector< cv::Point > &searchLineCorners );
     GC_STATUS AdjustStopSignForRotation( const cv::Size imgSize, const FindPointSet &calcLinePts, double &offsetAngle );

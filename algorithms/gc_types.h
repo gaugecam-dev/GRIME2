@@ -179,6 +179,8 @@ public:
     CalibModelSymbol() :
         imgSize( cv::Size( -1, -1 ) ),
         targetSearchRegion( cv::Rect( -1, -1, -1, -1 ) ),
+        facetLength( -1.0 ),
+        zeroOffset( 0.0 ),
         center( cv::Point2d( -1.0, -1.0 ) ),
         angle( -9999999.0 )
     {}
@@ -198,6 +200,8 @@ public:
                       std::vector< cv::Point2d > worldPts,
                       std::vector< LineEnds > lineEndPts,
                       cv::Rect symbolSearchROI,
+                      double facetLen,
+                      double offsetToZero,
                       cv::Point2d centerPoint,
                       double symbolAngle ) :
         imgSize( imageSize ),
@@ -205,6 +209,8 @@ public:
         worldPoints( worldPts ),
         searchLineSet( lineEndPts ),
         targetSearchRegion( symbolSearchROI ),
+        facetLength( facetLen ),
+        zeroOffset( offsetToZero ),
         center( centerPoint ),
         angle( symbolAngle )
     {}
@@ -220,6 +226,8 @@ public:
         worldPoints.clear();
         searchLineSet.clear();
         targetSearchRegion = cv::Rect( -1, -1, -1, -1 );
+        facetLength = -1.0;
+        zeroOffset = 0.0;
         center = cv::Point2d( -1.0, -1.0 );
         angle = -9999999.0;
     }
@@ -230,6 +238,8 @@ public:
     std::vector< cv::Point2d > worldPoints; ///< Vector of world points ordered to match the pixel point vector
     std::vector< LineEnds > searchLineSet;  ///< Vector of search lines to be searched for the water line
     cv::Rect targetSearchRegion;            ///< Region within which to perform line and move search
+    double facetLength;                     ///< Length of a stop sign facet in world units
+    double zeroOffset;                      ///< Distance from bottom left stop sign corner to zero stage
     cv::Point2d center;                     ///< Center of symbol
     double angle;                           ///< Angle of symbol
 };
