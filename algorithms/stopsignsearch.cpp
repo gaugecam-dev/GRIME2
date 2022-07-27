@@ -148,10 +148,10 @@ GC_STATUS StopsignSearch::AdjustLineLength( const LineEnds &a, const double newL
     {
         newLine.top = a.top;
         double lenAB = sqrt( pow( a.top.x - a.bot.x, 2.0 ) + pow( a.top.y - a.bot.y, 2.0 ) );
-        newLine.bot.x = a.top.x + ( ( a.top.x - a.bot.x ) / lenAB ) * newLength;
-        newLine.bot.y = a.top.y + ( ( a.top.y - a.bot.y ) / lenAB ) * newLength;
-        newLine.bot.x = a.top.x + ( ( a.bot.x - a.top.x ) / lenAB ) * newLength;
-        newLine.bot.y = a.top.y + ( ( a.bot.y - a.top.y ) / lenAB ) * newLength;
+        newLine.bot.x = cvRound( a.top.x + ( ( a.top.x - a.bot.x ) / lenAB ) * newLength );
+        newLine.bot.y = cvRound( a.top.y + ( ( a.top.y - a.bot.y ) / lenAB ) * newLength );
+        newLine.bot.x = cvRound( a.top.x + ( ( a.bot.x - a.top.x ) / lenAB ) * newLength );
+        newLine.bot.y = cvRound( a.top.y + ( ( a.bot.y - a.top.y ) / lenAB ) * newLength );
 
         // lenAB = sqrt(pow(A.x - B.x, 2.0) + pow(A.y - B.y, 2.0));
         // C.x = B.x + (B.x - A.x) / lenAB * length;
@@ -261,8 +261,8 @@ GC_STATUS StopsignSearch::RefineFind( const Mat &img, vector< Point2d > &pts )
                         {
                             for ( size_t i = 0; i < lineEndSet.size(); ++i )
                             {
-                                line( color, Point( pts[ i ].x - 10, pts[ i ].y ), Point( pts[ i ].x + 10, pts[ i ].y ), Scalar( 255, 0, 0 ), 1 );
-                                line( color, Point( pts[ i ].x, pts[ i ].y - 10 ), Point( pts[ i ].x, pts[ i ].y + 10 ), Scalar( 255, 0, 0 ), 1 );
+                                line( color, Point( cvRound( pts[ i ].x - 10 ), cvRound( pts[ i ].y ) ), Point( cvRound( pts[ i ].x + 10 ), cvRound( pts[ i ].y ) ), Scalar( 255, 0, 0 ), 1 );
+                                line( color, Point( cvRound( pts[ i ].x ), cvRound( pts[ i ].y - 10 ) ), Point( cvRound( pts[ i ].x ), cvRound( pts[ i ].y + 10 ) ), Scalar( 255, 0, 0 ), 1 );
                                 line( color, lineEndSet[ i ].bot, lineEndSet[ i ].top, Scalar( 0, 255, 0 ), 1 );
                             }
                             // imwrite( "/var/tmp/water/nighttime.png", color );
@@ -288,7 +288,7 @@ GC_STATUS StopsignSearch::Init( const int templateDim, const int rotateCnt )
         templates.push_back( StopSignTemplateSet( 0 ) );
         for ( size_t i = 1; i < 8; ++i )
         {
-            templates.push_back( StopSignTemplateSet( 360 - i * 45 ) );
+            templates.push_back( StopSignTemplateSet( 360 - static_cast< int >( i ) * 45 ) );
         }
 
         retVal = CreatePointTemplates( templateDim, rotateCnt, templates[ 0 ].ptTemplates );
@@ -337,7 +337,7 @@ GC_STATUS StopsignSearch::RotatePointTemplates( const size_t idx, const double a
             Mat rotMask, rotTempl;
             for ( size_t i = 0; i < templates[ 0 ].ptTemplates.size(); ++i )
             {
-                templates[ idx ].pointAngle = angle;
+                templates[ idx ].pointAngle = cvRound( angle );
                 templates[ idx ].ptTemplates.push_back( StopSignTemplate() );
                 templates[ idx ].ptTemplates[ i ].angle = templates[ 0 ].ptTemplates[ i ].angle;
                 templates[ idx ].ptTemplates[ i ].offset = templates[ 0 ].ptTemplates[ i ].offset;
@@ -470,7 +470,7 @@ GC_STATUS StopsignSearch::DrawCorner( const int templateDim, cv::Mat &templ, cv:
         }
         else
         {
-            double blackLineWidth = 10.0;
+            int blackLineWidth = 10;
             int tempRotDim = cvRound( static_cast< double >( templateDim ) * 1.415 );
             tempRotDim += ( 0 == tempRotDim % 2 ? 1 : 0 );
             int rectTopAndLeft = ( tempRotDim - templateDim ) >> 1;
@@ -585,14 +585,14 @@ GC_STATUS StopsignSearch::CreateTemplateOverlay( const std::string debugFolder )
                              static_cast< int >( templates[ j ].pointAngle ),
                              cvRound( templates[ j ].ptTemplates[ i ].angle ) + 5 );
 
-                    line( tempColor, Point( templates[ j ].ptTemplates[ i ].offset.x - 10, templates[ j ].ptTemplates[ i ].offset.y ),
-                          Point( templates[ j ].ptTemplates[ i ].offset.x + 10, templates[ j ].ptTemplates[ i ].offset.y ), Scalar( 0, 0, 255 ), 1 );
-                    line( tempColor, Point( templates[ j ].ptTemplates[ i ].offset.x, templates[ j ].ptTemplates[ i ].offset.y - 10 ),
-                          Point( templates[ j ].ptTemplates[ i ].offset.x, templates[ j ].ptTemplates[ i ].offset.y + 10 ), Scalar( 0, 0, 255 ), 1 );
-                    line( tempColor, Point( templates[ j ].ptTemplates[ 0 ].mask.cols + templates[ j ].ptTemplates[ i ].offset.x - 10, templates[ j ].ptTemplates[ i ].offset.y ),
-                          Point( templates[ j ].ptTemplates[ 0 ].mask.cols + templates[ j ].ptTemplates[ i ].offset.x + 10, templates[ j ].ptTemplates[ i ].offset.y ), Scalar( 0, 0, 255 ), 1 );
-                    line( tempColor, Point( templates[ j ].ptTemplates[ 0 ].mask.cols + templates[ j ].ptTemplates[ i ].offset.x, templates[ j ].ptTemplates[ i ].offset.y - 10 ),
-                          Point( templates[ j ].ptTemplates[ 0 ].mask.cols + templates[ j ].ptTemplates[ i ].offset.x, templates[ j ].ptTemplates[ i ].offset.y + 10 ), Scalar( 0, 0, 255 ), 1 );
+                    line( tempColor, Point2d( templates[ j ].ptTemplates[ i ].offset.x - 10, templates[ j ].ptTemplates[ i ].offset.y ),
+                          Point2d( templates[ j ].ptTemplates[ i ].offset.x + 10, templates[ j ].ptTemplates[ i ].offset.y ), Scalar( 0, 0, 255 ), 1 );
+                    line( tempColor, Point2d( templates[ j ].ptTemplates[ i ].offset.x, templates[ j ].ptTemplates[ i ].offset.y - 10 ),
+                          Point2d( templates[ j ].ptTemplates[ i ].offset.x, templates[ j ].ptTemplates[ i ].offset.y + 10 ), Scalar( 0, 0, 255 ), 1 );
+                    line( tempColor, Point2d( templates[ j ].ptTemplates[ 0 ].mask.cols + templates[ j ].ptTemplates[ i ].offset.x - 10, templates[ j ].ptTemplates[ i ].offset.y ),
+                          Point2d( templates[ j ].ptTemplates[ 0 ].mask.cols + templates[ j ].ptTemplates[ i ].offset.x + 10, templates[ j ].ptTemplates[ i ].offset.y ), Scalar( 0, 0, 255 ), 1 );
+                    line( tempColor, Point2d( templates[ j ].ptTemplates[ 0 ].mask.cols + templates[ j ].ptTemplates[ i ].offset.x, templates[ j ].ptTemplates[ i ].offset.y - 10 ),
+                          Point2d( templates[ j ].ptTemplates[ 0 ].mask.cols + templates[ j ].ptTemplates[ i ].offset.x, templates[ j ].ptTemplates[ i ].offset.y + 10 ), Scalar( 0, 0, 255 ), 1 );
                     imwrite( buf, tempColor );
                 }
             }
@@ -625,10 +625,10 @@ GC_STATUS StopsignSearch::FitLine( const std::vector< Point > &pts, LineEnds &li
             vector< LineEnds > validLines;
 
             fitLine( pts, lineVec, DIST_L2, 0.0, 0.01, 0.01 );
-            lineEnds.top.x = lineVec[ 2 ] + ( lineVec[ 0 ] * -lineVec[ 2 ] );
-            lineEnds.top.y = lineVec[ 3 ] + ( lineVec[ 1 ] * -lineVec[ 2 ] );
-            lineEnds.bot.x = lineVec[ 2 ] + ( lineVec[ 0 ] * ( img.cols - lineVec[ 2 ] - 1 ) );
-            lineEnds.bot.y = lineVec[ 3 ] + ( lineVec[ 1 ] * ( img.cols - lineVec[ 2 ] - 1 ) );
+            lineEnds.top.x = cvRound( lineVec[ 2 ] + ( lineVec[ 0 ] * -lineVec[ 2 ] ) );
+            lineEnds.top.y = cvRound( lineVec[ 3 ] + ( lineVec[ 1 ] * -lineVec[ 2 ] ) );
+            lineEnds.bot.x = cvRound( lineVec[ 2 ] + ( lineVec[ 0 ] * ( img.cols - lineVec[ 2 ] - 1 ) ) );
+            lineEnds.bot.y = cvRound( lineVec[ 3 ] + ( lineVec[ 1 ] * ( img.cols - lineVec[ 2 ] - 1 ) ) );
             angle = atan2( ( lineEnds.bot.y - lineEnds.top.y ),
                            ( lineEnds.bot.x - lineEnds.top.x ) ) * ( 180.0 / CV_PI );
 
@@ -642,17 +642,17 @@ GC_STATUS StopsignSearch::FitLine( const std::vector< Point > &pts, LineEnds &li
             {
                 if ( isVertical )
                 {
-                    lineEnds.top.x = pt.x;
+                    lineEnds.top.x = cvRound( pt.x );
                     lineEnds.top.y = 0;
-                    lineEnds.bot.x = pt.x;
+                    lineEnds.bot.x = cvRound( pt.x );
                     lineEnds.bot.y = img.rows - 1;
                 }
                 else
                 {
-                    lineEnds.top.x = 0.0;
-                    lineEnds.top.y = intercept;
-                    lineEnds.bot.x = static_cast< double >( img.cols ) - 1.0;
-                    lineEnds.bot.y = slope * lineEnds.bot.x + intercept;
+                    lineEnds.top.x = 0;
+                    lineEnds.top.y = cvRound( intercept );
+                    lineEnds.bot.x = img.cols - 1;
+                    lineEnds.bot.y = cvRound( slope * lineEnds.bot.x + intercept );
                     clipLine( img.size(), lineEnds.top, lineEnds.bot );
                 }
             }

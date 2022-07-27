@@ -211,8 +211,8 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const double facetLength
                         int topOffsetY = searchLineCorners[ 0 ].y - searchLineCorners[ 1 ].y;
                         int botOffsetY = searchLineCorners[ 2 ].y - searchLineCorners[ 3 ].y;
 
-                        searchLineCorners[ 0 ].x = model.pixelPoints[ 5 ].x;
-                        searchLineCorners[ 0 ].y = model.pixelPoints[ 5 ].y + 30;
+                        searchLineCorners[ 0 ].x = cvRound( model.pixelPoints[ 5 ].x );
+                        searchLineCorners[ 0 ].y = cvRound( model.pixelPoints[ 5 ].y ) + 30;
                         searchLineCorners[ 1 ].x = searchLineCorners[ 0 ].x + topWidth;
                         searchLineCorners[ 1 ].y = searchLineCorners[ 0 ].y - topOffsetY;
 
@@ -780,50 +780,50 @@ GC_STATUS CalibStopSign::FindCorners( const cv::Mat &mask, const std::vector< cv
             int swathSize = bb.height / 5;
             RotatedRect rotRect = fitEllipse( contour );
             Mat scratch = Mat::zeros( mask.size(), CV_8UC1 );
-            line( scratch, rotRect.center, Point( 0, rotRect.center.y ), Scalar( 255 ), swathSize );
+            line( scratch, Point( cvRound( rotRect.center.x ), cvRound( rotRect.center.y ) ), Point( 0, cvRound( rotRect.center.y ) ), Scalar( 255 ), swathSize );
             scratch &= edges;
 #ifdef DEBUG_FIND_CALIB_SYMBOL
             imwrite( DEBUG_FOLDER + "left_edge_pts_swath.png", scratch );
 #endif
 
-            int top = rotRect.center.y - swathSize / 2;
+            int top = cvRound( rotRect.center.y ) - swathSize / 2;
             top = 0 > top ? 0 : top;
-            int bot = rotRect.center.y + swathSize / 2;
+            int bot = cvRound( rotRect.center.y ) + swathSize / 2;
             bot = scratch.rows <= bot ? scratch.rows - 1 : bot;
 
-            Rect rect( 0, top, rotRect.center.x, bot - top );
+            Rect rect( 0, top, cvRound( rotRect.center.x ), bot - top );
             Point2d lftPt1, lftPt2;
             retVal = GetLineEndPoints( scratch, rect, lftPt1, lftPt2 );
             if ( GC_OK == retVal )
             {
                 scratch = 0;
-                line( scratch, rotRect.center, Point( scratch.cols - 1, rotRect.center.y ), Scalar( 255 ), swathSize );
+                line( scratch, rotRect.center, Point( scratch.cols - 1, cvRound( rotRect.center.y ) ), Scalar( 255 ), swathSize );
                 scratch &= edges;
 
-                rect = Rect( rotRect.center.x, top, scratch.cols - rotRect.center.x, bot - top );
+                rect = Rect( cvRound( rotRect.center.x ), top, scratch.cols - cvRound( rotRect.center.x ), bot - top );
                 Point2d rgtPt1, rgtPt2;
                 retVal = GetLineEndPoints( scratch, rect, rgtPt1, rgtPt2 );
                 if ( GC_OK == retVal )
                 {
                     scratch = 0;
-                    line( scratch, rotRect.center, Point( rotRect.center.x, 0 ), Scalar( 255 ), swathSize );
+                    line( scratch, rotRect.center, Point( cvRound( rotRect.center.x ), 0 ), Scalar( 255 ), swathSize );
                     scratch &= edges;
 
-                    int lft = rotRect.center.x - swathSize / 2;
+                    int lft = cvRound( rotRect.center.x ) - swathSize / 2;
                     lft = 0 > lft ? 0 : lft;
-                    int rgt = rotRect.center.x + swathSize / 2;
+                    int rgt = cvRound( rotRect.center.x ) + swathSize / 2;
                     rgt = scratch.cols <= rgt ? scratch.cols - 1 : rgt;
 
-                    rect = Rect( lft, 0, rgt - lft, rotRect.center.y );
+                    rect = Rect( lft, 0, rgt - lft, cvRound( rotRect.center.y ) );
                     Point2d topPt1, topPt2;
                     retVal = GetLineEndPoints( scratch, rect, topPt1, topPt2 );
                     if ( GC_OK == retVal )
                     {
                         scratch = 0;
-                        line( scratch, rotRect.center, Point( rotRect.center.x, scratch.rows - 1 ), Scalar( 255 ), swathSize );
+                        line( scratch, rotRect.center, Point( cvRound( rotRect.center.x ), scratch.rows - 1 ), Scalar( 255 ), swathSize );
                         scratch &= edges;
 
-                        rect = Rect( lft, rotRect.center.y, rgt - lft, scratch.rows - rotRect.center.y );
+                        rect = Rect( lft, cvRound( rotRect.center.y ), rgt - lft, scratch.rows - cvRound( rotRect.center.y ) );
                         Point2d botPt1, botPt2;
                         retVal = GetLineEndPoints( scratch, rect, botPt1, botPt2 );
                         if ( GC_OK == retVal )
@@ -992,8 +992,9 @@ GC_STATUS CalibStopSign::FindDiagonals( const cv::Mat &mask, const std::vector< 
             imwrite( DEBUG_FOLDER + "top_left_edge_pts_swath.png", scratch );
 #endif
 
-            Rect rect( octoLines.top.pt1.x, octoLines.top.pt1.y, rotRect.center.x - octoLines.top.pt1.x,
-                       rotRect.center.y - octoLines.top.pt1.y );
+            Rect rect( cvRound( octoLines.top.pt1.x ), cvRound( octoLines.top.pt1.y ),
+                       cvRound( rotRect.center.x - octoLines.top.pt1.x ),
+                       cvRound( rotRect.center.y - octoLines.top.pt1.y ) );
 
             retVal = GetLineEndPoints( scratch, rect, octoLines.topLeft.pt1, octoLines.topLeft.pt2 );
             if ( GC_OK == retVal )
@@ -1005,8 +1006,9 @@ GC_STATUS CalibStopSign::FindDiagonals( const cv::Mat &mask, const std::vector< 
                 imwrite( DEBUG_FOLDER + "top_right_edge_pts_swath.png", scratch );
 #endif
 
-                rect = Rect( rotRect.center.x, octoLines.top.pt2.y, octoLines.top.pt2.x - rotRect.center.x,
-                             rotRect.center.y - octoLines.top.pt2.y );
+                rect = Rect( cvRound( rotRect.center.x ), cvRound( octoLines.top.pt2.y ),
+                             cvRound( octoLines.top.pt2.x - rotRect.center.x ),
+                             cvRound( rotRect.center.y - octoLines.top.pt2.y ) );
 
                 retVal = GetLineEndPoints( scratch, rect, octoLines.topRight.pt1, octoLines.topRight.pt2 );
                 if ( GC_OK == retVal )
@@ -1018,8 +1020,9 @@ GC_STATUS CalibStopSign::FindDiagonals( const cv::Mat &mask, const std::vector< 
                     imwrite( DEBUG_FOLDER + "bot_left_edge_pts_swath.png", scratch );
 #endif
 
-                    rect = Rect( octoLines.bot.pt2.x, rotRect.center.y, rotRect.center.x - octoLines.bot.pt2.x,
-                                 octoLines.bot.pt2.y - rotRect.center.y );
+                    rect = Rect( cvRound( octoLines.bot.pt2.x ), cvRound( rotRect.center.y ),
+                                 cvRound( rotRect.center.x - octoLines.bot.pt2.x ),
+                                 cvRound( octoLines.bot.pt2.y - rotRect.center.y ) );
                     retVal = GetLineEndPoints( scratch, rect, octoLines.botLeft.pt1, octoLines.botLeft.pt2 );
                     if ( GC_OK == retVal )
                     {
@@ -1030,8 +1033,9 @@ GC_STATUS CalibStopSign::FindDiagonals( const cv::Mat &mask, const std::vector< 
                         imwrite( DEBUG_FOLDER + "bot_right_edge_pts_swath.png", scratch );
 #endif
 
-                        rect = Rect( rotRect.center.x, rotRect.center.y, octoLines.bot.pt1.x - rotRect.center.x,
-                                     octoLines.bot.pt1.y - rotRect.center.y );
+                        rect = Rect( cvRound( rotRect.center.x ), cvRound( rotRect.center.y ),
+                                     cvRound( octoLines.bot.pt1.x - rotRect.center.x ),
+                                     cvRound( octoLines.bot.pt1.y - rotRect.center.y ) );
 
                         retVal = GetLineEndPoints( scratch, rect, octoLines.botRight.pt1, octoLines.botRight.pt2 );
                         if ( GC_OK == retVal )
@@ -1390,18 +1394,18 @@ GC_STATUS CalibStopSign::DrawOverlay( const cv::Mat &img, cv::Mat &result, const
             {
                 if ( drawCalibScale || drawCalibGrid )
                 {
-                    line( result, Point( model.pixelPoints[ 0 ].x - targetRadius, model.pixelPoints[ 0 ].y ),
-                                  Point( model.pixelPoints[ 0 ].x + targetRadius, model.pixelPoints[ 0 ].y ), Scalar( 0, 255, 0 ), lineWidth );
-                    line( result, Point( model.pixelPoints[ 0 ].x, model.pixelPoints[ 0 ].y - targetRadius ),
-                                  Point( model.pixelPoints[ 0 ].x, model.pixelPoints[ 0 ].y + targetRadius ), Scalar( 0, 255, 0 ), lineWidth );
+                    line( result, Point2d( model.pixelPoints[ 0 ].x - targetRadius, model.pixelPoints[ 0 ].y ),
+                                  Point2d( model.pixelPoints[ 0 ].x + targetRadius, model.pixelPoints[ 0 ].y ), Scalar( 0, 255, 0 ), lineWidth );
+                    line( result, Point2d( model.pixelPoints[ 0 ].x, model.pixelPoints[ 0 ].y - targetRadius ),
+                                  Point2d( model.pixelPoints[ 0 ].x, model.pixelPoints[ 0 ].y + targetRadius ), Scalar( 0, 255, 0 ), lineWidth );
                     circle( result, model.pixelPoints[ 0 ], targetRadius, Scalar( 0, 255, 0 ), lineWidth );
                     for ( size_t i = 1; i < model.pixelPoints.size(); ++i )
                     {
                         line( result, model.pixelPoints[ i - 1 ], model.pixelPoints[ i ], Scalar( 255, 0, 0 ), lineWidth );
-                        line( result, Point( model.pixelPoints[ i ].x - targetRadius, model.pixelPoints[ i ].y ),
-                                      Point( model.pixelPoints[ i ].x + targetRadius, model.pixelPoints[ i ].y ), Scalar( 0, 255, 0 ), lineWidth );
-                        line( result, Point( model.pixelPoints[ i ].x, model.pixelPoints[ i ].y - targetRadius ),
-                                      Point( model.pixelPoints[ i ].x, model.pixelPoints[ i ].y + targetRadius ), Scalar( 0, 255, 0 ), lineWidth );
+                        line( result, Point2d( model.pixelPoints[ i ].x - targetRadius, model.pixelPoints[ i ].y ),
+                                      Point2d( model.pixelPoints[ i ].x + targetRadius, model.pixelPoints[ i ].y ), Scalar( 0, 255, 0 ), lineWidth );
+                        line( result, Point2d( model.pixelPoints[ i ].x, model.pixelPoints[ i ].y - targetRadius ),
+                                      Point2d( model.pixelPoints[ i ].x, model.pixelPoints[ i ].y + targetRadius ), Scalar( 0, 255, 0 ), lineWidth );
                         circle( result, model.pixelPoints[ i ], targetRadius, Scalar( 0, 255, 0 ), lineWidth );
                     }
                     line( result, model.pixelPoints[ 0 ], model.pixelPoints[ model.pixelPoints.size() - 1 ], Scalar( 255, 0, 0 ), lineWidth );
@@ -1445,7 +1449,7 @@ GC_STATUS CalibStopSign::DrawOverlay( const cv::Mat &img, cv::Mat &result, const
                                           Point2d( rgtX - quarterLength, yPos ), Scalar( 0, 255, 255 ), lineWidth );
 
                                 }
-                                putText( result, msg, Point( lftX - 120, yPos + 15 ), FONT_HERSHEY_PLAIN, fontScale, Scalar( 0, 0, 255 ), lineWidth );
+                                putText( result, msg, Point( cvRound( lftX - 120 ), cvRound( yPos ) + 15 ), FONT_HERSHEY_PLAIN, fontScale, Scalar( 0, 0, 255 ), lineWidth );
                             }
                         }
                     }
@@ -1491,7 +1495,8 @@ GC_STATUS CalibStopSign::DrawOverlay( const cv::Mat &img, cv::Mat &result, const
                                                     {
                                                         isFirst = false;
                                                         sprintf( msg, "%.1f", r );
-                                                        putText( result, msg, Point( 10, pt1.y - 10 ), FONT_HERSHEY_PLAIN, fontScale, Scalar( 0, 0, 255 ), lineWidth );
+                                                        putText( result, msg, Point( 10, cvRound( pt1.y ) - 10 ),
+                                                                 FONT_HERSHEY_PLAIN, fontScale, Scalar( 0, 0, 255 ), lineWidth );
                                                     }
                                                     retVal = WorldToPixel( Point2d( c + incX, r ), pt2 );
                                                     if ( GC_OK == retVal )

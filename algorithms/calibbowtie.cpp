@@ -316,7 +316,7 @@ GC_STATUS CalibBowtie::DrawOverlay( const cv::Mat img, cv::Mat &imgOut, const bo
                                       Point2d( rgtX - quarterLength, yPos ), Scalar( 0, 255, 255 ), textStroke );
 
                             }
-                            putText( imgOut, msg, Point( lftX - 120, yPos + 15 ), FONT_HERSHEY_PLAIN, fontScale, Scalar( 0, 0, 255 ), textStroke );
+                            putText( imgOut, msg, Point( cvRound( lftX ) - 120, cvRound( yPos ) + 15 ), FONT_HERSHEY_PLAIN, fontScale, Scalar( 0, 0, 255 ), textStroke );
                         }
                     }
                 }
