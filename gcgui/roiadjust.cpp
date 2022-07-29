@@ -282,28 +282,26 @@ int RoiAdjust::AdjustPointPoly( const QSize displaySize, double const scale, Lin
 
     return ret;
 }
-int RoiAdjust::FormBowtieCalibJsonString( const std::string csvFilepath, const std::string jsonResultFilepath,
-                                          const bool useSearchROI, const QRect rectROI, const int moveSearchROIGrowPercent,
-                                          const LineSearchPoly searchPoly, std::string &json )
+int RoiAdjust::FormBowtieCalibJsonString(  const CalibJsonItems &items, std::string &json )
 {
     int ret = 0;
 
     json.clear();
 
     json = "{\"calibType\": \"BowTie\", ";
-    json += "\"calibWorldPt_csv\": \"" + csvFilepath + "\", ";
+    json += "\"calibWorldPt_csv\": \"" + items.worldTargetPosition_csvFile + "\", ";
     json += "\"facetLength\": -1.0, ";
     json += "\"zeroOffset\": 0.0, ";
-    json += "\"moveSearchROIGrowPercent\": " + std::to_string( moveSearchROIGrowPercent ) + ", ";
+    json += "\"moveSearchROIGrowPercent\": " + std::to_string( items.moveROIGrowPercent ) + ", ";
     json += "\"drawCalib\": 0, ";
     json += "\"drawMoveSearchROIs\": 0, ";
     json += "\"drawWaterLineSearchROI\": 0, ";
-    if ( useSearchROI )
+    if ( items.useROI )
     {
-        json += "\"targetRoi_x\": " + std::to_string( rectROI.x() ) + ", ";
-        json += "\"targetRoi_y\": " + std::to_string( rectROI.y() ) + ", ";
-        json += "\"targetRoi_width\": " + std::to_string( rectROI.width() ) + ", ";
-        json += "\"targetRoi_height\": " + std::to_string( rectROI.height() ) + ", ";
+        json += "\"targetRoi_x\": " + std::to_string( items.roi.x ) + ", ";
+        json += "\"targetRoi_y\": " + std::to_string( items.roi.y ) + ", ";
+        json += "\"targetRoi_width\": " + std::to_string( items.roi.width ) + ", ";
+        json += "\"targetRoi_height\": " + std::to_string( items.roi.height ) + ", ";
     }
     else
     {
@@ -312,39 +310,41 @@ int RoiAdjust::FormBowtieCalibJsonString( const std::string csvFilepath, const s
         json += "\"targetRoi_width\": -1, ";
         json += "\"targetRoi_height\": -1, ";
     }
-    json += "\"searchPoly_lftTop_x\": " + std::to_string( searchPoly.lftTop.x() ) + ", ";
-    json += "\"searchPoly_lftTop_y\": " + std::to_string( searchPoly.lftTop.y() ) + ", ";
-    json += "\"searchPoly_rgtTop_x\": " + std::to_string( searchPoly.rgtTop.x() ) + ", ";
-    json += "\"searchPoly_rgtTop_y\": " + std::to_string( searchPoly.rgtTop.y() ) + ", ";
-    json += "\"searchPoly_lftBot_x\": " + std::to_string( searchPoly.lftBot.x() ) + ", ";
-    json += "\"searchPoly_lftBot_y\": " + std::to_string( searchPoly.lftBot.y() ) + ", ";
-    json += "\"searchPoly_rgtBot_x\": " + std::to_string( searchPoly.rgtBot.x() ) + ", ";
-    json += "\"searchPoly_rgtBot_y\": " + std::to_string( searchPoly.rgtBot.y() ) + ", ";
-    json += "\"calibResult_json\": \"" + jsonResultFilepath + "\"}";
+    json += "\"searchPoly_lftTop_x\": " + std::to_string( items.lineSearchPoly.lftTop.x() ) + ", ";
+    json += "\"searchPoly_lftTop_y\": " + std::to_string( items.lineSearchPoly.lftTop.y() ) + ", ";
+    json += "\"searchPoly_rgtTop_x\": " + std::to_string( items.lineSearchPoly.rgtTop.x() ) + ", ";
+    json += "\"searchPoly_rgtTop_y\": " + std::to_string( items.lineSearchPoly.rgtTop.y() ) + ", ";
+    json += "\"searchPoly_lftBot_x\": " + std::to_string( items.lineSearchPoly.lftBot.x() ) + ", ";
+    json += "\"searchPoly_lftBot_y\": " + std::to_string( items.lineSearchPoly.lftBot.y() ) + ", ";
+    json += "\"searchPoly_rgtBot_x\": " + std::to_string( items.lineSearchPoly.rgtBot.x() ) + ", ";
+    json += "\"searchPoly_rgtBot_y\": " + std::to_string( items.lineSearchPoly.rgtBot.y() ) + ", ";
+    json += "\"symbolColor_blue\": -1, ";
+    json += "\"symbolColor_green\": -1, ";
+    json += "\"symbolColor_red\": -1, ";
+    json += "\"colorRangeMin\": -1, ";
+    json += "\"colorRangeMax\": -1, ";
+    json += "\"calibResult_json\": \"" + items.calibVisionResult_json + "\"}";
 
     return ret;
 }
-int RoiAdjust::FormStopsignCalibJsonString( const std::string csvFilepath, const std::string jsonResultFilepath,
-                                            const bool useSearchROI, const QRect rectROI, const int moveSearchROIGrowPercent,
-                                            const double facetLength, const double zeroOffset, const LineSearchPoly searchPoly,
-                                            std::string &json )
+int RoiAdjust::FormStopsignCalibJsonString( const CalibJsonItems &items, std::string &json )
 {
     int ret = 0;
 
     json = "{\"calibType\": \"StopSign\", ";
-    json += "\"calibWorldPt_csv\": \"" + csvFilepath + "\", ";
-    json += "\"facetLength\": " + std::to_string( facetLength ) + ", ";
-    json += "\"zeroOffset\": " + std::to_string( zeroOffset ) + ", ";
-    json += "\"moveSearchROIGrowPercent\": " + std::to_string( moveSearchROIGrowPercent ) + ", ";
+    json += "\"calibWorldPt_csv\": \"" + items.worldTargetPosition_csvFile + "\", ";
+    json += "\"facetLength\": " + std::to_string( items.facetLength ) + ", ";
+    json += "\"zeroOffset\": " + std::to_string( items.zeroOffset ) + ", ";
+    json += "\"moveSearchROIGrowPercent\": " + std::to_string( items.moveROIGrowPercent ) + ", ";
     json += "\"drawCalib\": 0, ";
     json += "\"drawMoveSearchROIs\": 0, ";
     json += "\"drawWaterLineSearchROI\": 0, ";
-    if ( useSearchROI )
+    if ( items.useROI )
     {
-        json += "\"targetRoi_x\": " + std::to_string( rectROI.x() ) + ", ";
-        json += "\"targetRoi_y\": " + std::to_string( rectROI.y() ) + ", ";
-        json += "\"targetRoi_width\": " + std::to_string( rectROI.width() ) + ", ";
-        json += "\"targetRoi_height\": " + std::to_string( rectROI.height() ) + ", ";
+        json += "\"targetRoi_x\": " + std::to_string( items.roi.x ) + ", ";
+        json += "\"targetRoi_y\": " + std::to_string( items.roi.y ) + ", ";
+        json += "\"targetRoi_width\": " + std::to_string( items.roi.width ) + ", ";
+        json += "\"targetRoi_height\": " + std::to_string( items.roi.height ) + ", ";
     }
     else
     {
@@ -353,15 +353,20 @@ int RoiAdjust::FormStopsignCalibJsonString( const std::string csvFilepath, const
         json += "\"targetRoi_width\": -1, ";
         json += "\"targetRoi_height\": -1, ";
     }
-    json += "\"searchPoly_lftTop_x\": " + std::to_string( searchPoly.lftTop.x() ) + ", ";
-    json += "\"searchPoly_lftTop_y\": " + std::to_string( searchPoly.lftTop.y() ) + ", ";
-    json += "\"searchPoly_rgtTop_x\": " + std::to_string( searchPoly.rgtTop.x() ) + ", ";
-    json += "\"searchPoly_rgtTop_y\": " + std::to_string( searchPoly.rgtTop.y() ) + ", ";
-    json += "\"searchPoly_lftBot_x\": " + std::to_string( searchPoly.lftBot.x() ) + ", ";
-    json += "\"searchPoly_lftBot_y\": " + std::to_string( searchPoly.lftBot.y() ) + ", ";
-    json += "\"searchPoly_rgtBot_x\": " + std::to_string( searchPoly.rgtBot.x() ) + ", ";
-    json += "\"searchPoly_rgtBot_y\": " + std::to_string( searchPoly.rgtBot.y() ) + ", ";
-    json += "\"calibResult_json\": \"" + jsonResultFilepath + "\"}";
+    json += "\"searchPoly_lftTop_x\": " + std::to_string( items.lineSearchPoly.lftTop.x() ) + ", ";
+    json += "\"searchPoly_lftTop_y\": " + std::to_string( items.lineSearchPoly.lftTop.y() ) + ", ";
+    json += "\"searchPoly_rgtTop_x\": " + std::to_string( items.lineSearchPoly.rgtTop.x() ) + ", ";
+    json += "\"searchPoly_rgtTop_y\": " + std::to_string( items.lineSearchPoly.rgtTop.y() ) + ", ";
+    json += "\"searchPoly_lftBot_x\": " + std::to_string( items.lineSearchPoly.lftBot.x() ) + ", ";
+    json += "\"searchPoly_lftBot_y\": " + std::to_string( items.lineSearchPoly.lftBot.y() ) + ", ";
+    json += "\"searchPoly_rgtBot_x\": " + std::to_string( items.lineSearchPoly.rgtBot.x() ) + ", ";
+    json += "\"searchPoly_rgtBot_y\": " + std::to_string( items.lineSearchPoly.rgtBot.y() ) + ", ";
+    json += "\"symbolColor_blue\": " + std::to_string( items.targetColor.val[ 0 ] ) + ", ";
+    json += "\"symbolColor_green\": " + std::to_string( items.targetColor.val[ 1 ] ) + ", ";
+    json += "\"symbolColor_red\": " + std::to_string( items.targetColor.val[ 2 ] ) + ", ";
+    json += "\"colorRangeMin\": " + std::to_string( items.colorRangeMin ) + ", ";
+    json += "\"colorRangeMax\": " + std::to_string( items.colorRangeMax ) + ", ";
+    json += "\"calibResult_json\": \"" + items.calibVisionResult_json + "\"}";
 
     return ret;
 }

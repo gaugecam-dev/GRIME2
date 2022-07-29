@@ -153,12 +153,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
     ui->actionSaveVideo->setEnabled( false );
 
-    GC_STATUS retVal = m_visApp.LoadCalib( ui->lineEdit_calibVisionResult_json->text().toStdString() );
-    if ( GC_OK != retVal )
-    {
-        ui->textEdit_msgs->append( "Could not load calibration from " + ui->lineEdit_calibVisionResult_json->text() );
-    }
-
     ui->label_stopSignColor->setAutoFillBackground( true );
     SetStopsignColor( m_stopSignColor );
 
@@ -172,6 +166,14 @@ MainWindow::MainWindow(QWidget *parent) :
     on_lineEdit_imageFolder_textEdited( ui->lineEdit_imageFolder->text() );
     on_actionZoom100_triggered();
     ui->widget_overlayCheckboxes->hide();
+
+
+    GC_STATUS retVal = m_visApp.LoadCalib( ui->lineEdit_calibVisionResult_json->text().toStdString(), false );
+    if ( GC_OK != retVal )
+    {
+        ui->textEdit_msgs->append( "Could not load calibration from " + ui->lineEdit_calibVisionResult_json->text() );
+    }
+
     UpdateGUIEnables();
     UpdateCalibType();
     UpdateCalibSearchRegion();
@@ -1150,25 +1152,24 @@ void MainWindow::on_pushButton_visionCalibrate_clicked()
     ui->statusBar->update();
 
     string jsonControlStr;
+    CalibJsonItems calibItems( ui->lineEdit_calibVisionTarget_csv->text().toStdString(),
+                               ui->lineEdit_calibVisionResult_json->text().toStdString(),
+                               ui->checkBox_calibSearchROI->isChecked(),
+                               cv::Rect( m_rectROI.x(), m_rectROI.y(), m_rectROI.width(), m_rectROI.height() ),
+                               ui->spinBox_moveSearchROIGrowPercent->value() + 100, ui->doubleSpinBox_stopSignFacetLength->value(),
+                               ui->doubleSpinBox_stopSignZeroOffset->value(), m_lineSearchPoly,
+                               cv::Scalar( m_stopSignColor.blue(), m_stopSignColor.green(), m_stopSignColor.red() ),
+                               ui->spinBox_colorRangeMin->value(), ui->spinBox_colorRangeMax->value() );
     GC_STATUS retVal = GC_OK;
     int ret = -1;
     if ( ui->radioButton_calibBowtie->isChecked() )
     {
-        ret = m_roiAdjust.FormBowtieCalibJsonString( ui->lineEdit_calibVisionTarget_csv->text().toStdString(),
-                                                     ui->lineEdit_calibVisionResult_json->text().toStdString(),
-                                                     ui->checkBox_calibSearchROI->isChecked(), m_rectROI,
-                                                     ui->spinBox_moveSearchROIGrowPercent->value() + 100,
-                                                     m_lineSearchPoly, jsonControlStr );
+        ret = m_roiAdjust.FormBowtieCalibJsonString( calibItems, jsonControlStr );
     }
     else if ( ui->radioButton_calibStopSign->isChecked() )
     {
-        ret = m_roiAdjust.FormStopsignCalibJsonString( ui->lineEdit_calibVisionTarget_csv->text().toStdString(),
-                                                       ui->lineEdit_calibVisionResult_json->text().toStdString(),
-                                                       ui->checkBox_calibSearchROI->isChecked(), m_rectROI,
-                                                       ui->spinBox_moveSearchROIGrowPercent->value() + 100,
-                                                       ui->doubleSpinBox_stopSignFacetLength->value(),
-                                                       ui->doubleSpinBox_stopSignZeroOffset->value(),
-                                                       m_lineSearchPoly, jsonControlStr );
+
+        ret = m_roiAdjust.FormStopsignCalibJsonString( calibItems, jsonControlStr );
     }
     else
     {
@@ -1318,13 +1319,15 @@ void MainWindow::on_pushButton_findLineCurrentImage_clicked()
         params.calibControlString.clear();
         if ( params.isStopSignCalib )
         {
-            int ret = m_roiAdjust.FormStopsignCalibJsonString( ui->lineEdit_calibVisionTarget_csv->text().toStdString(),
-                                                               ui->lineEdit_calibVisionResult_json->text().toStdString(),
-                                                               ui->checkBox_calibSearchROI->isChecked(), m_rectROI,
-                                                               ui->spinBox_moveSearchROIGrowPercent->value() + 100,
-                                                               ui->doubleSpinBox_stopSignFacetLength->value(),
-                                                               ui->doubleSpinBox_stopSignZeroOffset->value(),
-                                                               m_lineSearchPoly, params.calibControlString );
+            CalibJsonItems calibItems( ui->lineEdit_calibVisionTarget_csv->text().toStdString(),
+                                       ui->lineEdit_calibVisionResult_json->text().toStdString(),
+                                       ui->checkBox_calibSearchROI->isChecked(),
+                                       cv::Rect( m_rectROI.x(), m_rectROI.y(), m_rectROI.width(), m_rectROI.height() ),
+                                       ui->spinBox_moveSearchROIGrowPercent->value() + 100, ui->doubleSpinBox_stopSignFacetLength->value(),
+                                       ui->doubleSpinBox_stopSignZeroOffset->value(), m_lineSearchPoly,
+                                       cv::Scalar( m_stopSignColor.blue(), m_stopSignColor.green(), m_stopSignColor.red() ),
+                                       ui->spinBox_colorRangeMin->value(), ui->spinBox_colorRangeMax->value() );
+            int ret = m_roiAdjust.FormStopsignCalibJsonString( calibItems, params.calibControlString );
             if ( 0 != ret )
             {
                 ui->statusBar->showMessage( "Find line: FAILURE -- could not create stopsign calib control string" );

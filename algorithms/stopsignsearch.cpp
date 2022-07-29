@@ -94,13 +94,7 @@ GC_STATUS StopsignSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &
                           Point( cvRound( maxMaxPt.x ), cvRound( maxMaxPt.y + 10 ) ), Scalar( 0, 255, 0 ), 1 );
                 }
             }
-            cout << endl;
-            for ( size_t i = 0; i < pts.size(); ++i )
-                cout << cvRound( pts[ i ].x ) << "  " << cvRound( pts[ i ].y ) << endl;
             retVal = RefineFind( img, pts );
-            cout << endl;
-            for ( size_t i = 0; i < pts.size(); ++i )
-                cout << cvRound( pts[ i ].x ) << "  " << cvRound( pts[ i ].y ) << endl;
             imwrite( "/var/tmp/water/template_stopsign_find.png", color );
         }
         if ( 8 != pts.size() )
@@ -261,8 +255,10 @@ GC_STATUS StopsignSearch::RefineFind( const Mat &img, vector< Point2d > &pts )
                         {
                             for ( size_t i = 0; i < lineEndSet.size(); ++i )
                             {
-                                line( color, Point( cvRound( pts[ i ].x - 10 ), cvRound( pts[ i ].y ) ), Point( cvRound( pts[ i ].x + 10 ), cvRound( pts[ i ].y ) ), Scalar( 255, 0, 0 ), 1 );
-                                line( color, Point( cvRound( pts[ i ].x ), cvRound( pts[ i ].y - 10 ) ), Point( cvRound( pts[ i ].x ), cvRound( pts[ i ].y + 10 ) ), Scalar( 255, 0, 0 ), 1 );
+                                line( color, Point( cvRound( pts[ i ].x - 10 ), cvRound( pts[ i ].y ) ),
+                                      Point( cvRound( pts[ i ].x + 10 ), cvRound( pts[ i ].y ) ), Scalar( 255, 0, 0 ), 1 );
+                                line( color, Point( cvRound( pts[ i ].x ), cvRound( pts[ i ].y - 10 ) ),
+                                      Point( cvRound( pts[ i ].x ), cvRound( pts[ i ].y + 10 ) ), Scalar( 255, 0, 0 ), 1 );
                                 line( color, lineEndSet[ i ].bot, lineEndSet[ i ].top, Scalar( 0, 255, 0 ), 1 );
                             }
                             // imwrite( "/var/tmp/water/nighttime.png", color );

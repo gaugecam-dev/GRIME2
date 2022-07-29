@@ -40,7 +40,8 @@ public:
         targetRoi_width( -1 ),
         targetRoi_height( -1 ),
         facetLength( -1.0 ),
-        zeroOffset( 0.0 )
+        zeroOffset( 0.0 ),
+        calib_displayType( "grid" )
     {}
     void clear()
     {
@@ -49,6 +50,7 @@ public:
         src_imagePath.clear();
         csvPath.clear();
         calib_jsonPath.clear();
+        calib_type.clear();
         result_imagePath.clear();
         timestamp_format.clear();
         timestamp_type.clear();
@@ -62,12 +64,14 @@ public:
         targetRoi_height = -1;
         facetLength = -1.0;
         zeroOffset = 0.0;
+        calib_displayType = "grid";
     }
     bool verbose;
     GRIME2_CLI_OP opToPerform;
     string src_imagePath;
     string csvPath;
     string calib_jsonPath;
+    string calib_type;
     string result_imagePath;
     string timestamp_format;
     string timestamp_type;
@@ -81,6 +85,7 @@ public:
     int targetRoi_height;
     double facetLength;
     double zeroOffset;
+    string calib_displayType;
 
 };
 int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
@@ -177,6 +182,32 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                         break;
                     }
                 }
+                else if ( "facet_length" == string( argv[ i ] ).substr( 2 ) )
+                {
+                    if ( i + 1 < argc )
+                    {
+                        params.facetLength = stod( argv[ ++i ] );
+                    }
+                    else
+                    {
+                        FILE_LOG( logERROR ) << "[ArgHandler] No value supplied on --facet_length request";
+                        retVal = -1;
+                        break;
+                    }
+                }
+                else if ( "zero_offset" == string( argv[ i ] ).substr( 2 ) )
+                {
+                    if ( i + 1 < argc )
+                    {
+                        params.zeroOffset = stod( argv[ ++i ] );
+                    }
+                    else
+                    {
+                        FILE_LOG( logERROR ) << "[ArgHandler] No value supplied on --zero_offset request";
+                        retVal = -1;
+                        break;
+                    }
+                }
                 else if ( "scale" == string( argv[ i ] ).substr( 2 ) )
                 {
                     if ( i + 1 < argc )
@@ -197,6 +228,14 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                 else if ( "timestamp_from_filename" == string( argv[ i ] ).substr( 2 ) )
                 {
                     params.timestamp_type = "from_filename";
+                }
+                else if ( "calib_overlay_scale" == string( argv[ i ] ).substr( 2 ) )
+                {
+                    params.calib_displayType = "scale";
+                }
+                else if ( "calib_overlay_grid" == string( argv[ i ] ).substr( 2 ) )
+                {
+                    params.calib_displayType = "grid";
                 }
                 else if ( "timestamp_start_pos" == string( argv[ i ] ).substr( 2 ) )
                 {

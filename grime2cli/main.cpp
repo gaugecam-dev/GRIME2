@@ -252,7 +252,7 @@ GC_STATUS FormCalibJsonString( const Grime2CLIParams cliParams, string &json )
 {
     GC_STATUS retVal = GC_OK;
 
-    if ( true ) // bow tie calibration
+    if ( "bowtie" == cliParams.calib_type ) // bow tie calibration
     {
         json = "{\"calibType\": \"BowTie\", ";
         json += "\"calibWorldPt_csv\": \"" + cliParams.csvPath + "\", ";
@@ -266,45 +266,23 @@ GC_STATUS FormCalibJsonString( const Grime2CLIParams cliParams, string &json )
         json += "\"targetRoi_height\": \"" + to_string( cliParams.targetRoi_height ) + "\", ";
         json += "\"calibResult_json\": \"" + cliParams.calib_jsonPath + "\"}";
     }
-    else if ( false ) // stop sign calibration
+    else if ( "stopsign" == cliParams.calib_type ) // stop sign calibration
     {
         json = "{\"calibType\": \"StopSign\", ";
-        if ( false ) // from file with world coords
-        {
-            json += "\"calibWorldPt_csv\": \"" + cliParams.csvPath + "\", ";
-            json += "\"stopSignFacetLength\": -1.0, }";
-            json += "\"drawCalib\": 1, ";
-            json += "\"drawMoveSearchROIs\": 1, ";
-            json += "\"drawWaterLineSearchROI\": 1, ";
-            json += "\"targetRoi_x\": \"" + to_string( cliParams.targetRoi_x ) + "\", ";
-            json += "\"targetRoi_y\": \"" + to_string( cliParams.targetRoi_y ) + "\", ";
-            json += "\"targetRoi_width\": \"" + to_string( cliParams.targetRoi_width ) + "\", ";
-            json += "\"targetRoi_height\": \"" + to_string( cliParams.targetRoi_height ) + "\", ";
-            json += "\"calibResult_json\": \"" + cliParams.calib_jsonPath + "\"}";
-        }
-        else if ( false ) // from facet length
-        {
-            json += "\"calibWorldPt_csv\": \"\", ";
-            json += "\"stopSignFacetLength\": " + to_string( 10.0 ) + ", ";
-            json += "\"drawCalib\": 1, ";
-            json += "\"drawMoveSearchROIs\": 1, ";
-            json += "\"drawWaterLineSearchROI\": 1, ";
-            json += "\"targetRoi_x\": \"" + to_string( cliParams.targetRoi_x ) + "\", ";
-            json += "\"targetRoi_y\": \"" + to_string( cliParams.targetRoi_y ) + "\", ";
-            json += "\"targetRoi_width\": \"" + to_string( cliParams.targetRoi_width ) + "\", ";
-            json += "\"targetRoi_height\": \"" + to_string( cliParams.targetRoi_height ) + "\", ";
-            json += "\"calibResult_json\": \"" + cliParams.calib_jsonPath + "\"}";
-        }
-        else
-        {
-            json.clear();
-            FILE_LOG( logERROR ) << "No valid stop sign calibration method";
-            retVal = GC_ERR;
-        }
+        json += "\"calibWorldPt_csv\": \"\", ";
+        json += "\"stopSignFacetLength\": " + to_string( 10.0 ) + ", ";
+        json += "\"drawCalib\": 1, ";
+        json += "\"drawMoveSearchROIs\": 1, ";
+        json += "\"drawWaterLineSearchROI\": 1, ";
+        json += "\"targetRoi_x\": \"" + to_string( cliParams.targetRoi_x ) + "\", ";
+        json += "\"targetRoi_y\": \"" + to_string( cliParams.targetRoi_y ) + "\", ";
+        json += "\"targetRoi_width\": \"" + to_string( cliParams.targetRoi_width ) + "\", ";
+        json += "\"targetRoi_height\": \"" + to_string( cliParams.targetRoi_height ) + "\", ";
+        json += "\"calibResult_json\": \"" + cliParams.calib_jsonPath + "\"}";
     }
     else
     {
-        FILE_LOG( logERROR ) << "No calibration type selected";
+        FILE_LOG( logERROR ) << "No valid calibration type selected";
         retVal = GC_ERR;
     }
 

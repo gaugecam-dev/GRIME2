@@ -156,7 +156,7 @@ public:
      * @param timestamp Image capture time
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
-    GC_STATUS CalcLine( const cv::Mat &img, const string timestamp );
+    GC_STATUS CalcLine( const cv::Mat &img, const string timestamp, const bool isStopSign );
 
     /**
      * @brief Find the water level in the specified image

@@ -126,6 +126,7 @@ public:
                 cv::Size gridSz,
                 std::vector< cv::Point2d > pixelPts,
                 std::vector< cv::Point2d > worldPts,
+                std::vector< cv::Point > waterLevelSearchCorners,
                 std::vector< LineEnds > lineEndPts,
                 cv::Rect mvSrchROILft,
                 cv::Rect mvSrchROIRgt,
@@ -134,6 +135,7 @@ public:
         gridSize( gridSz ),
         pixelPoints( pixelPts ),
         worldPoints( worldPts ),
+        waterlineSearchCorners( waterLevelSearchCorners ),
         searchLineSet( lineEndPts ),
         moveSearchRegionLft( mvSrchROILft ),
         moveSearchRegionRgt( mvSrchROIRgt ),
@@ -151,6 +153,7 @@ public:
         gridSize = cv::Size( -1, -1 );
         pixelPoints.clear();
         worldPoints.clear();
+        waterlineSearchCorners.clear();
         searchLineSet.clear();
         moveSearchRegionLft = cv::Rect( -1, -1, -1, -1 );
         moveSearchRegionRgt = cv::Rect( -1, -1, -1, -1 );
@@ -158,16 +161,17 @@ public:
         wholeTargetRegion = cv::Rect( -1, -1, -1, -1 );
     }
 
-    std::string controlJson;                ///< Json control string
-    cv::Size imgSize;                       ///< Dimensions of the calibration image
-    cv::Size gridSize;                      ///< Dimensions of the calibration grid
-    std::vector< cv::Point2d > pixelPoints; ///< Vector of pixel points ordered to match the world point vector
-    std::vector< cv::Point2d > worldPoints; ///< Vector of world points ordered to match the pixel point vector
-    std::vector< LineEnds > searchLineSet;  ///< Vector of search lines to be searched for the water line
-    cv::Rect moveSearchRegionLft;           ///< Left move search region (to search for top-left bowtie)
-    cv::Rect moveSearchRegionRgt;           ///< Right move search region (to search for top-right bowtie)
-    double moveSearchROIMultiplier;         ///< Move search region multiplier (based on nominal)
-    cv::Rect wholeTargetRegion;             ///< Region within which to perform line and move search
+    std::string controlJson;                         ///< Json control string
+    cv::Size imgSize;                                ///< Dimensions of the calibration image
+    cv::Size gridSize;                               ///< Dimensions of the calibration grid
+    std::vector< cv::Point2d > pixelPoints;          ///< Vector of pixel points ordered to match the world point vector
+    std::vector< cv::Point2d > worldPoints;          ///< Vector of world points ordered to match the pixel point vector
+    std::vector< cv::Point > waterlineSearchCorners; ///< Vector of search ROI corners (start at top-left, clockwise
+    std::vector< LineEnds > searchLineSet;           ///< Vector of search lines to be searched for the water line
+    cv::Rect moveSearchRegionLft;                    ///< Left move search region (to search for top-left bowtie)
+    cv::Rect moveSearchRegionRgt;                    ///< Right move search region (to search for top-right bowtie)
+    double moveSearchROIMultiplier;                  ///< Move search region multiplier (based on nominal)
+    cv::Rect wholeTargetRegion;                      ///< Region within which to perform line and move search
 };
 
 class CalibModelSymbol
@@ -182,7 +186,11 @@ public:
         facetLength( -1.0 ),
         zeroOffset( 0.0 ),
         center( cv::Point2d( -1.0, -1.0 ) ),
-        angle( -9999999.0 )
+        angle( -9999999.0 ),
+        hsvLow( cv::Scalar( 0, 0, 0 ) ),
+        hsvHigh( cv::Scalar( 0, 0, 0 ) ),
+        hsvLow1( cv::Scalar( -9999999, -9999999, -9999999 ) ),
+        hsvHigh1( cv::Scalar( -9999999, -9999999, -9999999 ) )
     {}
 
     // TODO: Update doxygen
@@ -198,21 +206,37 @@ public:
     CalibModelSymbol( cv::Size imageSize,
                       std::vector< cv::Point2d > pixelPts,
                       std::vector< cv::Point2d > worldPts,
+                      std::vector< cv::Point > waterLevelSearchCorners,
                       std::vector< LineEnds > lineEndPts,
                       cv::Rect symbolSearchROI,
                       double facetLen,
                       double offsetToZero,
                       cv::Point2d centerPoint,
-                      double symbolAngle ) :
+                      double symbolAngle,
+                      cv::Scalar colorOfSymbol,
+                      int colorRngMin,
+                      int colorRngMax,
+                      cv::Scalar hsvLow = cv::Scalar( -9999999, -9999999, -9999999 ),
+                      cv::Scalar hsvHigh = cv::Scalar( -9999999, -9999999, -9999999 ),
+                      cv::Scalar hsvLow1 = cv::Scalar( -9999999, -9999999, -9999999 ),
+                      cv::Scalar hsvHigh1 = cv::Scalar( -9999999, -9999999, -9999999 ) ) :
         imgSize( imageSize ),
         pixelPoints( pixelPts ),
         worldPoints( worldPts ),
+        waterlineSearchCorners( waterLevelSearchCorners ),
         searchLineSet( lineEndPts ),
         targetSearchRegion( symbolSearchROI ),
         facetLength( facetLen ),
         zeroOffset( offsetToZero ),
         center( centerPoint ),
-        angle( symbolAngle )
+        angle( symbolAngle ),
+        symbolColor( colorOfSymbol ),
+        colorRangeMin( colorRngMin ),
+        colorRangeMax( colorRngMax ),
+        hsvLow( hsvLow ),
+        hsvHigh( hsvHigh ),
+        hsvLow1( hsvLow1 ),
+        hsvHigh1( hsvHigh1 )
     {}
 
     /**
@@ -224,24 +248,40 @@ public:
         imgSize = cv::Size( -1, -1 );
         pixelPoints.clear();
         worldPoints.clear();
+        waterlineSearchCorners.clear();
         searchLineSet.clear();
         targetSearchRegion = cv::Rect( -1, -1, -1, -1 );
         facetLength = -1.0;
         zeroOffset = 0.0;
         center = cv::Point2d( -1.0, -1.0 );
         angle = -9999999.0;
+        symbolColor = cv::Scalar( 0, 0, 0 );
+        colorRangeMin = 20;
+        colorRangeMax = 20;
+        hsvLow = cv::Scalar( 0, 0, 0 );
+        hsvHigh = cv::Scalar( 0, 0, 0 );
+        hsvLow1 = cv::Scalar( -9999999, -9999999, -9999999 );
+        hsvHigh1 = cv::Scalar( -9999999, -9999999, -9999999 );
     }
 
-    std::string controlJson;                ///< Json control string
-    cv::Size imgSize;                       ///< Dimensions of the calibration image
-    std::vector< cv::Point2d > pixelPoints; ///< Vector of pixel points ordered to match the world point vector
-    std::vector< cv::Point2d > worldPoints; ///< Vector of world points ordered to match the pixel point vector
-    std::vector< LineEnds > searchLineSet;  ///< Vector of search lines to be searched for the water line
-    cv::Rect targetSearchRegion;            ///< Region within which to perform line and move search
-    double facetLength;                     ///< Length of a stop sign facet in world units
-    double zeroOffset;                      ///< Distance from bottom left stop sign corner to zero stage
-    cv::Point2d center;                     ///< Center of symbol
-    double angle;                           ///< Angle of symbol
+    std::string controlJson;                         ///< Json control string
+    cv::Size imgSize;                                ///< Dimensions of the calibration image
+    std::vector< cv::Point2d > pixelPoints;          ///< Vector of pixel points ordered to match the world point vector
+    std::vector< cv::Point2d > worldPoints;          ///< Vector of world points ordered to match the pixel point vector
+    std::vector< cv::Point > waterlineSearchCorners; ///< Vector of search ROI corners (start at top-left, clockwise
+    std::vector< LineEnds > searchLineSet;           ///< Vector of search lines to be searched for the water line
+    cv::Rect targetSearchRegion;                     ///< Region within which to perform line and move search
+    double facetLength;                              ///< Length of a stop sign facet in world units
+    double zeroOffset;                               ///< Distance from bottom left stop sign corner to zero stage
+    cv::Point2d center;                              ///< Center of symbol
+    double angle;                                    ///< Angle of symbol
+    cv::Scalar symbolColor;
+    int colorRangeMin;
+    int colorRangeMax;
+    cv::Scalar hsvLow;
+    cv::Scalar hsvHigh;
+    cv::Scalar hsvLow1;
+    cv::Scalar hsvHigh1;
 };
 
 /**

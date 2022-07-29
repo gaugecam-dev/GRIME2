@@ -22,6 +22,7 @@
 #include <QRect>
 #include <QPoint>
 #include <string>
+#include <opencv2/core.hpp>
 
 typedef enum CALIB_JSON_STRING_TYPE
 {
@@ -50,18 +51,54 @@ public:
     QPoint lftBot;
 };
 
+class CalibJsonItems
+{
+public:
+    CalibJsonItems() {}
+    CalibJsonItems( const std::string worldPosCsvFile,
+                    const std::string calibResultJson,
+                    const bool enableROI,
+                    const cv::Rect rect,
+                    const double moveGrowROIPercent,
+                    const double worldFacetLength,
+                    const double worldZeroOffset,
+                    const LineSearchPoly searchPoly,
+                    const cv::Scalar trgtColor,
+                    const int colorRngMin,
+                    const int colorRngMax ) :
+        worldTargetPosition_csvFile( worldPosCsvFile ),
+        calibVisionResult_json( calibResultJson ),
+        useROI( enableROI ),
+        roi( rect ),
+        moveROIGrowPercent( moveGrowROIPercent ),
+        facetLength( worldFacetLength ),
+        zeroOffset( worldZeroOffset ),
+        lineSearchPoly( searchPoly ),
+        targetColor( trgtColor ),
+        colorRangeMin( colorRngMin ),
+        colorRangeMax( colorRngMax )
+    {}
+
+    std::string worldTargetPosition_csvFile;
+    std::string calibVisionResult_json;
+    bool useROI;
+    cv::Rect roi;
+    double moveROIGrowPercent;
+    double facetLength;
+    double zeroOffset;
+    LineSearchPoly lineSearchPoly;
+    cv::Scalar targetColor;
+    double colorRangeMin;
+    double colorRangeMax;
+};
+
 class RoiAdjust
 {
 public:
     RoiAdjust();
 
-    int FormBowtieCalibJsonString( const std::string csvFilepath, const std::string jsonResultFilepath,
-                                   const bool useSearchROI, const QRect rectROI, const int moveSearchROIGrowPercent,
-                                   const LineSearchPoly searchPoly, std::string &json );
-    int FormStopsignCalibJsonString( const std::string csvFilepath, const std::string jsonResultFilepath,
-                                     const bool useSearchROI, const QRect rectROI, const int moveSearchROIGrowPercent,
-                                     const double facetLength, const double zeroOffset, const LineSearchPoly searchPoly,
-                                     std::string &json );
+    int FormBowtieCalibJsonString( const CalibJsonItems &items, std::string &json );
+    int FormStopsignCalibJsonString( const CalibJsonItems &items, std::string &json );
 
     int TestAgainstFindLines( const QPoint pt, const QSize displaySize, const int capturePos,
                               const double scale, QPoint &ptCapture, QLine &lineOne );

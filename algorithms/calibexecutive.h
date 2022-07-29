@@ -115,6 +115,7 @@ private:
     GC_STATUS CalculateRMSE( const std::vector< cv::Point2d > &foundPts, std::vector< cv::Point2d > &reprojectedPts,
                              double &rmseEuclideanDist, double &rmseX, double &rmseY );
     GC_STATUS CalculateRMSE( const cv::Mat &img, double &rmseEuclideanDist, double &rmseX, double &rmseY );
+    GC_STATUS SetCalibFromJson( const std::string &jsonParams );
 };
 
 } // namespace gc

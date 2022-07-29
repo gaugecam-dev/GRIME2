@@ -88,11 +88,10 @@ class CalibStopSign
 {
 public:
     CalibStopSign();
-    GC_STATUS Load( const std::string jsonCalFilepath );
+    GC_STATUS Load (const std::string jsonCalString );
     GC_STATUS Save( const std::string jsonCalFilepath );
-    GC_STATUS Calibrate( const cv::Mat &img, const double facetLength,
-                         const cv::Rect rect, const double zeroOffset, const std::string &controlJson,
-                         std::vector< cv::Point > &searchLineCorners );
+    GC_STATUS CalcHomographies();
+    GC_STATUS Calibrate( const cv::Mat &img, const std::string &controlJson );
     GC_STATUS AdjustStopSignForRotation( const cv::Size imgSize, const FindPointSet &calcLinePts, double &offsetAngle );
     GC_STATUS PixelToWorld( const cv::Point2d ptPixel, cv::Point2d &ptWorld );
     GC_STATUS WorldToPixel( const cv::Point2d ptWorld, cv::Point2d &ptPixel );
@@ -118,10 +117,6 @@ private:
     cv::Mat matHomogPixToWorld;
     cv::Mat matHomogWorldToPix;
     CalibModelSymbol model;
-    cv::Scalar hsvLow;
-    cv::Scalar hsvHigh;
-    cv::Scalar hsvLow2;
-    cv::Scalar hsvHigh2;
     StopsignSearch stopsignSearch;
 
     GC_STATUS FindColor( const cv::Mat &img, cv::Mat1b &redMask, std::vector< StopSignCandidate > &symbolCandidates );
@@ -137,6 +132,7 @@ private:
     GC_STATUS CreateCalibration( const std::vector< cv::Point2d > &pixelPts, const std::vector< cv::Point2d > &worldPts );
     GC_STATUS GetLineEquation( const cv::Point2d pt1, const cv::Point2d pt2, double &slope, double &intercept );
     GC_STATUS CalcCenterAngle( const std::vector< cv::Point2d > &pts, cv::Point2d &center, double &angle );
+    GC_STATUS CalcDrawBasePoints( cv::Point2d &pixelPtLft, cv::Point2d &pixelPtRgt, double &worldYInc );
 };
 
 } // namespace gc

@@ -107,8 +107,7 @@ GC_STATUS CalibExecutive::Calibrate( const Mat &img, const std::string jsonParam
     }
     return retVal;
 }
-GC_STATUS CalibExecutive::Calibrate( const cv::Mat &img, const std::string jsonParams,
-                                     double &rmseDist, double &rmseX, double &rmseY )
+GC_STATUS CalibExecutive::SetCalibFromJson( const std::string &jsonParams )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -146,41 +145,24 @@ GC_STATUS CalibExecutive::Calibrate( const cv::Mat &img, const std::string jsonP
         paramsCurrent.lineSearch_rgtBot.x = top_level.get< int >( "searchPoly_rgtBot_x", -1 );
         paramsCurrent.lineSearch_rgtBot.y = top_level.get< int >( "searchPoly_rgtBot_y", -1 );
 
-
         Mat imgFixed;
         Rect searchBB;
-        if ( "BowTie" == paramsCurrent.calibType )
+        if ( "StopSign" == paramsCurrent.calibType )
         {
-            if ( CV_8UC3 == img.type() )
-            {
-                cvtColor( img, imgFixed, cv::COLOR_BGR2GRAY );
-            }
-            else
-            {
-                imgFixed = img;
-            }
-            retVal = CalibrateBowTie( imgFixed, jsonParams );
-            if ( GC_OK == retVal )
-            {
-                retVal = bowTie.GetSearchRegionBoundingRect( searchBB );
-            }
-        }
-        else if ( "StopSign" == paramsCurrent.calibType )
-        {
-            if ( CV_8UC1 == img.type() )
-            {
-                FILE_LOG( logERROR ) << "[CalibExecutive::Calibrate] Stop sign calibration needs color image";
-                retVal = GC_ERR;
-            }
-            else
-            {
-                imgFixed = img;
-                retVal = CalibrateStopSign( imgFixed, jsonParams );
-                if ( GC_OK == retVal )
-                {
-                    retVal = stopSign.GetSearchRegionBoundingRect( searchBB );
-                }
-            }
+            stopSign.Model().controlJson = jsonParams;
+            stopSign.Model().facetLength = paramsCurrent.facetLength;
+            stopSign.Model().zeroOffset = paramsCurrent.zeroOffset;
+            stopSign.Model().targetSearchRegion = paramsCurrent.targetSearchROI;
+            stopSign.Model().waterlineSearchCorners[ 0 ] = paramsCurrent.lineSearch_lftTop;
+            stopSign.Model().waterlineSearchCorners[ 1 ] = paramsCurrent.lineSearch_rgtTop;
+            stopSign.Model().waterlineSearchCorners[ 2 ] = paramsCurrent.lineSearch_lftBot;
+            stopSign.Model().waterlineSearchCorners[ 3 ] = paramsCurrent.lineSearch_rgtBot;
+            double blueVal = top_level.get< int >( "symbolColor_blue", -1 );
+            double greenVal = top_level.get< int >( "symbolColor_green", -1 );
+            double redVal = top_level.get< int >( "symbolColor_red", -1 );
+            stopSign.Model().symbolColor = Scalar( blueVal, greenVal, redVal );
+            stopSign.Model().colorRangeMin = top_level.get< int >( "colorRangeMin", 20 );
+            stopSign.Model().colorRangeMax = top_level.get< int >( "colorRangeMax", 20 );
         }
         else
         {
@@ -188,15 +170,98 @@ GC_STATUS CalibExecutive::Calibrate( const cv::Mat &img, const std::string jsonP
                                     ( paramsCurrent.calibType.empty() ? "empty()" : paramsCurrent.calibType );
             retVal = GC_ERR;
         }
-
+    }
+    catch( boost::exception &e )
+    {
+        FILE_LOG( logERROR ) << "[CalibExecutive::Calibrate] " << diagnostic_information( e );
+        retVal = GC_EXCEPT;
+    }
+    return retVal;
+}
+GC_STATUS CalibExecutive::Calibrate( const cv::Mat &img, const std::string jsonParams,
+                                     double &rmseDist, double &rmseX, double &rmseY )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        string jsonParamsWhich = jsonParams;
+        if ( jsonParamsWhich.empty() )
+        {
+            if ( "StopSign" == paramsCurrent.calibType )
+            {
+                if ( !stopSign.Model().controlJson.empty() )
+                {
+                    jsonParamsWhich = stopSign.Model().controlJson;
+                }
+                else
+                {
+                    FILE_LOG( logERROR ) << "[CalibExecutive::Calibrate] No available stop sign calibration control string";
+                    retVal = GC_ERR;
+                }
+            }
+            else
+            {
+                FILE_LOG( logERROR ) << "[CalibExecutive::Calibrate] No available calibration control string";
+                retVal = GC_ERR;
+            }
+        }
+        else
+        {
+            retVal = SetCalibFromJson( jsonParamsWhich );
+        }
         if ( GC_OK == retVal )
         {
-            retVal = CalculateRMSE( imgFixed( searchBB ), rmseDist, rmseX, rmseY );
-            if ( GC_OK != retVal )
+            Mat imgFixed;
+            Rect searchBB;
+            if ( "BowTie" == paramsCurrent.calibType )
             {
-                rmseDist = rmseX = rmseY = -9999999.0;
-                FILE_LOG( logWARNING ) << "[CalibBowtie::Calibrate] Could not calculate RMSE";
-                retVal = GC_OK;
+                if ( CV_8UC3 == img.type() )
+                {
+                    cvtColor( img, imgFixed, cv::COLOR_BGR2GRAY );
+                }
+                else
+                {
+                    imgFixed = img;
+                }
+                retVal = CalibrateBowTie( imgFixed, jsonParamsWhich );
+                if ( GC_OK == retVal )
+                {
+                    retVal = bowTie.GetSearchRegionBoundingRect( searchBB );
+                }
+            }
+            else if ( "StopSign" == paramsCurrent.calibType )
+            {
+                if ( CV_8UC1 == img.type() )
+                {
+                    FILE_LOG( logERROR ) << "[CalibExecutive::Calibrate] Stop sign calibration needs color image";
+                    retVal = GC_ERR;
+                }
+                else
+                {
+                    imgFixed = img;
+                    retVal = CalibrateStopSign( imgFixed, jsonParamsWhich );
+                    if ( GC_OK == retVal )
+                    {
+                        retVal = stopSign.GetSearchRegionBoundingRect( searchBB );
+                    }
+                }
+            }
+            else
+            {
+                FILE_LOG( logERROR ) << "[CalibExecutive::Calibrate] Invalid calibration type=" <<
+                                        ( paramsCurrent.calibType.empty() ? "empty()" : paramsCurrent.calibType );
+                retVal = GC_ERR;
+            }
+
+            if ( GC_OK == retVal )
+            {
+                retVal = CalculateRMSE( imgFixed( searchBB ), rmseDist, rmseX, rmseY );
+                if ( GC_OK != retVal )
+                {
+                    rmseDist = rmseX = rmseY = -9999999.0;
+                    FILE_LOG( logWARNING ) << "[CalibBowtie::Calibrate] Could not calculate RMSE";
+                    retVal = GC_OK;
+                }
             }
         }
     }
@@ -349,7 +414,6 @@ GC_STATUS CalibExecutive::CalibrateStopSign( const cv::Mat &img, const string &c
 
     try
     {
-        clear();
         if ( CV_8UC3 != img.type() )
         {
             FILE_LOG( logERROR ) << "[VisApp::CalibrateStopSign] A color image (RGB) is required for stop sign calibration";
@@ -357,11 +421,7 @@ GC_STATUS CalibExecutive::CalibrateStopSign( const cv::Mat &img, const string &c
         }
         else
         {
-            vector< Point > searchLineCorners = { paramsCurrent.lineSearch_lftTop, paramsCurrent.lineSearch_rgtTop,
-                                                  paramsCurrent.lineSearch_lftBot, paramsCurrent.lineSearch_rgtBot };
-
-            retVal = stopSign.Calibrate( img, paramsCurrent.facetLength, paramsCurrent.targetSearchROI,
-                                         paramsCurrent.zeroOffset, controlJson, searchLineCorners );
+            retVal = stopSign.Calibrate( img, controlJson );
             if ( GC_OK == retVal )
             {
                 retVal = stopSign.Save( paramsCurrent.calibResultJsonFilepath );
@@ -474,7 +534,7 @@ GC_STATUS CalibExecutive::Load( const string jsonFilepath, const Mat &img )
 
             stringstream ss;
             ss << jsonString;
-            // cout << endl << jsonString << endl;
+            cout << endl << jsonString << endl;
 
             property_tree::ptree pt;
             property_tree::read_json( ss, pt );
@@ -500,8 +560,9 @@ GC_STATUS CalibExecutive::Load( const string jsonFilepath, const Mat &img )
                 bowTie.clear();
                 findCalibGrid.clear();
                 paramsCurrent.calibType = "StopSign";
+                paramsCurrent.calibResultJsonFilepath = jsonFilepath;
                 retVal = stopSign.Load( ss.str() );
-                if ( !img.empty() )
+                if ( GC_OK == retVal )
                 {
                     string controlJson = pt.get< string >( "control_json", "" );
                     if ( controlJson.empty() )
@@ -511,7 +572,18 @@ GC_STATUS CalibExecutive::Load( const string jsonFilepath, const Mat &img )
                     }
                     else
                     {
-                        retVal = CalibrateStopSign( img, controlJson );
+                        retVal = SetCalibFromJson( controlJson );
+                        if ( GC_OK == retVal )
+                        {
+                            if (  img.empty() )
+                            {
+                                retVal = stopSign.CalcHomographies();
+                            }
+                            else
+                            {
+                                retVal = CalibrateStopSign( img, controlJson );
+                            }
+                        }
                     }
                 }
             }

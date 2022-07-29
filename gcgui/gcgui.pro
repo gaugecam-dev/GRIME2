@@ -171,6 +171,7 @@ DISTFILES += \
     NOTICE \
     config/calib.json \
     config/calib_result.png \
+    config/calib_stopsign.json \
     config/calibration_target_world_coordinates.csv \
     config/settings.cfg \
     config/settingsWin.cfg \

@@ -361,7 +361,7 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params )
     GC_STATUS retVal = CalcLine( params, m_findLineResult );
     return retVal;
 }
-GC_STATUS VisApp::CalcLine( const Mat &img, const string timestamp )
+GC_STATUS VisApp::CalcLine( const Mat &img, const string timestamp, const bool isStopSign )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -377,16 +377,24 @@ GC_STATUS VisApp::CalcLine( const Mat &img, const string timestamp )
         {
             result.timestamp = timestamp;
 
-            retVal = CalcFindLine( img, result );
-            if ( GC_OK != retVal )
+            if ( isStopSign )
             {
-                result.findSuccess = false;
-                FILE_LOG( logERROR ) << "[VisApp::CalcLine] Could not calc line in image";
-                retVal = GC_ERR;
+                double rmseDist, rmseX, rmseY;
+                retVal = m_calibExec.Calibrate( img, "", rmseDist, rmseX, rmseY );
             }
-            else
+            if ( GC_OK == retVal )
             {
-                result.waterLevelAdjusted.y += 0.0;
+                retVal = CalcFindLine( img, result );
+                if ( GC_OK != retVal )
+                {
+                    result.findSuccess = false;
+                    FILE_LOG( logERROR ) << "[VisApp::CalcLine] Could not calc line in image";
+                    retVal = GC_ERR;
+                }
+                else
+                {
+                    result.waterLevelAdjusted.y += 0.0;
+                }
             }
         }
         m_findLineResult = result;
@@ -533,7 +541,11 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result 
                     {
                         Mat noImg = Mat();
                         retVal = m_calibExec.Load( params.calibFilepath, params.isStopSignCalib ? img : noImg );
-                        if ( GC_OK != retVal )
+                        if ( GC_OK == retVal )
+                        {
+
+                        }
+                        else
                         {
                             result.msgs.push_back( "Could not load calibration" );
                             FILE_LOG( logERROR ) << "[VisApp::CalcLine] Could not load calibration=" << params.calibFilepath ;
