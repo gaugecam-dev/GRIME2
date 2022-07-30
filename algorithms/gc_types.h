@@ -181,6 +181,7 @@ public:
      * @brief Constructor to set the model to an uninitialized state
      */
     CalibModelSymbol() :
+        validCalib( false ),
         imgSize( cv::Size( -1, -1 ) ),
         targetSearchRegion( cv::Rect( -1, -1, -1, -1 ) ),
         facetLength( -1.0 ),
@@ -203,23 +204,25 @@ public:
      * @param mvSrchROILft Left move search region (to search for top-left bowtie)
      * @param mvSrchROIRgt Right move search region (to search for top-right bowtie)
      */
-    CalibModelSymbol( cv::Size imageSize,
-                      std::vector< cv::Point2d > pixelPts,
-                      std::vector< cv::Point2d > worldPts,
-                      std::vector< cv::Point > waterLevelSearchCorners,
-                      std::vector< LineEnds > lineEndPts,
-                      cv::Rect symbolSearchROI,
-                      double facetLen,
-                      double offsetToZero,
-                      cv::Point2d centerPoint,
-                      double symbolAngle,
-                      cv::Scalar colorOfSymbol,
-                      int colorRngMin,
-                      int colorRngMax,
-                      cv::Scalar hsvLow = cv::Scalar( -9999999, -9999999, -9999999 ),
-                      cv::Scalar hsvHigh = cv::Scalar( -9999999, -9999999, -9999999 ),
-                      cv::Scalar hsvLow1 = cv::Scalar( -9999999, -9999999, -9999999 ),
-                      cv::Scalar hsvHigh1 = cv::Scalar( -9999999, -9999999, -9999999 ) ) :
+    CalibModelSymbol( const bool isCalibValid,
+                      const cv::Size imageSize,
+                      const std::vector< cv::Point2d > pixelPts,
+                      const std::vector< cv::Point2d > worldPts,
+                      const std::vector< cv::Point > waterLevelSearchCorners,
+                      const std::vector< LineEnds > lineEndPts,
+                      const cv::Rect symbolSearchROI,
+                      const double facetLen,
+                      const double offsetToZero,
+                      const cv::Point2d centerPoint,
+                      const double symbolAngle,
+                      const cv::Scalar colorOfSymbol,
+                      const int colorRngMin,
+                      const int colorRngMax,
+                      const cv::Scalar hsvLow = cv::Scalar( -9999999, -9999999, -9999999 ),
+                      const cv::Scalar hsvHigh = cv::Scalar( -9999999, -9999999, -9999999 ),
+                      const cv::Scalar hsvLow1 = cv::Scalar( -9999999, -9999999, -9999999 ),
+                      const cv::Scalar hsvHigh1 = cv::Scalar( -9999999, -9999999, -9999999 ) ) :
+        validCalib( isCalibValid ),
         imgSize( imageSize ),
         pixelPoints( pixelPts ),
         worldPoints( worldPts ),
@@ -244,6 +247,7 @@ public:
     */
     void clear()
     {
+        validCalib = false;
         controlJson.clear();
         imgSize = cv::Size( -1, -1 );
         pixelPoints.clear();
@@ -264,6 +268,7 @@ public:
         hsvHigh1 = cv::Scalar( -9999999, -9999999, -9999999 );
     }
 
+    bool validCalib;
     std::string controlJson;                         ///< Json control string
     cv::Size imgSize;                                ///< Dimensions of the calibration image
     std::vector< cv::Point2d > pixelPoints;          ///< Vector of pixel points ordered to match the world point vector

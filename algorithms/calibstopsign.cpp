@@ -17,8 +17,8 @@
 #include <iterator>
 #include "searchlines.h"
 
-#ifndef DEBUG_FIND_CALIB_SYMBOL
-#define DEBUG_FIND_CALIB_SYMBOL
+#ifdef DEBUG_FIND_CALIB_SYMBOL
+#undef DEBUG_FIND_CALIB_SYMBOL
 #include <iostream>
 #include <boost/filesystem.hpp>
 static const std::string DEBUG_FOLDER = "/var/tmp/water/";
@@ -37,6 +37,7 @@ namespace gc
 {
 
 static double elongation( Moments m );
+static double distance( Point2d a, Point2d b );
 
 CalibStopSign::CalibStopSign()
 {
@@ -71,8 +72,8 @@ CalibStopSign::CalibStopSign()
 }
 void CalibStopSign::clear()
 {
-    matHomogPixToWorld = Mat();
-    matHomogWorldToPix = Mat();
+    // matHomogPixToWorld = Mat();
+    // matHomogWorldToPix = Mat();
     model.clear();
 }
 GC_STATUS CalibStopSign::GetCalibParams( std::string &calibParams )
@@ -279,6 +280,10 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &contr
                 model.controlJson = controlJson;
             }
         }
+        if ( GC_OK != retVal )
+        {
+            model.validCalib = false;
+        }
     }
     catch( cv::Exception &e )
     {
@@ -354,13 +359,7 @@ GC_STATUS CalibStopSign::AdjustStopSignForRotation( const Size imgSize, const Fi
                     retVal = CalcCorners( octoLines, adjustedCorners );
                     if ( GC_OK == retVal )
                     {
-                        vector< Point2d > pointsTemp;
-                        Point2d ptTemp( 0.0, model.zeroOffset );
-                        for ( size_t i = 0; i < model.worldPoints.size(); ++i )
-                        {
-                            pointsTemp.push_back( model.worldPoints[ i ] + ptTemp );
-                        }
-                        retVal = CreateCalibration( model.pixelPoints, pointsTemp );
+                        retVal = CalcHomographies();
                     }
                 }
             }
@@ -408,26 +407,37 @@ GC_STATUS CalibStopSign::CalcCenterAngle( const std::vector< cv::Point2d > &pts,
         FILE_LOG( logERROR ) << "[CalibStopSign::CalcCenterAngle] " << e.what();
         retVal = GC_EXCEPT;
     }
-
     return retVal;
 }
 GC_STATUS CalibStopSign::CalcHomographies()
 {
-    GC_STATUS retVal = CreateCalibration( model.pixelPoints, model.worldPoints );
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        vector< Point2d > offsetWorldPts;
+        Point2d offsetPt( 0.0, model.zeroOffset );
+        for ( size_t i = 0; i < model.worldPoints.size(); ++i )
+        {
+            offsetWorldPts.push_back( model.worldPoints[ i ] + offsetPt );
+        }
+        retVal = CreateCalibration( model.pixelPoints, offsetWorldPts );
+    }
+    catch( std::exception &e )
+    {
+        FILE_LOG( logERROR ) << "[CalibStopSign::CalcHomographies] " << e.what();
+        retVal = GC_EXCEPT;
+    }
     return retVal;
 }
 GC_STATUS CalibStopSign::CreateCalibration( const std::vector< cv::Point2d > &pixelPts, const std::vector< cv::Point2d > &worldPts )
 {
     GC_STATUS retVal = GC_OK;
-
     try
     {
-        if ( pixelPts.empty() || worldPts.empty() || pixelPts.size() != worldPts.size() )
-        {
-            FILE_LOG( logERROR ) << "[CalibStopSign::Calibrate] Invalid world and/or pixel point sets";
-            retVal = GC_ERR;
-        }
-        else
+        model.validCalib = false;
+        bool arePtsOk;
+        retVal = TestCalibration( arePtsOk );
+        if ( GC_OK == retVal && arePtsOk )
         {
             matHomogPixToWorld = findHomography( pixelPts, worldPts );
             if ( matHomogPixToWorld.empty() )
@@ -442,6 +452,10 @@ GC_STATUS CalibStopSign::CreateCalibration( const std::vector< cv::Point2d > &pi
                 {
                     FILE_LOG( logERROR ) << "[CalibStopSign::Calibrate] Could not find world to pixel coordinate homography";
                     retVal = GC_ERR;
+                }
+                else
+                {
+                    model.validCalib = true;
                 }
             }
         }
@@ -573,9 +587,9 @@ GC_STATUS CalibStopSign::Load( const std::string jsonCalString )
                 Scalar hsv;
                 retVal = SetStopsignColor( model.symbolColor, static_cast< double >( model.colorRangeMin ) / 100.0,
                                            static_cast< double >( model.colorRangeMax ), hsv );
-                if ( GC_OK != retVal )
+                if ( GC_OK == retVal )
                 {
-                    retVal = CreateCalibration( model.pixelPoints, model.worldPoints );
+                    retVal = CalcHomographies();
                 }
             }
 #ifdef LOG_CALIB_VALUES
@@ -1434,8 +1448,8 @@ GC_STATUS CalibStopSign::SetStopsignColor( const cv::Scalar color, const double 
 
     return retVal;
 }
-GC_STATUS CalibStopSign::DrawOverlay( const cv::Mat &img, cv::Mat &result, const bool drawCalibScale,
-                                      const bool drawCalibGrid, const bool drawMoveROIs, const bool drawSearchROI )
+GC_STATUS CalibStopSign::DrawOverlay( const cv::Mat &img, cv::Mat &result, const bool drawCalibScale, const bool drawCalibGrid,
+                                      const bool drawMoveROIs, const bool drawSearchROI, const bool drawTargetSearchROI )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -1466,145 +1480,134 @@ GC_STATUS CalibStopSign::DrawOverlay( const cv::Mat &img, cv::Mat &result, const
                 retVal = GC_ERR;
             }
 
-            double dim = static_cast< double >( std::max( result.cols, result.rows ) );
-            int lineWidth = max( 1, cvRound( dim / 900.0 ) );
-            int targetRadius = lineWidth * 5;
             int textStroke = std::max( 1, cvRound( static_cast< double >( result.rows ) / 300.0 ) );
-            double fontScale = 1.0 + static_cast< double >( result.rows ) / 1200.0;
-
-            if ( model.pixelPoints.empty() )
+            if ( GC_OK == retVal )
             {
-                FILE_LOG( logERROR ) << "[CalibStopSign::DrawCalibration] No symbol points to draw";
-                retVal = GC_ERR;
-            }
-            else if ( GC_OK == retVal )
-            {
+                double dim = static_cast< double >( std::max( result.cols, result.rows ) );
+                int lineWidth = max( 1, cvRound( dim / 900.0 ) );
+                int targetRadius = lineWidth * 5;
+                double fontScale = 1.0 + static_cast< double >( result.rows ) / 1200.0;
                 if ( drawCalibScale || drawCalibGrid )
                 {
-                    line( result, Point2d( model.pixelPoints[ 0 ].x - targetRadius, model.pixelPoints[ 0 ].y ),
-                                  Point2d( model.pixelPoints[ 0 ].x + targetRadius, model.pixelPoints[ 0 ].y ), Scalar( 0, 255, 0 ), lineWidth );
-                    line( result, Point2d( model.pixelPoints[ 0 ].x, model.pixelPoints[ 0 ].y - targetRadius ),
-                                  Point2d( model.pixelPoints[ 0 ].x, model.pixelPoints[ 0 ].y + targetRadius ), Scalar( 0, 255, 0 ), lineWidth );
-                    circle( result, model.pixelPoints[ 0 ], targetRadius, Scalar( 0, 255, 0 ), lineWidth );
-                    for ( size_t i = 1; i < model.pixelPoints.size(); ++i )
+                    if ( !model.validCalib  )
                     {
-                        line( result, model.pixelPoints[ i - 1 ], model.pixelPoints[ i ], Scalar( 255, 0, 0 ), lineWidth );
-                        line( result, Point2d( model.pixelPoints[ i ].x - targetRadius, model.pixelPoints[ i ].y ),
-                                      Point2d( model.pixelPoints[ i ].x + targetRadius, model.pixelPoints[ i ].y ), Scalar( 0, 255, 0 ), lineWidth );
-                        line( result, Point2d( model.pixelPoints[ i ].x, model.pixelPoints[ i ].y - targetRadius ),
-                                      Point2d( model.pixelPoints[ i ].x, model.pixelPoints[ i ].y + targetRadius ), Scalar( 0, 255, 0 ), lineWidth );
-                        circle( result, model.pixelPoints[ i ], targetRadius, Scalar( 0, 255, 0 ), lineWidth );
-                    }
-                    line( result, model.pixelPoints[ 0 ], model.pixelPoints[ model.pixelPoints.size() - 1 ], Scalar( 255, 0, 0 ), lineWidth );
-
-                    Point2d ptLftTopPix( 0.0, 0.0 );
-                    Point2d ptRgtTopPix( static_cast< double >( result.cols - 1 ), 0.0 );
-                    Point2d ptLftBotPix( 0.0, static_cast< double >( result.rows - 1 ) );
-                    Point2d ptRgtBotPix( static_cast< double >( result.cols - 1 ), static_cast< double >( result.rows - 1 ) );
-
-                    if ( drawCalibScale )
-                    {
-                        double lftX = ( model.searchLineSet[ 0 ].top.x + model.searchLineSet[ 0 ].bot.x ) / 2.0;
-                        double rgtX = ( model.searchLineSet[ model.searchLineSet.size() - 1 ].top.x + model.searchLineSet[ model.searchLineSet.size() - 1 ].bot.x ) / 2.0;
-                        double quarterLength = ( rgtX - lftX ) / 4.0;
-                        lftX += quarterLength;
-                        rgtX -= quarterLength;
-                        quarterLength = ( rgtX - lftX ) / 4.0;
-
-                        double centerPoint = ( lftX + rgtX ) / 2.0;
-                        double startPoint = ( model.searchLineSet[ 0 ].top.y + model.searchLineSet[ model.searchLineSet.size() - 1 ].top.y ) / 2.0;
-                        double endPoint = ( model.searchLineSet[ 0 ].bot.y + model.searchLineSet[ model.searchLineSet.size() - 1 ].bot.y ) / 2.0;
-
-                        char msg[ 256 ];
-                        double yPos;
-                        Point2d worldPt;
-                        double vertInc = ( endPoint - startPoint ) / 10.0;
-                        for ( int i = 0; i < 10; ++i )
+                        if ( -1 == model.targetSearchRegion.x )
                         {
-                            yPos = startPoint + static_cast< double >( i ) * vertInc;
-                            retVal = PixelToWorld( Point2d( centerPoint, yPos ), worldPt );
-                            if ( GC_OK == retVal )
-                            {
-                                sprintf( msg, "%.1f", worldPt.y );
-                                if ( 0 == i % 2 )
-                                {
-                                    line( result, Point2d( lftX, yPos ), Point2d( rgtX, yPos ), Scalar( 0, 255, 255 ), lineWidth );
-                                }
-                                else
-                                {
-                                    line( result, Point2d( lftX + quarterLength, yPos ),
-                                          Point2d( rgtX - quarterLength, yPos ), Scalar( 0, 255, 255 ), lineWidth );
-
-                                }
-                                putText( result, msg, Point( cvRound( lftX - 120 ), cvRound( yPos ) + 15 ), FONT_HERSHEY_PLAIN, fontScale, Scalar( 0, 0, 255 ), lineWidth );
-                            }
+                            line( result, Point( model.imgSize.width >> 2, model.imgSize.height >> 2 ),
+                                  Point( 3 * ( model.imgSize.width >> 2 ), 3 * ( model.imgSize.height >> 2 ) ),
+                                  Scalar( 0, 0, 255 ), textStroke );
+                            line( result, Point( 3 * ( model.imgSize.width >> 2 ), model.imgSize.height >> 2 ),
+                                  Point( model.imgSize.width >> 2, 3 * ( model.imgSize.height >> 2 ) ),
+                                  Scalar( 0, 0, 255 ), textStroke );
+                        }
+                        else
+                        {
+                            line( result, Point( model.targetSearchRegion.x, model.targetSearchRegion.y ),
+                                  Point( model.targetSearchRegion.x + model.targetSearchRegion.width,
+                                         model.targetSearchRegion.y + model.targetSearchRegion.height ),
+                                  Scalar( 0, 0, 255 ), textStroke );
+                            line( result, Point( model.targetSearchRegion.x + model.targetSearchRegion.width, model.targetSearchRegion.y ),
+                                  Point( model.targetSearchRegion.x, model.targetSearchRegion.y + model.targetSearchRegion.height ),
+                                  Scalar( 0, 0, 255 ), textStroke );
                         }
                     }
                     else
                     {
-                        Point2d ptLftTopW, ptRgtTopW, ptLftBotW, ptRgtBotW;
-                        retVal = PixelToWorld( ptLftTopPix, ptLftTopW );
-                        if ( GC_OK == retVal )
+                        line( result, Point2d( model.pixelPoints[ 0 ].x - targetRadius, model.pixelPoints[ 0 ].y ),
+                                      Point2d( model.pixelPoints[ 0 ].x + targetRadius, model.pixelPoints[ 0 ].y ), Scalar( 0, 255, 0 ), lineWidth );
+                        line( result, Point2d( model.pixelPoints[ 0 ].x, model.pixelPoints[ 0 ].y - targetRadius ),
+                                      Point2d( model.pixelPoints[ 0 ].x, model.pixelPoints[ 0 ].y + targetRadius ), Scalar( 0, 255, 0 ), lineWidth );
+                        circle( result, model.pixelPoints[ 0 ], targetRadius, Scalar( 0, 255, 0 ), lineWidth );
+                        for ( size_t i = 1; i < model.pixelPoints.size(); ++i )
                         {
-                            retVal = PixelToWorld( ptRgtTopPix, ptRgtTopW );
-                            if ( GC_OK == retVal )
+                            line( result, model.pixelPoints[ i - 1 ], model.pixelPoints[ i ], Scalar( 255, 0, 0 ), lineWidth );
+                            line( result, Point2d( model.pixelPoints[ i ].x - targetRadius, model.pixelPoints[ i ].y ),
+                                          Point2d( model.pixelPoints[ i ].x + targetRadius, model.pixelPoints[ i ].y ), Scalar( 0, 255, 0 ), lineWidth );
+                            line( result, Point2d( model.pixelPoints[ i ].x, model.pixelPoints[ i ].y - targetRadius ),
+                                          Point2d( model.pixelPoints[ i ].x, model.pixelPoints[ i ].y + targetRadius ), Scalar( 0, 255, 0 ), lineWidth );
+                            circle( result, model.pixelPoints[ i ], targetRadius, Scalar( 0, 255, 0 ), lineWidth );
+                        }
+                        line( result, model.pixelPoints[ 0 ], model.pixelPoints[ model.pixelPoints.size() - 1 ], Scalar( 255, 0, 0 ), lineWidth );
+
+                        Point2d ptLftTopPix( 0.0, 0.0 );
+                        Point2d ptRgtTopPix( static_cast< double >( result.cols - 1 ), 0.0 );
+                        Point2d ptLftBotPix( 0.0, static_cast< double >( result.rows - 1 ) );
+                        Point2d ptRgtBotPix( static_cast< double >( result.cols - 1 ), static_cast< double >( result.rows - 1 ) );
+
+                        if ( drawCalibScale )
+                        {
+                            double lftX = ( model.searchLineSet[ 0 ].top.x + model.searchLineSet[ 0 ].bot.x ) / 2.0;
+                            double rgtX = ( model.searchLineSet[ model.searchLineSet.size() - 1 ].top.x +
+                                    model.searchLineSet[ model.searchLineSet.size() - 1 ].bot.x ) / 2.0;
+                            double quarterLength = ( rgtX - lftX ) / 4.0;
+                            lftX += quarterLength;
+                            rgtX -= quarterLength;
+                            quarterLength = ( rgtX - lftX ) / 4.0;
+
+                            double centerPoint = ( lftX + rgtX ) / 2.0;
+                            double startPoint = ( model.searchLineSet[ 0 ].top.y + model.searchLineSet[ model.searchLineSet.size() - 1 ].top.y ) / 2.0;
+                            double endPoint = ( model.searchLineSet[ 0 ].bot.y + model.searchLineSet[ model.searchLineSet.size() - 1 ].bot.y ) / 2.0;
+
+                            char msg[ 256 ];
+                            double yPos;
+                            Point2d worldPt;
+                            double vertInc = ( endPoint - startPoint ) / 10.0;
+                            for ( int i = 0; i < 10; ++i )
                             {
-                                retVal = PixelToWorld( ptLftBotPix, ptLftBotW );
+                                yPos = startPoint + static_cast< double >( i ) * vertInc;
+                                retVal = PixelToWorld( Point2d( centerPoint, yPos ), worldPt );
                                 if ( GC_OK == retVal )
                                 {
-                                    retVal = PixelToWorld( ptRgtBotPix, ptRgtBotW );
+                                    sprintf( msg, "%.1f", worldPt.y );
+                                    if ( 0 == i % 2 )
+                                    {
+                                        line( result, Point2d( lftX, yPos ), Point2d( rgtX, yPos ), Scalar( 0, 255, 255 ), lineWidth );
+                                    }
+                                    else
+                                    {
+                                        line( result, Point2d( lftX + quarterLength, yPos ),
+                                              Point2d( rgtX - quarterLength, yPos ), Scalar( 0, 255, 255 ), lineWidth );
+
+                                    }
+                                    putText( result, msg, Point( cvRound( lftX - 120 ), cvRound( yPos ) + 15 ),
+                                             FONT_HERSHEY_PLAIN, fontScale, Scalar( 0, 0, 255 ), lineWidth );
+                                }
+                            }
+                        }
+                        else
+                        {
+                            std::vector< StopSignLine > horzLines, vertLines;
+                            retVal = CalcGridDrawPoints( horzLines, vertLines );
+                            if ( GC_OK == retVal )
+                            {
+                                char msg[ 256 ];
+                                Point2d ptWorld;
+
+                                // zero level line
+                                putText( result, "0.0", Point( 10, cvRound( horzLines[ 0 ].pt1.y - 10 ) ),
+                                         FONT_HERSHEY_PLAIN, fontScale, Scalar( 0, 0, 255 ), lineWidth );
+                                line( result, horzLines[ 0 ].pt1, horzLines[ 0 ].pt2, Scalar( 0, 0, 255 ), lineWidth );
+
+                                // the rest of the horizontal lines
+                                for ( size_t i = 1; i < horzLines.size(); ++i )
+                                {
+                                    retVal = PixelToWorld( horzLines[ i ].pt1, ptWorld );
                                     if ( GC_OK == retVal )
                                     {
-                                        double minXW = std::min( ptLftTopW.x, ptLftBotW.x );
-                                        double maxXW = std::max( ptRgtTopW.x, ptRgtBotW.x );
-                                        double minYW = std::min( ptLftTopW.y, ptRgtTopW.y );
-                                        double maxYW = std::max( ptLftBotW.y, ptRgtBotW.y );
-                                        if ( maxYW < minYW )
-                                        {
-                                            swap( minYW, maxYW );
-                                        }
+                                        sprintf( msg, "%.1f", ptWorld.y );
+                                        putText( result, msg, Point( 10, cvRound( horzLines[ i ].pt1.y - 10 ) ),
+                                                 FONT_HERSHEY_PLAIN, fontScale, Scalar( 0, 255, 255 ), lineWidth );
+                                        line( result, horzLines[ i ].pt1, horzLines[ i ].pt2, Scalar( 0, 255, 255 ), lineWidth );
+                                    }
+                                }
 
-                                        double incX = ( maxXW - minXW ) / 10.0;
-                                        double incY = ( maxYW - minYW ) / 10.0;
-
-                                        bool isFirst;
-                                        char msg[ 256 ];
-                                        Point2d pt1, pt2;
-#if 1
-                                        retVal = WorldToPixel( Point2d( 0.0, 0.0 ), pt1 );
-                                        while ( pt1.y > 0.0 )
-                                        {
-                                        }
-#else
-                                        for ( double r = minYW; r < maxYW; r += incY )
-                                        {
-                                            isFirst = true;
-                                            for ( double c = minXW; c < maxXW; c += incX )
-                                            {
-                                                retVal = WorldToPixel( Point2d( c, r ), pt1 );
-                                                if ( GC_OK == retVal )
-                                                {
-                                                    if ( isFirst )
-                                                    {
-                                                        isFirst = false;
-                                                        sprintf( msg, "%.1f", r );
-                                                        putText( result, msg, Point( 10, cvRound( pt1.y ) - 10 ),
-                                                                 FONT_HERSHEY_PLAIN, fontScale, Scalar( 0, 0, 255 ), lineWidth );
-                                                    }
-                                                    retVal = WorldToPixel( Point2d( c + incX, r ), pt2 );
-                                                    if ( GC_OK == retVal )
-                                                    {
-                                                        line( result, pt1, pt2, Scalar( 0, 255, 255 ), lineWidth );
-                                                        retVal = WorldToPixel( Point2d( c, r + incY ), pt2 );
-                                                        if ( GC_OK == retVal )
-                                                        {
-                                                            line( result, pt1, pt2, Scalar( 0, 255, 255 ), lineWidth );
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-#endif
+                                // vertical lines
+                                for ( size_t i = 1; i < vertLines.size(); ++i )
+                                {
+                                    retVal = PixelToWorld( vertLines[ i ].pt1, ptWorld );
+                                    if ( GC_OK == retVal )
+                                    {
+                                        line( result, vertLines[ i ].pt1, vertLines[ i ].pt2, Scalar( 0, 255, 255 ), lineWidth );
                                     }
                                 }
                             }
@@ -1612,6 +1615,12 @@ GC_STATUS CalibStopSign::DrawOverlay( const cv::Mat &img, cv::Mat &result, const
                     }
                 }
                 if ( drawMoveROIs )
+                {
+                    rectangle( result, -1 == model.targetSearchRegion.x ?
+                                   Rect( 7, 7, model.imgSize.width - 8, model.imgSize.height - 8 ) :
+                                   model.targetSearchRegion, Scalar( 255, 0, 0 ), textStroke );
+                }
+                if ( drawTargetSearchROI )
                 {
                     rectangle( result, model.targetSearchRegion, Scalar( 255, 0, 0 ), textStroke );
                 }
@@ -1633,6 +1642,10 @@ GC_STATUS CalibStopSign::DrawOverlay( const cv::Mat &img, cv::Mat &result, const
                     }
                 }
             }
+            else
+            {
+                putText( result, "CALIBRATION NOT VALID", Point( 100, 100 ), FONT_HERSHEY_PLAIN, 2.0, Scalar( 0, 0, 255 ), textStroke );
+            }
         }
     }
     catch( Exception &e )
@@ -1643,31 +1656,275 @@ GC_STATUS CalibStopSign::DrawOverlay( const cv::Mat &img, cv::Mat &result, const
 
     return retVal;
 }
-GC_STATUS CalibStopSign::CalcDrawBasePoints( cv::Point2d &pixPtZeroLft, cv::Point2d &pixPtZeroRgt, double &worldYInc )
+GC_STATUS CalibStopSign::GetXEdgeMinDiffX(const double xWorld, cv::Point2d &ptPix, const bool isTopSideY )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        double x_min = 0;
+        double diff, minDiff;
+
+        Point2d ptWorld;
+        double y_pos = isTopSideY ? model.imgSize.height - 1 : 0;
+        retVal = PixelToWorld( Point2d( y_pos , 0.0 ), ptWorld );
+        if ( GC_OK == retVal )
+        {
+            minDiff = fabs( xWorld - ptWorld.y );
+            for ( int i = 1; i < model.imgSize.width; ++i )
+            {
+                retVal = PixelToWorld( Point2d( i, y_pos ), ptWorld );
+                if ( GC_OK == retVal )
+                {
+                    diff = fabs( xWorld - ptWorld.x );
+                    if ( minDiff > diff )
+                    {
+                        x_min = i;
+                        minDiff = diff;
+                    }
+                }
+                else
+                {
+                    break;
+                }
+            }
+            if ( GC_OK == retVal )
+            {
+                ptPix = Point2d( x_min, y_pos );
+            }
+        }
+    }
+    catch( std::exception &e )
+    {
+        FILE_LOG( logERROR ) << "[CalibStopSign::GetMinWorldDiffY] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+
+    return retVal;
+}
+GC_STATUS CalibStopSign::GetXEdgeMinDiffY(const double yWorld, cv::Point2d &ptPix, const bool isRightSideX )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        double y_min = 0;
+        double diff, minDiff;
+
+        Point2d ptWorld;
+        double x_pos = isRightSideX ? model.imgSize.width - 1 : 0;
+        retVal = PixelToWorld( Point2d( x_pos, 0.0 ), ptWorld );
+        if ( GC_OK == retVal )
+        {
+            minDiff = fabs( yWorld - ptWorld.y );
+            for ( int i = 1; i < model.imgSize.height; ++i )
+            {
+                retVal = PixelToWorld( Point2d( x_pos, i ), ptWorld );
+                if ( GC_OK == retVal )
+                {
+                    diff = fabs( yWorld - ptWorld.y );
+                    if ( minDiff > diff )
+                    {
+                        y_min = i;
+                        minDiff = diff;
+                    }
+                }
+                else
+                {
+                    break;
+                }
+            }
+            if ( GC_OK == retVal )
+            {
+                ptPix = Point2d( x_pos, y_min );
+            }
+        }
+    }
+    catch( std::exception &e )
+    {
+        FILE_LOG( logERROR ) << "[CalibStopSign::GetMinWorldDiffY] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+
+    return retVal;
+}
+GC_STATUS CalibStopSign::CalcGridDrawPoints( std::vector< StopSignLine > &horzLines, std::vector< StopSignLine > &vertLines )
 {
     GC_STATUS retVal = GC_OK;
     try
     {
         if ( 8 != model.pixelPoints.size() || 8 != model.worldPoints.size() )
         {
-            FILE_LOG( logERROR ) << "[CalibStopSign::FineLeftImageEdgeWorldZero] System not calibrated";
+            FILE_LOG( logERROR ) << "[CalibStopSign::CalcGridDrawPoints] System not calibrated";
             retVal = GC_ERR;
         }
         else
         {
+            horzLines.clear();
+            vertLines.clear();
+
+            double horzInc = static_cast< double >( model.imgSize.width ) / 11.0;
+            double vertInc = static_cast< double >( model.imgSize.height ) / 11.0;
+
             Point2d ptLft, ptRgt;
             double slope = ( model.pixelPoints[ 5 ].y - model.pixelPoints[ 4 ].y ) /
                            ( model.pixelPoints[ 5 ].x - model.pixelPoints[ 4 ].x );
-            pixPtZeroLft.y = model.pixelPoints[ 4 ].y + slope * model.pixelPoints[ 4 ].x;
-            pixPtZeroLft.x = 0.0;
+            ptLft.y = model.pixelPoints[ 4 ].y + slope * model.pixelPoints[ 4 ].x;
+            ptLft.x = 0.0;
 
-            pixPtZeroRgt.x = model.imgSize.width - 1;
-            pixPtZeroRgt.y = slope * model.pixelPoints[ 4 ].x + pixPtZeroLft.y;
+            ptRgt.x = model.imgSize.width - 1;
+            ptRgt.y = slope * model.pixelPoints[ 4 ].x + ptLft.y;
+
+            Point2d ptPix1, ptPix2;
+            retVal = GetXEdgeMinDiffY( 0.0, ptPix1, false );
+            if ( GC_OK == retVal )
+            {
+                retVal = GetXEdgeMinDiffY( 0.0, ptPix2, true );
+                if ( GC_OK == retVal )
+                {
+                    horzLines.push_back( StopSignLine( ptPix1, ptPix2 ) );
+                }
+            }
+
+            double pixLftZeroY = ptPix1.y;
+
+            Point2d ptWorld;
+            if ( GC_OK == retVal )
+            {
+                double y_pixPos = pixLftZeroY - vertInc;
+                while( 0.0 <= y_pixPos )
+                {
+                    retVal = PixelToWorld( Point2d( 0.0, y_pixPos ), ptWorld );
+                    if ( GC_OK == retVal )
+                    {
+                        retVal = GetXEdgeMinDiffY( ptWorld.y, ptPix1, false );
+                        if ( GC_OK == retVal )
+                        {
+                            retVal = GetXEdgeMinDiffY( ptWorld.y, ptPix2, true );
+                            if ( GC_OK == retVal )
+                            {
+                                horzLines.push_back( StopSignLine( ptPix1, ptPix2 ) );
+                            }
+                        }
+                    }
+                    if ( GC_OK != retVal )
+                    {
+                        break;
+                    }
+                    y_pixPos -= vertInc;
+                }
+            }
+
+            if ( GC_OK == retVal )
+            {
+                double y_pixPos = pixLftZeroY + vertInc;
+                while( model.imgSize.height > y_pixPos )
+                {
+                    retVal = PixelToWorld( Point2d( 0.0, y_pixPos ), ptWorld );
+                    if ( GC_OK == retVal )
+                    {
+                        retVal = GetXEdgeMinDiffY( ptWorld.y, ptPix1, false );
+                        if ( GC_OK == retVal )
+                        {
+                            retVal = GetXEdgeMinDiffY( ptWorld.y, ptPix2, true );
+                            if ( GC_OK == retVal )
+                            {
+                                horzLines.push_back( StopSignLine( ptPix1, ptPix2 ) );
+                            }
+                        }
+                    }
+                    if ( GC_OK != retVal )
+                    {
+                        break;
+                    }
+                    y_pixPos += vertInc;
+                }
+            }
+
+            if ( GC_OK == retVal )
+            {
+                double x_pixPos = horzInc;
+                while( model.imgSize.width > x_pixPos )
+                {
+                    retVal = PixelToWorld( Point2d( x_pixPos, 0.0 ), ptWorld );
+                    if ( GC_OK == retVal )
+                    {
+                        retVal = GetXEdgeMinDiffX( ptWorld.x, ptPix1, false );
+                        if ( GC_OK == retVal )
+                        {
+                            retVal = GetXEdgeMinDiffX( ptWorld.x, ptPix2, true );
+                            if ( GC_OK == retVal )
+                            {
+                                vertLines.push_back( StopSignLine( ptPix1, ptPix2 ) );
+                            }
+                        }
+                    }
+                    if ( GC_OK != retVal )
+                    {
+                        break;
+                    }
+                    x_pixPos += horzInc;
+                }
+            }
+        }
+
+        if ( horzLines.empty() )
+        {
+            FILE_LOG( logERROR ) << "[CalibStopSign::CalcGridDrawPoints] Unable to calculate any grid lines";
+            retVal = GC_ERR;
         }
     }
     catch( std::exception &e )
     {
-        FILE_LOG( logERROR ) << "[CalibStopSign::FineLeftImageEdgeWorldZero] " << e.what();
+        FILE_LOG( logERROR ) << "[CalibStopSign::CalcGridDrawPoints] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+
+    return retVal;
+}
+GC_STATUS CalibStopSign::TestCalibration( bool &isValid )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        isValid = false;
+        if ( !model.pixelPoints.empty() && !model.worldPoints.empty() &&
+             model.pixelPoints.size() == model.worldPoints.size() )
+        {
+            double dist, distAvg = 0.0;
+            double distMin = 9999999;
+            double distMax = -9999999;
+            for ( size_t i = 1; i < model.pixelPoints.size(); ++i )
+            {
+                dist = distance( model.pixelPoints[ i - 1 ], model.pixelPoints[ i ] );
+                if ( dist < distMin )
+                {
+                    distMin = dist;
+                }
+                if ( dist > distMax )
+                {
+                    distMax = dist;
+                }
+                distAvg += dist;
+            }
+            dist = distance( model.pixelPoints[ 0 ], model.pixelPoints[ model.pixelPoints.size() - 1 ] );
+            if ( dist < distMin )
+            {
+                distMin = dist;
+            }
+            if ( dist > distMax )
+            {
+                distMax = dist;
+            }
+            distAvg += dist;
+            distAvg /= static_cast< double >( model.pixelPoints.size() );
+            if ( distMax - distMin < 0.1 * distAvg )
+            {
+                isValid = true;
+            }
+        }
+    }
+    catch( std::exception &e )
+    {
+        FILE_LOG( logERROR ) << "[CalibStopSign::TestCalibration] " << e.what();
         retVal = GC_EXCEPT;
     }
 
@@ -1675,6 +1932,11 @@ GC_STATUS CalibStopSign::CalcDrawBasePoints( cv::Point2d &pixPtZeroLft, cv::Poin
 }
 
 // helper functions
+static double distance( Point2d a, Point2d b )
+{
+    return sqrt( ( b.y - a.y ) * ( b.y - a.y ) + ( b.x - a.x ) * ( b.x - a.x ) );
+}
+
 static double elongation( Moments m )
 {
     double x = m.mu20 + m.mu02;

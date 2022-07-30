@@ -241,6 +241,7 @@ void MainWindow::createConnections()
     connect( ui->checkBox_showMoveROIs, &QCheckBox::stateChanged, this, &MainWindow::UpdatePixmapTarget );
     connect( ui->checkBox_showMoveFind, &QCheckBox::stateChanged, this, &MainWindow::UpdatePixmapTarget );
     connect( ui->checkBox_showSearchROI, &QCheckBox::stateChanged, this, &MainWindow::UpdatePixmapTarget );
+    connect( ui->checkBox_showTargetROI, &QCheckBox::stateChanged, this, &MainWindow::UpdatePixmapTarget );
     connect( ui->checkBox_createFindLine_csvResultsFile, &QCheckBox::stateChanged, this, &MainWindow::UpdateGUIEnables );
     connect( ui->checkBox_createFindLine_annotatedResults, &QCheckBox::stateChanged, this, &MainWindow::UpdateGUIEnables );
     connect( ui->checkBox_calibSearchROI, &QRadioButton::toggled, this, &MainWindow::UpdateCalibSearchRegion );
@@ -600,6 +601,7 @@ int MainWindow::UpdatePixmap()
             overlays += ui->checkBox_showMoveROIs->isChecked() ? MOVE_ROIS : OVERLAYS_NONE;
             overlays += ui->checkBox_showMoveFind->isChecked() ? MOVE_FIND : OVERLAYS_NONE;
             overlays += ui->checkBox_showSearchROI->isChecked() ? SEARCH_ROI : OVERLAYS_NONE;
+            overlays += ui->checkBox_showTargetROI->isChecked() ? TARGET_ROI : OVERLAYS_NONE;
 
             gc::GC_STATUS retVal = m_visApp.GetImage( cv::Size( m_pQImg->width(), m_pQImg->height() ),
                                                       static_cast< size_t >( m_pQImg->bytesPerLine() ),
@@ -1340,13 +1342,15 @@ void MainWindow::on_pushButton_findLineCurrentImage_clicked()
         {
             ui->checkBox_showFindLine->setChecked( true );
             m_pComboBoxImageToView->setCurrentText( "Overlay" );
-            UpdatePixmapTarget();
             ui->statusBar->showMessage( "Find line: SUCCESS" );
         }
         else
         {
             ui->statusBar->showMessage( "Find line: FAILURE" );
         }
+
+        UpdatePixmapTarget();
+
         ui->textEdit_msgs->clear();
         for ( size_t i = 0; i < result.msgs.size(); ++i )
         {
@@ -1379,6 +1383,12 @@ void MainWindow::on_pushButton_findLine_processFolder_clicked()
     drawTypes += ui->checkBox_showDerivTwo->isChecked() ? SECOND_DERIVE : 0;
     drawTypes += ui->checkBox_showRANSAC->isChecked() ? RANSAC_POINTS : 0;
     drawTypes += ui->checkBox_showMoveFind->isChecked() ? MOVE_FIND_RESULT : 0;
+    drawTypes += ui->checkBox_showMoveFind->isChecked() ? MOVE_FIND_RESULT : 0;
+    drawTypes += ui->checkBox_showTargetROI->isChecked() ? TARGET_ROI : 0;
+    if ( ui->checkBox_showCalib->isChecked() )
+    {
+        drawTypes += ui->radioButton_calibDisplayScale->isChecked() ? CALIB_SCALE : CALIB_GRID;
+    }
 
     GC_STATUS retVal = m_visApp.CalcLinesInFolder( folder, params, ui->radioButton_folderOfImages->isChecked(), static_cast< LineDrawType >( drawTypes ) );
 

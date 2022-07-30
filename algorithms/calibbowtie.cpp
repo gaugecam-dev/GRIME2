@@ -220,8 +220,8 @@ GC_STATUS CalibBowtie::GetSearchRegionBoundingRect( cv::Rect &rect )
     }
     return retVal;
 }
-GC_STATUS CalibBowtie::DrawOverlay( const cv::Mat img, cv::Mat &imgOut, const bool drawCalibScale,
-                                    const bool drawCalibGrid, const bool drawMoveROIs, const bool drawSearchROI )
+GC_STATUS CalibBowtie::DrawOverlay( const cv::Mat img, cv::Mat &imgOut, const bool drawCalibScale, const bool drawCalibGrid,
+                                    const bool drawMoveROIs, const bool drawSearchROI, const bool drawTargetSearchROI )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -278,6 +278,11 @@ GC_STATUS CalibBowtie::DrawOverlay( const cv::Mat img, cv::Mat &imgOut, const bo
                     line( imgOut, m_model.searchLineSet[ m_model.searchLineSet.size() - 1 ].top, m_model.searchLineSet[ m_model.searchLineSet.size() - 1 ].bot, Scalar( 255, 0, 0 ), textStroke );
                     line( imgOut, m_model.searchLineSet[ 0 ].bot, m_model.searchLineSet[ m_model.searchLineSet.size() - 1 ].bot, Scalar( 255, 0, 0 ), textStroke );
                 }
+            }
+
+            if ( drawTargetSearchROI )
+            {
+                rectangle( imgOut, m_model.wholeTargetRegion, Scalar( 255, 0, 0 ), textStroke );
             }
 
             if ( drawCalibGrid || drawCalibScale )

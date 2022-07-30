@@ -95,8 +95,8 @@ public:
     GC_STATUS AdjustStopSignForRotation( const cv::Size imgSize, const FindPointSet &calcLinePts, double &offsetAngle );
     GC_STATUS PixelToWorld( const cv::Point2d ptPixel, cv::Point2d &ptWorld );
     GC_STATUS WorldToPixel( const cv::Point2d ptWorld, cv::Point2d &ptPixel );
-    GC_STATUS DrawOverlay( const cv::Mat &img, cv::Mat &result, const bool drawCalibScale,
-                           const bool drawCalibGrid, const bool drawMoveROIs, const bool drawSearchROI );
+    GC_STATUS DrawOverlay( const cv::Mat &img, cv::Mat &result, const bool drawCalibScale, const bool drawCalibGrid,
+                           const bool drawMoveROIs, const bool drawSearchROI , const bool drawTargetSearchROI );
     GC_STATUS SetStopsignColor( const cv::Scalar color, const double minRange, const double maxRange, cv::Scalar &hsv );
     GC_STATUS GetCalibParams( std::string &calibParams );
 
@@ -132,7 +132,10 @@ private:
     GC_STATUS CreateCalibration( const std::vector< cv::Point2d > &pixelPts, const std::vector< cv::Point2d > &worldPts );
     GC_STATUS GetLineEquation( const cv::Point2d pt1, const cv::Point2d pt2, double &slope, double &intercept );
     GC_STATUS CalcCenterAngle( const std::vector< cv::Point2d > &pts, cv::Point2d &center, double &angle );
-    GC_STATUS CalcDrawBasePoints( cv::Point2d &pixelPtLft, cv::Point2d &pixelPtRgt, double &worldYInc );
+    GC_STATUS CalcGridDrawPoints (std::vector< StopSignLine > &horzLines, std::vector< StopSignLine > &vertLines );
+    GC_STATUS GetXEdgeMinDiffX( const double xWorld, cv::Point2d &ptPix, const bool isTopSideY );
+    GC_STATUS GetXEdgeMinDiffY( const double yWorld, cv::Point2d &ptPix, const bool isRightSideX );
+    GC_STATUS TestCalibration( bool &isValid );
 };
 
 } // namespace gc

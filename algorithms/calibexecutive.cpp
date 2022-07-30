@@ -37,6 +37,7 @@ ostream &operator<<( ostream &out, CalibExecParams &params )
     out << "\"drawCalibGrid\": " << ( params.drawCalibGrid ? 1 : 0 ) << ", ";
     out << "\"drawMoveSearchROIs\": " << ( params.drawMoveSearchROIs ? 1 : 0 ) << ", ";
     out << "\"drawWaterLineSearchROI\": " << ( params.drawWaterLineSearchROI ? 1 : 0 ) << ", ";
+    out << "\"drawTargetSearchROI\": " << ( params.drawTargetSearchROI ? 1 : 0 ) << ", ";
     out << "\"targetRoi_x\": " << ( params.targetSearchROI.x ) << ", ";
     out << "\"targetRoi_y\": " << ( params.targetSearchROI.y ) << ", ";
     out << "\"targetRoi_width\": " << ( params.targetSearchROI.width ) << ", ";
@@ -131,6 +132,7 @@ GC_STATUS CalibExecutive::SetCalibFromJson( const std::string &jsonParams )
         paramsCurrent.drawCalibGrid = 1 == top_level.get< int >( "drawCalibGrid", 0 );
         paramsCurrent.drawMoveSearchROIs = 1 == top_level.get< int >( "drawMoveSearchROIs", 0 );
         paramsCurrent.drawWaterLineSearchROI = 1 == top_level.get< int >( "drawWaterLineSearchROI", 0 );
+        paramsCurrent.drawTargetSearchROI = 1 == top_level.get< int >( "drawTargetSearchROI", 0 );
         paramsCurrent.targetSearchROI.x = top_level.get< int >( "targetRoi_x", -1 );
         paramsCurrent.targetSearchROI.y = top_level.get< int >( "targetRoi_y", -1 );
         paramsCurrent.targetSearchROI.width = top_level.get< int >( "targetRoi_width", -1 );
@@ -153,10 +155,11 @@ GC_STATUS CalibExecutive::SetCalibFromJson( const std::string &jsonParams )
             stopSign.Model().facetLength = paramsCurrent.facetLength;
             stopSign.Model().zeroOffset = paramsCurrent.zeroOffset;
             stopSign.Model().targetSearchRegion = paramsCurrent.targetSearchROI;
-            stopSign.Model().waterlineSearchCorners[ 0 ] = paramsCurrent.lineSearch_lftTop;
-            stopSign.Model().waterlineSearchCorners[ 1 ] = paramsCurrent.lineSearch_rgtTop;
-            stopSign.Model().waterlineSearchCorners[ 2 ] = paramsCurrent.lineSearch_lftBot;
-            stopSign.Model().waterlineSearchCorners[ 3 ] = paramsCurrent.lineSearch_rgtBot;
+            stopSign.Model().waterlineSearchCorners.clear();
+            stopSign.Model().waterlineSearchCorners.push_back( paramsCurrent.lineSearch_lftTop );
+            stopSign.Model().waterlineSearchCorners.push_back( paramsCurrent.lineSearch_rgtTop );
+            stopSign.Model().waterlineSearchCorners.push_back( paramsCurrent.lineSearch_lftBot );
+            stopSign.Model().waterlineSearchCorners.push_back( paramsCurrent.lineSearch_rgtBot );
             double blueVal = top_level.get< int >( "symbolColor_blue", -1 );
             double greenVal = top_level.get< int >( "symbolColor_green", -1 );
             double redVal = top_level.get< int >( "symbolColor_red", -1 );
@@ -280,25 +283,27 @@ GC_STATUS CalibExecutive::AdjustStopSignForRotation( const Size imgSize, const F
 GC_STATUS CalibExecutive::DrawOverlay( const cv::Mat matIn, cv::Mat &imgMatOut )
 {
     GC_STATUS retVal = DrawOverlay( matIn, imgMatOut, paramsCurrent.drawCalibScale, paramsCurrent.drawCalibGrid,
-                                     paramsCurrent.drawMoveSearchROIs, paramsCurrent.drawWaterLineSearchROI );
+                                    paramsCurrent.drawMoveSearchROIs, paramsCurrent.drawWaterLineSearchROI,
+                                    paramsCurrent.drawTargetSearchROI );
     return retVal;
 }
-GC_STATUS CalibExecutive::DrawOverlay( const cv::Mat matIn, cv::Mat &imgMatOut, const bool drawCalibScale,
-                                       const bool drawCalibGrid, const bool drawMoveROIs, const bool drawSearchROI )
+GC_STATUS CalibExecutive::DrawOverlay( const cv::Mat matIn, cv::Mat &imgMatOut, const bool drawCalibScale, const bool drawCalibGrid,
+                                       const bool drawMoveROIs, const bool drawSearchROI, const bool drawTargetROI )
 {
     GC_STATUS retVal = GC_OK;
     if ( "BowTie" == paramsCurrent.calibType )
     {
         CalibModelBowtie model = bowTie.GetModel();
-        retVal = bowTie.DrawOverlay( matIn, imgMatOut, drawCalibScale, drawCalibGrid, drawMoveROIs, drawSearchROI );
+        retVal = bowTie.DrawOverlay( matIn, imgMatOut, drawCalibScale, drawCalibGrid, drawMoveROIs, drawSearchROI, drawTargetROI );
     }
     else if ( "StopSign" == paramsCurrent.calibType )
     {
-        retVal = stopSign.DrawOverlay( matIn, imgMatOut, drawCalibScale, drawCalibGrid, drawMoveROIs, drawSearchROI );
+        retVal = stopSign.DrawOverlay( matIn, imgMatOut, drawCalibScale, drawCalibGrid, drawMoveROIs, drawSearchROI, drawTargetROI );
     }
     else
     {
-        FILE_LOG( logERROR ) << "[CalibExecutive::DrawOverlay] Invalid calibration type=" << ( paramsCurrent.calibType.empty() ? "empty()" : paramsCurrent.calibType );
+        FILE_LOG( logERROR ) << "[CalibExecutive::DrawOverlay] Invalid calibration type=" <<
+                                ( paramsCurrent.calibType.empty() ? "empty()" : paramsCurrent.calibType );
         retVal = GC_ERR;
     }
     return retVal;

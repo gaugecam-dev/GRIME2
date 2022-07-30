@@ -43,6 +43,19 @@
           <number>0</number>
          </property>
          <item>
+          <widget class="QCheckBox" name="checkBox_showSearchROI">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="text">
+            <string>Waterline ROI</string>
+           </property>
+          </widget>
+         </item>
+         <item>
           <widget class="QCheckBox" name="checkBox_showFindLine">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -54,6 +67,22 @@
             <string>Waterline</string>
            </property>
           </widget>
+         </item>
+         <item>
+          <spacer name="horizontalSpacer_12">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeType">
+            <enum>QSizePolicy::Preferred</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>17</height>
+            </size>
+           </property>
+          </spacer>
          </item>
          <item>
           <widget class="QCheckBox" name="checkBox_showRANSAC">
@@ -108,30 +137,20 @@
           </widget>
          </item>
          <item>
-          <widget class="QCheckBox" name="checkBox_showMoveFind">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
+          <spacer name="horizontalSpacer_13">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
            </property>
-           <property name="text">
-            <string>Move find</string>
+           <property name="sizeType">
+            <enum>QSizePolicy::Preferred</enum>
            </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QCheckBox" name="checkBox_showSearchROI">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>17</height>
+            </size>
            </property>
-           <property name="text">
-            <string>Search ROI</string>
-           </property>
-          </widget>
+          </spacer>
          </item>
          <item>
           <widget class="QCheckBox" name="checkBox_showMoveROIs">
@@ -143,6 +162,19 @@
            </property>
            <property name="text">
             <string>Move ROIs</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="checkBox_showMoveFind">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="text">
+            <string>Move find</string>
            </property>
           </widget>
          </item>
@@ -161,6 +193,24 @@
             </size>
            </property>
           </spacer>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="checkBox_showTargetROI">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="font">
+            <font>
+             <pointsize>9</pointsize>
+            </font>
+           </property>
+           <property name="text">
+            <string>Target ROI</string>
+           </property>
+          </widget>
          </item>
          <item>
           <widget class="QCheckBox" name="checkBox_showCalib">
@@ -1315,7 +1365,7 @@
                    <item>
                     <layout class="QHBoxLayout" name="horizontalLayout_26">
                      <item>
-                      <widget class="QLabel" name="label_9">
+                      <widget class="QLabel" name="label_moveSearchROI">
                        <property name="font">
                         <font>
                          <pointsize>9</pointsize>

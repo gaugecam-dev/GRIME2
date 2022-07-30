@@ -168,13 +168,15 @@ GC_STATUS GuiVisApp::GetImageOverlay( const IMG_BUFFERS nImgColor, const IMG_DIS
             if ( ( overlays & CALIB_SCALE ) ||
                  ( overlays & CALIB_GRID ) ||
                  ( overlays & MOVE_ROIS ) ||
-                 ( overlays & SEARCH_ROI ) )
+                 ( overlays & SEARCH_ROI ) ||
+                 ( overlays & TARGET_ROI ) )
             {
                 retVal = m_visApp.DrawCalibOverlay( m_matDisplay, m_matDisplay,
                                                     overlays & CALIB_SCALE,
                                                     overlays & CALIB_GRID,
                                                     overlays & MOVE_ROIS,
-                                                    overlays & SEARCH_ROI );
+                                                    overlays & SEARCH_ROI,
+                                                    overlays & TARGET_ROI );
             }
             int overlayType = OVERLAYS_NONE;
             if( overlays & FINDLINE )
@@ -1098,6 +1100,7 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                                         }
                                         else
                                         {
+                                            findData.findlineResult.clear();
                                             msg += string( "Water level=FAIL" );
                                             resultString += to_string( -9999999.0 );
                                             findData.findlineResult.waterLevelAdjusted.y = -9999999.0;

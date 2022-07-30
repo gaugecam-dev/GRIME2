@@ -489,6 +489,7 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result 
     try
     {
         result.clear();
+        m_findLineResult.clear();
         cv::Mat img = imread( params.imagePath, IMREAD_COLOR );
         if ( img.empty() )
         {
@@ -541,11 +542,7 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result 
                     {
                         Mat noImg = Mat();
                         retVal = m_calibExec.Load( params.calibFilepath, params.isStopSignCalib ? img : noImg );
-                        if ( GC_OK == retVal )
-                        {
-
-                        }
-                        else
+                        if ( GC_OK != retVal )
                         {
                             result.msgs.push_back( "Could not load calibration" );
                             FILE_LOG( logERROR ) << "[VisApp::CalcLine] Could not load calibration=" << params.calibFilepath ;
@@ -635,9 +632,11 @@ GC_STATUS VisApp::DrawCalibOverlay( const cv::Mat matIn, cv::Mat &imgMatOut )
     return retVal;
 }
 GC_STATUS VisApp::DrawCalibOverlay( const cv::Mat matIn, cv::Mat &imgMatOut, const bool drawCalibScale,
-                                    const bool drawCalibGrid, const bool drawMoveROIs, const bool drawSearchROI )
+                                    const bool drawCalibGrid, const bool drawMoveROIs,
+                                    const bool drawSearchROI, const bool drawTargetROI )
 {
-    GC_STATUS retVal = m_calibExec.DrawOverlay( matIn, imgMatOut, drawCalibScale, drawCalibGrid, drawMoveROIs, drawSearchROI );
+    GC_STATUS retVal = m_calibExec.DrawOverlay( matIn, imgMatOut, drawCalibScale, drawCalibGrid,
+                                                drawMoveROIs, drawSearchROI, drawTargetROI );
     return retVal;
 }
 GC_STATUS VisApp::DrawLineFindOverlay( const cv::Mat &img, cv::Mat &imgOut, const LineDrawType overlayTypes )

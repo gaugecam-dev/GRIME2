@@ -206,14 +206,12 @@ public:
     GC_STATUS GetSearchRegionBoundingRect( cv::Rect &rect );
     CalibModelBowtie &Model() { return m_model; }
     std::string ControlJson() { return m_model.controlJson; }
-    GC_STATUS DrawOverlay( const cv::Mat img, cv::Mat &imgOut, const bool drawCalibScale,
-                           const bool drawCalibGrid, const bool drawMoveROIs, const bool drawSearchROI );
+    GC_STATUS DrawOverlay( const cv::Mat img, cv::Mat &imgOut, const bool drawCalibScale, const bool drawCalibGrid,
+                           const bool drawMoveROIs, const bool drawSearchROI, const bool drawTargetSearchROI );
 
 private:
     cv::Mat m_matHomogPixToWorld;
     cv::Mat m_matHomogWorldToPix;
-    // std::vector< double > m_worldToPixParams;
-
     CalibModelBowtie m_model;
 };
 

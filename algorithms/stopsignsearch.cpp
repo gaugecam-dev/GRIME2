@@ -12,8 +12,8 @@ using namespace boost;
 namespace fs = filesystem;
 #endif
 
-#ifndef DEBUG_STOPSIGN_LINEFIT
-#define DEBUG_STOPSIGN_LINEFIT
+#ifdef DEBUG_STOPSIGN_LINEFIT
+#undef DEBUG_STOPSIGN_LINEFIT
 #endif
 
 static const std::string DEBUG_FOLDER = std::string( "/var/tmp/water/" );
@@ -54,11 +54,11 @@ GC_STATUS StopsignSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &
 
             GaussianBlur( matIn, matIn, Size( 5, 5 ), 9.0 );
             medianBlur( matIn, matIn, 17 );
-            imwrite( "/var/tmp/water/template_stopsign_gauss.png", matIn );
+            // imwrite( "/var/tmp/water/template_stopsign_gauss.png", matIn );
 
             cv::Ptr< CLAHE > clahe = createCLAHE( 1.0 );
             clahe->apply( matIn, matIn );
-            imwrite( "/var/tmp/water/template_stopsign_clahe.png", matIn );
+            // imwrite( "/var/tmp/water/template_stopsign_clahe.png", matIn );
 
             Mat color;
             if ( img.type() == CV_8UC1 )

@@ -19,6 +19,7 @@ public:
         drawCalibGrid( false ),
         drawMoveSearchROIs( false ),
         drawWaterLineSearchROI( false ),
+        drawTargetSearchROI( false ),
         targetSearchROI( cv::Rect( -1, -1, -1, -1 ) ),
         lineSearch_lftTop( cv::Point( -1, -1 ) ),
         lineSearch_rgtTop( cv::Point( -1, -1 ) ),
@@ -38,6 +39,7 @@ public:
         drawCalibGrid = false;
         drawMoveSearchROIs = false;
         drawWaterLineSearchROI = false;
+        drawTargetSearchROI = false;
         targetSearchROI = cv::Rect( -1, -1, -1, -1 );
         lineSearch_lftTop = cv::Point( -1, -1 );
         lineSearch_rgtTop = cv::Point( -1, -1 );
@@ -55,6 +57,7 @@ public:
     bool drawCalibGrid;
     bool drawMoveSearchROIs;
     bool drawWaterLineSearchROI;
+    bool drawTargetSearchROI;
     cv::Rect targetSearchROI;
     cv::Point lineSearch_lftTop;
     cv::Point lineSearch_rgtTop;
@@ -83,8 +86,8 @@ public:
     GC_STATUS SetMoveSearchROIs( const cv::Mat img, const cv::Rect rectLeft, const cv::Rect rectRight );
     GC_STATUS DetectMove( std::vector< cv::Point2d > &origPos, std::vector< cv::Point2d > &newPos );
     GC_STATUS DrawOverlay( const cv::Mat matIn, cv::Mat &imgMatOut );
-    GC_STATUS DrawOverlay( const cv::Mat matIn, cv::Mat &imgMatOut, const bool drawCalibScale,
-                           const bool drawCalibGrid, const bool drawMoveROIs, const bool drawSearchROI );
+    GC_STATUS DrawOverlay( const cv::Mat matIn, cv::Mat &imgMatOut, const bool drawCalibScale, const bool drawCalibGrid,
+                           const bool drawMoveROIs, const bool drawSearchROI, const bool drawTargetROI );
     GC_STATUS FindMoveTargets( const cv::Mat &img, FindPointSet &ptsFound );
     GC_STATUS MoveRefPoint( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt );
     GC_STATUS SetStopsignColorRed();
