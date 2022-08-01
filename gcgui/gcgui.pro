@@ -169,6 +169,8 @@ DISTFILES += \
     ../algorithms/Doxyfile \
     LICENSE \
     NOTICE \
+    config/batch_test_linux \
+    config/batch_test_win.bat \
     config/calib.json \
     config/calib_result.png \
     config/calib_stopsign.json \

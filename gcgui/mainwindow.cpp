@@ -43,8 +43,8 @@ using namespace boost;
 namespace fs = boost::filesystem;
 
 #ifdef WIN32
-static const string __CONFIGURATION_FOLDER = "c:/gaugecam/config/";
-static const string __SETTINGS_FILEPATH = "c:/gaugecam/config/settingsWin.cfg";
+static const char __CONFIGURATION_FOLDER[] = "c:/gaugecam/config/";
+static const char __SETTINGS_FILEPATH[] = "c:/gaugecam/config/settingsWin.cfg";
 #else
 static const char __CONFIGURATION_FOLDER[] = "./config/";
 static const char __SETTINGS_FILEPATH[] = "./config/settings.cfg";

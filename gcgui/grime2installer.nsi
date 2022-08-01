@@ -30,7 +30,7 @@
 !define INSTALLFILEPATH_GCGUI "${INSTALLFILEPATH_RELEASE}\gcgui\release"
 !endif
 
-!ifndef INSTALLFILEPATH_GRIM2CLI
+!ifndef INSTALLFILEPATH_GRIME2CLI
 !define INSTALLFILEPATH_GRIME2CLI "${INSTALLFILEPATH_RELEASE}\grime2cli\release"
 !endif
 
@@ -107,6 +107,7 @@ Section "GaugeCam Files" grime2
   File "${INSTALLFILEPATH_CONFIG}\calib_result.png"
   File "${INSTALLFILEPATH_CONFIG}\calibration_target_world_coordinates.csv"
   File "${INSTALLFILEPATH_CONFIG}\calib.json"
+  File "${INSTALLFILEPATH_CONFIG}\calib_stopsign.json"
   File "${INSTALLFILEPATH_CONFIG}\settingsWin.cfg"
 
   SetOutPath "${WIN_CONFIG_PATH}\2012_demo\05"
@@ -114,6 +115,9 @@ Section "GaugeCam Files" grime2
 
   SetOutPath "${WIN_CONFIG_PATH}\2012_demo\06"
   File "${INSTALLFILEPATH_CONFIG}\2012_demo\06\*.*"
+
+  SetOutPath "${WIN_CONFIG_PATH}\2022_demo"
+  File "${INSTALLFILEPATH_CONFIG}\2022_demo\*.*"
 
   SetOutPath "$INSTDIR\platforms"
   File "${INSTALLFILEPATH_QT}\plugins\platforms\qwindows.dll"
@@ -125,6 +129,7 @@ Section "GaugeCam Files" grime2
   SetOutPath "$INSTDIR"
   File "${INSTALLFILEPATH_GCGUI}\grime2.exe"
   File "${INSTALLFILEPATH_GRIME2CLI}\grime2cli.exe"
+  File "${INSTALLFILEPATH_CONFIG}\batch_test_win.bat"
   File "${INSTALLFILEPATH_QT}\Qt5Core.dll"
   File "${INSTALLFILEPATH_QT}\Qt5Gui.dll"
   File "${INSTALLFILEPATH_QT}\Qt5Widgets.dll"
