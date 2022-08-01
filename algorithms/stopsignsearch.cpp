@@ -5,8 +5,8 @@
 #include "opencv2/imgcodecs.hpp"
 #include "bresenham.h"
 
-#ifdef DEBUG_STOPSIGN_TEMPL
-#undef DEBUG_STOPSIGN_TEMPL
+#ifndef DEBUG_STOPSIGN_TEMPL
+#define DEBUG_STOPSIGN_TEMPL
 #include <boost/filesystem.hpp>
 using namespace boost;
 namespace fs = filesystem;

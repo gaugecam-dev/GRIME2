@@ -135,6 +135,10 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &contr
                         if ( GC_OK == retVal )
                         {
                             retVal = CalcCorners( octoLines, model.pixelPoints );
+                            if ( GC_OK == retVal )
+                            {
+                                retVal = TestCalibration( model.validCalib );
+                            }
                         }
                     }
                 }
@@ -157,6 +161,10 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &contr
                     else
                     {
                         retVal = stopsignSearch.Find( img, model.pixelPoints );
+                    }
+                    if ( GC_OK == retVal )
+                    {
+                        retVal = TestCalibration( model.validCalib );
                     }
                 }
             }
@@ -1916,9 +1924,14 @@ GC_STATUS CalibStopSign::TestCalibration( bool &isValid )
             }
             distAvg += dist;
             distAvg /= static_cast< double >( model.pixelPoints.size() );
-            if ( distMax - distMin < 0.1 * distAvg )
+            if ( distMax - distMin < 0.10 * distAvg )
             {
                 isValid = true;
+            }
+            else
+            {
+                FILE_LOG( logERROR ) << "[CalibStopSign::TestCalibration] Calibration point find bad";
+                retVal = GC_ERR;
             }
         }
     }

@@ -1158,6 +1158,8 @@ void MainWindow::on_pushButton_visionCalibrate_clicked()
     ui->statusBar->showMessage( "calibrating..." );
     ui->statusBar->update();
 
+    UpdateCalibSearchRegion();
+
     string jsonControlStr;
     CalibJsonItems calibItems( ui->lineEdit_calibVisionTarget_csv->text().toStdString(),
                                ui->lineEdit_calibVisionResult_json->text().toStdString(),
