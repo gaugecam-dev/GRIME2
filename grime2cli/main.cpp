@@ -17,20 +17,32 @@
 #include <iostream>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/imgcodecs.hpp>
+#include <boost/filesystem.hpp>
 #include "arghandler.h"
 #include "../algorithms/visapp.h"
+#include "../algorithms/calibexecutive.h"
 
-using namespace std;
 using namespace gc;
+using namespace std;
+using namespace boost;
+namespace fs = filesystem;
 
 // example command lines
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~ GENERAL ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // --version
-// --show_help
-// --calibrate "/media/kchapman/Elements/Projects/GRIME2/build-grime2cli-Desktop_Qt_5_15_2_GCC_64bit-Debug/config/2012_demo/06/NRmarshDN-12-06-30-10-30.jpg" --target_roi 280 20 500 580 --calib_json "/media/kchapman/Elements/Projects/GRIME2/build-grime2cli-Desktop_Qt_5_15_2_GCC_64bit-Debug/config/calib.json" --csv_file "/media/kchapman/Elements/Projects/GRIME2/build-grime2cli-Desktop_Qt_5_15_2_GCC_64bit-Debug/config/calibration_target_world_coordinates.csv" --result_image "/var/tmp/water/calib_result.png"
-// --show_metadata "/home/kchapman/data/idaho_power/bad_cal_bad_line_find/TREK0003.jpg"
-// --find_line --timestamp_from_filename --timestamp_start_pos 10 --timestamp_format "yy-mm-dd-HH-MM" "/media/kchapman/Elements/Projects/GRIME2/build-grime2cli-Desktop_Qt_5_15_2_GCC_64bit-Debug/config/2012_demo/06/NRmarshDN-12-06-30-10-30.jpg" --calib_json "/media/kchapman/Elements/Projects/GRIME2/build-grime2cli-Desktop_Qt_5_15_2_GCC_64bit-Debug/config/calib.json" --result_image "/var/tmp/water/find_line_result.png"
-// --run_folder --timestamp_from_filename --timestamp_start_pos 10 --timestamp_format "yy-mm-dd-HH-MM" "/media/kchapman/Elements/Projects/GRIME2/build-grime2cli-Desktop_Qt_5_15_2_GCC_64bit-Debug/config/2012_demo/06/" --calib_json "/media/kchapman/Elements/Projects/GRIME2/build-grime2cli-Desktop_Qt_5_15_2_GCC_64bit-Debug/config/calib.json" --csv_file "/var/tmp/water/folder.csv" --result_folder "/var/tmp/water/"
-// --make_gif "/media/kchapman/Elements/Projects/GRIME2/gcgui/config/2012_demo/06/" --result_image "/var/tmp/water/demo.gif" --scale 0.20 --delay_ms 1000
+// --help
+// --show_metadata --source "./config/2022_demo/20220715_KOLA_GaugeCam_001.JPG"
+// --make_gif --source "./config/2012_demo/06/" --result_image "/var/tmp/water/demo.gif" --scale 0.20 --delay_ms 1000
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~ BOW-TIE ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// --calibrate --source "./config/2012_demo/06/NRmarshDN-12-06-30-10-30.jpg" --calib_json "./config/calib.json" --csv_file "./config/calibration_target_world_coordinates.csv" --result_image "/var/tmp/water/calib_result.png"
+// --find_line --timestamp_from_filename --timestamp_start_pos 10 --timestamp_format "yy-mm-dd-HH-MM" --source "./config/2012_demo/06/NRmarshDN-12-06-30-10-30.jpg" --calib_json "./config/calib.json" --result_image "/var/tmp/water/find_line_result.png"
+// --run_folder --timestamp_from_filename --timestamp_start_pos 10 --timestamp_format "yy-mm-dd-HH-MM" --source "./config/2012_demo/06/" --calib_json "./config/calib.json" --csv_file "/var/tmp/water/folder.csv" --result_folder "/var/tmp/water/"
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~ STOP SIGN ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// --calibrate --source "./config/2022_demo/20220715_KOLA_GaugeCam_001.JPG" --calib_json "./config/calib_stopsign.json" --result_image "/var/tmp/water/calib_result_stopsign.png"
+// --find_line --timestamp_from_exif --timestamp_start_pos 0 --timestamp_format "yyyy-mm-dd-HH-MM" --source "./config/2022_demo/20220715_KOLA_GaugeCam_001.JPG" --calib_json "./config/calib_stopsign.json" --result_image "/var/tmp/water/find_line_result_stopsign.png"
+// --run_folder --timestamp_from_exif --timestamp_start_pos 0 --timestamp_format "yyyy-mm-dd-HH-MM" --source "./config/2022_demo/" --calib_json "./config/calib_stopsign.json" --csv_file "/var/tmp/water/folder_stopsign.csv" --result_folder "/var/tmp/water/"
 
 // forward declarations
 void ShowVersion();
@@ -41,10 +53,10 @@ GC_STATUS CreateGIF( const Grime2CLIParams cliParams );
 GC_STATUS FormCalibJsonString( const Grime2CLIParams cliParams, string &json );
 
 /** \file main.cpp
- * @brief Holds the main() function for command line use of the h2o_cli libraries.
+ * @brief Holds the main() function for command line use of the gaugecam libraries.
  *
  * \author Kenneth W. Chapman
- * \copyright Copyright (C) 2020, Kenneth W. Chapman <coffeesig@gmail.com>, all rights reserved.\n
+ * \copyright Copyright (C) 2020, 2022, Kenneth W. Chapman <coffeesig@gmail.com>, all rights reserved.\n
  * This project is released under the Apache License, Version 2.0.
  * \bug No known bugs.
  */
@@ -123,28 +135,32 @@ GC_STATUS Calibrate( const Grime2CLIParams cliParams )
     try
     {
         VisApp vis;
-        string jsonString;
-        retVal = FormCalibJsonString( cliParams, jsonString );
-        if ( GC_OK == retVal )
+        cv::Mat img = cv::Mat();
+        if ( !cliParams.src_imagePath.empty() )
         {
-            double rmseX, rmseY, rmseDist;
-            if ( cliParams.result_imagePath.empty() )
+            img = cv::imread( cliParams.src_imagePath );
+            if ( img.empty() )
             {
-                retVal = vis.Calibrate( cliParams.src_imagePath, jsonString, rmseX, rmseY, rmseDist );
+                cout << "FAIL: Could not read calibration image " << cliParams.src_imagePath;
+                FILE_LOG( logERROR ) << "FAIL: Could not read calibration image " << cliParams.src_imagePath;
+                retVal = GC_ERR;
             }
-            else
-            {
-                retVal = vis.Calibrate( cliParams.src_imagePath, jsonString,
-                                        cliParams.result_imagePath, rmseX, rmseY, rmseDist );
-            }
+        }
+        // cout << fs::canonical( cliParams.calib_jsonPath ).string() << endl;
+        retVal = vis.LoadCalib( cliParams.calib_jsonPath, img );
+        if ( GC_OK == retVal && !cliParams.result_imagePath.empty() && !img.empty() )
+        {
+            cv::Mat calibOverlay;
+            retVal = vis.DrawCalibOverlay( img, calibOverlay, false, true, true, true, true );
             if ( GC_OK == retVal )
             {
-                cout << "Calibration RMSE" << endl;
-                cout << "~~~~~~~~~~~~~~~~" << endl;
-                char msg[ 256 ];
-                sprintf( msg, "X=%0.3e\nY=%0.3e\nEuclid. dist=%0.3e", rmseX, rmseY, rmseDist );
-                cout << msg << endl;
-                cout << "~~~~~~~~~~~~~~~~" << endl;
+                bool bRet = imwrite( cliParams.result_imagePath, calibOverlay );
+                if ( !bRet )
+                {
+                    cout << "FAIL: Could not write calibration result image " << cliParams.result_imagePath;
+                    FILE_LOG( logERROR ) << "FAIL: Could not write calibration result image " << cliParams.src_imagePath;
+                    retVal = GC_ERR;
+                }
             }
         }
     }
@@ -175,7 +191,7 @@ GC_STATUS RunFolder( const Grime2CLIParams cliParams )
             for ( auto& p: fs::recursive_directory_iterator( cliParams.src_imagePath ) )
             {
                 ext = p.path().extension().string();
-                if ( ext == ".png" || ext == ".jpg" )
+                if ( ext == ".png" || ext == ".jpg" || ext == ".PNG" || ext == ".JPG" )
                 {
                     images.push_back( p.path().string() );
                 }
@@ -246,46 +262,6 @@ GC_STATUS FindWaterLevel( const Grime2CLIParams cliParams )
     FindLineResult result;
     GC_STATUS retVal = visApp.CalcLine( params, result, resultJson );
     cout << resultJson << endl;
-    return retVal;
-}
-GC_STATUS FormCalibJsonString( const Grime2CLIParams cliParams, string &json )
-{
-    GC_STATUS retVal = GC_OK;
-
-    if ( "bowtie" == cliParams.calib_type ) // bow tie calibration
-    {
-        json = "{\"calibType\": \"BowTie\", ";
-        json += "\"calibWorldPt_csv\": \"" + cliParams.csvPath + "\", ";
-        json += "\"stopSignFacetLength\": -1.0, ";
-        json += "\"drawCalib\": 1, ";
-        json += "\"drawMoveSearchROIs\": 1, ";
-        json += "\"drawWaterLineSearchROI\": 1, ";
-        json += "\"targetRoi_x\": \"" + to_string( cliParams.targetRoi_x ) + "\", ";
-        json += "\"targetRoi_y\": \"" + to_string( cliParams.targetRoi_y ) + "\", ";
-        json += "\"targetRoi_width\": \"" + to_string( cliParams.targetRoi_width ) + "\", ";
-        json += "\"targetRoi_height\": \"" + to_string( cliParams.targetRoi_height ) + "\", ";
-        json += "\"calibResult_json\": \"" + cliParams.calib_jsonPath + "\"}";
-    }
-    else if ( "stopsign" == cliParams.calib_type ) // stop sign calibration
-    {
-        json = "{\"calibType\": \"StopSign\", ";
-        json += "\"calibWorldPt_csv\": \"\", ";
-        json += "\"stopSignFacetLength\": " + to_string( 10.0 ) + ", ";
-        json += "\"drawCalib\": 1, ";
-        json += "\"drawMoveSearchROIs\": 1, ";
-        json += "\"drawWaterLineSearchROI\": 1, ";
-        json += "\"targetRoi_x\": \"" + to_string( cliParams.targetRoi_x ) + "\", ";
-        json += "\"targetRoi_y\": \"" + to_string( cliParams.targetRoi_y ) + "\", ";
-        json += "\"targetRoi_width\": \"" + to_string( cliParams.targetRoi_width ) + "\", ";
-        json += "\"targetRoi_height\": \"" + to_string( cliParams.targetRoi_height ) + "\", ";
-        json += "\"calibResult_json\": \"" + cliParams.calib_jsonPath + "\"}";
-    }
-    else
-    {
-        FILE_LOG( logERROR ) << "No valid calibration type selected";
-        retVal = GC_ERR;
-    }
-
     return retVal;
 }
 GC_STATUS CreateGIF( const Grime2CLIParams cliParams )

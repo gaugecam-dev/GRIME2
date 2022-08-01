@@ -105,7 +105,7 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &contr
     GC_STATUS retVal = GC_OK;
     try
     {
-        cout << model.targetSearchRegion << endl;
+        // cout << model.targetSearchRegion << endl;
 
         std::vector< StopSignCandidate > candidates;
         bool useRoi = -1 != model.targetSearchRegion.x &&
@@ -119,9 +119,9 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &contr
         if ( GC_OK == retVal )
         {
             cv::Mat1b mask;
-            imwrite( "/var/tmp/water/img.png", useRoi ? img( model.targetSearchRegion ) : img );
+            // imwrite( "/var/tmp/water/img.png", useRoi ? img( model.targetSearchRegion ) : img );
             retVal = FindColor( useRoi ? img( model.targetSearchRegion ) : img, mask, candidates );
-            imwrite( "/var/tmp/water/mask.png", mask );
+            // imwrite( "/var/tmp/water/mask.png", mask );
             if ( GC_OK == retVal )
             {
                 OctagonLines octoLines;
@@ -763,12 +763,12 @@ GC_STATUS CalibStopSign::FindColor( const cv::Mat &img, cv::Mat1b &mask,
     {
         if ( img.empty() )
         {
-            FILE_LOG( logERROR ) << "[CalibStopSign::FindRed] Cannot find red in an empty image";
+            FILE_LOG( logERROR ) << "[CalibStopSign::FindColor] Cannot find red in an empty image";
             retVal = GC_ERR;
         }
         else if ( img.type() != CV_8UC3 )
         {
-            FILE_LOG( logERROR ) << "[CalibStopSign::FindRed] Image must be an 8-bit BGR image to find red";
+            FILE_LOG( logERROR ) << "[CalibStopSign::FindColor] Image must be an 8-bit BGR image to find red";
             retVal = GC_ERR;
         }
         else
@@ -832,7 +832,7 @@ GC_STATUS CalibStopSign::FindColor( const cv::Mat &img, cv::Mat1b &mask,
             }
             if ( symbolCandidates.empty() )
             {
-                FILE_LOG( logERROR ) << "[CalibStopSign::FindRed] No symbol candidates found";
+                FILE_LOG( logERROR ) << "[CalibStopSign::FindColor] No symbol candidates found, trying nighttime method";
                 retVal = GC_ERR;
             }
 #ifdef DEBUG_FIND_CALIB_SYMBOL
@@ -845,7 +845,7 @@ GC_STATUS CalibStopSign::FindColor( const cv::Mat &img, cv::Mat1b &mask,
     }
     catch( cv::Exception &e )
     {
-        FILE_LOG( logERROR ) << "[CalibStopSign::FindRed] " << e.what();
+        FILE_LOG( logERROR ) << "[CalibStopSign::FindColor] " << e.what();
         retVal = GC_EXCEPT;
     }
 

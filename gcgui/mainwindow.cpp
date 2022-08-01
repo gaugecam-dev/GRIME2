@@ -36,6 +36,7 @@
 #include <boost/filesystem.hpp>
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include "../algorithms/calibexecutive.h"
 
 using namespace std;
 using namespace boost;
@@ -45,8 +46,8 @@ namespace fs = boost::filesystem;
 static const string __CONFIGURATION_FOLDER = "c:/gaugecam/config/";
 static const string __SETTINGS_FILEPATH = "c:/gaugecam/config/settingsWin.cfg";
 #else
-const static string __CONFIGURATION_FOLDER = "./config/";
-const static string __SETTINGS_FILEPATH = "./config/settings.cfg";
+static const char __CONFIGURATION_FOLDER[] = "./config/";
+static const char __SETTINGS_FILEPATH[] = "./config/settings.cfg";
 #endif
 
 static double Distance( const double x1, const int y1, const int x2, const int y2 )
@@ -141,7 +142,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->scrollArea_ImgDisplay->setWidgetResizable( false );
     ui->scrollArea_ImgDisplay->setWidget( m_pLabelImgDisplay );
 
-    int ret = ReadSettings( __SETTINGS_FILEPATH.c_str() );
+    int ret = ReadSettings( __SETTINGS_FILEPATH );
     if ( 0 != ret )
     {
         QMessageBox::warning( this, "Read settings warning", "FAIL:  No settings found, using defaults" );
@@ -185,7 +186,7 @@ MainWindow::~MainWindow()
         QMessageBox::warning( this, "App write settings warning",
                               "FAIL:  Could not write application settings properly on program exit" );
 
-    ret = WriteSettings( QString( __SETTINGS_FILEPATH.c_str() ) );
+    ret = WriteSettings( QString( __SETTINGS_FILEPATH ) );
     if ( 0 != ret )
         QMessageBox::warning( this, "GUI write settings warning",
                               "FAIL:  Could not write GUI settings properly on program exit" );
@@ -372,8 +373,8 @@ int MainWindow::ReadSettings( const QString filepath )
 
         // vision stuff
         pSettings->beginGroup( "Vision" );
-        ui->lineEdit_calibVisionTarget_csv->setText( pSettings->value( "calibCSVFileIn", QString( __CONFIGURATION_FOLDER.c_str() ) + "calibration_target_world_coordinates.csv" ).toString() );
-        ui->lineEdit_calibVisionResult_json->setText( pSettings->value( "calibJsonFileOut", QString( __CONFIGURATION_FOLDER.c_str() ) + "calib.json" ).toString() );
+        ui->lineEdit_calibVisionTarget_csv->setText( pSettings->value( "calibCSVFileIn", QString( __CONFIGURATION_FOLDER ) + "calibration_target_world_coordinates.csv" ).toString() );
+        ui->lineEdit_calibVisionResult_json->setText( pSettings->value( "calibJsonFileOut", QString( __CONFIGURATION_FOLDER ) + "calib.json" ).toString() );
         pSettings->value( "calibTypeIsBowtie", true ).toBool() ? ui->radioButton_calibBowtie->setChecked( true ) : ui->radioButton_calibStopSign->setChecked( true );
         ui->checkBox_calibSearchROI->setChecked( !pSettings->value( "useWholeImage", true ).toBool() );
         ui->doubleSpinBox_stopSignFacetLength->setValue( pSettings->value( "stopSignFacetLength", 0.599 ).toDouble() ); // 7.1875 inches
@@ -385,8 +386,8 @@ int MainWindow::ReadSettings( const QString filepath )
                                   pSettings->value( "stopSignGreen", 0 ).toInt(),
                                   pSettings->value( "stopSignBlue", 0 ).toInt() );
 
-        ui->lineEdit_findLineTopFolder->setText( pSettings->value( "findLineFolder", QString( __CONFIGURATION_FOLDER.c_str() ) ).toString() );
-        ui->lineEdit_findLine_resultCSVFile->setText( pSettings->value( "findLineCSVOutPath", QString( __CONFIGURATION_FOLDER.c_str() ) + "waterlevel.csv" ).toString() );
+        ui->lineEdit_findLineTopFolder->setText( pSettings->value( "findLineFolder", QString( __CONFIGURATION_FOLDER ) ).toString() );
+        ui->lineEdit_findLine_resultCSVFile->setText( pSettings->value( "findLineCSVOutPath", QString( __CONFIGURATION_FOLDER ) + "waterlevel.csv" ).toString() );
 
         bool isFolderOfImages = pSettings->value( "folderOfImages", true ).toBool();
         ui->radioButton_folderOfImages->setChecked( isFolderOfImages );
@@ -395,7 +396,7 @@ int MainWindow::ReadSettings( const QString filepath )
         bool createCSV = pSettings->value( "createCSVCheckbox", true ).toBool();
         ui->checkBox_createFindLine_csvResultsFile->setChecked( createCSV );
 
-        ui->lineEdit_findLine_annotatedResultFolder->setText( pSettings->value( "findLineAnnotatedOutFolder", QString( __CONFIGURATION_FOLDER.c_str() ) ).toString() );
+        ui->lineEdit_findLine_annotatedResultFolder->setText( pSettings->value( "findLineAnnotatedOutFolder", QString( __CONFIGURATION_FOLDER ) ).toString() );
         ui->checkBox_createFindLine_annotatedResults->setChecked( pSettings->value( "createAnnotationCheckbox", false ).toBool() );
         ui->spinBox_timeStringPosZero->setValue( pSettings->value( "timestampStringStartPos", 10 ).toInt() );
         ui->radioButton_dateTimeInFilename->setChecked( pSettings->value( "timestampFromFilename", true ).toBool() );
@@ -537,6 +538,8 @@ void MainWindow::UpdateCalibType()
         ui->groupBox_calibStopsignColor->setEnabled( false );
         ui->lineEdit_calibVisionTarget_csv->setEnabled( true );
         ui->toolButton_calibVisionTarget_csv_browse->setEnabled( true );
+        ui->label_moveSearchROI->setEnabled( true );
+        ui->spinBox_moveSearchROIGrowPercent->setEnabled( true );
     }
     else
     {
@@ -544,6 +547,8 @@ void MainWindow::UpdateCalibType()
         ui->doubleSpinBox_stopSignFacetLength->setEnabled( true );
         ui->lineEdit_calibVisionTarget_csv->setEnabled( false );
         ui->toolButton_calibVisionTarget_csv_browse->setEnabled( false );
+        ui->label_moveSearchROI->setEnabled( false );
+        ui->spinBox_moveSearchROIGrowPercent->setEnabled( false );
     }
 }
 void MainWindow::UpdateGUIEnables()
@@ -1159,19 +1164,23 @@ void MainWindow::on_pushButton_visionCalibrate_clicked()
                                ui->checkBox_calibSearchROI->isChecked(),
                                cv::Rect( m_rectROI.x(), m_rectROI.y(), m_rectROI.width(), m_rectROI.height() ),
                                ui->spinBox_moveSearchROIGrowPercent->value() + 100, ui->doubleSpinBox_stopSignFacetLength->value(),
-                               ui->doubleSpinBox_stopSignZeroOffset->value(), m_lineSearchPoly,
+                               ui->doubleSpinBox_stopSignZeroOffset->value(),
+                               LineSearchRoi( Point( m_lineSearchPoly.lftTop.x(), m_lineSearchPoly.lftTop.y() ),
+                                              Point( m_lineSearchPoly.rgtTop.x(), m_lineSearchPoly.rgtTop.y() ),
+                                              Point( m_lineSearchPoly.lftBot.x(), m_lineSearchPoly.lftBot.y() ),
+                                              Point( m_lineSearchPoly.rgtBot.x(), m_lineSearchPoly.rgtBot.y() ) ),
                                cv::Scalar( m_stopSignColor.blue(), m_stopSignColor.green(), m_stopSignColor.red() ),
                                ui->spinBox_colorRangeMin->value(), ui->spinBox_colorRangeMax->value() );
     GC_STATUS retVal = GC_OK;
     int ret = -1;
     if ( ui->radioButton_calibBowtie->isChecked() )
     {
-        ret = m_roiAdjust.FormBowtieCalibJsonString( calibItems, jsonControlStr );
+        ret = CalibExecutive::FormBowtieCalibJsonString( calibItems, jsonControlStr );
     }
     else if ( ui->radioButton_calibStopSign->isChecked() )
     {
 
-        ret = m_roiAdjust.FormStopsignCalibJsonString( calibItems, jsonControlStr );
+        ret = CalibExecutive::FormStopsignCalibJsonString( calibItems, jsonControlStr );
     }
     else
     {
@@ -1326,10 +1335,14 @@ void MainWindow::on_pushButton_findLineCurrentImage_clicked()
                                        ui->checkBox_calibSearchROI->isChecked(),
                                        cv::Rect( m_rectROI.x(), m_rectROI.y(), m_rectROI.width(), m_rectROI.height() ),
                                        ui->spinBox_moveSearchROIGrowPercent->value() + 100, ui->doubleSpinBox_stopSignFacetLength->value(),
-                                       ui->doubleSpinBox_stopSignZeroOffset->value(), m_lineSearchPoly,
+                                       ui->doubleSpinBox_stopSignZeroOffset->value(),
+                                       LineSearchRoi( Point( m_lineSearchPoly.lftTop.x(), m_lineSearchPoly.lftTop.y() ),
+                                                      Point( m_lineSearchPoly.rgtTop.x(), m_lineSearchPoly.rgtTop.y() ),
+                                                      Point( m_lineSearchPoly.lftBot.x(), m_lineSearchPoly.lftBot.y() ),
+                                                      Point( m_lineSearchPoly.rgtBot.x(), m_lineSearchPoly.rgtBot.y() ) ),
                                        cv::Scalar( m_stopSignColor.blue(), m_stopSignColor.green(), m_stopSignColor.red() ),
                                        ui->spinBox_colorRangeMin->value(), ui->spinBox_colorRangeMax->value() );
-            int ret = m_roiAdjust.FormStopsignCalibJsonString( calibItems, params.calibControlString );
+            int ret = CalibExecutive::FormStopsignCalibJsonString( calibItems, params.calibControlString );
             if ( 0 != ret )
             {
                 ui->statusBar->showMessage( "Find line: FAILURE -- could not create stopsign calib control string" );

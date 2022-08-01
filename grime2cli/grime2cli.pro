@@ -133,6 +133,8 @@ DISTFILES += \
     LICENSE \
     Makefile \
     NOTICE \
+    batch_test_linux \
+    batch_test_win.bat \
     config/calib.json \
     config/calib_result.png \
     config/calibration_target_world_coordinates.csv \

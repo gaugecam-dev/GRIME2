@@ -34,14 +34,7 @@ public:
         timestamp_startPos( -1 ),
         timeStamp_length( -1 ),
         delay_ms( 250 ),
-        scale( 0.2 ),
-        targetRoi_x( -1 ),
-        targetRoi_y( -1 ),
-        targetRoi_width( -1 ),
-        targetRoi_height( -1 ),
-        facetLength( -1.0 ),
-        zeroOffset( 0.0 ),
-        calib_displayType( "grid" )
+        scale( 0.2 )
     {}
     void clear()
     {
@@ -58,13 +51,6 @@ public:
         timeStamp_length = -1;
         delay_ms = 250;
         scale = 0.2;
-        targetRoi_x = -1;
-        targetRoi_y = -1;
-        targetRoi_width = -1;
-        targetRoi_height = -1;
-        facetLength = -1.0;
-        zeroOffset = 0.0;
-        calib_displayType = "grid";
     }
     bool verbose;
     GRIME2_CLI_OP opToPerform;
@@ -79,13 +65,6 @@ public:
     int timeStamp_length;
     int delay_ms;
     double scale;
-    int targetRoi_x;
-    int targetRoi_y;
-    int targetRoi_width;
-    int targetRoi_height;
-    double facetLength;
-    double zeroOffset;
-    string calib_displayType;
 
 };
 int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
@@ -104,12 +83,10 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                 if ( "help" == string( argv[ i ] ).substr( 2 ) )
                 {
                     params.opToPerform = SHOW_HELP;
-                    return 0;
                 }
                 else if ( "version" == string( argv[ i ] ).substr( 2 ) )
                 {
                     params.opToPerform = SHOW_VERSION;
-                    return 0;
                 }
                 else if ( "verbose" == string( argv[ i ] ).substr( 2 ) )
                 {
@@ -121,6 +98,7 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                     {
                         FILE_LOG( logERROR ) << "[ArgHandler] no log filename specified on --logFile request";
                         retVal = -1;
+                        break;
                     }
                     else
                     {
@@ -182,32 +160,6 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                         break;
                     }
                 }
-                else if ( "facet_length" == string( argv[ i ] ).substr( 2 ) )
-                {
-                    if ( i + 1 < argc )
-                    {
-                        params.facetLength = stod( argv[ ++i ] );
-                    }
-                    else
-                    {
-                        FILE_LOG( logERROR ) << "[ArgHandler] No value supplied on --facet_length request";
-                        retVal = -1;
-                        break;
-                    }
-                }
-                else if ( "zero_offset" == string( argv[ i ] ).substr( 2 ) )
-                {
-                    if ( i + 1 < argc )
-                    {
-                        params.zeroOffset = stod( argv[ ++i ] );
-                    }
-                    else
-                    {
-                        FILE_LOG( logERROR ) << "[ArgHandler] No value supplied on --zero_offset request";
-                        retVal = -1;
-                        break;
-                    }
-                }
                 else if ( "scale" == string( argv[ i ] ).substr( 2 ) )
                 {
                     if ( i + 1 < argc )
@@ -228,14 +180,6 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                 else if ( "timestamp_from_filename" == string( argv[ i ] ).substr( 2 ) )
                 {
                     params.timestamp_type = "from_filename";
-                }
-                else if ( "calib_overlay_scale" == string( argv[ i ] ).substr( 2 ) )
-                {
-                    params.calib_displayType = "scale";
-                }
-                else if ( "calib_overlay_grid" == string( argv[ i ] ).substr( 2 ) )
-                {
-                    params.calib_displayType = "grid";
                 }
                 else if ( "timestamp_start_pos" == string( argv[ i ] ).substr( 2 ) )
                 {
@@ -272,6 +216,7 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                         {
                             FILE_LOG( logERROR ) << "[ArgHandler] CSV file " << params.csvPath << " extension not recognized";
                             retVal = -1;
+                            break;
                         }
                         else if ( !fs::exists( fs::path( params.csvPath ).parent_path() ) )
                         {
@@ -310,22 +255,6 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                         break;
                     }
                 }
-                else if ( "target_roi" == string( argv[ i ] ).substr( 2 ) )
-                {
-                    if ( i + 4 < argc )
-                    {
-                        params.targetRoi_x = atoi( argv[ ++i ] );
-                        params.targetRoi_y = atoi( argv[ ++i ] );
-                        params.targetRoi_width = atoi( argv[ ++i ] );
-                        params.targetRoi_height = atoi( argv[ ++i ] );
-                    }
-                    else
-                    {
-                        FILE_LOG( logERROR ) << "[ArgHandler] Insufficient values supplied on --target_roi request";
-                        retVal = -1;
-                        break;
-                    }
-                }
                 else if ( "result_image" == string( argv[ i ] ).substr( 2 ) )
                 {
                     if ( i + 1 < argc )
@@ -339,6 +268,7 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                         {
                             FILE_LOG( logERROR ) << "[ArgHandler] Image file " << params.result_imagePath << " extension not recognized";
                             retVal = -1;
+                            break;
                         }
                         else
                         {
@@ -350,6 +280,7 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                                 {
                                     FILE_LOG( logERROR ) << "[ArgHandler] Could not create result image folder: " << result_folder;
                                     retVal = -1;
+                                    break;
                                 }
                             }
                         }
@@ -370,6 +301,7 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                         {
                             FILE_LOG( logERROR ) << "[ArgHandler] Result path " << params.result_imagePath << " is not a folder";
                             retVal = -1;
+                            break;
                         }
                         else if ( !fs::exists( params.result_imagePath ) )
                         {
@@ -378,6 +310,7 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                             {
                                 FILE_LOG( logERROR ) << "[ArgHandler] Could not create result folder: " << params.result_imagePath;
                                 retVal = -1;
+                                break;
                             }
                         }
                     }
@@ -388,38 +321,52 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                         break;
                     }
                 }
+                else if ( "source" == string( argv[ i ] ).substr( 2 ) )
+                {
+                    if ( i + 1 < argc )
+                    {
+                        params.src_imagePath = argv[ ++i ];
+                        if ( CALIBRATE == params.opToPerform ||
+                             FIND_LINE == params.opToPerform ||
+                             SHOW_METADATA == params.opToPerform )
+                        {
+                            bool isOk = IsExistingImagePath( params.src_imagePath );
+                            if ( !isOk )
+                            {
+                                FILE_LOG( logERROR ) << "Source image does not exist: " << params.src_imagePath;
+                                retVal = -1;
+                                break;
+                            }
+                        }
+                        else if ( MAKE_GIF == params.opToPerform ||
+                                  RUN_FOLDER == params.opToPerform )
+                        {
+                            if ( !fs::is_directory( params.src_imagePath ) )
+                            {
+                                FILE_LOG( logERROR ) << "Source path is not a folder: " << params.src_imagePath;
+                                retVal = -1;
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            FILE_LOG( logERROR ) << "[ArgHandler] There is no associated operation for the first path";
+                            retVal = -1;
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        FILE_LOG( logERROR ) << "[ArgHandler] No value supplied on --source request";
+                        retVal = -1;
+                        break;
+                    }
+                }
                 else
                 {
                     FILE_LOG( logERROR ) << "[ArgHandler]  Invalid command line item " << argv[ i ];
                     retVal = -1;
-                }
-            }
-            else if ( params.src_imagePath.empty() )
-            {
-                params.src_imagePath = argv[ i ];
-                if ( CALIBRATE == params.opToPerform ||
-                     FIND_LINE == params.opToPerform ||
-                     SHOW_METADATA == params.opToPerform )
-                {
-                    bool isOk = IsExistingImagePath( params.src_imagePath );
-                    if ( !isOk )
-                    {
-                        retVal = -1;
-                    }
-                }
-                else if ( MAKE_GIF == params.opToPerform ||
-                          RUN_FOLDER == params.opToPerform )
-                {
-                    if ( !fs::is_directory( params.src_imagePath ) )
-                    {
-                        FILE_LOG( logERROR ) << "Source path is not a folder: " << params.src_imagePath;
-                        retVal = -1;
-                    }
-                }
-                else
-                {
-                    FILE_LOG( logERROR ) << "[ArgHandler] There is no associated operation for the first path";
-                    retVal = -1;
+                    break;
                 }
             }
             else
@@ -441,7 +388,9 @@ bool IsExistingImagePath( const string imgPath )
 {
     bool isGood = true;
     if ( string::npos == imgPath.find( ".png" ) &&
-         string::npos == imgPath.find( ".jpg" ) )
+         string::npos == imgPath.find( ".jpg" ) &&
+         string::npos == imgPath.find( ".PNG" ) &&
+         string::npos == imgPath.find( ".JPG" ) )
     {
         FILE_LOG( logERROR ) << "Image file " << imgPath << " extension not recognized";
         isGood = false;
@@ -466,15 +415,13 @@ void PrintHelp()
     // the images for each scan time and tile positions from the specified stack
     // index into the created folder to which it pertains
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    cout << "FORMAT: grime2cli --calibrate <Bowtie target image> " << endl <<
-            "                  --csv_file <CSV file with bow tie target xy positions>" << endl <<
+    cout << "FORMAT: grime2cli --calibrate <Target image> " << endl <<
+            "                  --csv_file <CSV file with bow tie target xy positions (if needed)>" << endl <<
             "                  --calib_json <json filepath for created json file>" << endl <<
-            "                 [--target_roi <left> <top> <width> <height> OPTIONAL]" << endl <<
             "                 [--result_image <Result overlay image> OPTIONAL]" << endl <<
-            "        Loads image with bow tie targets (all must be visible). Reads csv file" << endl <<
-            "        that holds world coordinate positions of the centers of the bow ties," << endl <<
-            "        calculates move target positions, creates calibration model, and creates" << endl <<
-            "        calibration model, then stores it to the specified json file. An optional" << endl <<
+            "        Loads image with calibration target. Loads an existing calibration," << endl <<
+            "        performs a new calibration if a source image is supplied," << endl <<
+            "        then stores the calibration to the specified json file. An optional" << endl <<
             "        result image with the calibration result can be created." << endl;
     cout << "FORMAT: grime2cli --find_line --timestamp_from_filename or --timestamp_from_exif " << endl <<
             "                  --timestamp_start_pos <position of the first timestamp char of source string>" << endl <<
@@ -511,3 +458,33 @@ void PrintHelp()
     cout << "     Shows the grime2cli version" << endl;
 }
 #endif // ARGHANDLER_H
+/*
+{
+  "calibType": "StopSign",
+  "calibWorldPt_csv": "./config/calibration_target_world_coordinates.csv",
+  "facetLength": 0.599,
+  "zeroOffset": 2.36,
+  "moveSearchROIGrowPercent": 100,
+  "drawCalib": 0,
+  "drawMoveSearchROIs": 0,
+  "drawWaterLineSearchROI": 0,
+  "targetRoi_x": 950,
+  "targetRoi_y": 358,
+  "targetRoi_width": 401,
+  "targetRoi_height": 517,
+  "searchPoly_lftTop_x": 1108,
+  "searchPoly_lftTop_y": 758,
+  "searchPoly_rgtTop_x": 1258,
+  "searchPoly_rgtTop_y": 761,
+  "searchPoly_lftBot_x": 1263,
+  "searchPoly_lftBot_y": 1095,
+  "searchPoly_rgtBot_x": 1079,
+  "searchPoly_rgtBot_y": 1084,
+  "symbolColor_blue": 195,
+  "symbolColor_green": 127,
+  "symbolColor_red": 10,
+  "colorRangeMin": 20,
+  "colorRangeMax": 20,
+  "calibResult_json": "./config/calib_stopsign.json"
+}
+*/

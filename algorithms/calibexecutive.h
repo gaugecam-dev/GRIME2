@@ -67,6 +67,69 @@ public:
     friend std::ostream &operator<<( std::ostream &out, const CalibExecParams &params ) ;
 };
 
+
+class LineSearchRoi
+{
+public:
+    LineSearchRoi() :
+        lftTop( cv::Point( 50, 50 ) ),
+        rgtTop( cv::Point( 100, 50 ) ),
+        rgtBot( cv::Point( 100, 100 ) ),
+        lftBot( cv::Point( 50, 100 ) )
+    {}
+
+    LineSearchRoi( const cv::Point lftTop, const cv::Point rgtTop,
+                    const cv::Point rgtBot, const cv::Point lftBot ) :
+        lftTop( lftTop ), rgtTop( rgtTop ), rgtBot( rgtBot ), lftBot( lftBot )
+    {}
+
+    cv::Point lftTop;
+    cv::Point rgtTop;
+    cv::Point rgtBot;
+    cv::Point lftBot;
+};
+
+class CalibJsonItems
+{
+public:
+    CalibJsonItems() {}
+    CalibJsonItems( const std::string worldPosCsvFile,
+                    const std::string calibResultJson,
+                    const bool enableROI,
+                    const cv::Rect rect,
+                    const double moveGrowROIPercent,
+                    const double worldFacetLength,
+                    const double worldZeroOffset,
+                    const LineSearchRoi searchPoly,
+                    const cv::Scalar trgtColor,
+                    const int colorRngMin,
+                    const int colorRngMax ) :
+        worldTargetPosition_csvFile( worldPosCsvFile ),
+        calibVisionResult_json( calibResultJson ),
+        useROI( enableROI ),
+        roi( rect ),
+        moveROIGrowPercent( moveGrowROIPercent ),
+        facetLength( worldFacetLength ),
+        zeroOffset( worldZeroOffset ),
+        lineSearchPoly( searchPoly ),
+        targetColor( trgtColor ),
+        colorRangeMin( colorRngMin ),
+        colorRangeMax( colorRngMax )
+    {}
+
+    std::string worldTargetPosition_csvFile;
+    std::string calibVisionResult_json;
+    bool useROI;
+    cv::Rect roi;
+    double moveROIGrowPercent;
+    double facetLength;
+    double zeroOffset;
+    LineSearchRoi lineSearchPoly;
+    cv::Scalar targetColor;
+    double colorRangeMin;
+    double colorRangeMax;
+};
+
 class CalibExecutive
 {
 public:
@@ -100,6 +163,9 @@ public:
     cv::Rect &TargetRoi();
     std::string &GetCalibType() { return paramsCurrent.calibType; } // BowTie or StopSign
     GC_STATUS GetCalibParams( std::string &calibParams );
+
+    static GC_STATUS FormBowtieCalibJsonString( const CalibJsonItems &items, std::string &json );
+    static GC_STATUS FormStopsignCalibJsonString( const CalibJsonItems &items, std::string &json );
 
 private:
     CalibBowtie bowTie;

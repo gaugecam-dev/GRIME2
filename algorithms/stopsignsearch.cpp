@@ -95,7 +95,7 @@ GC_STATUS StopsignSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &
                 }
             }
             retVal = RefineFind( img, pts );
-            imwrite( "/var/tmp/water/template_stopsign_find.png", color );
+            // imwrite( "/var/tmp/water/template_stopsign_find.png", color );
         }
         if ( 8 != pts.size() )
         {
