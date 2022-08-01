@@ -164,8 +164,8 @@ GC_STATUS CalibExecutive::SetCalibFromJson( const std::string &jsonParams )
             double greenVal = top_level.get< double >( "symbolColor_green", -1 );
             double redVal = top_level.get< double >( "symbolColor_red", -1 );
             stopSign.Model().symbolColor = Scalar( blueVal, greenVal, redVal );
-            stopSign.Model().colorRangeMin = top_level.get< double >( "colorRangeMin", 20 );
-            stopSign.Model().colorRangeMax = top_level.get< double >( "colorRangeMax", 20 );
+            stopSign.Model().colorRangeMin = top_level.get< int >( "colorRangeMin", 20 );
+            stopSign.Model().colorRangeMax = top_level.get< int >( "colorRangeMax", 20 );
         }
         else
         {

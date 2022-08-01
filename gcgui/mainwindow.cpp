@@ -168,7 +168,6 @@ MainWindow::MainWindow(QWidget *parent) :
     on_actionZoom100_triggered();
     ui->widget_overlayCheckboxes->hide();
 
-
     GC_STATUS retVal = m_visApp.LoadCalib( ui->lineEdit_calibVisionResult_json->text().toStdString(), false );
     if ( GC_OK == retVal )
     {

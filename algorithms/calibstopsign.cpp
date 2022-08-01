@@ -539,17 +539,17 @@ GC_STATUS CalibStopSign::Load( const std::string jsonCalString )
             if ( it != ptreeTop.not_found() )
             {
                 const property_tree::ptree &ptreeWaterlineSearchROI = ptreeTop.get_child( "WaterlineSearchRegion" );
-                ptInt.x = ptreeWaterlineSearchROI.get< int >( "toplft_x", -1.0 );
-                ptInt.y = ptreeWaterlineSearchROI.get< int >( "toplft_y", -1.0 );
+                ptInt.x = ptreeWaterlineSearchROI.get< int >( "toplft_x", -1 );
+                ptInt.y = ptreeWaterlineSearchROI.get< int >( "toplft_y", -1 );
                 model.waterlineSearchCorners.push_back( ptInt );
-                ptInt.x = ptreeWaterlineSearchROI.get< int >( "toprgt_x", -1.0 );
-                ptInt.y = ptreeWaterlineSearchROI.get< int >( "toprgt_y", -1.0 );
+                ptInt.x = ptreeWaterlineSearchROI.get< int >( "toprgt_x", -1 );
+                ptInt.y = ptreeWaterlineSearchROI.get< int >( "toprgt_y", -1 );
                 model.waterlineSearchCorners.push_back( ptInt );
-                ptInt.x = ptreeWaterlineSearchROI.get< int >( "botlft_x", -1.0 );
-                ptInt.y = ptreeWaterlineSearchROI.get< int >( "botlft_y", -1.0 );
+                ptInt.x = ptreeWaterlineSearchROI.get< int >( "botlft_x", -1 );
+                ptInt.y = ptreeWaterlineSearchROI.get< int >( "botlft_y", -1 );
                 model.waterlineSearchCorners.push_back( ptInt );
-                ptInt.x = ptreeWaterlineSearchROI.get< int >( "botrgt_x", -1.0 );
-                ptInt.y = ptreeWaterlineSearchROI.get< int >( "botrgt_y", -1.0 );
+                ptInt.x = ptreeWaterlineSearchROI.get< int >( "botrgt_x", -1 );
+                ptInt.y = ptreeWaterlineSearchROI.get< int >( "botrgt_y", -1 );
                 model.waterlineSearchCorners.push_back( ptInt );
             }
 
@@ -830,7 +830,7 @@ GC_STATUS CalibStopSign::FindColor( const cv::Mat &img, cv::Mat1b &mask,
                         if ( MAX_SYMBOL_CONTOUR_ELONG >= elong )
                         {
                             symbolCandidates.push_back( StopSignCandidate( contours[ i ], area, elong ) );
-                            drawContours( mask, contours, i, Scalar( 255 ), FILLED );
+                            drawContours( mask, contours, static_cast< int >( i ), Scalar( 255 ), FILLED );
 #ifdef DEBUG_FIND_CALIB_SYMBOL
                             drawContours( color, contours, i, Scalar( 0, 255, 255 ), 3 );
 #endif
