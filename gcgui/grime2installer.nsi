@@ -46,6 +46,10 @@
 !define WIN_CONFIG_PATH "c:\gaugecam\config"
 !endif
 
+!ifndef WIN_RESULTS_PATH
+!define WIN_RESULTS_PATH "c:\gaugecam\results"
+!endif
+
 ;--------------------------------
 ;Include Modern UI and logic lib
 
@@ -102,6 +106,8 @@ Section "GaugeCam Files" grime2
   File "${INSTALLFILEPATH_DOCS}\boost_license.txt"
   File "${INSTALLFILEPATH_DOCS}\lgpl_license.txt"
   File "${INSTALLFILEPATH_DOCS}\release_notes.html"
+
+  CreateDirectory "${WIN_RESULTS_PATH}"
 
   SetOutPath "${WIN_CONFIG_PATH}"
   File "${INSTALLFILEPATH_CONFIG}\calib_result.png"
