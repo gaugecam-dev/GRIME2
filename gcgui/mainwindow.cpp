@@ -170,7 +170,22 @@ MainWindow::MainWindow(QWidget *parent) :
 
 
     GC_STATUS retVal = m_visApp.LoadCalib( ui->lineEdit_calibVisionResult_json->text().toStdString(), false );
-    if ( GC_OK != retVal )
+    if ( GC_OK == retVal )
+    {
+        if ( ui->radioButton_calibStopSign->isChecked() )
+        {
+            Scalar hsv, color;
+            double minRange, maxRange;
+            retVal = m_visApp.GetStopsignColor( color, minRange, maxRange, hsv );
+            if ( GC_OK == retVal )
+            {
+                ui->spinBox_colorRangeMin->setValue( cvRound( minRange ) );
+                ui->spinBox_colorRangeMax->setValue( cvRound( maxRange ) );
+                SetStopsignColor( color );
+            }
+        }
+    }
+    else
     {
         ui->textEdit_msgs->append( "Could not load calibration from " + ui->lineEdit_calibVisionResult_json->text() );
     }

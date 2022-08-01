@@ -125,6 +125,7 @@ public:
 
     // TODO: Fix doxygen
     GC_STATUS GetCalibParams( std::string &calibParams );
+    GC_STATUS GetStopsignColor( cv::Scalar &color, double &minRange, double &maxRange );
     GC_STATUS SetStopsignColor( const cv::Scalar color, const double minRange, const double maxRange, cv::Scalar &hsv );
     GC_STATUS DrawCalibOverlay( const cv::Mat matIn, cv::Mat &imgMatOut );
     GC_STATUS DrawCalibOverlay( const cv::Mat matIn, cv::Mat &imgMatOut, const bool drawCalibScale, const bool drawCalibGrid,

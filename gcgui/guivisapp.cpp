@@ -606,6 +606,15 @@ GC_STATUS GuiVisApp::CreateAnimation( const std::string imageFolder, const std::
     //    sigMessage( string( "Create animation: " ) + ( GC_OK == retVal ? "SUCCESS" : "FAILURE" ) );
     return retVal;
 }
+GC_STATUS GuiVisApp::GetStopsignColor( cv::Scalar &color, double &minRange, double &maxRange, cv::Scalar &hsv )
+{
+    GC_STATUS retVal = m_visApp.GetStopsignColor( color, minRange, maxRange );
+    if ( GC_OK == retVal )
+    {
+        retVal = m_visApp.SetStopsignColor( color, minRange, maxRange, hsv );
+    }
+    return retVal;
+}
 GC_STATUS GuiVisApp::SetStopsignColor( const cv::Scalar color, const int minRange, const int maxRange, cv::Scalar &hsv )
 {
     GC_STATUS retVal = m_visApp.SetStopsignColor( color, static_cast< double >( minRange ) / 100.0,

@@ -685,6 +685,22 @@ GC_STATUS CalibExecutive::FindMoveTargetsBowTie( const Mat &img, FindPointSet &p
     }
     return retVal;
 }
+GC_STATUS CalibExecutive::GetStopsignColor( cv::Scalar &color, double &minRange, double &maxRange )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        color = stopSign.Model().symbolColor;
+        minRange = stopSign.Model().colorRangeMin;
+        maxRange = stopSign.Model().colorRangeMax;
+    }
+    catch( Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[CalibBowtie::GetStopsignColor] " << e.what();
+    }
+
+    return retVal;
+}
 GC_STATUS CalibExecutive::SetStopsignColor( const cv::Scalar color, const double minRange, const double maxRange, cv::Scalar &hsv )
 {
     GC_STATUS retVal = stopSign.SetStopsignColor( color, minRange, maxRange, hsv );

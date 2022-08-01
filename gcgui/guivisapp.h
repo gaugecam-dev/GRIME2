@@ -92,6 +92,7 @@ public:
 
     // calibration methods
     GC_STATUS SetStopsignColor( const cv::Scalar color, const int minRange, const int maxRange, Scalar &hsv );
+    GC_STATUS GetStopsignColor( cv::Scalar &color, double &minRange, double &maxRange, cv::Scalar &hsv );
     GC_STATUS GetROIColor( const cv::Rect roi, cv::Scalar &color );
     GC_STATUS LoadCalib(const std::string calibJson, const bool reCalib );
     GC_STATUS Calibrate( const std::string imgFilepath, const string jsonControl );
