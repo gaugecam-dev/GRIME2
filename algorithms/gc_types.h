@@ -57,6 +57,24 @@ enum GC_TIMESTAMP_TYPE
     FROM_EXTERNAL       ///< Pass filename to algorithm using YYYY-MM-DDThh:mm::ss format (ISO)
 };
 
+/// enum for draw selections
+enum IMG_DISPLAY_OVERLAYS
+{
+    OVERLAYS_NONE = 0,
+    CALIB_SCALE = 1,
+    CALIB_GRID = 2,
+    TARGET_ROI = 4,
+    FINDLINE = 8,
+    FEATROIS = 16,
+    MOVE_ROIS = 32,
+    MOVE_FIND = 64,
+    DIAG_ROWSUMS = 128,
+    FINDLINE_1ST_DERIV = 256,
+    FINDLINE_2ND_DERIV = 512,
+    RANSAC_POINTS = 1024,
+    SEARCH_ROI = 2048
+};
+
 static const double DEFAULT_MIN_LINE_ANGLE = -10.0;                             ///< Default minimum line find angle
 static const double DEFAULT_MAX_LINE_ANGLE = 10.0;                              ///< Default maximum line find angle
 static const int FIT_LINE_RANSAC_TRIES_TOTAL = 100;                             ///< Fit line RANSAC total tries
@@ -65,7 +83,7 @@ static const int FIT_LINE_RANSAC_POINT_COUNT = 5;                               
 static const int MIN_DEFAULT_INT = -std::numeric_limits< int >::max();          ///< Minimum value for an integer
 static const double MIN_DEFAULT_DBL = -std::numeric_limits< double >::max();    ///< Minimum value for a double
 static const int GC_BOWTIE_TEMPLATE_DIM = 56;                                   ///< Default bowtie template size
-static const int GC_STOPSIGN_TEMPLATE_DIM = 99;                                 ///< Default bowtie template size
+static const int GC_STOPSIGN_TEMPLATE_DIM = 79;                                 ///< Default bowtie template size
 static const int GC_IMAGE_SIZE_WIDTH = 800;                                     ///< Default image width
 static const int GC_IMAGE_SIZE_HEIGHT = 600;                                    ///< Default image height
 static const double MIN_BOWTIE_FIND_SCORE = 0.55;                               ///< Minimum bow tie sccore

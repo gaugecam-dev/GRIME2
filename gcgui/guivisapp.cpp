@@ -42,9 +42,9 @@ using namespace boost;
 namespace fs = boost::filesystem;
 
 #ifdef _WIN32
-static const string LOG_FILE_FOLDER = "c:/temp/gaugecam/";
+static const char LOG_FILE_FOLDER[] = "c:/temp/gaugecam/";
 #else
-static const string LOG_FILE_FOLDER = "/var/tmp/gaugecam/";
+static const char LOG_FILE_FOLDER[] = "/var/tmp/gaugecam/";
 #endif
 
 using namespace cv;
@@ -69,7 +69,7 @@ GuiVisApp::GuiVisApp() :
         folderExists = fs::create_directories( p );
 
     char buf[ 256 ];
-    sprintf( buf, "%sgrime.log", folderExists ? LOG_FILE_FOLDER.c_str() : "" );
+    sprintf( buf, "%sgrime.log", folderExists ? LOG_FILE_FOLDER : "" );
 
 #if WIN32
     fopen_s( &m_pFileLog, buf, "w" );
@@ -164,14 +164,14 @@ GC_STATUS GuiVisApp::GetImageOverlay( const IMG_BUFFERS nImgColor, const IMG_DIS
         }
         else if ( BUF_OVERLAY == nImgColor )
         {
-            m_matDisplay = m_matColor.clone();
+            Mat matTemp = m_matColor.clone();
             if ( ( overlays & CALIB_SCALE ) ||
                  ( overlays & CALIB_GRID ) ||
                  ( overlays & MOVE_ROIS ) ||
                  ( overlays & SEARCH_ROI ) ||
                  ( overlays & TARGET_ROI ) )
             {
-                retVal = m_visApp.DrawCalibOverlay( m_matDisplay, m_matDisplay,
+                retVal = m_visApp.DrawCalibOverlay( m_matColor, matTemp,
                                                     overlays & CALIB_SCALE,
                                                     overlays & CALIB_GRID,
                                                     overlays & MOVE_ROIS,
@@ -180,20 +180,20 @@ GC_STATUS GuiVisApp::GetImageOverlay( const IMG_BUFFERS nImgColor, const IMG_DIS
             }
             int overlayType = OVERLAYS_NONE;
             if( overlays & FINDLINE )
-                overlayType += FOUND_LINE;
+                overlayType += FINDLINE;
             if( overlays & DIAG_ROWSUMS )
-                    overlayType += ROW_SUMS;
-            if( overlays & DIAG_1ST_DERIV )
-                    overlayType += FIRST_DERIVE;
-            if( overlays & DIAG_2ND_DERIV )
-                    overlayType += SECOND_DERIVE;
-            if( overlays & DIAG_RANSAC )
+                    overlayType += DIAG_ROWSUMS;
+            if( overlays & FINDLINE_1ST_DERIV )
+                    overlayType += FINDLINE_1ST_DERIV;
+            if( overlays & FINDLINE_2ND_DERIV )
+                    overlayType += FINDLINE_2ND_DERIV;
+            if( overlays & RANSAC_POINTS )
                     overlayType += RANSAC_POINTS;
             if( overlays & MOVE_FIND )
-                    overlayType += MOVE_FIND_RESULT;
+                    overlayType += MOVE_FIND;
             if ( OVERLAYS_NONE != overlayType )
             {
-                retVal = m_visApp.DrawLineFindOverlay( m_matDisplay, m_matDisplay, static_cast< LineDrawType >( overlayType ) );
+                retVal = m_visApp.DrawLineFindOverlay( matTemp, m_matDisplay, static_cast< IMG_DISPLAY_OVERLAYS >( overlayType ) );
             }
         }
     }
@@ -725,7 +725,7 @@ GC_STATUS GuiVisApp::CalcLine( const FindLineParams params, FindLineResult &resu
     }
     return retVal;
 }
-GC_STATUS GuiVisApp::CalcLinesInFolder( const std::string folder, const FindLineParams params, const bool isFolderOfImages, const LineDrawType drawTypes )
+GC_STATUS GuiVisApp::CalcLinesInFolder( const std::string folder, const FindLineParams params, const bool isFolderOfImages, const IMG_DISPLAY_OVERLAYS drawTypes )
 {
     GC_STATUS retVal = GC_OK;
     if ( m_isRunning )
@@ -958,7 +958,7 @@ bool GuiVisApp::isRunningFindLine()
 {
     return m_threadType != FIND_LINES_THREAD ? false : m_isRunning;
 }
-GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &images,  const FindLineParams params, const LineDrawType drawTypes )
+GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &images,  const FindLineParams params, const IMG_DISPLAY_OVERLAYS drawTypes )
 {
     GC_STATUS retVal = GC_OK;
     m_threadType = FIND_LINES_THREAD;
@@ -1128,12 +1128,27 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                                         }
                                         if ( !params.resultImagePath.empty() )
                                         {
-                                            Mat color;
-                                            retVal = m_visApp.DrawLineFindOverlay( img, color, findData.findlineResult, drawTypes );
+                                            Mat color, colorTemp;
+                                            string resultFilepath = resultFolderAdj + fs::path( images[ i ] ).stem().string() + "_overlay.png";
+
+#if 1
+                                            retVal = GetImageOverlay( BUF_OVERLAY, drawTypes );
+#else
+                                            bool drawCalib = false;
+                                            if ( ( CALIB_GRID & drawTypes ) || ( CALIB_SCALE & drawTypes ) || ( SEARCH_ROI & drawTypes ) )
+                                            {
+                                                drawCalib = true;
+                                                retVal = m_visApp.DrawCalibOverlay( img, colorTemp );
+                                                if ( GC_OK != retVal  )
+                                                {
+                                                    FILE_LOG( logWARNING ) << "Could not draw overlay on findline image " << resultFilepath;
+                                                }
+                                            }
+                                            retVal = m_visApp.DrawLineFindOverlay( drawCalib ? colorTemp : img, color, findData.findlineResult, drawTypes );
+#endif
                                             if ( GC_OK == retVal )
                                             {
-                                                string resultFilepath = resultFolderAdj + fs::path( images[ i ] ).stem().string() + "_overlay.png";
-                                                bool bRet = imwrite( resultFilepath, color );
+                                                bool bRet = imwrite( resultFilepath, m_matDisplay );
                                                 if ( !bRet )
                                                 {
                                                     FILE_LOG( logWARNING ) << "Could not write result image to " << resultFilepath;

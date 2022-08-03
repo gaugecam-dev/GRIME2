@@ -38,9 +38,9 @@ namespace pt = property_tree;
 #ifdef DEBUG_BOWTIE_FIND
 #undef DEBUG_BOWTIE_FIND
 #ifdef _WIN32
-    static const string DEBUG_FOLDER = "c:/gaugecam/";
+static const char DEBUG_FOLDER[] = "c:/gaugecam/";
 #else
-    static const string DEBUG_FOLDER = "/var/tmp/gaugecam/";
+static const char DEBUG_FOLDER[] = "/var/tmp/water/";
 #endif
 #endif
 
@@ -644,13 +644,13 @@ GC_STATUS VisApp::DrawCalibOverlay( const cv::Mat matIn, cv::Mat &imgMatOut, con
                                                 drawMoveROIs, drawSearchROI, drawTargetROI );
     return retVal;
 }
-GC_STATUS VisApp::DrawLineFindOverlay( const cv::Mat &img, cv::Mat &imgOut, const LineDrawType overlayTypes )
+GC_STATUS VisApp::DrawLineFindOverlay( const cv::Mat &img, cv::Mat &imgOut, const IMG_DISPLAY_OVERLAYS overlayTypes )
 {
     GC_STATUS retVal = m_findLine.DrawResult( img, imgOut, m_findLineResult, overlayTypes );
     return retVal;
 }
 GC_STATUS VisApp::DrawLineFindOverlay( const cv::Mat &img, cv::Mat &imgOut, const FindLineResult findLineResult,
-                                       const LineDrawType overlayTypes )
+                                       const IMG_DISPLAY_OVERLAYS overlayTypes )
 {
     GC_STATUS retVal = m_findLine.DrawResult( img, imgOut, findLineResult, overlayTypes );
     return retVal;

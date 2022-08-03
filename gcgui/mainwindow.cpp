@@ -614,9 +614,9 @@ int MainWindow::UpdatePixmap()
             }
             overlays += ui->checkBox_showFindLine->isChecked() ? FINDLINE : OVERLAYS_NONE;
             overlays += ui->checkBox_showRowSums->isChecked() ? DIAG_ROWSUMS : OVERLAYS_NONE;
-            overlays += ui->checkBox_showDerivOne->isChecked() ? DIAG_1ST_DERIV : OVERLAYS_NONE;
-            overlays += ui->checkBox_showDerivTwo->isChecked() ? DIAG_2ND_DERIV : OVERLAYS_NONE;
-            overlays += ui->checkBox_showRANSAC->isChecked() ? DIAG_RANSAC : OVERLAYS_NONE;
+            overlays += ui->checkBox_showDerivOne->isChecked() ? FINDLINE_1ST_DERIV : OVERLAYS_NONE;
+            overlays += ui->checkBox_showDerivTwo->isChecked() ? FINDLINE_2ND_DERIV : OVERLAYS_NONE;
+            overlays += ui->checkBox_showRANSAC->isChecked() ? RANSAC_POINTS : OVERLAYS_NONE;
             overlays += ui->checkBox_showMoveROIs->isChecked() ? MOVE_ROIS : OVERLAYS_NONE;
             overlays += ui->checkBox_showMoveFind->isChecked() ? MOVE_FIND : OVERLAYS_NONE;
             overlays += ui->checkBox_showSearchROI->isChecked() ? SEARCH_ROI : OVERLAYS_NONE;
@@ -1406,20 +1406,20 @@ void MainWindow::on_pushButton_findLine_processFolder_clicked()
     vector< string > headings = { "filename", "timestamp", "water level" };
     InitTable( headings );
 
-    int drawTypes = ui->checkBox_showFindLine->isChecked() ? FOUND_LINE : 0;
-    drawTypes += ui->checkBox_showRowSums->isChecked() ? ROW_SUMS : 0;
-    drawTypes += ui->checkBox_showDerivOne->isChecked() ? FIRST_DERIVE : 0;
-    drawTypes += ui->checkBox_showDerivTwo->isChecked() ? SECOND_DERIVE : 0;
+    int drawTypes = FINDLINE;
+    drawTypes += ui->checkBox_showRowSums->isChecked() ? DIAG_ROWSUMS : 0;
+    drawTypes += ui->checkBox_showDerivOne->isChecked() ? FINDLINE_1ST_DERIV : 0;
+    drawTypes += ui->checkBox_showDerivTwo->isChecked() ? FINDLINE_2ND_DERIV : 0;
     drawTypes += ui->checkBox_showRANSAC->isChecked() ? RANSAC_POINTS : 0;
-    drawTypes += ui->checkBox_showMoveFind->isChecked() ? MOVE_FIND_RESULT : 0;
-    drawTypes += ui->checkBox_showMoveFind->isChecked() ? MOVE_FIND_RESULT : 0;
+    drawTypes += ui->checkBox_showMoveFind->isChecked() ? MOVE_FIND : 0;
     drawTypes += ui->checkBox_showTargetROI->isChecked() ? TARGET_ROI : 0;
+    drawTypes += ui->checkBox_showSearchROI->isChecked() ? SEARCH_ROI : 0;
     if ( ui->checkBox_showCalib->isChecked() )
     {
-        drawTypes += ui->radioButton_calibDisplayScale->isChecked() ? CALIB_SCALE : CALIB_GRID;
+        drawTypes += ui->radioButton_calibDisplayGrid->isChecked() ? CALIB_GRID : CALIB_SCALE;
     }
 
-    GC_STATUS retVal = m_visApp.CalcLinesInFolder( folder, params, ui->radioButton_folderOfImages->isChecked(), static_cast< LineDrawType >( drawTypes ) );
+    GC_STATUS retVal = m_visApp.CalcLinesInFolder( folder, params, ui->radioButton_folderOfImages->isChecked(), static_cast< IMG_DISPLAY_OVERLAYS >( drawTypes ) );
 
     ui->textEdit_msgs->clear();
     ui->textEdit_msgs->append( GC_OK == retVal ? "Folder run started" : "Folder run failed to start" );

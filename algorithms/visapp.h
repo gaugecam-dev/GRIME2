@@ -33,6 +33,7 @@
 #include "findline.h"
 #include "metadata.h"
 #include "animate.h"
+#include "gc_types.h"
 
 //! GaugeCam classes, functions and variables
 namespace gc
@@ -225,7 +226,7 @@ public:
      * @param imgOut Destination OpenCV Mat image holding the source image with find line overlay
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
-    GC_STATUS DrawLineFindOverlay( const cv::Mat &img, cv::Mat &imgOut, const LineDrawType overlayTypes = NO_OVERLAY );
+    GC_STATUS DrawLineFindOverlay( const cv::Mat &img, cv::Mat &imgOut, const IMG_DISPLAY_OVERLAYS overlayTypes = OVERLAYS_NONE );
 
     /**
      * @brief Create an overlay image with a user specified found water line
@@ -235,7 +236,7 @@ public:
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
     GC_STATUS DrawLineFindOverlay( const cv::Mat &img, cv::Mat &imgOut, const FindLineResult findLineResult,
-                                   const LineDrawType overlayTypes = static_cast< LineDrawType >( static_cast< int >( FOUND_LINE ) |
+                                   const IMG_DISPLAY_OVERLAYS overlayTypes = static_cast< IMG_DISPLAY_OVERLAYS >( static_cast< int >( FINDLINE ) |
                                                                                                   static_cast< int >( RANSAC_POINTS ) ) );
 
     /**

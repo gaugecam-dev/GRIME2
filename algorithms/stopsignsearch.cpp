@@ -20,18 +20,18 @@
 #include "opencv2/imgcodecs.hpp"
 #include "bresenham.h"
 
-#ifndef DEBUG_STOPSIGN_TEMPL
-#define DEBUG_STOPSIGN_TEMPL
+#ifdef DEBUG_STOPSIGN_TEMPL
+#undef DEBUG_STOPSIGN_TEMPL
 #include <boost/filesystem.hpp>
 using namespace boost;
 namespace fs = filesystem;
+#ifdef _WIN32
+static const char DEBUG_FOLDER[] = "c:/gaugecam/";
+#else
+static const char DEBUG_FOLDER[] = "/var/tmp/water/";
+#endif
 #endif
 
-#ifdef DEBUG_STOPSIGN_LINEFIT
-#undef DEBUG_STOPSIGN_LINEFIT
-#endif
-
-static const std::string DEBUG_FOLDER = std::string( "/var/tmp/water/" );
 using namespace cv;
 using namespace std;
 
@@ -67,19 +67,25 @@ GC_STATUS StopsignSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &
             if ( img.type() == CV_8UC3 )
                 cvtColor( img, matIn, COLOR_BGR2GRAY );
 
-            GaussianBlur( matIn, matIn, Size( 5, 5 ), 9.0 );
-            medianBlur( matIn, matIn, 17 );
-            // imwrite( "/var/tmp/water/template_stopsign_gauss.png", matIn );
-
             cv::Ptr< CLAHE > clahe = createCLAHE( 1.0 );
             clahe->apply( matIn, matIn );
-            // imwrite( "/var/tmp/water/template_stopsign_clahe.png", matIn );
+#ifdef DEBUG_STOPSIGN_TEMPL
+            imwrite( "/var/tmp/water/template_stopsign_clahe.png", matIn );
+#endif
 
+            // GaussianBlur( matIn, matIn, Size( 3, 3 ), 1.0 );
+            medianBlur( matIn, matIn, 5 );
+#ifdef DEBUG_STOPSIGN_TEMPL
+            imwrite( "/var/tmp/water/template_stopsign_median.png", matIn );
+#endif
+
+#ifdef DEBUG_STOPSIGN_TEMPL
             Mat color;
             if ( img.type() == CV_8UC1 )
                 cvtColor( img, color, COLOR_BGR2GRAY );
             else
                 img.copyTo( color );
+#endif
 
             pts.clear();
             Mat response;
@@ -103,14 +109,28 @@ GC_STATUS StopsignSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &
                 if ( 0.0 < maxMaxVal )
                 {
                     pts.push_back( maxMaxPt );
+#ifdef DEBUG_STOPSIGN_TEMPL
                     line( color, Point( cvRound( maxMaxPt.x - 10 ), cvRound( maxMaxPt.y ) ),
-                          Point( cvRound( maxMaxPt.x + 10 ), cvRound( maxMaxPt.y ) ), Scalar( 0, 255, 0 ), 1 );
+                          Point( cvRound( maxMaxPt.x + 10 ), cvRound( maxMaxPt.y ) ), Scalar( 0, 255, 255 ), 1 );
                     line( color, Point( cvRound( maxMaxPt.x ), cvRound( maxMaxPt.y - 10 ) ),
-                          Point( cvRound( maxMaxPt.x ), cvRound( maxMaxPt.y + 10 ) ), Scalar( 0, 255, 0 ), 1 );
+                          Point( cvRound( maxMaxPt.x ), cvRound( maxMaxPt.y + 10 ) ), Scalar( 0, 255, 255 ), 1 );
+#endif
                 }
             }
+
             retVal = RefineFind( img, pts );
-            // imwrite( "/var/tmp/water/template_stopsign_find.png", color );
+
+#ifdef DEBUG_STOPSIGN_TEMPL
+            imwrite( "/var/tmp/water/stopsign_find_template.png", color );
+            for ( size_t i = 0; i < pts.size(); ++i )
+            {
+                line( color, Point( cvRound( pts[ i ].x - 10 ), cvRound( pts[ i ].y ) ),
+                      Point( cvRound( pts[ i ].x + 10 ), cvRound( pts[ i ].y ) ), Scalar( 0, 255, 0 ), 1 );
+                line( color, Point( cvRound( pts[ i ].x ), cvRound( pts[ i ].y - 10 ) ),
+                      Point( cvRound( pts[ i ].x ), cvRound( pts[ i ].y + 10 ) ), Scalar( 0, 255, 0 ), 1 );
+            }
+            imwrite( "/var/tmp/water/stopsign_find_line.png", color );
+#endif
         }
         if ( 8 != pts.size() )
         {
@@ -208,6 +228,8 @@ GC_STATUS StopsignSearch::RefineFind( const Mat &img, vector< Point2d > &pts )
             vector< LineEnds > lineEndSet;
             vector< Point > lineEdges;
             Mat mask = Mat::zeros( img.size(), CV_8UC1 );
+
+#ifdef DEBUG_STOPSIGN_TEMPL
             Mat color;
             if ( img.type() == CV_8UC3 )
             {
@@ -217,16 +239,17 @@ GC_STATUS StopsignSearch::RefineFind( const Mat &img, vector< Point2d > &pts )
             {
                 cvtColor( img, color, COLOR_GRAY2BGR );
             }
+#endif
 
             LineEnds lineA;
             vector< LineEnds > lineSet;
-            retVal = ShortenLine( LineEnds( pts[ 0 ], pts[ pts.size() - 1 ] ), 0.5, lineA );
+            retVal = ShortenLine( LineEnds( pts[ 0 ], pts[ pts.size() - 1 ] ), 0.9, lineA );
             if ( GC_OK == retVal )
             {
                 lineSet.push_back( lineA );
                 for ( size_t i = 1; i < pts.size(); ++i )
                 {
-                    retVal = ShortenLine( LineEnds( pts[ i ], pts[ i - 1 ] ), 0.5, lineA );
+                    retVal = ShortenLine( LineEnds( pts[ i ], pts[ i - 1 ] ), 0.9, lineA );
                     if ( GC_OK == retVal )
                     {
                         lineSet.push_back( lineA );
@@ -240,18 +263,25 @@ GC_STATUS StopsignSearch::RefineFind( const Mat &img, vector< Point2d > &pts )
                 {
                     for ( size_t i = 0; i < lineSet.size(); ++i )
                     {
+#ifdef DEBUG_STOPSIGN_TEMPL
                         line( color, lineSet[ i ].bot, lineSet[ i ].top, Scalar( 0, 0, 255 ), 1 );
+#endif
                         mask = 0;
                         line( mask, lineSet[ i ].top, lineSet[ i ].bot, Scalar( 255 ), 15 );
                         mask &= edges;
                         // imwrite( "/var/tmp/water/line_edges.png", mask );
+
                         findNonZero( mask, lineEdges );
+
+#ifdef DEBUG_STOPSIGN_TEMPL
                         for ( size_t j = 0; j < lineEdges.size(); ++j )
                         {
                             color.at<Vec3b>( lineEdges[ j ] )[ 0 ] = 0;
                             color.at<Vec3b>( lineEdges[ j ] )[ 1 ] = 255;
                             color.at<Vec3b>( lineEdges[ j ] )[ 2 ] = 255;
                         }
+#endif
+
                         retVal = FitLine( lineEdges, lineEnds, img );
                         if ( GC_OK == retVal )
                         {
@@ -266,6 +296,8 @@ GC_STATUS StopsignSearch::RefineFind( const Mat &img, vector< Point2d > &pts )
                     if ( GC_OK == retVal )
                     {
                         retVal = CalcPointsFromLines( lineEndSet, pts );
+
+#ifdef DEBUG_STOPSIGN_TEMPL
                         if ( GC_OK == retVal )
                         {
                             for ( size_t i = 0; i < lineEndSet.size(); ++i )
@@ -276,8 +308,10 @@ GC_STATUS StopsignSearch::RefineFind( const Mat &img, vector< Point2d > &pts )
                                       Point( cvRound( pts[ i ].x ), cvRound( pts[ i ].y + 10 ) ), Scalar( 255, 0, 0 ), 1 );
                                 line( color, lineEndSet[ i ].bot, lineEndSet[ i ].top, Scalar( 0, 255, 0 ), 1 );
                             }
-                            // imwrite( "/var/tmp/water/nighttime.png", color );
+                            imwrite( "/var/tmp/water/nighttime.png", color );
                         }
+#endif
+
                     }
                 }
             }
@@ -408,20 +442,20 @@ GC_STATUS StopsignSearch::CreatePointTemplates( const int templateDim, const int
             {
                 for ( int i = 0; i < rotateCnt; ++i )
                 {
-                    retVal = RotateImage( maskZero, mask, static_cast< double >( 5 - i ) );
+                    retVal = RotateImage( maskZero, mask, static_cast< double >( rotateCnt - i ) );
                     if ( GC_OK == retVal )
                     {
                         threshold( mask, mask, 127, 255, THRESH_BINARY );
                         // imwrite( "/var/tmp/water/mask_" + to_string( i ) + ".png", mask );
-                        retVal = RotateImage( templZero, templ, static_cast< double >( 5 - i ) );
+                        retVal = RotateImage( templZero, templ, static_cast< double >( rotateCnt - i ) );
                         if ( GC_OK == retVal )
                         {
                             // imwrite( "/var/tmp/water/templ_" + to_string( i ) + ".png", templ );
                             ptTemplates[ i ].mask = mask.clone();
                             ptTemplates[ i ].templ = templ.clone();
-                            ptTemplates[ i ].angle = static_cast< double >( 5 - i );
+                            ptTemplates[ i ].angle = static_cast< double >( rotateCnt - i );
                             ptTemplates[ i ].offset = offset;
-                            angle = static_cast< double >( ( rotateCnt - 1 ) - ( i + 5 ) );
+                            angle = static_cast< double >( ( rotateCnt - 1 ) - ( i + rotateCnt ) );
                             retVal = RotateImage( maskZero, mask, angle );
                             if ( GC_OK == retVal )
                             {
@@ -481,7 +515,7 @@ GC_STATUS StopsignSearch::DrawCorner( const int templateDim, cv::Mat &templ, cv:
         }
         else
         {
-            int blackLineWidth = 10;
+            int blackLineWidth = 5;
             int tempRotDim = cvRound( static_cast< double >( templateDim ) * 1.415 );
             tempRotDim += ( 0 == tempRotDim % 2 ? 1 : 0 );
             int rectTopAndLeft = ( tempRotDim - templateDim ) >> 1;
@@ -522,7 +556,7 @@ GC_STATUS StopsignSearch::DrawCorner( const int templateDim, cv::Mat &templ, cv:
             contour.push_back( Point( templateDim >> 1, templateDim >> 1 ) );
 
             templ = Mat::zeros( Size( tempRotDim, tempRotDim ), CV_8UC1 );
-            drawContours( templ( rect ), vector< vector< Point > >( 1, contour ), -1, Scalar( 128 ), FILLED );
+            drawContours( templ( rect ), vector< vector< Point > >( 1, contour ), -1, Scalar( 56 ), FILLED );
             // imwrite( DEBUG_FOLDER + "templ_000.png", templ );
 
             templ( rect ) = mask( rect ) - templ( rect );

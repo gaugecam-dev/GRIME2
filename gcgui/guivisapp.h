@@ -41,22 +41,6 @@ enum IMG_BUFFERS
     BUF_OVERLAY,
     BUF_DISPLAY
 };
-enum IMG_DISPLAY_OVERLAYS
-{
-    OVERLAYS_NONE = 0,
-    CALIB_SCALE = 1,
-    CALIB_GRID = 2,
-    TARGET_ROI = 4,
-    FINDLINE = 8,
-    FEATROIS = 16,
-    MOVE_ROIS = 32,
-    MOVE_FIND = 64,
-    DIAG_ROWSUMS = 128,
-    DIAG_1ST_DERIV = 256,
-    DIAG_2ND_DERIV = 512,
-    DIAG_RANSAC = 1024,
-    SEARCH_ROI = 2048
-};
 enum GUIVISAPP_THREAD_TYPE
 {
     FIND_LINES_THREAD,
@@ -103,7 +87,7 @@ public:
     GC_STATUS GetMetadata( const std::string imgFilepath, std::string &data );
     GC_STATUS CreateAnimation( const std::string imageFolder, const std::string animationFilepath, const int delay_ms , const double scale );
     GC_STATUS CalcLine( const FindLineParams params, FindLineResult &result );
-    GC_STATUS CalcLinesInFolder( const std::string folder, const FindLineParams params, const bool isFolderOfImages , const LineDrawType drawTypes );
+    GC_STATUS CalcLinesInFolder( const std::string folder, const FindLineParams params, const bool isFolderOfImages , const IMG_DISPLAY_OVERLAYS drawTypes );
     GC_STATUS CalcLinesThreadFinish();
     GC_STATUS CreateGIFThreadFinish();
     bool isRunningFindLine();
@@ -142,7 +126,7 @@ private:
     GC_STATUS InitBuffers( const cv::Size sizeImg );
     GC_STATUS AdjustImageSize( const cv::Mat &matSrc, cv::Mat &matDst );
     GC_STATUS RemoveAllFilesInFolder( const std::string folderpath );
-    GC_STATUS CalcLinesThreadFunc( const std::vector< std::string > &images, const FindLineParams params, const LineDrawType drawTypes );
+    GC_STATUS CalcLinesThreadFunc( const std::vector< std::string > &images, const FindLineParams params, const IMG_DISPLAY_OVERLAYS drawTypes );
     GC_STATUS CreateGIFThreadFunc( const std::string gifFilepath, const std::vector< std::string > &images, const int delay_ms, const double scale );
 };
 

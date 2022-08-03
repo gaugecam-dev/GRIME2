@@ -388,33 +388,32 @@ GC_STATUS FindLine::GetRandomNumbers( const int low_bound, const int high_bound,
     return retVal;
 }
 GC_STATUS FindLine::DrawResult( const Mat &img, Mat &imgOut, const FindLineResult &result,
-                                const LineDrawType overlayTypes )
+                                const IMG_DISPLAY_OVERLAYS overlayTypes )
 {
-    GC_STATUS retVal = img.empty() ? GC_ERR : GC_OK;
-    if ( GC_OK != retVal )
+    GC_STATUS retVal = GC_OK;
+    if ( ( img.ptr() == imgOut.ptr() ) || img.empty() )
     {
-        FILE_LOG( logERROR ) << "[FindLine::DrawResult] Cannot draw find line results on a NULL image";
+        FILE_LOG( logERROR ) << "[FindLine::DrawResult] Cannot draw find line results on a NULL image or if src=dst";
+        retVal = GC_ERR;
     }
     else
     {
         try
         {
-            if ( &img != &imgOut )
+            if ( CV_8UC1 == img.type() )
             {
-                if ( CV_8UC1 == img.type() )
-                {
-                    cvtColor( img, imgOut, COLOR_GRAY2BGR );
-                }
-                else if ( CV_8UC3 == img.type() )
-                {
-                    imgOut = img.clone();
-                }
-                else
-                {
-                    FILE_LOG( logERROR ) << "[FindLine::DrawResult] Invalid image type for drawing row sum must be 8-bit gray or 8-bit bgr";
-                    retVal = GC_ERR;
-                }
+                cvtColor( img, imgOut, COLOR_GRAY2BGR );
             }
+            else if ( CV_8UC3 == img.type() )
+            {
+                imgOut = img.clone();
+            }
+            else
+            {
+                FILE_LOG( logERROR ) << "[FindLine::DrawResult] Invalid image type for drawing row sum must be 8-bit gray or 8-bit bgr";
+                retVal = GC_ERR;
+            }
+
             if ( GC_OK == retVal )
             {
                 int circleSize =  std::max( 5, cvRound( static_cast< double >( imgOut.rows ) / 400.0 ) );
@@ -422,7 +421,7 @@ GC_STATUS FindLine::DrawResult( const Mat &img, Mat &imgOut, const FindLineResul
                 int textRowSpacing = cvRound( static_cast< double >( imgOut.rows ) / 40.0 );
                 double fontScale = static_cast< double >( imgOut.rows ) / 500.0;
 
-                if ( ( overlayTypes & ROW_SUMS ) && !result.diagRowSums.empty() )
+                if ( ( overlayTypes & DIAG_ROWSUMS ) && !result.diagRowSums.empty() )
                 {
                     for ( size_t i = 0; i < result.diagRowSums.size(); ++i )
                     {
@@ -436,7 +435,7 @@ GC_STATUS FindLine::DrawResult( const Mat &img, Mat &imgOut, const FindLineResul
                     }
                 }
 
-                if ( ( overlayTypes & FIRST_DERIVE ) && !result.diag1stDeriv.empty() )
+                if ( ( overlayTypes & FINDLINE_1ST_DERIV ) && !result.diag1stDeriv.empty() )
                 {
                     for ( size_t i = 0; i < result.diag1stDeriv.size(); ++i )
                     {
@@ -450,7 +449,7 @@ GC_STATUS FindLine::DrawResult( const Mat &img, Mat &imgOut, const FindLineResul
                     }
                 }
 
-                if ( ( overlayTypes & SECOND_DERIVE ) && !result.diag2ndDeriv.empty() )
+                if ( ( overlayTypes & FINDLINE_2ND_DERIV ) && !result.diag2ndDeriv.empty() )
                 {
                     for ( size_t i = 0; i < result.diag2ndDeriv.size(); ++i )
                     {
@@ -476,7 +475,7 @@ GC_STATUS FindLine::DrawResult( const Mat &img, Mat &imgOut, const FindLineResul
                 }
                 else
                 {
-                    if ( ( overlayTypes & FOUND_LINE ) )
+                    if ( ( overlayTypes & FINDLINE ) )
                     {
                         line( imgOut, result.calcLinePts.lftPixel, result.calcLinePts.rgtPixel, Scalar( 255, 0, 0 ), textStroke + 1 );
                         circle( imgOut, result.calcLinePts.ctrPixel, circleSize + textStroke, Scalar( 0, 255, 0 ), textStroke );
@@ -490,7 +489,7 @@ GC_STATUS FindLine::DrawResult( const Mat &img, Mat &imgOut, const FindLineResul
                                                result.calcLinePts.ctrPixel.y + circleSize + textStroke * 2 ), Scalar( 0, 0, 255 ), textStroke );
                     }
 
-                    if ( ( overlayTypes & MOVE_FIND_RESULT ) )
+                    if ( ( overlayTypes & MOVE_FIND ) )
                     {
                         line( imgOut, result.refMovePts.lftPixel, result.refMovePts.rgtPixel, Scalar( 0, 0, 255 ), circleSize );
                         line( imgOut, result.foundMovePts.lftPixel, result.foundMovePts.rgtPixel, Scalar( 0, 255, 0 ), ( circleSize >> 1 ) - 1 );
