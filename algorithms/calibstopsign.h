@@ -97,7 +97,6 @@ public:
     GC_STATUS WorldToPixel( const cv::Point2d ptWorld, cv::Point2d &ptPixel );
     GC_STATUS DrawOverlay( const cv::Mat &img, cv::Mat &result, const bool drawCalibScale, const bool drawCalibGrid,
                            const bool drawMoveROIs, const bool drawSearchROI , const bool drawTargetSearchROI );
-    GC_STATUS SetStopsignColor( const cv::Scalar color, const double minRange, const double maxRange, cv::Scalar &hsv );
     GC_STATUS GetCalibParams( std::string &calibParams );
 
     void clear();
@@ -119,7 +118,6 @@ private:
     CalibModelSymbol model;
     StopsignSearch stopsignSearch;
 
-    GC_STATUS FindColor( const cv::Mat &img, cv::Mat1b &redMask, std::vector< StopSignCandidate > &symbolCandidates );
     GC_STATUS RotateImage( const cv::Mat &src, cv::Mat &dst, const double angle );
     GC_STATUS GetNonZeroPoints( cv::Mat &img, std::vector< cv::Point > &pts );
     GC_STATUS GetLineEndPoints( cv::Mat &mask, const cv::Rect rect, cv::Point2d &pt1, cv::Point2d &pt2 );
@@ -130,11 +128,12 @@ private:
     GC_STATUS CalcOctoWorldPoints( const double sideLength, std::vector< cv::Point2d > &pts );
     GC_STATUS CalcSearchLines( const cv::Mat &img, std::vector< cv::Point > &searchLineCorners, std::vector< LineEnds > &searchLines );
     GC_STATUS CreateCalibration( const std::vector< cv::Point2d > &pixelPts, const std::vector< cv::Point2d > &worldPts );
-    GC_STATUS GetLineEquation( const cv::Point2d pt1, const cv::Point2d pt2, double &slope, double &intercept );
     GC_STATUS CalcCenterAngle( const std::vector< cv::Point2d > &pts, cv::Point2d &center, double &angle );
     GC_STATUS CalcGridDrawPoints (std::vector< StopSignLine > &horzLines, std::vector< StopSignLine > &vertLines );
     GC_STATUS GetXEdgeMinDiffX( const double xWorld, cv::Point2d &ptPix, const bool isTopSideY );
     GC_STATUS GetXEdgeMinDiffY( const double yWorld, cv::Point2d &ptPix, const bool isRightSideX );
+    GC_STATUS CalcSearchROI( const double botLftPtDistToZero, cv::Point2d &lftTop,
+                             cv::Point2d &rgtTop, cv::Point2d &lftBot, cv::Point2d &rgtBot  );
     GC_STATUS TestCalibration( bool &isValid );
 };
 

@@ -132,7 +132,7 @@ GC_STATUS GuiVisApp::GetImage(const Size sizeImg, const size_t nStride, const in
     try
     {
         retVal = GetImageOverlay( nImgColor, overlays );
-        if ( 0 != retVal )
+        if ( GC_OK != retVal )
         {
             FILE_LOG( logWARNING ) << "Could not perform GetImageOverlay()";
             m_matDisplay.setTo( 0 );
@@ -189,18 +189,22 @@ GC_STATUS GuiVisApp::GetImageOverlay( const IMG_BUFFERS nImgColor, const IMG_DIS
             if( overlays & FINDLINE )
                 overlayType += FINDLINE;
             if( overlays & DIAG_ROWSUMS )
-                    overlayType += DIAG_ROWSUMS;
+                overlayType += DIAG_ROWSUMS;
             if( overlays & FINDLINE_1ST_DERIV )
-                    overlayType += FINDLINE_1ST_DERIV;
+                overlayType += FINDLINE_1ST_DERIV;
             if( overlays & FINDLINE_2ND_DERIV )
-                    overlayType += FINDLINE_2ND_DERIV;
+                overlayType += FINDLINE_2ND_DERIV;
             if( overlays & RANSAC_POINTS )
-                    overlayType += RANSAC_POINTS;
+                overlayType += RANSAC_POINTS;
             if( overlays & MOVE_FIND )
-                    overlayType += MOVE_FIND;
-            if ( OVERLAYS_NONE != overlayType )
+                overlayType += MOVE_FIND;
+            if ( ( OVERLAYS_NONE != overlayType ) )
             {
                 retVal = m_visApp.DrawLineFindOverlay( matTemp, m_matDisplay, static_cast< IMG_DISPLAY_OVERLAYS >( overlayType ) );
+            }
+            else
+            {
+                m_matDisplay = matTemp.clone();
             }
         }
     }
@@ -611,57 +615,6 @@ GC_STATUS GuiVisApp::CreateAnimation( const std::string imageFolder, const std::
 
     //    GC_STATUS retVal = m_visApp.CreateAnimation( imageFolder, animationFilepath, delay_ms, scale );
     //    sigMessage( string( "Create animation: " ) + ( GC_OK == retVal ? "SUCCESS" : "FAILURE" ) );
-    return retVal;
-}
-GC_STATUS GuiVisApp::GetStopsignColor( cv::Scalar &color, double &minRange, double &maxRange, cv::Scalar &hsv )
-{
-    GC_STATUS retVal = m_visApp.GetStopsignColor( color, minRange, maxRange );
-    if ( GC_OK == retVal )
-    {
-        retVal = m_visApp.SetStopsignColor( color, minRange, maxRange, hsv );
-    }
-    return retVal;
-}
-GC_STATUS GuiVisApp::SetStopsignColor( const cv::Scalar color, const int minRange, const int maxRange, cv::Scalar &hsv )
-{
-    GC_STATUS retVal = m_visApp.SetStopsignColor( color, static_cast< double >( minRange ) / 100.0,
-                                                  static_cast< double >( maxRange ) / 100.0, hsv );
-    return retVal;
-}
-GC_STATUS GuiVisApp::GetROIColor( const cv::Rect roi, cv::Scalar &color )
-{
-    GC_STATUS retVal = GC_OK;
-    if ( m_matColor.empty() )
-    {
-        retVal = GC_ERR;
-        sigMessage( string( "GetRoiColor: No image available" ) );
-    }
-    else if ( roi.x < 0 || roi.y < 0 ||
-              roi.x + roi.width > m_matColor.cols ||
-              roi.y + roi.height > m_matColor.rows )
-    {
-        retVal = GC_ERR;
-        sigMessage( string( "GetRoiColor: Invalid region of interested selected" ) );
-    }
-    else
-    {
-        try
-        {
-            vector< Mat > chans;
-            cv::split( m_matColor( roi ), chans );
-            double b = mean( chans[ 0 ] ).val[ 0 ];
-            double g = mean( chans[ 1 ] ).val[ 0 ];
-            double r = mean( chans[ 2 ] ).val[ 0 ];
-            color = Scalar( b, g, r );
-        }
-        catch( std::exception &e )
-        {
-            sigMessage( string( "GetRoiColor: Exception" ) );
-            FILE_LOG( logERROR ) << "[VisApp::GetROIColor] " << e.what();
-            retVal = GC_EXCEPT;
-        }
-    }
-
     return retVal;
 }
 GC_STATUS GuiVisApp::GetCalibParams( std::string &calibParams )

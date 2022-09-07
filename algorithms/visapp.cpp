@@ -616,16 +616,6 @@ GC_STATUS VisApp::PixelToWorld( FindPointSet &ptSet )
     }
     return retVal;
 }
-GC_STATUS VisApp::GetStopsignColor( cv::Scalar &color, double &minRange, double &maxRange )
-{
-    GC_STATUS retVal = m_calibExec.GetStopsignColor( color, minRange, maxRange );
-    return retVal;
-}
-GC_STATUS VisApp::SetStopsignColor( const cv::Scalar color, const double minRange, const double maxRange, Scalar &hsv )
-{
-    GC_STATUS retVal = m_calibExec.SetStopsignColor( color, minRange, maxRange, hsv );
-    return retVal;
-}
 GC_STATUS VisApp::GetCalibParams( std::string &calibParams )
 {
     GC_STATUS retVal = m_calibExec.GetCalibParams( calibParams );

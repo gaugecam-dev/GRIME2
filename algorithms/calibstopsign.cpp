@@ -29,9 +29,6 @@ static const char DEBUG_FOLDER[] = "/var/tmp/water/";
 #endif
 
 static const double MIN_SYMBOL_CONTOUR_SIZE = 30;
-static const double MIN_SYMBOL_CONTOUR_AREA = 1500;
-static const int MIN_SYMBOL_CONTOUR_LENGTH = 7;
-static const double MAX_SYMBOL_CONTOUR_ELONG = 1.5;
 using namespace cv;
 using namespace std;
 using namespace boost;
@@ -104,7 +101,6 @@ GC_STATUS CalibStopSign::GetCalibParams( std::string &calibParams )
     return retVal;
 }
 // symbolPoints are clockwise ordered with 0 being the topmost left point
-#if 1
 GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &controlJson )
 {
     GC_STATUS retVal = GC_OK;
@@ -185,262 +181,59 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &contr
                 retVal = CreateCalibration( model.pixelPoints, pointsTemp );
                 if ( GC_OK == retVal )
                 {
-#ifdef DEBUG_FIND_CALIB_SYMBOL
-                    Mat temp_img;
-                    img.copyTo( temp_img );
-                    // cvtColor( img, temp_img, COLOR_GRAY2BGR );
-                    line( temp_img, model.waterlineSearchCorners[ 0 ], model.waterlineSearchCorners[ 1 ], Scalar( 0, 0, 255 ), 7 );
-                    line( temp_img, model.waterlineSearchCorners[ 0 ], model.waterlineSearchCorners[ 2 ], Scalar( 0, 255, 255 ), 7 );
-                    line( temp_img, model.waterlineSearchCorners[ 3 ], model.waterlineSearchCorners[ 1 ], Scalar( 0, 255, 0 ), 7 );
-                    line( temp_img, model.waterlineSearchCorners[ 3 ], model.waterlineSearchCorners[ 2 ], Scalar( 255, 0, 0 ), 7 );
-                    imwrite( "/var/tmp/water/test_search_roi_0.png", temp_img );
-#endif
-                    if ( 0.0 <= model.waterlineSearchCorners[ 0 ].x )
-                    {
-                        int topWidth = model.waterlineSearchCorners[ 1 ].x - model.waterlineSearchCorners[ 0 ].x;
-                        int botWidth = model.waterlineSearchCorners[ 3 ].x - model.waterlineSearchCorners[ 2 ].x;
-                        int lftHeight = model.waterlineSearchCorners[ 2 ].y - model.waterlineSearchCorners[ 0 ].y;
+                    Point2d lftTop, rgtTop, lftBot, rgtBot;
+                    retVal = CalcSearchROI( 2.36, lftTop, rgtTop, lftBot, rgtBot );
+                    Mat color;
 
-                        int lftOffsetX = model.waterlineSearchCorners[ 0 ].x - model.waterlineSearchCorners[ 2 ].x;
-                        int topOffsetY = model.waterlineSearchCorners[ 0 ].y - model.waterlineSearchCorners[ 1 ].y;
-                        int botOffsetY = model.waterlineSearchCorners[ 2 ].y - model.waterlineSearchCorners[ 3 ].y;
-
-                        model.waterlineSearchCorners[ 0 ].x = cvRound( model.pixelPoints[ 5 ].x );
-                        model.waterlineSearchCorners[ 0 ].y = cvRound( model.pixelPoints[ 5 ].y ) + 30;
-                        model.waterlineSearchCorners[ 1 ].x = model.waterlineSearchCorners[ 0 ].x + topWidth;
-                        model.waterlineSearchCorners[ 1 ].y = model.waterlineSearchCorners[ 0 ].y - topOffsetY;
-
-                        model.waterlineSearchCorners[ 2 ].x = model.waterlineSearchCorners[ 0 ].x - lftOffsetX;
-                        model.waterlineSearchCorners[ 2 ].y = model.waterlineSearchCorners[ 0 ].y + lftHeight;
-                        model.waterlineSearchCorners[ 3 ].x = model.waterlineSearchCorners[ 2 ].x + botWidth;
-                        model.waterlineSearchCorners[ 3 ].y = model.waterlineSearchCorners[ 2 ].y - botOffsetY;
-
-#ifdef DEBUG_FIND_CALIB_SYMBOL
-                        img.copyTo( temp_img );
-                        // cvtColor( img, temp_img, COLOR_GRAY2BGR );
-                        line( temp_img, model.waterlineSearchCorners[ 0 ], model.waterlineSearchCorners[ 1 ], Scalar( 0, 0, 255 ), 7 );
-                        line( temp_img, model.waterlineSearchCorners[ 0 ], model.waterlineSearchCorners[ 2 ], Scalar( 0, 255, 255 ), 7 );
-                        line( temp_img, model.waterlineSearchCorners[ 3 ], model.waterlineSearchCorners[ 1 ], Scalar( 0, 255, 0 ), 7 );
-                        line( temp_img, model.waterlineSearchCorners[ 3 ], model.waterlineSearchCorners[ 2 ], Scalar( 255, 0, 0 ), 7 );
-                        imwrite( "/var/tmp/water/test_search_roi_1.png", temp_img );
-#endif
-
-                        SearchLines searchLines;
-                        retVal = searchLines.CalcSearchLines( model.waterlineSearchCorners, model.searchLineSet );
-                        if ( GC_OK != retVal )
-                        {
-                            FILE_LOG( logERROR ) << "[CalibStopSign::Calibrate] Invalid search lines (is 4-pt bounding poly correct?)";
-                            retVal = GC_OK;
-                        }
-                    }
-
-                    if ( GC_OK == retVal )
-                    {
-                        retVal = CalcCenterAngle( model.worldPoints, model.center, model.angle );
-                        if ( GC_OK == retVal )
-                        {
-                            model.imgSize = img.size();
-                        }
-                    }
-                }
-            }
-            if ( model.pixelPoints.empty() || model.worldPoints.empty() || model.searchLineSet.empty() )
-            {
-                FILE_LOG( logERROR ) << "[CalibStopSign::Calibrate] No valid calibration for drawing";
-                retVal = GC_ERR;
-            }
-            else if ( matHomogPixToWorld.empty() || matHomogWorldToPix.empty() )
-            {
-                FILE_LOG( logERROR ) << "[CalibStopSign::Calibrate] System not calibrated";
-                retVal = GC_ERR;
-            }
-            else
-            {
-                model.controlJson = controlJson;
-            }
-        }
-        if ( GC_OK != retVal )
-        {
-            model.validCalib = false;
-        }
-    }
-    catch( cv::Exception &e )
-    {
-        FILE_LOG( logERROR ) << "[CalibStopSign::Calibrate] " << e.what();
-        retVal = GC_EXCEPT;
-    }
-
-    return retVal;
-}
-#else
-GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &controlJson )
-{
-    GC_STATUS retVal = GC_OK;
-    try
-    {
-        // cout << model.targetSearchRegion << endl;
-
-        std::vector< StopSignCandidate > candidates;
-        bool useRoi = -1 != model.targetSearchRegion.x &&
-                -1 != model.targetSearchRegion.y &&
-                -1 != model.targetSearchRegion.width &&
-                -1 != model.targetSearchRegion.height;
-
-        Scalar hsv;
-        retVal = SetStopsignColor( model.symbolColor, static_cast< double >( model.colorRangeMin ) / 100.0,
-                                   static_cast< double >( model.colorRangeMax ), hsv );
-        if ( GC_OK == retVal )
-        {
-            cv::Mat1b mask;
-            // imwrite( "/var/tmp/water/img.png", useRoi ? img( model.targetSearchRegion ) : img );
-            retVal = FindColor( useRoi ? img( model.targetSearchRegion ) : img, mask, candidates );
-            // imwrite( "/var/tmp/water/mask.png", mask );
-            if ( GC_OK == retVal )
-            {
-                OctagonLines octoLines;
-                Point2d ptTopLft, ptTopRgt, ptBotLft, ptBotRgt;
-                for ( size_t i = 0; i < candidates.size(); ++i )
-                {
-                    retVal = FindCorners( mask, candidates[ i ].contour, octoLines );
-                    if ( GC_OK == retVal )
-                    {
-                        retVal = FindDiagonals( mask, candidates[ i ].contour, octoLines );
-                        if ( GC_OK == retVal )
-                        {
-                            retVal = CalcCorners( octoLines, model.pixelPoints );
-                            if ( GC_OK == retVal )
-                            {
-                                retVal = TestCalibration( model.validCalib );
-                            }
-                        }
-                    }
-                }
-            }
-            if ( GC_OK != retVal )
-            {
-                retVal = stopsignSearch.Init( GC_STOPSIGN_TEMPLATE_DIM, 5 );
-                if ( GC_OK == retVal )
-                {
-                    if ( useRoi )
-                    {
-                        Point2d ptOffset( model.targetSearchRegion.x, model.targetSearchRegion.y );
-                        vector< Point2d > pixPtsRoi;
-                        for ( size_t i = 0; i < model.pixelPoints.size(); ++i )
-                        {
-                            pixPtsRoi.push_back( model.pixelPoints[ i ] + ptOffset );
-                        }
-                        retVal = stopsignSearch.Find( img( model.targetSearchRegion ), model.pixelPoints );
-                    }
-                    else
-                    {
-                        retVal = stopsignSearch.Find( img, model.pixelPoints );
-                    }
-                    if ( GC_OK == retVal )
-                    {
-                        retVal = TestCalibration( model.validCalib );
-                    }
-                }
-            }
-
-            if ( GC_OK == retVal )
-            {
-#ifdef DEBUG_FIND_CALIB_SYMBOL
-                Mat color;
-                if ( useRoi )
-                {
-                    img( model.targetSearchRegion ).copyTo( color );
-                }
-                else
-                {
                     img.copyTo( color );
-                }
-                for ( size_t i = 0; i < model.pixelPoints.size(); ++i )
-                {
-                    line( color, Point( model.pixelPoints[ i ].x - 10, model.pixelPoints[ i ].y ),
-                                 Point( model.pixelPoints[ i ].x + 10, model.pixelPoints[ i ].y ),
-                          Scalar( 0, 255, 255 ), 1 );
-                    line( color, Point( model.pixelPoints[ i ].x, model.pixelPoints[ i ].y - 10 ),
-                                 Point( model.pixelPoints[ i ].x, model.pixelPoints[ i ].y + 10 ),
-                          Scalar( 0, 255, 255 ), 1 );
-                }
-                imwrite( DEBUG_FOLDER + "___FINAL.png", color );
-#endif
-                if ( useRoi )
-                {
-                    Point2d offset = Point2d( model.targetSearchRegion.x, model.targetSearchRegion.y );
-                    for ( size_t i = 0; i < model.pixelPoints.size(); ++i )
-                    {
-                        model.pixelPoints[ i ] += offset;
-                    }
-                }
-
-                retVal = CalcOctoWorldPoints( model.facetLength, model.worldPoints );
-                if ( GC_OK == retVal )
-                {
-                    vector< Point2d > pointsTemp;
-                    Point2d ptTemp( 0.0, model.zeroOffset );
-                    for ( size_t i = 0; i < model.worldPoints.size(); ++i )
-                    {
-                        pointsTemp.push_back( model.worldPoints[ i ] + ptTemp );
-                    }
-                    retVal = CreateCalibration( model.pixelPoints, pointsTemp );
+                    Point2d pt;
+                    retVal = WorldToPixel( lftTop, pt );
                     if ( GC_OK == retVal )
                     {
-#ifdef DEBUG_FIND_CALIB_SYMBOL
-                        Mat temp_img;
-                        img.copyTo( temp_img );
-                        // cvtColor( img, temp_img, COLOR_GRAY2BGR );
-                        line( temp_img, model.waterlineSearchCorners[ 0 ], model.waterlineSearchCorners[ 1 ], Scalar( 0, 0, 255 ), 7 );
-                        line( temp_img, model.waterlineSearchCorners[ 0 ], model.waterlineSearchCorners[ 2 ], Scalar( 0, 255, 255 ), 7 );
-                        line( temp_img, model.waterlineSearchCorners[ 3 ], model.waterlineSearchCorners[ 1 ], Scalar( 0, 255, 0 ), 7 );
-                        line( temp_img, model.waterlineSearchCorners[ 3 ], model.waterlineSearchCorners[ 2 ], Scalar( 255, 0, 0 ), 7 );
-                        imwrite( "/var/tmp/water/test_search_roi_0.png", temp_img );
-#endif
-                        if ( 0.0 <= model.waterlineSearchCorners[ 0 ].x )
-                        {
-                            int topWidth = model.waterlineSearchCorners[ 1 ].x - model.waterlineSearchCorners[ 0 ].x;
-                            int botWidth = model.waterlineSearchCorners[ 3 ].x - model.waterlineSearchCorners[ 2 ].x;
-                            int lftHeight = model.waterlineSearchCorners[ 2 ].y - model.waterlineSearchCorners[ 0 ].y;
-
-                            int lftOffsetX = model.waterlineSearchCorners[ 0 ].x - model.waterlineSearchCorners[ 2 ].x;
-                            int topOffsetY = model.waterlineSearchCorners[ 0 ].y - model.waterlineSearchCorners[ 1 ].y;
-                            int botOffsetY = model.waterlineSearchCorners[ 2 ].y - model.waterlineSearchCorners[ 3 ].y;
-
-                            model.waterlineSearchCorners[ 0 ].x = cvRound( model.pixelPoints[ 5 ].x );
-                            model.waterlineSearchCorners[ 0 ].y = cvRound( model.pixelPoints[ 5 ].y ) + 30;
-                            model.waterlineSearchCorners[ 1 ].x = model.waterlineSearchCorners[ 0 ].x + topWidth;
-                            model.waterlineSearchCorners[ 1 ].y = model.waterlineSearchCorners[ 0 ].y - topOffsetY;
-
-                            model.waterlineSearchCorners[ 2 ].x = model.waterlineSearchCorners[ 0 ].x - lftOffsetX;
-                            model.waterlineSearchCorners[ 2 ].y = model.waterlineSearchCorners[ 0 ].y + lftHeight;
-                            model.waterlineSearchCorners[ 3 ].x = model.waterlineSearchCorners[ 2 ].x + botWidth;
-                            model.waterlineSearchCorners[ 3 ].y = model.waterlineSearchCorners[ 2 ].y - botOffsetY;
-
-#ifdef DEBUG_FIND_CALIB_SYMBOL
-                            img.copyTo( temp_img );
-                            // cvtColor( img, temp_img, COLOR_GRAY2BGR );
-                            line( temp_img, model.waterlineSearchCorners[ 0 ], model.waterlineSearchCorners[ 1 ], Scalar( 0, 0, 255 ), 7 );
-                            line( temp_img, model.waterlineSearchCorners[ 0 ], model.waterlineSearchCorners[ 2 ], Scalar( 0, 255, 255 ), 7 );
-                            line( temp_img, model.waterlineSearchCorners[ 3 ], model.waterlineSearchCorners[ 1 ], Scalar( 0, 255, 0 ), 7 );
-                            line( temp_img, model.waterlineSearchCorners[ 3 ], model.waterlineSearchCorners[ 2 ], Scalar( 255, 0, 0 ), 7 );
-                            imwrite( "/var/tmp/water/test_search_roi_1.png", temp_img );
-#endif
-
-                            SearchLines searchLines;
-                            retVal = searchLines.CalcSearchLines( model.waterlineSearchCorners, model.searchLineSet );
-                            if ( GC_OK != retVal )
-                            {
-                                FILE_LOG( logERROR ) << "[CalibStopSign::Calibrate] Invalid search lines (is 4-pt bounding poly correct?)";
-                                retVal = GC_OK;
-                            }
-                        }
-
+                        model.waterlineSearchCorners[ 0 ] = Point( cvRound( pt.x ), cvRound( pt.y ) );
+                        retVal = WorldToPixel( rgtTop, pt );
                         if ( GC_OK == retVal )
                         {
-                            retVal = CalcCenterAngle( model.worldPoints, model.center, model.angle );
+                            model.waterlineSearchCorners[ 1 ] = Point( cvRound( pt.x ), cvRound( pt.y ) );
+                            retVal = WorldToPixel( rgtBot, pt );
                             if ( GC_OK == retVal )
                             {
-                                model.imgSize = img.size();
+                                model.waterlineSearchCorners[ 2 ] = Point( cvRound( pt.x ), cvRound( pt.y ) );
+                                retVal = WorldToPixel( lftBot, pt );
+                                if ( GC_OK == retVal )
+                                {
+                                    model.waterlineSearchCorners[ 3 ] = Point( cvRound( pt.x ), cvRound( pt.y ) );
+#ifdef DEBUG_FIND_CALIB_SYMBOL
+                                    Mat temp_img;
+                                    img.copyTo( temp_img );
+                                    // cvtColor( img, temp_img, COLOR_GRAY2BGR );
+                                    line( temp_img, model.waterlineSearchCorners[ 0 ], model.waterlineSearchCorners[ 1 ], Scalar( 0, 0, 255 ), 7 );
+                                    line( temp_img, model.waterlineSearchCorners[ 0 ], model.waterlineSearchCorners[ 2 ], Scalar( 0, 255, 255 ), 7 );
+                                    line( temp_img, model.waterlineSearchCorners[ 3 ], model.waterlineSearchCorners[ 1 ], Scalar( 0, 255, 0 ), 7 );
+                                    line( temp_img, model.waterlineSearchCorners[ 3 ], model.waterlineSearchCorners[ 2 ], Scalar( 255, 0, 0 ), 7 );
+                                    imwrite( "/var/tmp/water/test_search_roi_0.png", temp_img );
+                                    circle( color, model.waterlineSearchCorners[ 0 ], 11, Scalar( 0, 0, 255 ), 3 );
+                                    circle( color, model.waterlineSearchCorners[ 1 ], 11, Scalar( 0, 255, 255 ), 3 );
+                                    circle( color, model.waterlineSearchCorners[ 2 ], 11, Scalar( 255, 0, 0 ), 3 );
+                                    circle( color, model.waterlineSearchCorners[ 3 ], 11, Scalar( 0, 255, 0 ), 3 );
+                                    imwrite( "/var/tmp/water/roi_pts.png", color );
+#endif
+                                    SearchLines searchLines;
+                                    retVal = searchLines.CalcSearchLines( model.waterlineSearchCorners, model.searchLineSet );
+                                    if ( GC_OK != retVal )
+                                    {
+                                        FILE_LOG( logERROR ) << "[CalibStopSign::Calibrate] Invalid search lines (is 4-pt bounding poly correct?)";
+                                        retVal = GC_OK;
+                                    }
+                                    else
+                                    {
+                                        retVal = CalcCenterAngle( model.worldPoints, model.center, model.angle );
+                                        if ( GC_OK == retVal )
+                                        {
+                                            model.imgSize = img.size();
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -474,7 +267,6 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &contr
 
     return retVal;
 }
-#endif
 GC_STATUS CalibStopSign::AdjustStopSignForRotation( const Size imgSize, const FindPointSet &calcLinePts, double &offsetAngle )
 {
     GC_STATUS retVal = GC_OK;
@@ -765,14 +557,7 @@ GC_STATUS CalibStopSign::Load( const std::string jsonCalString )
 #endif
 
                 model.controlJson = ptreeTop.get< string >( "control_json", "{}" );
-
-                Scalar hsv;
-                retVal = SetStopsignColor( model.symbolColor, static_cast< double >( model.colorRangeMin ) / 100.0,
-                                           static_cast< double >( model.colorRangeMax ), hsv );
-                if ( GC_OK == retVal )
-                {
-                    retVal = CalcHomographies();
-                }
+                retVal = CalcHomographies();
             }
 #ifdef LOG_CALIB_VALUES
             FILE_LOG( logINFO ) << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
@@ -931,103 +716,6 @@ GC_STATUS CalibStopSign::CalcOctoWorldPoints( const double sideLength, std::vect
     catch( std::exception &e )
     {
         FILE_LOG( logERROR ) << "[CalibStopSign::CalcWorldPoints] " << e.what();
-        retVal = GC_EXCEPT;
-    }
-
-    return retVal;
-}
-GC_STATUS CalibStopSign::FindColor( const cv::Mat &img, cv::Mat1b &mask,
-                                    std::vector< StopSignCandidate > &symbolCandidates )
-{
-    GC_STATUS retVal = GC_OK;
-
-    try
-    {
-        if ( img.empty() )
-        {
-            FILE_LOG( logERROR ) << "[CalibStopSign::FindColor] Cannot find red in an empty image";
-            retVal = GC_ERR;
-        }
-        else if ( img.type() != CV_8UC3 )
-        {
-            FILE_LOG( logERROR ) << "[CalibStopSign::FindColor] Image must be an 8-bit BGR image to find red";
-            retVal = GC_ERR;
-        }
-        else
-        {
-            Mat3b hsv;
-            cvtColor( img, hsv, COLOR_BGR2HSV );
-            if ( -999 < model.hsvLow1.val[ 0 ] ) // red -- has beginning and end
-            {
-                Mat1b mask1, mask2;
-                inRange( hsv, model.hsvLow, model.hsvHigh, mask1 );
-                inRange( hsv, model.hsvLow1, model.hsvHigh1, mask2 );
-                mask = mask1 | mask2;
-            }
-            else // generic -- does not cross beginning or end
-            {
-                inRange( hsv, model.hsvLow, model.hsvHigh, mask );
-            }
-#ifdef DEBUG_FIND_CALIB_SYMBOL
-            imwrite( DEBUG_FOLDER + "hsv_color_find.png", mask );
-#endif
-
-            GaussianBlur( mask, mask, Size( 7, 7 ), 3.0 );
-#ifdef DEBUG_FIND_CALIB_SYMBOL
-            imwrite( DEBUG_FOLDER + "gaussian.png", mask );
-#endif
-
-            vector< vector< Point > > contours;
-            findContours( mask, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE );
-
-#ifdef DEBUG_FIND_CALIB_SYMBOL
-            Mat color;
-            img.copyTo( color );
-            imwrite( DEBUG_FOLDER + "red_mask.png", mask );
-#endif
-
-            Moments m;
-            double area, elong;
-            symbolCandidates.clear();
-            for ( size_t i = 0; i < contours.size(); ++i )
-            {
-                if ( MIN_SYMBOL_CONTOUR_LENGTH <= contours[ i ].size() )
-                {
-                    area = contourArea( contours[ i ] );
-                    if ( MIN_SYMBOL_CONTOUR_AREA <= area )
-                    {
-                        m = moments( contours[ i ] );
-                        elong = elongation( m );
-#ifdef DEBUG_FIND_CALIB_SYMBOL
-                        cout << "elongation=" << elong << endl;
-#endif
-                        if ( MAX_SYMBOL_CONTOUR_ELONG >= elong )
-                        {
-                            symbolCandidates.push_back( StopSignCandidate( contours[ i ], area, elong ) );
-                            drawContours( mask, contours, static_cast< int >( i ), Scalar( 255 ), FILLED );
-#ifdef DEBUG_FIND_CALIB_SYMBOL
-                            drawContours( color, contours, i, Scalar( 0, 255, 255 ), 3 );
-#endif
-                        }
-                    }
-                }
-            }
-            if ( symbolCandidates.empty() )
-            {
-                FILE_LOG( logERROR ) << "[CalibStopSign::FindColor] No symbol candidates found, trying nighttime method";
-                retVal = GC_ERR;
-            }
-#ifdef DEBUG_FIND_CALIB_SYMBOL
-            else
-            {
-                imwrite( DEBUG_FOLDER + "candidates.png", color );
-            }
-#endif
-        }
-    }
-    catch( cv::Exception &e )
-    {
-        FILE_LOG( logERROR ) << "[CalibStopSign::FindColor] " << e.what();
         retVal = GC_EXCEPT;
     }
 
@@ -1578,58 +1266,6 @@ GC_STATUS BGR_2_HSV( const cv::Scalar color, cv::Scalar &hsv )
     }
     return retVal;
 }
-GC_STATUS CalibStopSign::SetStopsignColor( const cv::Scalar color, const double minRange, const double maxRange, cv::Scalar &hsv )
-{
-    GC_STATUS retVal = GC_OK;
-
-    try
-    {
-        if ( color.channels < 3 )
-        {
-            FILE_LOG( logERROR ) << "[CalibStopSign::SetStopsignColor] Invalid color (not enough channels)";
-            retVal = GC_ERR;
-        }
-        else
-        {
-            model.symbolColor = color;
-
-            if ( ( 0 == color.val[ 0 ] ) &&
-                 ( 0 == color.val[ 0 ] ) &&
-                 ( 0 == color.val[ 0 ] ) )
-            {
-                model.hsvLow = Scalar( 0, 70, 50 );
-                model.hsvHigh = Scalar( 10, 255, 255 );
-                model.hsvLow1 = Scalar( 170, 70, 50 );
-                model.hsvHigh1 = Scalar( 180, 255, 255 );
-            }
-            else
-            {
-                retVal = BGR_2_HSV( color, hsv );
-                if ( GC_OK == retVal )
-                {
-                    double minH = std::max( 0.0, ( 1.0 - minRange ) * hsv.val[ 0 ] );
-                    double minS = std::max( 0.0, ( 1.0 - minRange ) * hsv.val[ 1 ] );
-                    double minV = std::max( 0.0, ( 1.0 - minRange ) * hsv.val[ 2 ] );
-                    model.hsvLow = Scalar( minH, minS, minV );
-                    model.hsvLow1 = Scalar( -9999999, -9999999, -9999999 );
-
-                    double maxH = std::min( 255.0, ( 1.0 + maxRange ) * hsv.val[ 0 ] );
-                    double maxS = std::min( 255.0, ( 1.0 + maxRange ) * hsv.val[ 1 ] );
-                    double maxV = std::min( 255.0, ( 1.0 + maxRange ) * hsv.val[ 2 ] );
-                    model.hsvHigh = Scalar( maxH, maxS, maxV );
-                    model.hsvHigh1 = Scalar( -9999999, -9999999, -9999999 );
-                }
-            }
-        }
-    }
-    catch( Exception &e )
-    {
-        FILE_LOG( logERROR ) << "[CalibStopSign::SetStopsignColor] " << e.what();
-        retVal = GC_EXCEPT;
-    }
-
-    return retVal;
-}
 GC_STATUS CalibStopSign::DrawOverlay( const cv::Mat &img, cv::Mat &result, const bool drawCalibScale, const bool drawCalibGrid,
                                       const bool drawMoveROIs, const bool drawSearchROI, const bool drawTargetSearchROI )
 {
@@ -1804,7 +1440,17 @@ GC_STATUS CalibStopSign::DrawOverlay( const cv::Mat &img, cv::Mat &result, const
                 }
                 if ( drawTargetSearchROI )
                 {
-                    rectangle( result, model.targetSearchRegion, Scalar( 255, 0, 0 ), textStroke );
+                    if ( model.waterlineSearchCorners.empty() )
+                    {
+                        rectangle( result, model.targetSearchRegion, Scalar( 255, 0, 0 ), textStroke );
+                    }
+                    else
+                    {
+                        line( result, model.waterlineSearchCorners[ 0 ], model.waterlineSearchCorners[ 1 ], Scalar( 255, 0, 0 ), textStroke );
+                        line( result, model.waterlineSearchCorners[ 1 ], model.waterlineSearchCorners[ 2 ], Scalar( 255, 0, 0 ), textStroke );
+                        line( result, model.waterlineSearchCorners[ 2 ], model.waterlineSearchCorners[ 3 ], Scalar( 255, 0, 0 ), textStroke );
+                        line( result, model.waterlineSearchCorners[ 3 ], model.waterlineSearchCorners[ 0 ], Scalar( 255, 0, 0 ), textStroke );
+                    }
                 }
                 if ( drawSearchROI )
                 {
@@ -2057,6 +1703,39 @@ GC_STATUS CalibStopSign::CalcGridDrawPoints( std::vector< StopSignLine > &horzLi
     catch( std::exception &e )
     {
         FILE_LOG( logERROR ) << "[CalibStopSign::CalcGridDrawPoints] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+
+    return retVal;
+}
+GC_STATUS CalibStopSign::CalcSearchROI( const double botLftPtDistToZero, cv::Point2d &lftTop,
+                                        cv::Point2d &rgtTop, cv::Point2d &lftBot, cv::Point2d &rgtBot )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        if ( model.worldPoints.empty() )
+        {
+            FILE_LOG( logERROR ) << "[CalibStopSign::CalcSearchROI] System not calibrated";
+            retVal = GC_ERR;
+        }
+        else if ( ( model.worldPoints[ 1 ].y == model.worldPoints[ 4 ].y ) ||
+                  ( model.worldPoints[ 0 ].y == model.worldPoints[ 5 ].y ) )
+        {
+            FILE_LOG( logERROR ) << "[CalibStopSign::CalcSearchROI] Invalid calibration";
+            retVal = GC_ERR;
+        }
+        else
+        {
+            lftBot = Point2d( ( model.worldPoints[ 5 ].x + model.worldPoints[ 6 ].x ) / 2.0, 0.0 );
+            rgtBot = Point2d( ( model.worldPoints[ 3 ].x + model.worldPoints[ 4 ].x ) / 2.0, 0.0 );
+            lftTop = Point2d( ( model.worldPoints[ 5 ].x + model.worldPoints[ 6 ].x ) / 2.0, botLftPtDistToZero * 0.9 );
+            rgtTop = Point2d( ( model.worldPoints[ 3 ].x + model.worldPoints[ 4 ].x ) / 2.0, botLftPtDistToZero * 0.9 );
+        }
+    }
+    catch( std::exception &e )
+    {
+        FILE_LOG( logERROR ) << "[CalibStopSign::CalcSearchROI] " << e.what();
         retVal = GC_EXCEPT;
     }
 

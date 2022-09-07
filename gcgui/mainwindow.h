@@ -93,8 +93,6 @@ private slots:
     void on_pushButton_showCalibration_clicked();
     void on_pushButton_createAnimation_clicked();
     void on_pushButton_animationStop_clicked();
-    void on_pushButton_setStopSignColor_clicked();
-    void on_pushButton_setStopsignRed_clicked();
 
     void on_pushButton_test_clicked();
 
@@ -129,7 +127,6 @@ private:
     QRect m_rectRubberBand;
     QPoint m_ptCapture;
     LineSearchPoly m_lineSearchPoly;
-    QColor m_stopSignColor;
 
     // vision application
     GuiVisApp m_visApp;
@@ -157,9 +154,9 @@ private:
     void UpdateCalibType();
     void UpdateCalibSearchRegion();
     void UpdateRegionButton();
+    void UpdatePolyButton();
+    void UpdateRulerButton();
     void UpdateRulerMeasurement();
-    void SetStopsignColor( cv::Scalar newColor );
-    void SetStopsignColor( QColor newColor );
     int ReadSettings( const QString filepath = "" );
     int WriteSettings(const QString filepath = "" );
     size_t GetImagesPathsFromFolder(  const QString strPath );

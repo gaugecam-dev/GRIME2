@@ -154,9 +154,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
     ui->actionSaveVideo->setEnabled( false );
 
-    ui->label_stopSignColor->setAutoFillBackground( true );
-    SetStopsignColor( m_stopSignColor );
-
     createActions();
     createConnections();
 
@@ -169,22 +166,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->widget_overlayCheckboxes->hide();
 
     GC_STATUS retVal = m_visApp.LoadCalib( ui->lineEdit_calibVisionResult_json->text().toStdString(), false );
-    if ( GC_OK == retVal )
-    {
-        if ( ui->radioButton_calibStopSign->isChecked() )
-        {
-            Scalar hsv, color;
-            double minRange, maxRange;
-            retVal = m_visApp.GetStopsignColor( color, minRange, maxRange, hsv );
-            if ( GC_OK == retVal )
-            {
-                ui->spinBox_colorRangeMin->setValue( cvRound( minRange ) );
-                ui->spinBox_colorRangeMax->setValue( cvRound( maxRange ) );
-                SetStopsignColor( color );
-            }
-        }
-    }
-    else
+    if ( GC_OK != retVal )
     {
         ui->textEdit_msgs->append( "Could not load calibration from " + ui->lineEdit_calibVisionResult_json->text() );
     }
@@ -394,11 +376,6 @@ int MainWindow::ReadSettings( const QString filepath )
         ui->doubleSpinBox_stopSignFacetLength->setValue( pSettings->value( "stopSignFacetLength", 0.599 ).toDouble() ); // 7.1875 inches
         ui->doubleSpinBox_stopSignZeroOffset->setValue( pSettings->value( "stopSignZeroOffset", 2.36 ).toDouble() );
         ui->spinBox_moveSearchROIGrowPercent->setValue( pSettings->value( "moveSearchROIGrowPercent", 0 ).toInt() );
-        ui->spinBox_colorRangeMin->setValue( pSettings->value( "stopSignColorRangeMin", 10 ).toInt() );
-        ui->spinBox_colorRangeMax->setValue( pSettings->value( "stopSignColorRangeMax", 10 ).toInt() );
-        m_stopSignColor = QColor( pSettings->value( "stopSignRed", 255 ).toInt(),
-                                  pSettings->value( "stopSignGreen", 0 ).toInt(),
-                                  pSettings->value( "stopSignBlue", 0 ).toInt() );
 
         ui->lineEdit_findLineTopFolder->setText( pSettings->value( "findLineFolder", QString( __CONFIGURATION_FOLDER ) ).toString() );
         ui->lineEdit_findLine_resultCSVFile->setText( pSettings->value( "findLineCSVOutPath", QString( __CONFIGURATION_FOLDER ) + "waterlevel.csv" ).toString() );
@@ -491,11 +468,6 @@ int MainWindow::WriteSettings( const QString filepath )
         pSettings->setValue( "stopSignFacetLength", ui->doubleSpinBox_stopSignFacetLength->value() );
         pSettings->setValue( "stopSignZeroOffset", ui->doubleSpinBox_stopSignZeroOffset->value() );
         pSettings->setValue( "moveSearchROIGrowPercent", ui->spinBox_moveSearchROIGrowPercent->value() );
-        pSettings->setValue( "stopSignColorRangeMin", ui->spinBox_colorRangeMin->value() );
-        pSettings->setValue( "stopSignColorRangeMax", ui->spinBox_colorRangeMax->value() );
-        pSettings->setValue( "stopSignRed", m_stopSignColor.red() );
-        pSettings->setValue( "stopSignGreen", m_stopSignColor.green() );
-        pSettings->setValue( "stopSignBlue", m_stopSignColor.blue() );
 
         pSettings->setValue( "findLineFolder", ui->lineEdit_findLineTopFolder->text() );
         pSettings->setValue( "findLineCSVOutPath", ui->lineEdit_findLine_resultCSVFile->text() );
@@ -1001,12 +973,32 @@ void MainWindow::UpdateRegionButton()
         ui->actionSetRuler->setChecked( false );
         ui->actionSetSearchPoly->setChecked( false );
     }
-    else if ( ui->actionSetSearchPoly->isChecked() )
+    else
+    {
+        enableResetRegionButton = false;
+    }
+    ui->pushButton_resetSearchRegion->setEnabled( enableResetRegionButton );
+    ScaleImage();
+}
+void MainWindow::UpdatePolyButton()
+{
+    bool enableResetRegionButton = true;
+    if ( ui->actionSetSearchPoly->isChecked() )
     {
         ui->actionSetROI->setChecked( false );
         ui->actionSetRuler->setChecked( false );
     }
-    else if ( ui->actionSetRuler->isChecked() )
+    else
+    {
+        enableResetRegionButton = false;
+    }
+    ui->pushButton_resetSearchRegion->setEnabled( enableResetRegionButton );
+    ScaleImage();
+}
+void MainWindow::UpdateRulerButton()
+{
+    bool enableResetRegionButton = true;
+    if ( ui->actionSetRuler->isChecked() )
     {
         ui->actionSetROI->setChecked( false );
         ui->actionSetSearchPoly->setChecked( false );
@@ -1018,41 +1010,9 @@ void MainWindow::UpdateRegionButton()
     ui->pushButton_resetSearchRegion->setEnabled( enableResetRegionButton );
     ScaleImage();
 }
-void MainWindow::on_pushButton_setStopSignColor_clicked()
-{
-    cv::Scalar color;
-    GC_STATUS retVal = m_visApp.GetROIColor( cv::Rect( m_rectROI.x(), m_rectROI.y(),
-                                                       m_rectROI.width(), m_rectROI.height() ), color );
-    if ( GC_OK == retVal )
-    {
-        SetStopsignColor( color ); // to show in the gui
-    }
-}
-void MainWindow::on_pushButton_setStopsignRed_clicked()
-{
-    SetStopsignColor( cv::Scalar( 0, 0, 255 ) );
-}
-void MainWindow::SetStopsignColor( QColor newColor ) { SetStopsignColor( cv::Scalar( newColor.blue(), newColor.green(), newColor.red() ) ); }
-void MainWindow::SetStopsignColor( cv::Scalar newColor )
-{
-    cv::Scalar hsv;
-    GC_STATUS retVal = m_visApp.SetStopsignColor( newColor, ui->spinBox_colorRangeMin->value(),
-                                                  ui->spinBox_colorRangeMin->value(), hsv ); // to set the color for which to search
-    if ( GC_OK == retVal )
-    {
-        string hsvMsg = "  h=" + to_string( cvRound( hsv.val[0] ) );
-        hsvMsg +="  s=" + to_string( cvRound( hsv.val[1] ) );
-        hsvMsg +="  v=" + to_string( cvRound( hsv.val[2] ) );
-        ui->label_stopSignColor->setText( QString( hsvMsg.c_str() ) );
-    }
-    m_stopSignColor = QColor( newColor.val[ 2 ], newColor.val[ 1 ], newColor.val[ 0 ] );
-    QPalette pal = ui->label_stopSignColor->palette();
-    pal.setColor( QPalette::Window, QColor( newColor.val[ 2 ], newColor.val[ 1 ], newColor.val[ 0 ] ) );
-    ui->label_stopSignColor->setPalette( pal );
-}
 void MainWindow::on_actionSetROI_toggled( bool ) { UpdateRegionButton(); }
-void MainWindow::on_actionSetSearchPoly_toggled( bool ) { UpdateRegionButton(); }
-void MainWindow::on_actionSetRuler_toggled( bool ) { UpdateRegionButton(); }
+void MainWindow::on_actionSetSearchPoly_toggled( bool ) { UpdatePolyButton(); }
+void MainWindow::on_actionSetRuler_toggled( bool ) { UpdateRulerButton(); }
 void MainWindow::on_actionImageLoad_triggered()
 {
     QString filters = "Image Files (*.png *.jpg *.bmp)";
@@ -1184,9 +1144,7 @@ void MainWindow::on_pushButton_visionCalibrate_clicked()
                                LineSearchRoi( Point( m_lineSearchPoly.lftTop.x(), m_lineSearchPoly.lftTop.y() ),
                                               Point( m_lineSearchPoly.rgtTop.x(), m_lineSearchPoly.rgtTop.y() ),
                                               Point( m_lineSearchPoly.lftBot.x(), m_lineSearchPoly.lftBot.y() ),
-                                              Point( m_lineSearchPoly.rgtBot.x(), m_lineSearchPoly.rgtBot.y() ) ),
-                               cv::Scalar( m_stopSignColor.blue(), m_stopSignColor.green(), m_stopSignColor.red() ),
-                               ui->spinBox_colorRangeMin->value(), ui->spinBox_colorRangeMax->value() );
+                                              Point( m_lineSearchPoly.rgtBot.x(), m_lineSearchPoly.rgtBot.y() ) ) );
     GC_STATUS retVal = GC_OK;
     int ret = -1;
     if ( ui->radioButton_calibBowtie->isChecked() )
@@ -1355,9 +1313,7 @@ void MainWindow::on_pushButton_findLineCurrentImage_clicked()
                                        LineSearchRoi( Point( m_lineSearchPoly.lftTop.x(), m_lineSearchPoly.lftTop.y() ),
                                                       Point( m_lineSearchPoly.rgtTop.x(), m_lineSearchPoly.rgtTop.y() ),
                                                       Point( m_lineSearchPoly.lftBot.x(), m_lineSearchPoly.lftBot.y() ),
-                                                      Point( m_lineSearchPoly.rgtBot.x(), m_lineSearchPoly.rgtBot.y() ) ),
-                                       cv::Scalar( m_stopSignColor.blue(), m_stopSignColor.green(), m_stopSignColor.red() ),
-                                       ui->spinBox_colorRangeMin->value(), ui->spinBox_colorRangeMax->value() );
+                                                      Point( m_lineSearchPoly.rgtBot.x(), m_lineSearchPoly.rgtBot.y() ) ) );
             int ret = CalibExecutive::FormStopsignCalibJsonString( calibItems, params.calibControlString );
             if ( 0 != ret )
             {

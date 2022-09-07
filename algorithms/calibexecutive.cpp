@@ -685,27 +685,6 @@ GC_STATUS CalibExecutive::FindMoveTargetsBowTie( const Mat &img, FindPointSet &p
     }
     return retVal;
 }
-GC_STATUS CalibExecutive::GetStopsignColor( cv::Scalar &color, double &minRange, double &maxRange )
-{
-    GC_STATUS retVal = GC_OK;
-    try
-    {
-        color = stopSign.Model().symbolColor;
-        minRange = stopSign.Model().colorRangeMin;
-        maxRange = stopSign.Model().colorRangeMax;
-    }
-    catch( Exception &e )
-    {
-        FILE_LOG( logERROR ) << "[CalibBowtie::GetStopsignColor] " << e.what();
-    }
-
-    return retVal;
-}
-GC_STATUS CalibExecutive::SetStopsignColor( const cv::Scalar color, const double minRange, const double maxRange, cv::Scalar &hsv )
-{
-    GC_STATUS retVal = stopSign.SetStopsignColor( color, minRange, maxRange, hsv );
-    return retVal;
-}
 GC_STATUS CalibExecutive::MoveRefPoint( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt )
 {
     GC_STATUS retVal = GC_OK;
@@ -899,11 +878,6 @@ GC_STATUS CalibExecutive::FormBowtieCalibJsonString(  const CalibJsonItems &item
         json += "\"searchPoly_lftBot_y\": " + std::to_string( items.lineSearchPoly.lftBot.y ) + ", ";
         json += "\"searchPoly_rgtBot_x\": " + std::to_string( items.lineSearchPoly.rgtBot.x ) + ", ";
         json += "\"searchPoly_rgtBot_y\": " + std::to_string( items.lineSearchPoly.rgtBot.y ) + ", ";
-        json += "\"symbolColor_blue\": -1, ";
-        json += "\"symbolColor_green\": -1, ";
-        json += "\"symbolColor_red\": -1, ";
-        json += "\"colorRangeMin\": -1, ";
-        json += "\"colorRangeMax\": -1, ";
         json += "\"calibResult_json\": \"" + items.calibVisionResult_json + "\"}";
     }
     catch( Exception &e )
@@ -949,11 +923,6 @@ GC_STATUS CalibExecutive::FormStopsignCalibJsonString( const CalibJsonItems &ite
         json += "\"searchPoly_lftBot_y\": " + std::to_string( items.lineSearchPoly.lftBot.y ) + ", ";
         json += "\"searchPoly_rgtBot_x\": " + std::to_string( items.lineSearchPoly.rgtBot.x ) + ", ";
         json += "\"searchPoly_rgtBot_y\": " + std::to_string( items.lineSearchPoly.rgtBot.y ) + ", ";
-        json += "\"symbolColor_blue\": " + std::to_string( items.targetColor.val[ 0 ] ) + ", ";
-        json += "\"symbolColor_green\": " + std::to_string( items.targetColor.val[ 1 ] ) + ", ";
-        json += "\"symbolColor_red\": " + std::to_string( items.targetColor.val[ 2 ] ) + ", ";
-        json += "\"colorRangeMin\": " + std::to_string( items.colorRangeMin ) + ", ";
-        json += "\"colorRangeMax\": " + std::to_string( items.colorRangeMax ) + ", ";
         json += "\"calibResult_json\": \"" + items.calibVisionResult_json + "\"}";
     }
     catch( Exception &e )

@@ -100,10 +100,7 @@ public:
                     const double moveGrowROIPercent,
                     const double worldFacetLength,
                     const double worldZeroOffset,
-                    const LineSearchRoi searchPoly,
-                    const cv::Scalar trgtColor,
-                    const int colorRngMin,
-                    const int colorRngMax ) :
+                    const LineSearchRoi searchPoly ) :
         worldTargetPosition_csvFile( worldPosCsvFile ),
         calibVisionResult_json( calibResultJson ),
         useROI( enableROI ),
@@ -111,10 +108,7 @@ public:
         moveROIGrowPercent( moveGrowROIPercent ),
         facetLength( worldFacetLength ),
         zeroOffset( worldZeroOffset ),
-        lineSearchPoly( searchPoly ),
-        targetColor( trgtColor ),
-        colorRangeMin( colorRngMin ),
-        colorRangeMax( colorRngMax )
+        lineSearchPoly( searchPoly )
     {}
 
     std::string worldTargetPosition_csvFile;
@@ -125,9 +119,6 @@ public:
     double facetLength;
     double zeroOffset;
     LineSearchRoi lineSearchPoly;
-    cv::Scalar targetColor;
-    double colorRangeMin;
-    double colorRangeMax;
 };
 
 class CalibExecutive
@@ -153,9 +144,6 @@ public:
                            const bool drawMoveROIs, const bool drawSearchROI, const bool drawTargetROI );
     GC_STATUS FindMoveTargets( const cv::Mat &img, FindPointSet &ptsFound );
     GC_STATUS MoveRefPoint( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt );
-    GC_STATUS SetStopsignColorRed();
-    GC_STATUS GetStopsignColor( cv::Scalar &color, double &minRange, double &maxRange );
-    GC_STATUS SetStopsignColor( const cv::Scalar color,  double minRange, const double maxRange, cv::Scalar &hsv );
     GC_STATUS AdjustStopSignForRotation( const cv::Size imgSize, const FindPointSet &calcLinePts, double &offsetAngle );
 
     CalibModelBowtie &CalibBowtieModel() { return bowTie.Model(); }
