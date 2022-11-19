@@ -13,7 +13,11 @@ class CalibExecParams
 public:
     CalibExecParams() :
         facetLength( -1.0 ),
-        zeroOffset( 0.0 ),
+        zeroOffset( 2.0 ),
+        botLftPtToLft( -0.5 ),
+        botLftPtToTop( 1.0 ),
+        botLftPtToRgt( 1.5 ),
+        botLftPtToBot( -3.0 ),
         moveSearchROIGrowPercent( 0 ),
         drawCalibScale( false ),
         drawCalibGrid( false ),
@@ -32,7 +36,11 @@ public:
         calibType.clear();
         worldPtCSVFilepath.clear();
         facetLength = -1.0;
-        zeroOffset = 0.0;
+        zeroOffset = 2.0;
+        botLftPtToLft = -0.5;
+        botLftPtToTop = 1.0;
+        botLftPtToRgt = 1.5;
+        botLftPtToBot = -3.0;
         moveSearchROIGrowPercent = 0;
         calibResultJsonFilepath.clear();
         drawCalibScale = false;
@@ -51,6 +59,10 @@ public:
     string worldPtCSVFilepath;
     double facetLength;
     double zeroOffset;
+    double botLftPtToLft;                            ///< Distance from bottom left stop sign corner to search ROI left
+    double botLftPtToTop;                            ///< Distance from bottom left stop sign corner to search ROI top
+    double botLftPtToRgt;                            ///< Distance from bottom left stop sign corner to search ROI right
+    double botLftPtToBot;                            ///< Distance from bottom left stop sign corner to search ROI bottom
     int moveSearchROIGrowPercent;
     string calibResultJsonFilepath;
     bool drawCalibScale;
@@ -92,7 +104,14 @@ public:
 class CalibJsonItems
 {
 public:
-    CalibJsonItems() {}
+    CalibJsonItems() :
+        facetLength( 0.7 ),
+        zeroOffset( 2.0 ),
+        botLftPtToLft( -0.5 ),
+        botLftPtToTop( 1.0 ),
+        botLftPtToRgt( 1.5 ),
+        botLftPtToBot( -3.0 )
+    {}
     CalibJsonItems( const std::string worldPosCsvFile,
                     const std::string calibResultJson,
                     const bool enableROI,
@@ -100,6 +119,10 @@ public:
                     const double moveGrowROIPercent,
                     const double worldFacetLength,
                     const double worldZeroOffset,
+                    const double offsetToLft,
+                    const double offsetToTop,
+                    const double offsetToRgt,
+                    const double offsetToBot,
                     const LineSearchRoi searchPoly ) :
         worldTargetPosition_csvFile( worldPosCsvFile ),
         calibVisionResult_json( calibResultJson ),
@@ -108,6 +131,10 @@ public:
         moveROIGrowPercent( moveGrowROIPercent ),
         facetLength( worldFacetLength ),
         zeroOffset( worldZeroOffset ),
+        botLftPtToLft( offsetToLft ),
+        botLftPtToTop( offsetToTop ),
+        botLftPtToRgt( offsetToRgt ),
+        botLftPtToBot( offsetToBot ),
         lineSearchPoly( searchPoly )
     {}
 
@@ -118,6 +145,10 @@ public:
     double moveROIGrowPercent;
     double facetLength;
     double zeroOffset;
+    double botLftPtToLft;                            ///< Distance from bottom left stop sign corner to search ROI left
+    double botLftPtToTop;                            ///< Distance from bottom left stop sign corner to search ROI top
+    double botLftPtToRgt;                            ///< Distance from bottom left stop sign corner to search ROI right
+    double botLftPtToBot;                            ///< Distance from bottom left stop sign corner to search ROI bottom
     LineSearchRoi lineSearchPoly;
 };
 
@@ -166,9 +197,12 @@ private:
 
     GC_STATUS CalibrateBowTie( const cv::Mat &img, const string &controlJson );
     GC_STATUS CalibrateStopSign( const cv::Mat &img, const string &controlJson );
+
     GC_STATUS FindMoveTargetsBowTie( const cv::Mat &img, FindPointSet &ptsFound );
+    GC_STATUS FindMoveTargetsStopSign( const cv::Mat &img, FindPointSet &ptsFound );
     GC_STATUS MoveRefPointBowTie( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt );
     GC_STATUS MoveRefPointStopSign( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt );
+
     GC_STATUS ReadWorldCoordsFromCSVBowTie( const string csvFilepath, vector< vector< cv::Point2d > > &worldCoords );
     GC_STATUS CalculateRMSE( const std::vector< cv::Point2d > &foundPts, std::vector< cv::Point2d > &reprojectedPts,
                              double &rmseEuclideanDist, double &rmseX, double &rmseY );

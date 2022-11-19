@@ -93,6 +93,7 @@ public:
     GC_STATUS CalcHomographies();
     GC_STATUS Calibrate( const cv::Mat &img, const std::string &controlJson );
     GC_STATUS AdjustStopSignForRotation( const cv::Size imgSize, const FindPointSet &calcLinePts, double &offsetAngle );
+
     GC_STATUS PixelToWorld( const cv::Point2d ptPixel, cv::Point2d &ptWorld );
     GC_STATUS WorldToPixel( const cv::Point2d ptWorld, cv::Point2d &ptPixel );
     GC_STATUS DrawOverlay( const cv::Mat &img, cv::Mat &result, const bool drawCalibScale, const bool drawCalibGrid,
@@ -108,6 +109,7 @@ public:
     std::vector< LineEnds > &SearchLineSet() { return model.searchLineSet; }
     std::string ControlJson() { return model.controlJson; }
     CalibModelSymbol &Model() { return model; }
+    StopsignSearch &SearchObj() { return stopsignSearch; }
     GC_STATUS GetSearchRegionBoundingRect( cv::Rect &rect );
 
     cv::Rect &TargetRoi() { return model.targetSearchRegion; }
@@ -132,8 +134,9 @@ private:
     GC_STATUS CalcGridDrawPoints (std::vector< StopSignLine > &horzLines, std::vector< StopSignLine > &vertLines );
     GC_STATUS GetXEdgeMinDiffX( const double xWorld, cv::Point2d &ptPix, const bool isTopSideY );
     GC_STATUS GetXEdgeMinDiffY( const double yWorld, cv::Point2d &ptPix, const bool isRightSideX );
-    GC_STATUS CalcSearchROI( const double botLftPtDistToZero, cv::Point2d &lftTop,
-                             cv::Point2d &rgtTop, cv::Point2d &lftBot, cv::Point2d &rgtBot  );
+    GC_STATUS CalcSearchROI( const double zeroOffset, const double botLftPtToLft, const double botLftPtToTop,
+                             const double botLftPtToRgt, const double botLftPtToBot, cv::Point2d &lftTop,
+                             cv::Point2d &rgtTop, cv::Point2d &lftBot, cv::Point2d &rgtBot );
     GC_STATUS TestCalibration( bool &isValid );
 };
 

@@ -62,6 +62,7 @@ public:
 
     GC_STATUS Init( const int templateDim, const int rotateCnt );
     GC_STATUS Find( const cv::Mat &img, std::vector< cv::Point2d > &pts );
+    GC_STATUS FindMoveTargets( const cv::Mat &img, const cv::Rect targetRoi, cv::Point2d &ptLeft, cv::Point2d &ptRight );
 
 private:
     std::vector< StopSignTemplateSet > templates;

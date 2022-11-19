@@ -381,6 +381,15 @@ GC_STATUS VisApp::CalcLine( const Mat &img, const string timestamp, const bool i
             {
                 double rmseDist, rmseX, rmseY;
                 retVal = m_calibExec.Calibrate( img, "", rmseDist, rmseX, rmseY );
+                if ( GC_OK != retVal )
+                {
+                    FindPointSet findPtSet;
+                    retVal = m_calibExec.FindMoveTargets( img, findPtSet );
+                    if ( GC_OK == retVal )
+                    {
+
+                    }
+                }
             }
             if ( GC_OK == retVal )
             {

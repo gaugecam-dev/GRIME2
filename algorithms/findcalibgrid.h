@@ -145,7 +145,7 @@ public:
      * @see SetMoveTargetROI(), DrawMoveROIs(), GetMoveTargetROIs()
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
-    GC_STATUS FindMoveTargetsBowTie( const cv::Mat &img, const cv::Rect targetRoi, cv::Point2d &ptLeft, cv::Point2d &ptRight );
+    GC_STATUS FindMoveTargets( const cv::Mat &img, const cv::Rect targetRoi, cv::Point2d &ptLeft, cv::Point2d &ptRight );
 
     // TODO: Fill in FindMoveTargetsStopSign()
     // TODO: This method currently only handles translation and not rotation

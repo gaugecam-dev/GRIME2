@@ -203,7 +203,11 @@ public:
         imgSize( cv::Size( -1, -1 ) ),
         targetSearchRegion( cv::Rect( -1, -1, -1, -1 ) ),
         facetLength( -1.0 ),
-        zeroOffset( 0.0 ),
+        zeroOffset( 2.0 ),
+        botLftPtToLft( -0.5 ),
+        botLftPtToTop( 1.0 ),
+        botLftPtToRgt( 1.5 ),
+        botLftPtToBot( -3.0 ),
         center( cv::Point2d( -1.0, -1.0 ) ),
         angle( -9999999.0 ),
         hsvLow( cv::Scalar( 0, 0, 0 ) ),
@@ -230,7 +234,11 @@ public:
                       const std::vector< LineEnds > lineEndPts,
                       const cv::Rect symbolSearchROI,
                       const double facetLen,
-                      const double offsetToZero,
+                      const double zeroOffsetVertical,
+                      const double offsetToLft,
+                      const double offsetToTop,
+                      const double offsetToRgt,
+                      const double offsetToBot,
                       const cv::Point2d centerPoint,
                       const double symbolAngle,
                       const cv::Scalar colorOfSymbol,
@@ -248,7 +256,11 @@ public:
         searchLineSet( lineEndPts ),
         targetSearchRegion( symbolSearchROI ),
         facetLength( facetLen ),
-        zeroOffset( offsetToZero ),
+        zeroOffset( zeroOffsetVertical ),
+        botLftPtToLft( offsetToLft ),
+        botLftPtToTop( offsetToTop ),
+        botLftPtToRgt( offsetToRgt ),
+        botLftPtToBot( offsetToBot ),
         center( centerPoint ),
         angle( symbolAngle ),
         symbolColor( colorOfSymbol ),
@@ -274,7 +286,11 @@ public:
         searchLineSet.clear();
         targetSearchRegion = cv::Rect( -1, -1, -1, -1 );
         facetLength = -1.0;
-        zeroOffset = 0.0;
+        zeroOffset = 2.0;
+        botLftPtToLft = -0.5;
+        botLftPtToTop = 1.0;
+        botLftPtToRgt = 1.5;
+        botLftPtToBot = -3.0;
         center = cv::Point2d( -1.0, -1.0 );
         angle = -9999999.0;
         symbolColor = cv::Scalar( 0, 0, 0 );
@@ -295,7 +311,11 @@ public:
     std::vector< LineEnds > searchLineSet;           ///< Vector of search lines to be searched for the water line
     cv::Rect targetSearchRegion;                     ///< Region within which to perform line and move search
     double facetLength;                              ///< Length of a stop sign facet in world units
-    double zeroOffset;                               ///< Distance from bottom left stop sign corner to zero stage
+    double zeroOffset;                              ///< Distance from bottom left stop sign corner to zero vertical position
+    double botLftPtToLft;                            ///< Distance from bottom left stop sign corner to search ROI left
+    double botLftPtToTop;                            ///< Distance from bottom left stop sign corner to search ROI top
+    double botLftPtToRgt;                            ///< Distance from bottom left stop sign corner to search ROI right
+    double botLftPtToBot;                            ///< Distance from bottom left stop sign corner to search ROI bottom
     cv::Point2d center;                              ///< Center of symbol
     double angle;                                    ///< Angle of symbol
     cv::Scalar symbolColor;

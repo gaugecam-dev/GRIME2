@@ -56,86 +56,98 @@ GC_STATUS StopsignSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &
     GC_STATUS retVal = GC_OK;
     try
     {
-        if ( img.empty() || templates.empty() )
+        if ( img.empty() )
         {
-            FILE_LOG( logERROR ) << "[StopsignSearch::Find] Templates not created";
+            FILE_LOG( logERROR ) << "[StopsignSearch::Find] Empty input image";
             retVal = GC_ERR;
         }
         else
         {
-            Mat matIn = img;
-            if ( img.type() == CV_8UC3 )
-                cvtColor( img, matIn, COLOR_BGR2GRAY );
-
-            cv::Ptr< CLAHE > clahe = createCLAHE( 1.0 );
-            clahe->apply( matIn, matIn );
-#ifdef DEBUG_STOPSIGN_TEMPL
-            imwrite( "/var/tmp/water/template_stopsign_clahe.png", matIn );
-#endif
-
-            // GaussianBlur( matIn, matIn, Size( 3, 3 ), 1.0 );
-            medianBlur( matIn, matIn, 5 );
-#ifdef DEBUG_STOPSIGN_TEMPL
-            imwrite( "/var/tmp/water/template_stopsign_median.png", matIn );
-#endif
-
-#ifdef DEBUG_STOPSIGN_TEMPL
-            Mat color;
-            if ( img.type() == CV_8UC1 )
-                cvtColor( img, color, COLOR_BGR2GRAY );
-            else
-                img.copyTo( color );
-#endif
-
-            pts.clear();
-            Mat response;
-            for ( size_t j = 0; j < templates.size(); ++j )
+            if ( templates.empty() )
             {
-                Point2d maxMaxPt;
-                double maxMaxVal = -9999999;
-                for ( size_t i = 0; i < templates[ j ].ptTemplates.size(); ++i )
-                {
-                    matchTemplate( matIn, templates[ j ].ptTemplates[ i ].templ, response, TM_CCORR_NORMED, templates[ j ].ptTemplates[ i ].mask );
+                retVal = Init( GC_STOPSIGN_TEMPLATE_DIM, 5 );
+            }
+            if ( templates.empty() || GC_OK != retVal )
+            {
+                FILE_LOG( logERROR ) << "[StopsignSearch::FindMoveTargets] Cannot find move stop sign in an uninitialized object";
+                retVal = GC_ERR;
+            }
+            else
+            {
+                Mat matIn = img;
+                if ( img.type() == CV_8UC3 )
+                    cvtColor( img, matIn, COLOR_BGR2GRAY );
 
-                    double maxVal;
-                    Point maxPt;
-                    minMaxLoc( response, nullptr, &maxVal, nullptr, &maxPt );
-                    if ( maxVal > maxMaxVal )
+                cv::Ptr< CLAHE > clahe = createCLAHE( 1.0 );
+                clahe->apply( matIn, matIn );
+#ifdef DEBUG_STOPSIGN_TEMPL
+                imwrite( "/var/tmp/water/template_stopsign_clahe.png", matIn );
+#endif
+
+                // GaussianBlur( matIn, matIn, Size( 5, 5 ), 1.0 );
+                medianBlur( matIn, matIn, 7 );
+#ifdef DEBUG_STOPSIGN_TEMPL
+                imwrite( "/var/tmp/water/template_stopsign_median.png", matIn );
+#endif
+
+#ifdef DEBUG_STOPSIGN_TEMPL
+                Mat color;
+                if ( img.type() == CV_8UC1 )
+                    cvtColor( img, color, COLOR_BGR2GRAY );
+                else
+                    img.copyTo( color );
+#endif
+
+                pts.clear();
+                Mat response;
+                for ( size_t j = 0; j < templates.size(); ++j )
+                {
+                    Point2d maxMaxPt;
+                    double maxMaxVal = -9999999;
+                    for ( size_t i = 0; i < templates[ j ].ptTemplates.size(); ++i )
                     {
-                        maxMaxVal = maxVal;
-                        maxMaxPt = Point2d( maxPt ) + templates[ j ].ptTemplates[ i ].offset;
+                        matchTemplate( matIn, templates[ j ].ptTemplates[ i ].templ, response, TM_CCORR_NORMED, templates[ j ].ptTemplates[ i ].mask );
+
+                        double maxVal;
+                        Point maxPt;
+                        minMaxLoc( response, nullptr, &maxVal, nullptr, &maxPt );
+                        if ( maxVal > maxMaxVal )
+                        {
+                            maxMaxVal = maxVal;
+                            maxMaxPt = Point2d( maxPt ) + templates[ j ].ptTemplates[ i ].offset;
+                        }
+                    }
+                    if ( 0.0 < maxMaxVal )
+                    {
+                        pts.push_back( maxMaxPt );
+#ifdef DEBUG_STOPSIGN_TEMPL
+                        line( color, Point( cvRound( maxMaxPt.x - 10 ), cvRound( maxMaxPt.y ) ),
+                              Point( cvRound( maxMaxPt.x + 10 ), cvRound( maxMaxPt.y ) ), Scalar( 0, 255, 255 ), 1 );
+                        line( color, Point( cvRound( maxMaxPt.x ), cvRound( maxMaxPt.y - 10 ) ),
+                              Point( cvRound( maxMaxPt.x ), cvRound( maxMaxPt.y + 10 ) ), Scalar( 0, 255, 255 ), 1 );
+#endif
                     }
                 }
-                if ( 0.0 < maxMaxVal )
+
+                retVal = RefineFind( img, pts );
+
+#ifdef DEBUG_STOPSIGN_TEMPL
+                imwrite( "/var/tmp/water/stopsign_find_template.png", color );
+                for ( size_t i = 0; i < pts.size(); ++i )
                 {
-                    pts.push_back( maxMaxPt );
-#ifdef DEBUG_STOPSIGN_TEMPL
-                    line( color, Point( cvRound( maxMaxPt.x - 10 ), cvRound( maxMaxPt.y ) ),
-                          Point( cvRound( maxMaxPt.x + 10 ), cvRound( maxMaxPt.y ) ), Scalar( 0, 255, 255 ), 1 );
-                    line( color, Point( cvRound( maxMaxPt.x ), cvRound( maxMaxPt.y - 10 ) ),
-                          Point( cvRound( maxMaxPt.x ), cvRound( maxMaxPt.y + 10 ) ), Scalar( 0, 255, 255 ), 1 );
-#endif
+                    line( color, Point( cvRound( pts[ i ].x - 10 ), cvRound( pts[ i ].y ) ),
+                          Point( cvRound( pts[ i ].x + 10 ), cvRound( pts[ i ].y ) ), Scalar( 0, 255, 0 ), 1 );
+                    line( color, Point( cvRound( pts[ i ].x ), cvRound( pts[ i ].y - 10 ) ),
+                          Point( cvRound( pts[ i ].x ), cvRound( pts[ i ].y + 10 ) ), Scalar( 0, 255, 0 ), 1 );
                 }
-            }
-
-            retVal = RefineFind( img, pts );
-
-#ifdef DEBUG_STOPSIGN_TEMPL
-            imwrite( "/var/tmp/water/stopsign_find_template.png", color );
-            for ( size_t i = 0; i < pts.size(); ++i )
-            {
-                line( color, Point( cvRound( pts[ i ].x - 10 ), cvRound( pts[ i ].y ) ),
-                      Point( cvRound( pts[ i ].x + 10 ), cvRound( pts[ i ].y ) ), Scalar( 0, 255, 0 ), 1 );
-                line( color, Point( cvRound( pts[ i ].x ), cvRound( pts[ i ].y - 10 ) ),
-                      Point( cvRound( pts[ i ].x ), cvRound( pts[ i ].y + 10 ) ), Scalar( 0, 255, 0 ), 1 );
-            }
-            imwrite( "/var/tmp/water/stopsign_find_line.png", color );
+                imwrite( "/var/tmp/water/stopsign_find_line.png", color );
 #endif
-        }
-        if ( 8 != pts.size() )
-        {
-            FILE_LOG( logERROR ) << "[StopsignSearch::Find] Found only " << pts.size() << " points";
-            retVal = GC_ERR;
+            }
+            if ( 8 != pts.size() )
+            {
+                FILE_LOG( logERROR ) << "[StopsignSearch::Find] Found only " << pts.size() << " points";
+                retVal = GC_ERR;
+            }
         }
     }
     catch( const cv::Exception &e )
@@ -145,8 +157,113 @@ GC_STATUS StopsignSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &
     }
     return retVal;
 }
+GC_STATUS StopsignSearch::FindMoveTargets( const Mat &img, const Rect targetRoi, Point2d &ptLeft, Point2d &ptRight )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        if ( img.empty() )
+        {
+            FILE_LOG( logERROR ) << "[StopsignSearch::FindMoveTargets] Cannot find move targets in an empty image";
+            retVal = GC_ERR;
+        }
+        else
+        {
+            if ( templates.empty() )
+            {
+                retVal = Init( GC_STOPSIGN_TEMPLATE_DIM, 5 );
+            }
+            if ( GC_OK != retVal || templates.empty() )
+            {
+                FILE_LOG( logERROR ) << "[StopsignSearch::FindMoveTargets] Cannot find move targets in an uninitialized object";
+                retVal = GC_ERR;
+            }
+            else
+            {
+                Mat matIn = img( targetRoi );
+                if ( img.type() == CV_8UC3 )
+                    cvtColor( img, matIn, COLOR_BGR2GRAY );
 
+                cv::Ptr< CLAHE > clahe = createCLAHE( 1.0 );
+                clahe->apply( matIn, matIn );
+#ifdef DEBUG_STOPSIGN_TEMPL
+                imwrite( "/var/tmp/water/template_stopsign_clahe.png", matIn );
+#endif
 
+                // GaussianBlur( matIn, matIn, Size( 5, 5 ), 1.0 );
+                medianBlur( matIn, matIn, 7 );
+#ifdef DEBUG_STOPSIGN_TEMPL
+                imwrite( "/var/tmp/water/template_stopsign_median.png", matIn );
+#endif
+
+#ifdef DEBUG_STOPSIGN_TEMPL
+                Mat color;
+                if ( img.type() == CV_8UC1 )
+                    cvtColor( img, color, COLOR_BGR2GRAY );
+                else
+                    img.copyTo( color );
+#endif
+
+                ptLeft = Point2d( -1.0, -1.0 );
+                ptRight = Point2d( -1.0, -1.0 );
+
+                Point maxPt;
+                Mat response;
+                Point2d maxMaxPt;
+                double maxVal, maxMaxVal;
+                vector< int > templIdx = { 0, 7 }; // 0 = top left corner, 7 = top right corner
+
+                for ( size_t j = 0; j < templIdx.size(); ++j )
+                {
+                    maxMaxVal = -9999999;
+                    imwrite( "/var/tmp/water/stopsign_move_target" + to_string(j) + ".png", templates[ j ].ptTemplates[ 5 ].templ );
+                    for ( size_t i = 0; i < templates[ j ].ptTemplates.size(); ++i )
+                    {
+                        matchTemplate( matIn, templates[ j ].ptTemplates[ i ].templ, response, TM_CCORR_NORMED, templates[ j ].ptTemplates[ i ].mask );
+
+                        minMaxLoc( response, nullptr, &maxVal, nullptr, &maxPt );
+                        if ( maxVal > maxMaxVal )
+                        {
+                            maxMaxVal = maxVal;
+                            maxMaxPt = Point2d( maxPt ) + templates[ j ].ptTemplates[ i ].offset;
+                            if ( 0 == j )
+                            {
+                                ptLeft = maxMaxPt + Point2d( targetRoi.x, targetRoi.y );
+                            }
+                            else
+                            {
+                                ptRight = maxMaxPt + Point2d( targetRoi.x, targetRoi.y );
+                            }
+                        }
+                    }
+                    if ( 0.0 < maxMaxVal )
+                    {
+#ifdef DEBUG_STOPSIGN_TEMPL
+                        line( color, Point( cvRound( maxMaxPt.x - 10 ), cvRound( maxMaxPt.y ) ),
+                              Point( cvRound( maxMaxPt.x + 10 ), cvRound( maxMaxPt.y ) ), Scalar( 0, 255, 0 ), 1 );
+                        line( color, Point( cvRound( maxMaxPt.x ), cvRound( maxMaxPt.y - 10 ) ),
+                              Point( cvRound( maxMaxPt.x ), cvRound( maxMaxPt.y + 10 ) ), Scalar( 0, 255, 0 ), 1 );
+                        imwrite( "/var/tmp/water/stopsign_move_target_found.png", color );
+#endif
+                    }
+                    else
+                    {
+                        FILE_LOG( logERROR ) << "[StopsignSearch::FindMoveTargets] Could not find move target";
+                        retVal = GC_ERR;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    catch( Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[StopsignSearch::FindMoveTargets] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+
+    return retVal;
+}
 GC_STATUS StopsignSearch::ShortenLine( const LineEnds &a, const double newLengthPercent, LineEnds &newLine )
 {
     GC_STATUS retVal = GC_OK;
@@ -203,7 +320,7 @@ GC_STATUS StopsignSearch::RefineFind( const Mat &img, vector< Point2d > &pts )
             FILE_LOG( logERROR ) << "[StopsignSearch::RefineFind] Reference image empty";
             retVal = GC_ERR;
         }
-        else if ( 8 != pts.size() )
+        else if ( 8 != pts.size() && 2 != pts.size() )
         {
             FILE_LOG( logERROR ) << "[StopsignSearch::RefineFind] Need 8 points, but got only " << pts.size();
             retVal = GC_ERR;
@@ -311,7 +428,6 @@ GC_STATUS StopsignSearch::RefineFind( const Mat &img, vector< Point2d > &pts )
                             imwrite( "/var/tmp/water/nighttime.png", color );
                         }
 #endif
-
                     }
                 }
             }
@@ -327,6 +443,7 @@ GC_STATUS StopsignSearch::RefineFind( const Mat &img, vector< Point2d > &pts )
 GC_STATUS StopsignSearch::Init( const int templateDim, const int rotateCnt )
 {
     GC_STATUS retVal = GC_OK;
+
     try
     {
         templates.clear();
@@ -464,6 +581,7 @@ GC_STATUS StopsignSearch::CreatePointTemplates( const int templateDim, const int
                                 retVal = RotateImage( templZero, templ, angle );
                                 if ( GC_OK == retVal )
                                 {
+                                    // GaussianBlur( templ, templ, Size( 5, 5 ), 1.0 );
                                     // imwrite( "/var/tmp/water/templ_" + to_string( rotateCnt + i + 1 ) + ".png", templ );
                                     ptTemplates[ rotateCnt + i + 1 ].mask = mask.clone();
                                     ptTemplates[ rotateCnt + i + 1 ].templ = templ.clone();

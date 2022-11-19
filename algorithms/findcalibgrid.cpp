@@ -621,15 +621,8 @@ GC_STATUS FindCalibGrid::FindMoveTargets( const Mat &img, const Rect targetRoi, 
 
     if ( "BowTie" == calibType )
     {
-        retVal = FindMoveTargetsBowTie( img, targetRoi, ptLeft, ptRight );
+        retVal = FindMoveTargets( img, targetRoi, ptLeft, ptRight );
     }
-    // TODO: StopSign placeholder (pull it back in)
-#if 0
-    else if ( "StopSign" == calibType )
-    {
-        retVal = FindMoveTargetsStopSign( img, targetRoi, ptLeft, ptRight );
-    }
-#endif
     else
     {
         FILE_LOG( logERROR ) << "[FindCalibGrid::FindMoveTargets] No valid calibration type currently set";
@@ -638,27 +631,17 @@ GC_STATUS FindCalibGrid::FindMoveTargets( const Mat &img, const Rect targetRoi, 
 
     return retVal;
 }
-// TODO: Fill in FindMoveTargetsStopSign()
-#if 0
-GC_STATUS FindCalibGrid::FindMoveTargetsStopSign( const cv::Mat &img, const cv::Rect targetRoi, cv::Point2d &ptLeft, cv::Point2d &ptRight )
-{
-    GC_STATUS retVal = GC_OK;
-
-    return retVal;
-}
-#endif
-
-GC_STATUS FindCalibGrid::FindMoveTargetsBowTie( const Mat &img, const Rect targetRoi, Point2d &ptLeft, Point2d &ptRight )
+GC_STATUS FindCalibGrid::FindMoveTargets( const Mat &img, const Rect targetRoi, Point2d &ptLeft, Point2d &ptRight )
 {
     GC_STATUS retVal = GC_OK;
     if ( m_templates.empty() )
     {
-        FILE_LOG( logERROR ) << "[FindCalibGrid::FindMoveTargetsBowTie] Cannot find move targets in an uninitialized object";
+        FILE_LOG( logERROR ) << "[FindCalibGrid::FindMoveTargets] Cannot find move targets in an uninitialized object";
         retVal = GC_ERR;
     }
     else if ( img.empty() )
     {
-        FILE_LOG( logERROR ) << "[FindCalibGrid::FindMoveTargetsBowTie] Cannot find move targets in an empty image";
+        FILE_LOG( logERROR ) << "[FindCalibGrid::FindMoveTargets] Cannot find move targets in an empty image";
         retVal = GC_ERR;
     }
     else
@@ -710,7 +693,7 @@ GC_STATUS FindCalibGrid::FindMoveTargetsBowTie( const Mat &img, const Rect targe
             }
             if ( 2 != m_matchItems.size() )
             {
-                FILE_LOG( logERROR ) << "[FindCalibGrid::FindMoveTargetsBowTie]"
+                FILE_LOG( logERROR ) << "[FindCalibGrid::FindMoveTargets]"
                                         " Invalid move point count=" << m_matchItems.size() << ".  Should be 2";
                 retVal = GC_ERR;
             }
@@ -730,7 +713,7 @@ GC_STATUS FindCalibGrid::FindMoveTargetsBowTie( const Mat &img, const Rect targe
         }
         catch( Exception &e )
         {
-            FILE_LOG( logERROR ) << "[FindCalibGrid::FindMoveTargetsBowTie] " << e.what();
+            FILE_LOG( logERROR ) << "[FindCalibGrid::FindMoveTargets] " << e.what();
             retVal = GC_EXCEPT;
         }
     }

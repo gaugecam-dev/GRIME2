@@ -114,27 +114,23 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &contr
                 -1 != model.targetSearchRegion.width &&
                 -1 != model.targetSearchRegion.height;
 
-        retVal = stopsignSearch.Init( GC_STOPSIGN_TEMPLATE_DIM, 5 );
+        if ( useRoi )
+        {
+            Point2d ptOffset( model.targetSearchRegion.x, model.targetSearchRegion.y );
+            vector< Point2d > pixPtsRoi;
+            for ( size_t i = 0; i < model.pixelPoints.size(); ++i )
+            {
+                pixPtsRoi.push_back( model.pixelPoints[ i ] + ptOffset );
+            }
+            retVal = stopsignSearch.Find( img( model.targetSearchRegion ), model.pixelPoints );
+        }
+        else
+        {
+            retVal = stopsignSearch.Find( img, model.pixelPoints );
+        }
         if ( GC_OK == retVal )
         {
-            if ( useRoi )
-            {
-                Point2d ptOffset( model.targetSearchRegion.x, model.targetSearchRegion.y );
-                vector< Point2d > pixPtsRoi;
-                for ( size_t i = 0; i < model.pixelPoints.size(); ++i )
-                {
-                    pixPtsRoi.push_back( model.pixelPoints[ i ] + ptOffset );
-                }
-                retVal = stopsignSearch.Find( img( model.targetSearchRegion ), model.pixelPoints );
-            }
-            else
-            {
-                retVal = stopsignSearch.Find( img, model.pixelPoints );
-            }
-            if ( GC_OK == retVal )
-            {
-                retVal = TestCalibration( model.validCalib );
-            }
+            retVal = TestCalibration( model.validCalib );
         }
 
         if ( GC_OK == retVal )
@@ -182,10 +178,10 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &contr
                 if ( GC_OK == retVal )
                 {
                     Point2d lftTop, rgtTop, lftBot, rgtBot;
-                    retVal = CalcSearchROI( 2.36, lftTop, rgtTop, lftBot, rgtBot );
-                    Mat color;
+                    retVal = CalcSearchROI( model.zeroOffset, model.botLftPtToLft, model.botLftPtToTop,
+                                            model.botLftPtToRgt, model.botLftPtToBot,
+                                            lftTop, rgtTop, lftBot, rgtBot );
 
-                    img.copyTo( color );
                     Point2d pt;
                     retVal = WorldToPixel( lftTop, pt );
                     if ( GC_OK == retVal )
@@ -212,6 +208,8 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &contr
                                     line( temp_img, model.waterlineSearchCorners[ 3 ], model.waterlineSearchCorners[ 1 ], Scalar( 0, 255, 0 ), 7 );
                                     line( temp_img, model.waterlineSearchCorners[ 3 ], model.waterlineSearchCorners[ 2 ], Scalar( 255, 0, 0 ), 7 );
                                     imwrite( "/var/tmp/water/test_search_roi_0.png", temp_img );
+                                    Mat color;
+                                    img.copyTo( color );
                                     circle( color, model.waterlineSearchCorners[ 0 ], 11, Scalar( 0, 0, 255 ), 3 );
                                     circle( color, model.waterlineSearchCorners[ 1 ], 11, Scalar( 0, 255, 255 ), 3 );
                                     circle( color, model.waterlineSearchCorners[ 2 ], 11, Scalar( 255, 0, 0 ), 3 );
@@ -467,6 +465,10 @@ GC_STATUS CalibStopSign::Load( const std::string jsonCalString )
             model.imgSize.height = ptreeTop.get< int >( "imageHeight", 0 );
             model.facetLength = ptreeTop.get< double >( "facetLength", -1.0 );
             model.zeroOffset = ptreeTop.get< double >( "zeroOffset", 0.0 );
+            model.botLftPtToLft = ptreeTop.get< double >( "botLftPtToLft", 0.0 );
+            model.botLftPtToTop = ptreeTop.get< double >( "botLftPtToTop", 0.0 );
+            model.botLftPtToRgt = ptreeTop.get< double >( "botLftPtToRgt", 0.0 );
+            model.botLftPtToBot = ptreeTop.get< double >( "botLftPtToBot", 0.0 );
             double blueVal = ptreeTop.get< double >( "symbolColor_blue", 0.0 );
             double greenVal = ptreeTop.get< double >( "symbolColor_green", 0.0 );
             double redVal = ptreeTop.get< double >( "symbolColor_red", 0.0 );
@@ -608,6 +610,10 @@ GC_STATUS CalibStopSign::Save( const std::string jsonCalFilepath )
                 fileStream << "  \"imageHeight\":" << model.imgSize.height << "," << endl;
                 fileStream << "  \"facetLength\":" << model.facetLength << "," << endl;
                 fileStream << "  \"zeroOffset\":" << model.zeroOffset << "," << endl;
+                fileStream << "  \"botLftPtToLft\":" << model.botLftPtToLft << "," << endl;
+                fileStream << "  \"botLftPtToTop\":" << model.botLftPtToTop << "," << endl;
+                fileStream << "  \"botLftPtToRgt\":" << model.botLftPtToRgt << "," << endl;
+                fileStream << "  \"botLftPtToBot\":" << model.botLftPtToBot << "," << endl;
 
                 fileStream << "  \"symbolColor_blue\":" << model.symbolColor.val[ 0 ] << "," << endl;
                 fileStream << "  \"symbolColor_green\":" << model.symbolColor.val[ 1 ] << "," << endl;
@@ -1708,7 +1714,8 @@ GC_STATUS CalibStopSign::CalcGridDrawPoints( std::vector< StopSignLine > &horzLi
 
     return retVal;
 }
-GC_STATUS CalibStopSign::CalcSearchROI( const double botLftPtDistToZero, cv::Point2d &lftTop,
+GC_STATUS CalibStopSign::CalcSearchROI( const double zeroOffset, const double botLftPtToLft, const double botLftPtToTop,
+                                        const double botLftPtToRgt, const double botLftPtToBot, cv::Point2d &lftTop,
                                         cv::Point2d &rgtTop, cv::Point2d &lftBot, cv::Point2d &rgtBot )
 {
     GC_STATUS retVal = GC_OK;
@@ -1727,10 +1734,18 @@ GC_STATUS CalibStopSign::CalcSearchROI( const double botLftPtDistToZero, cv::Poi
         }
         else
         {
+#if 1
+            Point2d botLftPt =  model.worldPoints[ 5 ];
+            lftTop = botLftPt + Point2d( botLftPtToLft, botLftPtToTop );
+            rgtTop = botLftPt + Point2d( botLftPtToRgt, botLftPtToTop );
+            lftBot = botLftPt + Point2d( botLftPtToLft, botLftPtToBot );
+            rgtBot = botLftPt + Point2d( botLftPtToRgt, botLftPtToBot );
+#else
             lftBot = Point2d( ( model.worldPoints[ 5 ].x + model.worldPoints[ 6 ].x ) / 2.0, 0.0 );
             rgtBot = Point2d( ( model.worldPoints[ 3 ].x + model.worldPoints[ 4 ].x ) / 2.0, 0.0 );
-            lftTop = Point2d( ( model.worldPoints[ 5 ].x + model.worldPoints[ 6 ].x ) / 2.0, botLftPtDistToZero * 0.9 );
-            rgtTop = Point2d( ( model.worldPoints[ 3 ].x + model.worldPoints[ 4 ].x ) / 2.0, botLftPtDistToZero * 0.9 );
+            lftTop = Point2d( ( model.worldPoints[ 5 ].x + model.worldPoints[ 6 ].x ) / 2.0, botLftPtToZero * 0.9 );
+            rgtTop = Point2d( ( model.worldPoints[ 3 ].x + model.worldPoints[ 4 ].x ) / 2.0, botLftPtToZero * 0.9 );
+#endif
         }
     }
     catch( std::exception &e )
