@@ -100,6 +100,33 @@ GC_STATUS CalibStopSign::GetCalibParams( std::string &calibParams )
     }
     return retVal;
 }
+GC_STATUS CalibStopSign::AdjustCalib( const cv::Point2d ptLft, const cv::Point2d ptRgt )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        double offset_x_lft = model.pixelPoints[ 0 ].x - ptLft.x;
+        double offset_y_lft = model.pixelPoints[ 0 ].y - ptLft.y;
+        double offset_x_rgt = model.pixelPoints[ 7 ].x - ptRgt.x;
+        double offset_y_rgt = model.pixelPoints[ 7 ].y - ptRgt.y;
+        double offset_x = ( offset_x_lft + offset_x_rgt ) / 2.0;
+        double offset_y = ( offset_y_lft + offset_y_rgt ) / 2.0;
+
+        for ( size_t i = 0; i < model.pixelPoints.size(); ++i )
+        {
+            model.pixelPoints[ i ].x += offset_x;
+            model.pixelPoints[ i ].y += offset_y;
+        }
+        retVal = CalcHomographies();
+    }
+    catch( cv::Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[CalibStopSign::AdjustCalib] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+
+    return retVal;
+}
 // symbolPoints are clockwise ordered with 0 being the topmost left point
 GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &controlJson )
 {

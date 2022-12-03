@@ -117,6 +117,7 @@ GC_STATUS CalibExecutive::SetCalibFromJson( const std::string &jsonParams )
     GC_STATUS retVal = GC_OK;
     try
     {
+        // cout << jsonParams << endl;
         paramsCurrent.clear();
 
         stringstream ss;
@@ -135,13 +136,13 @@ GC_STATUS CalibExecutive::SetCalibFromJson( const std::string &jsonParams )
         paramsCurrent.botLftPtToRgt = top_level.get< double >( "botLftPtToRgt", 1.5 );
         paramsCurrent.botLftPtToBot = top_level.get< double >( "botLftPtToBot", -3.0 );
 
-        paramsCurrent.moveSearchROIGrowPercent = top_level.get< int >( "moveSearchROIGrowPercent", 0 );
+        paramsCurrent.moveSearchROIGrowPercent = cvRound( top_level.get< double >( "moveSearchROIGrowPercent", 0 ) );
         paramsCurrent.calibResultJsonFilepath = top_level.get< string >( "calibResult_json", "" );
         paramsCurrent.drawCalibScale = 1 == top_level.get< int >( "drawCalibScale", 0 );
         paramsCurrent.drawCalibGrid = 1 == top_level.get< int >( "drawCalibGrid", 0 );
         paramsCurrent.drawMoveSearchROIs = 1 == top_level.get< int >( "drawMoveSearchROIs", 0 );
         paramsCurrent.drawWaterLineSearchROI = 1 == top_level.get< int >( "drawWaterLineSearchROI", 0 );
-        paramsCurrent.drawTargetSearchROI = 1 == top_level.get< int >( "drawTargetSearchROI", 0 );
+        paramsCurrent.drawTargetSearchROI = 1 == cvRound( top_level.get< double >( "drawTargetSearchROI", 0 ) );
         paramsCurrent.targetSearchROI.x = top_level.get< int >( "targetRoi_x", -1 );
         paramsCurrent.targetSearchROI.y = top_level.get< int >( "targetRoi_y", -1 );
         paramsCurrent.targetSearchROI.width = top_level.get< int >( "targetRoi_width", -1 );
@@ -162,7 +163,8 @@ GC_STATUS CalibExecutive::SetCalibFromJson( const std::string &jsonParams )
         {
             stopSign.Model().controlJson = jsonParams;
             stopSign.Model().facetLength = paramsCurrent.facetLength;
-            stopSign.Model().zeroOffset = paramsCurrent.zeroOffset;
+            // stopSign.Model().zeroOffset = paramsCurrent.zeroOffset;
+            stopSign.Model().zeroOffset = top_level.get< double >( "zeroOffset", 0.0 );
             stopSign.Model().botLftPtToLft = top_level.get< double >( "botLftPtToLft", -0.5 );
             stopSign.Model().botLftPtToTop = top_level.get< double >( "botLftPtToTop", 1.0 );
             stopSign.Model().botLftPtToRgt = top_level.get< double >( "botLftPtToRgt", 1.5 );
@@ -623,6 +625,10 @@ GC_STATUS CalibExecutive::Load( const string jsonFilepath, const Mat &img )
                                     {
                                         cv::Point2d ptLft, ptRgt;
                                         retVal = stopSign.SearchObj().FindMoveTargets( img, stopSign.TargetRoi(), ptLft, ptRgt );
+                                        if ( GC_OK == retVal )
+                                        {
+                                            retVal = stopSign.AdjustCalib( ptLft, ptRgt );
+                                        }
                                     }
                                 }
                             }
@@ -978,10 +984,64 @@ GC_STATUS CalibExecutive::FormStopsignCalibJsonString( const CalibJsonItems &ite
     catch( Exception &e )
     {
         FILE_LOG( logERROR ) << "[CalibExecutive::FormStopsignCalibJsonString] " << e.what();
+        retVal = GC_EXCEPT;
     }
 
     return retVal;
 }
+GC_STATUS CalibExecutive::GetCalibStopsignJsonItems( const std::string &jsonStr, CalibJsonItems &items )
+{
+    GC_STATUS retVal = GC_OK;
 
+    try
+    {
+        items.clear();
+
+        stringstream ss;
+        ss << jsonStr;
+        // cout << ss.str() << endl;
+
+        pt::ptree top_level;
+        pt::json_parser::read_json( ss, top_level );
+
+        items.facetLength = top_level.get< double >( "facetLength", -1.0 );
+        items.worldTargetPosition_csvFile = top_level.get< int >( "moveSearchROIGrowPercent", 0 );
+        items.calibVisionResult_json = top_level.get< string >( "calibResult_json", "" );
+        items.zeroOffset = top_level.get< double >( "botLftPtToLft", -0.5 );
+        items.useROI = top_level.get< int >( "useROI", 0 ) ? false : true;
+        if ( items.useROI )
+        {
+            items.roi.x = top_level.get< int >( "targetRoi_x", -1 );
+            items.roi.y = top_level.get< int >( "targetRoi_y", -1 );
+            items.roi.width = top_level.get< int >( "targetRoi_width", -1 );
+            items.roi.height = top_level.get< int >( "targetRoi_height", -1 );
+        }
+        else
+        {
+            items.roi = cv::Rect( -1, -1, -1, -1 );
+        }
+        items.lineSearchPoly.lftTop.x = top_level.get< int >( "searchPoly_lftTop_x", -1 );
+        items.lineSearchPoly.lftTop.y = top_level.get< int >( "searchPoly_lftTop_y", -1 );
+        items.lineSearchPoly.rgtTop.x = top_level.get< int >( "searchPoly_rgtTop_x", -1 );
+        items.lineSearchPoly.rgtTop.y = top_level.get< int >( "searchPoly_rgtTop_y", -1 );
+        items.lineSearchPoly.lftBot.x = top_level.get< int >( "searchPoly_lftBot_x", -1 );
+        items.lineSearchPoly.lftBot.y = top_level.get< int >( "searchPoly_lftBot_y", -1 );
+        items.lineSearchPoly.rgtBot.x = top_level.get< int >( "searchPoly_rgtBot_x", -1 );
+        items.lineSearchPoly.rgtBot.y = top_level.get< int >( "searchPoly_rgtBot_y", -1 );
+
+        items.botLftPtToLft = top_level.get< double >( "botLftPtToLft", -0.5 );
+        items.botLftPtToTop = top_level.get< double >( "botLftPtToTop", 1.0 );
+        items.botLftPtToRgt = top_level.get< double >( "botLftPtToRgt", 1.5 );
+        items.botLftPtToBot = top_level.get< double >( "botLftPtToBot", -3.0 );
+
+    }
+    catch( Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[CalibExecutive::FormStopsignCalibJsonString] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+
+    return retVal;
+}
 
 } // namespace gc

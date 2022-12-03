@@ -95,6 +95,14 @@ public:
         lftTop( lftTop ), rgtTop( rgtTop ), rgtBot( rgtBot ), lftBot( lftBot )
     {}
 
+    void clear()
+    {
+        lftTop = cv::Point( 50, 50 );
+        rgtTop = cv::Point( 100, 50 );
+        rgtBot = cv::Point( 100, 100 );
+        lftBot = cv::Point( 50, 100 );
+    }
+
     cv::Point lftTop;
     cv::Point rgtTop;
     cv::Point rgtBot;
@@ -137,6 +145,22 @@ public:
         botLftPtToBot( offsetToBot ),
         lineSearchPoly( searchPoly )
     {}
+
+    void clear()
+    {
+        worldTargetPosition_csvFile.clear();
+        calibVisionResult_json.clear();
+        useROI = false;
+        roi = cv::Rect( -1, -1, -1, -1 );
+        moveROIGrowPercent = 10.0;
+        facetLength = -1.0;
+        zeroOffset = 0.0;
+        botLftPtToBot = -1.0;
+        botLftPtToTop = -1.0;
+        botLftPtToRgt = -1.0;
+        botLftPtToBot = -1.0;
+        lineSearchPoly.clear();
+    }
 
     std::string worldTargetPosition_csvFile;
     std::string calibVisionResult_json;
@@ -186,6 +210,7 @@ public:
 
     static GC_STATUS FormBowtieCalibJsonString( const CalibJsonItems &items, std::string &json );
     static GC_STATUS FormStopsignCalibJsonString( const CalibJsonItems &items, std::string &json );
+    GC_STATUS GetCalibStopsignJsonItems( const std::string &jsonStr, CalibJsonItems &items );
 
 private:
     CalibBowtie bowTie;

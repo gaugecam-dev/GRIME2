@@ -93,7 +93,6 @@ private slots:
     void on_pushButton_showCalibration_clicked();
     void on_pushButton_createAnimation_clicked();
     void on_pushButton_animationStop_clicked();
-
     void on_pushButton_test_clicked();
 
 private:

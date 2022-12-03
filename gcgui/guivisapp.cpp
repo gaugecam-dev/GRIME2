@@ -702,7 +702,7 @@ GC_STATUS GuiVisApp::CalcLinesInFolder( const std::string folder, const FindLine
             vector< std::string > images;
             if ( isFolderOfImages )
             {
-                for ( auto& p: fs::recursive_directory_iterator( folder ) )
+                for ( auto& p: fs::directory_iterator( folder ) )
                 {
                     ext = p.path().extension().string();
                     std::transform( ext.begin(), ext.end(), ext.begin(),
@@ -930,6 +930,8 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
         int progressVal = 0;
         char buffer[ 256 ];
         bool stopped = false;
+
+        // sort( images.begin(), images.end() );
 
         ofstream csvOut;
         string resultFolderAdj = params.resultImagePath;

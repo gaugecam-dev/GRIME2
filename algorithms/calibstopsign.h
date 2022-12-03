@@ -92,6 +92,7 @@ public:
     GC_STATUS Save( const std::string jsonCalFilepath );
     GC_STATUS CalcHomographies();
     GC_STATUS Calibrate( const cv::Mat &img, const std::string &controlJson );
+    GC_STATUS AdjustCalib( const cv::Point2d ptLft, const cv::Point2d ptRgt );
     GC_STATUS AdjustStopSignForRotation( const cv::Size imgSize, const FindPointSet &calcLinePts, double &offsetAngle );
 
     GC_STATUS PixelToWorld( const cv::Point2d ptPixel, cv::Point2d &ptWorld );

@@ -185,7 +185,7 @@ GC_STATUS FindLine::Preprocess( const cv::Mat &src, cv::Mat &dst )
             GaussianBlur( src, dst, Size( 3, 3 ), 3.0 );
             medianBlur( dst, dst, 23 );
 
-            Mat kern = getStructuringElement( MORPH_RECT, Size( 1, 9 ) );
+            Mat kern = getStructuringElement( MORPH_RECT, Size( 5, 11 ) );
             dilate( dst, dst, kern, Point( -1, -1 ), 2 );
             erode( dst, dst, kern, Point( -1, -1 ), 2 );
         }
