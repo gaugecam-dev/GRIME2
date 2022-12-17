@@ -634,11 +634,12 @@ GC_STATUS GuiVisApp::Calibrate( const std::string imgFilepath, const string json
 {
     GC_STATUS retVal = GC_OK;
 
+    string err_msg;
     double rmseDist, rmseX, rmseY;
     retVal = LoadImageToApp( imgFilepath );
     if ( GC_OK == retVal )
     {
-        retVal = m_visApp.Calibrate( imgFilepath, jsonControl, rmseDist, rmseX, rmseY );
+        retVal = m_visApp.Calibrate( imgFilepath, jsonControl, rmseDist, rmseX, rmseY, err_msg );
     }
     if ( GC_OK == retVal )
     {
@@ -653,7 +654,9 @@ GC_STATUS GuiVisApp::Calibrate( const std::string imgFilepath, const string json
     }
     else
     {
-        sigMessage( string( "Calibration: FAILURE" ) );
+        if ( err_msg.empty() )
+            err_msg = "CALIB FAIL: Unknown error";
+        sigMessage( err_msg );
     }
     return retVal;
 }

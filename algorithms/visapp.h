@@ -82,11 +82,11 @@ public:
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
     GC_STATUS Calibrate( const string imgFilepath, const string jsonControl,
-                         double &rmseDist, double &rmseX, double &rmseY );
+                         double &rmseDist, double &rmseX, double &rmseY, string &err_msg );
 
     // TODO: Add doxygen comments
     GC_STATUS Calibrate( const string imgFilepath, const string jsonControl, const string resultImgPath,
-                         double &rmseDist, double &rmseX, double &rmseY );
+                         double &rmseDist, double &rmseX, double &rmseY , string &err_msg );
 
     // TODO: Adjust doxygen comments
     /**
@@ -95,7 +95,7 @@ public:
      * @param img Image for stopsign recalibration--if empty, calib loaded from disk
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
-    GC_STATUS LoadCalib( const std::string calibJson , const cv::Mat &img );
+    GC_STATUS LoadCalib( const std::string calibJson, const cv::Mat &img );
 
     /**
      * @brief Convert world coordinates to pixel coordinates using the currently set calibration

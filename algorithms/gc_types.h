@@ -75,8 +75,8 @@ enum IMG_DISPLAY_OVERLAYS
     SEARCH_ROI = 2048
 };
 
-static const double DEFAULT_MIN_LINE_ANGLE = -10.0;                             ///< Default minimum line find angle
-static const double DEFAULT_MAX_LINE_ANGLE = 10.0;                              ///< Default maximum line find angle
+static const double DEFAULT_MIN_LINE_ANGLE = -2.0;                             ///< Default minimum line find angle
+static const double DEFAULT_MAX_LINE_ANGLE = 2.0;                              ///< Default maximum line find angle
 static const int FIT_LINE_RANSAC_TRIES_TOTAL = 100;                             ///< Fit line RANSAC total tries
 static const int FIT_LINE_RANSAC_TRIES_EARLY_OUT = 50;                          ///< Fit line RANSAC early out tries
 static const int FIT_LINE_RANSAC_POINT_COUNT = 5;                               ///< Fit line RANSAC early out tries
@@ -420,7 +420,7 @@ public:
         angleWorld( MIN_DEFAULT_DBL ),
         lftPixel( cv::Point2d( MIN_DEFAULT_DBL, MIN_DEFAULT_DBL ) ),
         lftWorld( cv::Point2d( MIN_DEFAULT_DBL, MIN_DEFAULT_DBL ) ),
-        ctrPixel( cv::Point2d( MIN_DEFAULT_DBL, MIN_DEFAULT_DBL ) ),
+        ctrPixel( cv::Point2d( 0.0, 0.0 ) ),
         ctrWorld( cv::Point2d( MIN_DEFAULT_DBL, MIN_DEFAULT_DBL ) ),
         rgtPixel( cv::Point2d( MIN_DEFAULT_DBL, MIN_DEFAULT_DBL ) ),
         rgtWorld( cv::Point2d( MIN_DEFAULT_DBL, MIN_DEFAULT_DBL ) )
@@ -454,7 +454,7 @@ public:
         angleWorld = MIN_DEFAULT_DBL;
         lftPixel = cv::Point2d( MIN_DEFAULT_DBL, MIN_DEFAULT_DBL );
         lftWorld = cv::Point2d( MIN_DEFAULT_DBL, MIN_DEFAULT_DBL );
-        ctrPixel = cv::Point2d( MIN_DEFAULT_DBL, MIN_DEFAULT_DBL );
+        ctrPixel = cv::Point2d( 0.0, 0.0 );
         ctrWorld = cv::Point2d( MIN_DEFAULT_DBL, MIN_DEFAULT_DBL );
         rgtPixel = cv::Point2d( MIN_DEFAULT_DBL, MIN_DEFAULT_DBL );
         rgtWorld = cv::Point2d( MIN_DEFAULT_DBL, MIN_DEFAULT_DBL );
@@ -496,7 +496,7 @@ public:
         calibAngle( -9999999.0 ),
         calibCenterPt( cv::Point2d( -1.0, -1.0 ) ),
         offsetAngle( -9999999.0 ),
-        offsetCenterPt( cv::Point2d( -1.0, -1.0 ) )
+        offsetCenterPt( cv::Point2d( 0, 0 ) )
     {}
 
     CalibOffset( const double calAngle, const cv::Point2d calCenter,

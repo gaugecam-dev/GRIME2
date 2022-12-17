@@ -74,8 +74,8 @@ GC_STATUS VisApp::LoadCalib( const std::string calibJson, const cv::Mat &img )
     GC_STATUS retVal = m_calibExec.Load( calibJson, img );
     return retVal;
 }
-GC_STATUS VisApp::Calibrate( const string imgFilepath, const string jsonControl,
-                             const string resultImgPath, double &rmseDist, double &rmseX, double &rmseY )
+GC_STATUS VisApp::Calibrate( const string imgFilepath, const string jsonControl, const string resultImgPath,
+                             double &rmseDist, double &rmseX, double &rmseY, string &err_msg )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -88,7 +88,7 @@ GC_STATUS VisApp::Calibrate( const string imgFilepath, const string jsonControl,
         }
         else
         {
-            retVal = m_calibExec.Calibrate( img, jsonControl, rmseDist, rmseX, rmseY );
+            retVal = m_calibExec.Calibrate( img, jsonControl, rmseDist, rmseX, rmseY, err_msg );
             if ( GC_OK == retVal )
             {
                 Mat imgOut;
@@ -98,6 +98,7 @@ GC_STATUS VisApp::Calibrate( const string imgFilepath, const string jsonControl,
                     bool bRet = imwrite( resultImgPath, imgOut );
                     if ( !bRet )
                     {
+                        err_msg = "CALIB FAIL: Could not write calibration result image";
                         FILE_LOG( logERROR ) << "[VisApp::Calibrate] Could not write result image " << resultImgPath;
                         retVal = GC_ERR;
                     }
@@ -107,12 +108,13 @@ GC_STATUS VisApp::Calibrate( const string imgFilepath, const string jsonControl,
     }
     catch( Exception &e )
     {
+        err_msg = "CALIB FAIL: Exception";
         FILE_LOG( logERROR ) << "[VisApp::Calibrate] " << e.what();
         retVal = GC_EXCEPT;
     }
     return retVal;
 }
-GC_STATUS VisApp::Calibrate( const string imgFilepath, const string jsonControl, double &rmseDist, double &rmseX, double &rmseY )
+GC_STATUS VisApp::Calibrate( const string imgFilepath, const string jsonControl, double &rmseDist, double &rmseX, double &rmseY, string &err_msg )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -125,7 +127,7 @@ GC_STATUS VisApp::Calibrate( const string imgFilepath, const string jsonControl,
         }
         else
         {
-            retVal = m_calibExec.Calibrate( img, jsonControl, rmseDist, rmseX, rmseY );
+            retVal = m_calibExec.Calibrate( img, jsonControl, rmseDist, rmseX, rmseY, err_msg );
         }
     }
     catch( Exception &e )
@@ -210,7 +212,12 @@ GC_STATUS VisApp::CalcFindLine( const Mat &img, FindLineResult &result )
             result.refMovePts.setZero();
             result.foundMovePts.setZero();
             result.offsetMovePts.setZero();
+            Point2d moveOffset = m_calibExec.GetStopSignMoveOffset();
+#if 1
+            retVal = AdjustSearchAreaForMovement( m_calibExec.SearchLines(), searchLinesAdj, moveOffset );
+#else
             searchLinesAdj = m_calibExec.SearchLines();
+#endif
         }
         else if ( "BowTie" == m_calibExec.GetCalibType() )
         {
@@ -379,16 +386,13 @@ GC_STATUS VisApp::CalcLine( const Mat &img, const string timestamp, const bool i
 
             if ( isStopSign )
             {
+                string err_msg;
                 double rmseDist, rmseX, rmseY;
-                retVal = m_calibExec.Calibrate( img, "", rmseDist, rmseX, rmseY );
+                retVal = m_calibExec.Calibrate( img, "", rmseDist, rmseX, rmseY, err_msg );
                 if ( GC_OK != retVal )
                 {
                     FindPointSet findPtSet;
                     retVal = m_calibExec.FindMoveTargets( img, findPtSet );
-                    if ( GC_OK == retVal )
-                    {
-
-                    }
                 }
             }
             if ( GC_OK == retVal )
@@ -640,7 +644,7 @@ GC_STATUS VisApp::DrawCalibOverlay( const cv::Mat matIn, cv::Mat &imgMatOut, con
                                     const bool drawSearchROI, const bool drawTargetROI )
 {
     GC_STATUS retVal = m_calibExec.DrawOverlay( matIn, imgMatOut, drawCalibScale, drawCalibGrid,
-                                                drawMoveROIs, drawSearchROI, drawTargetROI );
+                                                drawMoveROIs, drawSearchROI, drawTargetROI, m_findLineResult.offsetMovePts.ctrPixel );
     return retVal;
 }
 GC_STATUS VisApp::DrawLineFindOverlay( const cv::Mat &img, cv::Mat &imgOut, const IMG_DISPLAY_OVERLAYS overlayTypes )

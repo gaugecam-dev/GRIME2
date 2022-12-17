@@ -91,7 +91,7 @@ public:
     GC_STATUS Load (const std::string jsonCalString );
     GC_STATUS Save( const std::string jsonCalFilepath );
     GC_STATUS CalcHomographies();
-    GC_STATUS Calibrate( const cv::Mat &img, const std::string &controlJson );
+    GC_STATUS Calibrate( const cv::Mat &img, const std::string &controlJson, std::string &err_msg );
     GC_STATUS AdjustCalib( const cv::Point2d ptLft, const cv::Point2d ptRgt );
     GC_STATUS AdjustStopSignForRotation( const cv::Size imgSize, const FindPointSet &calcLinePts, double &offsetAngle );
 
@@ -109,6 +109,7 @@ public:
      */
     std::vector< LineEnds > &SearchLineSet() { return model.searchLineSet; }
     std::string ControlJson() { return model.controlJson; }
+    cv::Point2d &MoveOffset() { return moveOffset; }
     CalibModelSymbol &Model() { return model; }
     StopsignSearch &SearchObj() { return stopsignSearch; }
     GC_STATUS GetSearchRegionBoundingRect( cv::Rect &rect );
@@ -120,6 +121,7 @@ private:
     cv::Mat matHomogWorldToPix;
     CalibModelSymbol model;
     StopsignSearch stopsignSearch;
+    cv::Point2d moveOffset;
 
     GC_STATUS RotateImage( const cv::Mat &src, cv::Mat &dst, const double angle );
     GC_STATUS GetNonZeroPoints( cv::Mat &img, std::vector< cv::Point > &pts );

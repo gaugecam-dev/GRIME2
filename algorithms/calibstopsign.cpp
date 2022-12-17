@@ -40,7 +40,8 @@ namespace gc
 static double elongation( Moments m );
 static double distance( Point2d a, Point2d b );
 
-CalibStopSign::CalibStopSign()
+CalibStopSign::CalibStopSign() :
+    moveOffset( Point2d( 0.0, 0.0 ) )
 {
     try
     {
@@ -76,6 +77,7 @@ void CalibStopSign::clear()
     // matHomogPixToWorld = Mat();
     // matHomogWorldToPix = Mat();
     model.clear();
+    moveOffset = Point2d( 0.0, 0.0 );
 }
 GC_STATUS CalibStopSign::GetCalibParams( std::string &calibParams )
 {
@@ -109,13 +111,13 @@ GC_STATUS CalibStopSign::AdjustCalib( const cv::Point2d ptLft, const cv::Point2d
         double offset_y_lft = model.pixelPoints[ 0 ].y - ptLft.y;
         double offset_x_rgt = model.pixelPoints[ 7 ].x - ptRgt.x;
         double offset_y_rgt = model.pixelPoints[ 7 ].y - ptRgt.y;
-        double offset_x = ( offset_x_lft + offset_x_rgt ) / 2.0;
-        double offset_y = ( offset_y_lft + offset_y_rgt ) / 2.0;
+        moveOffset.x = ( offset_x_lft + offset_x_rgt ) / 2.0;
+        moveOffset.y = ( offset_y_lft + offset_y_rgt ) / 2.0;
 
         for ( size_t i = 0; i < model.pixelPoints.size(); ++i )
         {
-            model.pixelPoints[ i ].x += offset_x;
-            model.pixelPoints[ i ].y += offset_y;
+            model.pixelPoints[ i ].x += moveOffset.x;
+            model.pixelPoints[ i ].y += moveOffset.y;
         }
         retVal = CalcHomographies();
     }
@@ -128,7 +130,7 @@ GC_STATUS CalibStopSign::AdjustCalib( const cv::Point2d ptLft, const cv::Point2d
     return retVal;
 }
 // symbolPoints are clockwise ordered with 0 being the topmost left point
-GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &controlJson )
+GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &controlJson, string &err_msg )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -155,12 +157,20 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &contr
         {
             retVal = stopsignSearch.Find( img, model.pixelPoints );
         }
-        if ( GC_OK == retVal )
+        if ( GC_OK != retVal )
+        {
+            err_msg = "CALIB FAIL [stop sign] Could not find stop sign in image";
+        }
+        else
         {
             retVal = TestCalibration( model.validCalib );
         }
 
-        if ( GC_OK == retVal )
+        if ( GC_OK != retVal )
+        {
+            err_msg = "CALIB FAIL [stop sign] Calib validation test";
+        }
+        else
         {
 #ifdef DEBUG_FIND_CALIB_SYMBOL
             Mat color;
@@ -193,7 +203,11 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &contr
             }
 
             retVal = CalcOctoWorldPoints( model.facetLength, model.worldPoints );
-            if ( GC_OK == retVal )
+            if ( GC_OK != retVal )
+            {
+                err_msg = "CALIB FAIL [stop sign] Could not calculate octogan points";
+            }
+            else
             {
                 vector< Point2d > pointsTemp;
                 Point2d ptTemp( 0.0, model.zeroOffset );
@@ -202,7 +216,11 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &contr
                     pointsTemp.push_back( model.worldPoints[ i ] + ptTemp );
                 }
                 retVal = CreateCalibration( model.pixelPoints, pointsTemp );
-                if ( GC_OK == retVal )
+                if ( GC_OK != retVal )
+                {
+                    err_msg = "CALIB FAIL [stop sign] Could not create calibaration";
+                }
+                else
                 {
                     Point2d lftTop, rgtTop, lftBot, rgtBot;
                     retVal = CalcSearchROI( model.zeroOffset, model.botLftPtToLft, model.botLftPtToTop,
@@ -211,19 +229,35 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &contr
 
                     Point2d pt;
                     retVal = WorldToPixel( lftTop, pt );
-                    if ( GC_OK == retVal )
+                    if ( GC_OK != retVal )
+                    {
+                        err_msg = "CALIB FAIL [stop sign] Could not calculate left top search roi point";
+                    }
+                    else
                     {
                         model.waterlineSearchCorners[ 0 ] = Point( cvRound( pt.x ), cvRound( pt.y ) );
                         retVal = WorldToPixel( rgtTop, pt );
-                        if ( GC_OK == retVal )
+                        if ( GC_OK != retVal )
+                        {
+                            err_msg = "CALIB FAIL [stop sign] Could not calculate right top search roi point";
+                        }
+                        else
                         {
                             model.waterlineSearchCorners[ 1 ] = Point( cvRound( pt.x ), cvRound( pt.y ) );
                             retVal = WorldToPixel( rgtBot, pt );
-                            if ( GC_OK == retVal )
+                            if ( GC_OK != retVal )
+                            {
+                                err_msg = "CALIB FAIL [stop sign] Could not calculate right bottom search roi point";
+                            }
+                            else
                             {
                                 model.waterlineSearchCorners[ 2 ] = Point( cvRound( pt.x ), cvRound( pt.y ) );
                                 retVal = WorldToPixel( lftBot, pt );
-                                if ( GC_OK == retVal )
+                                if ( GC_OK != retVal )
+                                {
+                                    err_msg = "CALIB FAIL [stop sign] Could not calculate left bottom search roi point";
+                                }
+                                else
                                 {
                                     model.waterlineSearchCorners[ 3 ] = Point( cvRound( pt.x ), cvRound( pt.y ) );
 #ifdef DEBUG_FIND_CALIB_SYMBOL
@@ -247,13 +281,18 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &contr
                                     retVal = searchLines.CalcSearchLines( model.waterlineSearchCorners, model.searchLineSet );
                                     if ( GC_OK != retVal )
                                     {
+                                        err_msg = "CALIB FAIL [stop sign] Invalid search lines (is 4-pt bounding poly correct?)";
                                         FILE_LOG( logERROR ) << "[CalibStopSign::Calibrate] Invalid search lines (is 4-pt bounding poly correct?)";
                                         retVal = GC_OK;
                                     }
                                     else
                                     {
                                         retVal = CalcCenterAngle( model.worldPoints, model.center, model.angle );
-                                        if ( GC_OK == retVal )
+                                        if ( GC_OK != retVal )
+                                        {
+                                            err_msg = "CALIB FAIL [stop sign] Could not stop sign angle";
+                                        }
+                                        else
                                         {
                                             model.imgSize = img.size();
                                         }
@@ -266,11 +305,13 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &contr
             }
             if ( model.pixelPoints.empty() || model.worldPoints.empty() || model.searchLineSet.empty() )
             {
+                err_msg = "CALIB FAIL [stop sign] No valid calibration for drawing";
                 FILE_LOG( logERROR ) << "[CalibStopSign::Calibrate] No valid calibration for drawing";
                 retVal = GC_ERR;
             }
             else if ( matHomogPixToWorld.empty() || matHomogWorldToPix.empty() )
             {
+                err_msg = "CALIB FAIL [stop sign] System not calibrated";
                 FILE_LOG( logERROR ) << "[CalibStopSign::Calibrate] System not calibrated";
                 retVal = GC_ERR;
             }
@@ -286,6 +327,7 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &contr
     }
     catch( cv::Exception &e )
     {
+        err_msg = "CALIB FAIL [stop sign] Exception";
         FILE_LOG( logERROR ) << "[CalibStopSign::Calibrate] " << e.what();
         retVal = GC_EXCEPT;
     }

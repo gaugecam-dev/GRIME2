@@ -76,7 +76,7 @@ GC_STATUS CalibExecutive::GetCalibParams( std::string &calibParams )
     return retVal;
 }
 GC_STATUS CalibExecutive::Recalibrate( const Mat &img, const std::string calibType,
-                                       double &rmseDist, double &rmseX, double &rmseY )
+                                       double &rmseDist, double &rmseX, double &rmseY, string &err_msg )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -97,15 +97,15 @@ GC_STATUS CalibExecutive::Recalibrate( const Mat &img, const std::string calibTy
 
     if ( GC_OK == retVal )
     {
-        retVal = Calibrate( img, controlJson, rmseDist, rmseX, rmseY );
+        retVal = Calibrate( img, controlJson, rmseDist, rmseX, rmseY, err_msg );
     }
 
     return retVal;
 }
 GC_STATUS CalibExecutive::Calibrate( const Mat &img, const std::string jsonParams, cv::Mat &imgResult,
-                                     double &rmseDist, double &rmseX, double &rmseY )
+                                     double &rmseDist, double &rmseX, double &rmseY, string &err_msg )
 {
-    GC_STATUS retVal = Calibrate( img, jsonParams, rmseDist, rmseX, rmseY );
+    GC_STATUS retVal = Calibrate( img, jsonParams, rmseDist, rmseX, rmseY, err_msg );
     if ( GC_OK == retVal )
     {
         retVal = DrawOverlay( img, imgResult );
@@ -201,7 +201,7 @@ GC_STATUS CalibExecutive::SetCalibFromJson( const std::string &jsonParams )
     return retVal;
 }
 GC_STATUS CalibExecutive::Calibrate( const cv::Mat &img, const std::string jsonParams,
-                                     double &rmseDist, double &rmseX, double &rmseY )
+                                     double &rmseDist, double &rmseX, double &rmseY, string &err_msg )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -217,6 +217,7 @@ GC_STATUS CalibExecutive::Calibrate( const cv::Mat &img, const std::string jsonP
                 }
                 else
                 {
+                    err_msg = "CALIB FAIL: No available stop sign calibration control string";
                     FILE_LOG( logERROR ) << "[CalibExecutive::Calibrate] No available stop sign calibration control string";
                     retVal = GC_ERR;
                 }
@@ -229,12 +230,14 @@ GC_STATUS CalibExecutive::Calibrate( const cv::Mat &img, const std::string jsonP
                 }
                 else
                 {
+                    err_msg = "CALIB FAIL: No available bow tie calibration control string";
                     FILE_LOG( logERROR ) << "[CalibExecutive::Calibrate] No available bow tie calibration control string";
                     retVal = GC_ERR;
                 }
             }
             else
             {
+                err_msg = "CALIB FAIL: No available calibration control string";
                 FILE_LOG( logERROR ) << "[CalibExecutive::Calibrate] No available calibration control string";
                 retVal = GC_ERR;
             }
@@ -243,7 +246,11 @@ GC_STATUS CalibExecutive::Calibrate( const cv::Mat &img, const std::string jsonP
         {
             retVal = SetCalibFromJson( jsonParamsWhich );
         }
-        if ( GC_OK == retVal )
+        if ( GC_OK != retVal )
+        {
+            err_msg = "CALIB FAIL: Could not set calib parameters from json string";
+        }
+        else
         {
             Mat imgFixed;
             Rect searchBB;
@@ -257,7 +264,7 @@ GC_STATUS CalibExecutive::Calibrate( const cv::Mat &img, const std::string jsonP
                 {
                     imgFixed = img;
                 }
-                retVal = CalibrateBowTie( imgFixed, jsonParamsWhich );
+                retVal = CalibrateBowTie( imgFixed, jsonParamsWhich, err_msg );
                 if ( GC_OK == retVal )
                 {
                     retVal = bowTie.GetSearchRegionBoundingRect( searchBB );
@@ -267,21 +274,28 @@ GC_STATUS CalibExecutive::Calibrate( const cv::Mat &img, const std::string jsonP
             {
                 if ( CV_8UC1 == img.type() )
                 {
+                    err_msg = "CALIB FAIL: Stop sign calibration needs color image";
                     FILE_LOG( logERROR ) << "[CalibExecutive::Calibrate] Stop sign calibration needs color image";
                     retVal = GC_ERR;
                 }
                 else
                 {
                     imgFixed = img;
-                    retVal = CalibrateStopSign( imgFixed, jsonParamsWhich );
+                    retVal = CalibrateStopSign( imgFixed, jsonParamsWhich, err_msg );
                     if ( GC_OK == retVal )
                     {
                         retVal = stopSign.GetSearchRegionBoundingRect( searchBB );
+                        if ( GC_OK != retVal )
+                        {
+                            err_msg = "CALIB FAIL: Stop sign calibration search bounding box could not be set";
+                        }
                     }
                 }
             }
             else
             {
+
+                err_msg = "CALIB FAIL: Invalid calibration type=" + ( paramsCurrent.calibType.empty() ? "empty()" : paramsCurrent.calibType );
                 FILE_LOG( logERROR ) << "[CalibExecutive::Calibrate] Invalid calibration type=" <<
                                         ( paramsCurrent.calibType.empty() ? "empty()" : paramsCurrent.calibType );
                 retVal = GC_ERR;
@@ -301,6 +315,7 @@ GC_STATUS CalibExecutive::Calibrate( const cv::Mat &img, const std::string jsonP
     }
     catch( boost::exception &e )
     {
+        err_msg = "CALIB FAIL: Exception";
         FILE_LOG( logERROR ) << "[CalibExecutive::Calibrate] " << diagnostic_information( e );
         retVal = GC_EXCEPT;
     }
@@ -319,13 +334,13 @@ GC_STATUS CalibExecutive::DrawOverlay( const cv::Mat matIn, cv::Mat &imgMatOut )
     return retVal;
 }
 GC_STATUS CalibExecutive::DrawOverlay( const cv::Mat matIn, cv::Mat &imgMatOut, const bool drawCalibScale, const bool drawCalibGrid,
-                                       const bool drawMoveROIs, const bool drawSearchROI, const bool drawTargetROI )
+                                       const bool drawMoveROIs, const bool drawSearchROI, const bool drawTargetROI, const Point2d moveOffset )
 {
     GC_STATUS retVal = GC_OK;
     if ( "BowTie" == paramsCurrent.calibType )
     {
-        CalibModelBowtie model = bowTie.GetModel();
-        retVal = bowTie.DrawOverlay( matIn, imgMatOut, drawCalibScale, drawCalibGrid, drawMoveROIs, drawSearchROI, drawTargetROI );
+        // CalibModelBowtie model = bowTie.GetModel();
+        retVal = bowTie.DrawOverlay( matIn, imgMatOut, drawCalibScale, drawCalibGrid, drawMoveROIs, drawSearchROI, drawTargetROI, moveOffset );
     }
     else if ( "StopSign" == paramsCurrent.calibType )
     {
@@ -444,7 +459,7 @@ GC_STATUS CalibExecutive::ReadWorldCoordsFromCSVBowTie( const string csvFilepath
 
     return retVal;
 }
-GC_STATUS CalibExecutive::CalibrateStopSign( const cv::Mat &img, const string &controlJson )
+GC_STATUS CalibExecutive::CalibrateStopSign( const cv::Mat &img, const string &controlJson, string &err_msg )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -452,12 +467,13 @@ GC_STATUS CalibExecutive::CalibrateStopSign( const cv::Mat &img, const string &c
     {
         if ( CV_8UC3 != img.type() )
         {
+            err_msg = "CALIB FAIL: Color image required for stop sign calibration";
             FILE_LOG( logERROR ) << "[VisApp::CalibrateStopSign] A color image (RGB) is required for stop sign calibration";
             retVal = GC_ERR;
         }
         else
         {
-            retVal = stopSign.Calibrate( img, controlJson );
+            retVal = stopSign.Calibrate( img, controlJson, err_msg );
             if ( GC_OK == retVal )
             {
                 retVal = stopSign.Save( paramsCurrent.calibResultJsonFilepath );
@@ -466,13 +482,14 @@ GC_STATUS CalibExecutive::CalibrateStopSign( const cv::Mat &img, const string &c
     }
     catch( Exception &e )
     {
+        err_msg = "CALIB FAIL: Exception";
         FILE_LOG( logERROR ) << "[VisApp::CalibrateStopSign] " << e.what();
         retVal = GC_EXCEPT;
     }
 
     return retVal;
 }
-GC_STATUS CalibExecutive::CalibrateBowTie( const cv::Mat &img, const std::string &controlJson )
+GC_STATUS CalibExecutive::CalibrateBowTie( const cv::Mat &img, const std::string &controlJson, string &err_msg )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -481,6 +498,7 @@ GC_STATUS CalibExecutive::CalibrateBowTie( const cv::Mat &img, const std::string
         retVal = findCalibGrid.InitBowtieTemplate( GC_BOWTIE_TEMPLATE_DIM, img.size() );
         if ( GC_OK != retVal )
         {
+            err_msg = "CALIB FAIL: Could not initialize bowtie templates for calibration";
             FILE_LOG( logERROR ) << "[VisApp::VisApp] Could not initialize bowtie templates for calibration";
         }
         else
@@ -502,10 +520,15 @@ GC_STATUS CalibExecutive::CalibrateBowTie( const cv::Mat &img, const std::string
                 {
                     vector< vector< Point2d > > pixelCoords;
                     retVal = findCalibGrid.GetFoundPoints( pixelCoords );
-                    if ( GC_OK == retVal )
+                    if ( GC_OK != retVal )
+                    {
+                        err_msg = "CALIB FAIL: Could get bowtie grid points";
+                    }
+                    else
                     {
                         if ( pixelCoords.size() != worldCoords.size() )
                         {
+                            err_msg = "CALIB FAIL: Found pixel array row count does not equal world array count";
                             FILE_LOG( logERROR ) << "[VisApp::CalibrateBowTie] Found pixel array row count does not equal world array count";
                             retVal = GC_ERR;
                         }
@@ -517,6 +540,7 @@ GC_STATUS CalibExecutive::CalibrateBowTie( const cv::Mat &img, const std::string
                             {
                                 if ( pixelCoords[ i ].size() != worldCoords[ i ].size() )
                                 {
+                                    err_msg = "CALIB FAIL: Found pixel array column count does not equal world array count";
                                     FILE_LOG( logERROR ) << "[VisApp::CalibrateBowTie] Found pixel array column count does not equal world array count";
                                     retVal = GC_ERR;
                                     break;
@@ -532,10 +556,14 @@ GC_STATUS CalibExecutive::CalibrateBowTie( const cv::Mat &img, const std::string
 
                             retVal = bowTie.Calibrate( pixPtArray, worldPtArray,
                                                        static_cast< double >( paramsCurrent.moveSearchROIGrowPercent ) / 100.0,
-                                                       controlJson, Size( 2, 4 ), img.size(), searchLineCorners );
+                                                       controlJson, Size( 2, 4 ), img.size(), searchLineCorners, err_msg );
                             if ( GC_OK == retVal )
                             {
                                 retVal = bowTie.Save( paramsCurrent.calibResultJsonFilepath );
+                                if ( GC_OK != retVal )
+                                {
+                                    err_msg = "CALIB WARN: Could not save bowtie calib config to " + paramsCurrent.calibResultJsonFilepath;
+                                }
                             }
                         }
                     }
@@ -545,6 +573,7 @@ GC_STATUS CalibExecutive::CalibrateBowTie( const cv::Mat &img, const std::string
     }
     catch( Exception &e )
     {
+        err_msg = "CALIB FAIL: Exception";
         FILE_LOG( logERROR ) << "[VisApp::CalibrateBowTie] " << e.what();
         retVal = GC_EXCEPT;
     }
@@ -617,7 +646,8 @@ GC_STATUS CalibExecutive::Load( const string jsonFilepath, const Mat &img )
                             }
                             else
                             {
-                                retVal = CalibrateStopSign( img, controlJson );
+                                string err_msg;
+                                retVal = CalibrateStopSign( img, controlJson, err_msg );
                                 if ( GC_OK != retVal )
                                 {
                                     retVal = stopSign.Load( ss.str() );

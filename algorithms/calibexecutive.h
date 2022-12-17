@@ -184,11 +184,11 @@ public:
     void clear();
     GC_STATUS Load( const std::string jsonFilepath, const cv::Mat &img );
     GC_STATUS Calibrate( const cv::Mat &img, const std::string jsonParams,
-                         double &rmseDist, double &rmseX, double &rmseY );
+                         double &rmseDist, double &rmseX, double &rmseY, string &err_msg );
     GC_STATUS Calibrate( const cv::Mat &img, const std::string jsonParams, cv::Mat &imgResult,
-                         double &rmseDist, double &rmseX, double &rmseY );
+                         double &rmseDist, double &rmseX, double &rmseY, string &err_msg );
     GC_STATUS Recalibrate( const cv::Mat &img, const std::string calibType,
-                           double &rmseDist, double &rmseX, double &rmseY );
+                           double &rmseDist, double &rmseX, double &rmseY, string &err_msg );
     GC_STATUS PixelToWorld( const cv::Point2d pixelPt, cv::Point2d &worldPt );
     GC_STATUS WorldToPixel( const cv::Point2d worldPt, cv::Point2d &pixelPt );
     GC_STATUS GetMoveSearchROIs( cv::Rect &rectLeft, cv::Rect &rectRight );
@@ -196,7 +196,8 @@ public:
     GC_STATUS DetectMove( std::vector< cv::Point2d > &origPos, std::vector< cv::Point2d > &newPos );
     GC_STATUS DrawOverlay( const cv::Mat matIn, cv::Mat &imgMatOut );
     GC_STATUS DrawOverlay( const cv::Mat matIn, cv::Mat &imgMatOut, const bool drawCalibScale, const bool drawCalibGrid,
-                           const bool drawMoveROIs, const bool drawSearchROI, const bool drawTargetROI );
+                           const bool drawMoveROIs, const bool drawSearchROI, const bool drawTargetROI,
+                           const cv::Point2d moveOffset = cv::Point2d( 0.0, 0.0 ) );
     GC_STATUS FindMoveTargets( const cv::Mat &img, FindPointSet &ptsFound );
     GC_STATUS MoveRefPoint( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt );
     GC_STATUS AdjustStopSignForRotation( const cv::Size imgSize, const FindPointSet &calcLinePts, double &offsetAngle );
@@ -207,6 +208,7 @@ public:
     cv::Rect &TargetRoi();
     std::string &GetCalibType() { return paramsCurrent.calibType; } // BowTie or StopSign
     GC_STATUS GetCalibParams( std::string &calibParams );
+    cv::Point2d GetStopSignMoveOffset() { return stopSign.MoveOffset(); }
 
     static GC_STATUS FormBowtieCalibJsonString( const CalibJsonItems &items, std::string &json );
     static GC_STATUS FormStopsignCalibJsonString( const CalibJsonItems &items, std::string &json );
@@ -220,8 +222,8 @@ private:
     std::vector< LineEnds > nullSearchLines;    ///< Empty vector of search lines to be searched for the water line
     cv::Rect nullRect = cv::Rect( -1, -1, -1, -1 );
 
-    GC_STATUS CalibrateBowTie( const cv::Mat &img, const string &controlJson );
-    GC_STATUS CalibrateStopSign( const cv::Mat &img, const string &controlJson );
+    GC_STATUS CalibrateBowTie( const cv::Mat &img, const string &controlJson, string &err_msg );
+    GC_STATUS CalibrateStopSign( const cv::Mat &img, const string &controlJson, string &err_msg );
 
     GC_STATUS FindMoveTargetsBowTie( const cv::Mat &img, FindPointSet &ptsFound );
     GC_STATUS FindMoveTargetsStopSign( const cv::Mat &img, FindPointSet &ptsFound );

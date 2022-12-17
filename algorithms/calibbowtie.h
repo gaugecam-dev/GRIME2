@@ -85,7 +85,7 @@ public:
      */
     GC_STATUS Calibrate( const std::vector< cv::Point2d > pixelPts, const std::vector< cv::Point2d > worldPts,
                          const double moveSearchROIMultiplier, const std::string &controlJson, const cv::Size gridSize,
-                         const cv::Size imgSize, std::vector< cv::Point > &searchLineCorners );
+                         const cv::Size imgSize, std::vector< cv::Point > &searchLineCorners , std::string &err_msg);
     /**
      * @brief Load a calibration model from a json file
      *
@@ -207,7 +207,8 @@ public:
     CalibModelBowtie &Model() { return m_model; }
     std::string ControlJson() { return m_model.controlJson; }
     GC_STATUS DrawOverlay( const cv::Mat img, cv::Mat &imgOut, const bool drawCalibScale, const bool drawCalibGrid,
-                           const bool drawMoveROIs, const bool drawSearchROI, const bool drawTargetSearchROI );
+                           const bool drawMoveROIs, const bool drawSearchROI, const bool drawTargetSearchROI,
+                           const cv::Point2d calibOffset = cv::Point2d( 0.0, 0.0 ) );
 
 private:
     cv::Mat m_matHomogPixToWorld;
