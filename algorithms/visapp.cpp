@@ -32,7 +32,7 @@
 using namespace cv;
 using namespace std;
 using namespace boost;
-namespace fs = filesystem;
+namespace fs = boost::filesystem;
 namespace pt = property_tree;
 
 #ifdef DEBUG_BOWTIE_FIND
@@ -145,8 +145,17 @@ GC_STATUS VisApp::GetImageTimestamp( const std::string filepath, std::string &ti
         GC_STATUS retVal = m_metaData.GetExifData( filepath, "CaptureTime", timestamp );
         if ( GC_OK != retVal )
         {
-            FILE_LOG( logERROR ) << "[VisApp::ListMetadata] Could  not retrieve exif image data from " << filepath;
+            FILE_LOG( logERROR ) << "[VisApp::ListMetadata] Could not retrieve exif timestamp from " << filepath;
         }
+    }
+    return retVal;
+}
+GC_STATUS VisApp::GetIllumination( const std::string filepath, std::string &timestamp )
+{
+    GC_STATUS retVal = m_metaData.GetExifData( filepath, "Illumination", timestamp );
+    if ( GC_OK != retVal )
+    {
+        FILE_LOG( logERROR ) << "[VisApp::ListMetadata] Could not retrieve exif illumination from " << filepath;
     }
     return retVal;
 }
@@ -268,7 +277,6 @@ GC_STATUS VisApp::CalcFindLine( const Mat &img, FindLineResult &result )
                                                                      result.foundMovePts.rgtWorld.x - result.foundMovePts.lftWorld.x ) * ( 180.0 / CV_PI );
                             result.calibOffsets.offsetCenterPt = ( result.foundMovePts.lftWorld + result.foundMovePts.rgtWorld ) / 2.0;
 
-
                             sprintf( buffer, "Adjust: %.3f", result.offsetMovePts.ctrWorld.y );
                             result.msgs.push_back( buffer );
 
@@ -305,6 +313,7 @@ GC_STATUS VisApp::CalcFindLine( const Mat &img, FindLineResult &result )
                 if ( GC_OK == retVal )
                 {
                     result.msgs.push_back( "FindStatus: " + string( GC_OK == retVal ? "SUCCESS" : "FAIL" ) );
+
                     retVal = PixelToWorld( result.calcLinePts );
                     if ( GC_OK != retVal )
                     {
@@ -312,7 +321,7 @@ GC_STATUS VisApp::CalcFindLine( const Mat &img, FindLineResult &result )
                     }
                     else
                     {
-                        snprintf( buffer, 256, "stopsign/waterline angle diff: %.3f", result.symbolToWaterLineAngle );
+                        snprintf( buffer, 256, "%s/waterline angle diff: %.3f", m_calibExec.GetCalibType().c_str(), result.symbolToWaterLineAngle );
                         result.msgs.push_back( buffer );
 
                         result.calcLinePts.angleWorld = atan2( result.calcLinePts.rgtWorld.y - result.calcLinePts.lftWorld.y,
@@ -629,9 +638,20 @@ GC_STATUS VisApp::PixelToWorld( FindPointSet &ptSet )
     }
     return retVal;
 }
+GC_STATUS VisApp::GetTargetSearchROI( cv::Rect &rect )
+{
+    GC_STATUS retVal = m_calibExec.GetTargetSearchROI( rect );
+    return retVal;
+
+}
 GC_STATUS VisApp::GetCalibParams( std::string &calibParams )
 {
     GC_STATUS retVal = m_calibExec.GetCalibParams( calibParams );
+    return retVal;
+}
+GC_STATUS VisApp::DrawAssocPts( const cv::Mat &img, cv::Mat &overlay, std::string &err_msg )
+{
+    GC_STATUS retVal = m_calibExec.DrawAssocPts( img, overlay, err_msg );
     return retVal;
 }
 GC_STATUS VisApp::DrawCalibOverlay( const cv::Mat matIn, cv::Mat &imgMatOut )

@@ -198,6 +198,7 @@ public:
     GC_STATUS DrawOverlay( const cv::Mat matIn, cv::Mat &imgMatOut, const bool drawCalibScale, const bool drawCalibGrid,
                            const bool drawMoveROIs, const bool drawSearchROI, const bool drawTargetROI,
                            const cv::Point2d moveOffset = cv::Point2d( 0.0, 0.0 ) );
+    GC_STATUS DrawAssocPts( const cv::Mat &img, cv::Mat &overlay, std::string &err_msg );
     GC_STATUS FindMoveTargets( const cv::Mat &img, FindPointSet &ptsFound );
     GC_STATUS MoveRefPoint( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt );
     GC_STATUS AdjustStopSignForRotation( const cv::Size imgSize, const FindPointSet &calcLinePts, double &offsetAngle );
@@ -208,6 +209,7 @@ public:
     cv::Rect &TargetRoi();
     std::string &GetCalibType() { return paramsCurrent.calibType; } // BowTie or StopSign
     GC_STATUS GetCalibParams( std::string &calibParams );
+    GC_STATUS GetTargetSearchROI( cv::Rect &rect );
     cv::Point2d GetStopSignMoveOffset() { return stopSign.MoveOffset(); }
 
     static GC_STATUS FormBowtieCalibJsonString( const CalibJsonItems &items, std::string &json );

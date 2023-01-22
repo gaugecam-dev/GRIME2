@@ -32,7 +32,7 @@
 using namespace cv;
 using namespace std;
 using namespace boost;
-namespace fs = filesystem;
+namespace fs = boost::filesystem;
 namespace pt = property_tree;
 
 // forward declarations

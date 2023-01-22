@@ -125,12 +125,15 @@ public:
      */
 
     // TODO: Fix doxygen
+    string GetCalibType() { return m_calibExec.GetCalibType(); }
+    GC_STATUS GetTargetSearchROI( cv::Rect &rect );
     GC_STATUS GetCalibParams( std::string &calibParams );
     GC_STATUS GetStopsignColor( cv::Scalar &color, double &minRange, double &maxRange );
     GC_STATUS SetStopsignColor( const cv::Scalar color, const double minRange, const double maxRange, cv::Scalar &hsv );
     GC_STATUS DrawCalibOverlay( const cv::Mat matIn, cv::Mat &imgMatOut );
     GC_STATUS DrawCalibOverlay( const cv::Mat matIn, cv::Mat &imgMatOut, const bool drawCalibScale, const bool drawCalibGrid,
                                 const bool drawMoveROIs, const bool drawSearchROI, const bool drawTargetROI );
+    GC_STATUS DrawAssocPts( const cv::Mat &img, cv::Mat &overlay, std::string &err_msg );
 
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // Findline methods
@@ -259,6 +262,9 @@ public:
      */
     GC_STATUS WriteFindlineResultToCSV( const std::string resultCSV, const std::string imgPath,
                                         const FindLineResult &result, const bool overwrite = false );
+
+    // TODO: Add doxygen comments
+    GC_STATUS GetIllumination( const std::string filepath, std::string &timestamp );
 
 private:
     std::string m_calibFilepath;

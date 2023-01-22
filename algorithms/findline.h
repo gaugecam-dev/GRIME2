@@ -146,6 +146,8 @@ private:
     double m_maxLineFindAngle;
     std::default_random_engine m_randomEngine;
 
+    GC_STATUS TriagePoints( std::vector< cv::Point2d > &pts );
+    GC_STATUS RemoveOutliers( std::vector< cv::Point2d > &pts, const size_t numToKeep );
     GC_STATUS GetRandomNumbers( const int low_bound, const int high_bound, const int cnt_to_generate,
                                 vector< int > &numbers, const bool isFirst );
     GC_STATUS CalcRowSums( const cv::Mat &img, const std::vector< LineEnds > &lines, std::vector< uint > &rowSums );

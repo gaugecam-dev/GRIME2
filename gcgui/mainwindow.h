@@ -80,6 +80,7 @@ private slots:
     void on_pushButton_clearTable_clicked();
     void on_tableAddRow( const string row_strings );
     void on_pushButton_visionCalibrate_clicked();
+    void on_pushButton_visionCalibrateLoad_clicked();
     void on_pushButton_resetSearchRegion_clicked();
     void on_toolButton_calibVisionTarget_csv_browse_clicked();
     void on_toolButton_calibVisionResult_json_browse_clicked();
@@ -151,6 +152,7 @@ private:
     int UpdatePixmap();
     void UpdatePixmapTarget();
     void UpdateCalibType();
+    void UpdateTargetRect();
     void UpdateCalibSearchRegion();
     void UpdateRegionButton();
     void UpdatePolyButton();

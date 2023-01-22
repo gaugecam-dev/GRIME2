@@ -25,7 +25,7 @@
 using namespace gc;
 using namespace std;
 using namespace boost;
-namespace fs = filesystem;
+namespace fs = boost::filesystem;
 
 // example command lines
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~ GENERAL ~~~~~~~~~~~~~~~~~~~~~~~~~~~

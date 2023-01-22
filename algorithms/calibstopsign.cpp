@@ -32,7 +32,7 @@ static const double MIN_SYMBOL_CONTOUR_SIZE = 30;
 using namespace cv;
 using namespace std;
 using namespace boost;
-namespace fs = filesystem;
+namespace fs = boost::filesystem;
 
 namespace gc
 {
@@ -85,8 +85,9 @@ GC_STATUS CalibStopSign::GetCalibParams( std::string &calibParams )
     try
     {
         stringstream ss;
+        ss.setf( ios::fixed, ios::floatfield );
         ss.precision( 3 );
-        ss << "STOP SIGN CALIBRATION" << endl << endl;
+        ss << "STOP SIGN CALIBRATION" << endl;
         ss << "Association points" << endl;
         for ( size_t i = 0; i < model.pixelPoints.size(); ++i )
         {
@@ -102,22 +103,66 @@ GC_STATUS CalibStopSign::GetCalibParams( std::string &calibParams )
     }
     return retVal;
 }
-GC_STATUS CalibStopSign::AdjustCalib( const cv::Point2d ptLft, const cv::Point2d ptRgt )
+GC_STATUS CalibStopSign::DrawAssocPts( const cv::Mat &img, cv::Mat &overlay, string &err_msg )
 {
     GC_STATUS retVal = GC_OK;
     try
     {
-        double offset_x_lft = model.pixelPoints[ 0 ].x - ptLft.x;
-        double offset_y_lft = model.pixelPoints[ 0 ].y - ptLft.y;
-        double offset_x_rgt = model.pixelPoints[ 7 ].x - ptRgt.x;
-        double offset_y_rgt = model.pixelPoints[ 7 ].y - ptRgt.y;
+        err_msg.clear();
+        if ( img.empty() )
+        {
+            err_msg = "[CalibStopSign::DrawAssocPts] Needs non-empty input images";
+            FILE_LOG( logERROR ) << "[CalibStopSign::DrawAssocPts] Needs non-empty input images";
+            retVal = GC_ERR;
+        }
+        else
+        {
+            if ( CV_8UC1 == img.type() )
+            {
+                cvtColor( img, overlay, COLOR_GRAY2BGR );
+            }
+            else
+            {
+                img.copyTo( overlay );
+            }
+            char buf[ 256 ];
+            for ( size_t i = 0; i < model.pixelPoints.size(); ++i )
+            {
+                // circle( overlay, model.pixelPoints[ i ], 3, Scalar( 0, 255, 0 ), FILLED );
+                Point textStart = Point( model.pixelPoints[ i ].x - 10, model.pixelPoints[ i ].y - 50 );
+                overlay( Rect( textStart.x - 5, textStart.y - 15, 120, 50 ) ) = Scalar( 255, 255, 255 );
+                sprintf( buf, "%d p:x=%d y=%d", static_cast< int >( i ), cvRound( model.pixelPoints[ i ].x ), cvRound( model.pixelPoints[ i ].y ) );
+                putText( overlay, buf, textStart, FONT_HERSHEY_PLAIN, 0.8, Scalar( 0, 0, 0 ), 1 );
+
+                textStart.y += 25;
+                sprintf( buf, "w:x=%.1f y=%.1f", model.worldPoints[ i ].x, model.worldPoints[ i ].y );
+                putText( overlay, buf, textStart, FONT_HERSHEY_PLAIN, 0.8, Scalar( 0, 0, 0 ), 1 );
+            }
+        }
+    }
+    catch( const Exception &e )
+    {
+        err_msg = "[CalibStopSign::DrawAssocPts] EXCEPTION";
+        FILE_LOG( logERROR ) << "[CalibStopSign::DrawAssocPts] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+    return retVal;
+}
+GC_STATUS CalibStopSign::AdjustCalib( const cv::Point2d ptLft, const cv::Point2d ptRgt, const Rect searchROI )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        double offset_x_lft = ( model.pixelPoints[ 0 ].x - searchROI.x ) - ptLft.x;
+        double offset_y_lft = ( model.pixelPoints[ 0 ].y - searchROI.y ) - ptLft.y;
+        double offset_x_rgt = ( model.pixelPoints[ 1 ].x - searchROI.x ) - ptRgt.x;
+        double offset_y_rgt = ( model.pixelPoints[ 1 ].y - searchROI.y ) - ptRgt.y;
         moveOffset.x = ( offset_x_lft + offset_x_rgt ) / 2.0;
         moveOffset.y = ( offset_y_lft + offset_y_rgt ) / 2.0;
 
         for ( size_t i = 0; i < model.pixelPoints.size(); ++i )
         {
-            model.pixelPoints[ i ].x += moveOffset.x;
-            model.pixelPoints[ i ].y += moveOffset.y;
+            model.pixelPoints[ i ] += moveOffset;
         }
         retVal = CalcHomographies();
     }
@@ -133,9 +178,17 @@ GC_STATUS CalibStopSign::AdjustCalib( const cv::Point2d ptLft, const cv::Point2d
 GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &controlJson, string &err_msg )
 {
     GC_STATUS retVal = GC_OK;
+
+    CalibModelSymbol oldModel;
+    cv::Mat oldHomogPixToWorld, oldHomogWorldToPix;
     try
     {
         // cout << model.targetSearchRegion << endl;
+
+        // copy previous model
+        matHomogPixToWorld.copyTo( oldHomogPixToWorld );
+        matHomogWorldToPix.copyTo( oldHomogWorldToPix );
+        oldModel = model;
 
         std::vector< StopSignCandidate > candidates;
         bool useRoi = -1 != model.targetSearchRegion.x &&
@@ -330,6 +383,13 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &contr
         err_msg = "CALIB FAIL [stop sign] Exception";
         FILE_LOG( logERROR ) << "[CalibStopSign::Calibrate] " << e.what();
         retVal = GC_EXCEPT;
+    }
+
+    if ( GC_OK != retVal )
+    {
+        oldHomogPixToWorld.copyTo( matHomogPixToWorld );
+        oldHomogWorldToPix.copyTo( matHomogWorldToPix );
+        model = oldModel;
     }
 
     return retVal;
@@ -779,6 +839,24 @@ GC_STATUS CalibStopSign::CalcOctoWorldPoints( const double sideLength, std::vect
         pts.clear();
         double cornerLength = sqrt( sideLength * sideLength / 2.0 );
 
+#if 1
+//        pts.push_back( Point2d( 0.0, 0.0 ) );
+//        pts.push_back( Point2d( sideLength, 0.0 ) );
+//        pts.push_back( Point2d( sideLength + cornerLength, cornerLength ) );
+//        pts.push_back( Point2d( sideLength + cornerLength, sideLength + cornerLength ) );
+//        pts.push_back( Point2d( sideLength, cornerLength + cornerLength + sideLength ) );
+//        pts.push_back( Point2d( 0.0, cornerLength + cornerLength + sideLength ) );
+//        pts.push_back( Point2d( -cornerLength, cornerLength + sideLength ) );
+//        pts.push_back( Point2d( -cornerLength, cornerLength ) );
+        pts.push_back( Point2d( 0.0, 0.0 ) );
+        pts.push_back( Point2d( sideLength, 0.0 ) );
+        pts.push_back( Point2d( sideLength + cornerLength, -cornerLength ) );
+        pts.push_back( Point2d( sideLength + cornerLength, -sideLength - cornerLength ) );
+        pts.push_back( Point2d( sideLength, -cornerLength - cornerLength - sideLength ) );
+        pts.push_back( Point2d( 0.0, -cornerLength + -cornerLength - sideLength ) );
+        pts.push_back( Point2d( -cornerLength, -cornerLength - sideLength ) );
+        pts.push_back( Point2d( -cornerLength, -cornerLength ) );
+#else
         pts.push_back( Point2d( 0.0, cornerLength + cornerLength + sideLength ) );
         pts.push_back( Point2d( sideLength, cornerLength + cornerLength + sideLength ) );
         pts.push_back( Point2d( sideLength + cornerLength, + cornerLength + sideLength ) );
@@ -787,6 +865,7 @@ GC_STATUS CalibStopSign::CalcOctoWorldPoints( const double sideLength, std::vect
         pts.push_back( Point2d( 0.0, 0.0 ) );
         pts.push_back( Point2d( -cornerLength, cornerLength ) );
         pts.push_back( Point2d( -cornerLength, cornerLength + sideLength ) );
+#endif
     }
     catch( std::exception &e )
     {
@@ -1861,7 +1940,7 @@ GC_STATUS CalibStopSign::TestCalibration( bool &isValid )
             }
             distAvg += dist;
             distAvg /= static_cast< double >( model.pixelPoints.size() );
-            if ( distMax - distMin < 0.10 * distAvg )
+            if ( distMax - distMin < 0.15 * distAvg )
             {
                 isValid = true;
             }

@@ -563,7 +563,7 @@
                <enum>QTabWidget::South</enum>
               </property>
               <property name="currentIndex">
-               <number>2</number>
+               <number>1</number>
               </property>
               <widget class="QWidget" name="tab_mainRunFolder">
                <attribute name="title">
@@ -1951,6 +1951,19 @@
                 </item>
                 <item>
                  <layout class="QHBoxLayout" name="horizontalLayout_12">
+                  <item>
+                   <widget class="QPushButton" name="pushButton_visionCalibrateLoad">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="text">
+                     <string>Load calibration</string>
+                    </property>
+                   </widget>
+                  </item>
                   <item>
                    <spacer name="horizontalSpacer_9">
                     <property name="orientation">

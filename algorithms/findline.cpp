@@ -16,6 +16,7 @@
 
 #include "log.h"
 #include "findline.h"
+#include <iostream>
 #include <chrono>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/imgcodecs.hpp>
@@ -73,6 +74,97 @@ GC_STATUS FindLine::SetLineFindAngleBounds( const double minAngle, const double 
         m_minLineFindAngle = minAngle;
         m_maxLineFindAngle = maxAngle;
     }
+    return retVal;
+}
+GC_STATUS FindLine::RemoveOutliers( vector< Point2d > &pts, const size_t numToKeep )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        if ( 7 > pts.size() )
+        {
+            FILE_LOG( logERROR ) << "[FindLine::RemoveOutliers] Point count to few to remove outliers";
+            retVal = GC_ERR;
+        }
+        else if ( 5 > numToKeep || pts.size() <= numToKeep )
+        {
+            FILE_LOG( logERROR ) << "[FindLine::RemoveOutliers] Invalid number to keep in outlier removal";
+            retVal = GC_ERR;
+        }
+        else
+        {
+            vector< Point2d > ptTemp = pts;
+            sort( ptTemp.begin(), ptTemp.end(), []( Point2d a, Point2d b ) {
+                return a.y > b.y; } );
+
+            pts.clear();
+            double medianY = ptTemp[ ptTemp.size() / 2 ].y;
+
+            vector< Point3d > ptsDistFromMedian;
+            for ( size_t i = 0; i < ptTemp.size(); ++i )
+            {
+                ptsDistFromMedian.push_back( Point3d( ptTemp[ i ].x, ptTemp[ i ].y, fabs( medianY - ptTemp[ i ].y ) ) );
+            }
+            sort( ptsDistFromMedian.begin(), ptsDistFromMedian.end(), []( Point3d a, Point3d b ) {
+                return a.z < b.z; } );
+
+            for ( size_t i = 0; i < numToKeep; ++i )
+            {
+                pts.push_back( Point2d( ptsDistFromMedian[ i ].x, ptsDistFromMedian[ i ].y ) );
+            }
+
+            sort( pts.begin(), pts.end(), []( Point2d a, Point2d b ) {
+                return a.x > b.x; } );
+        }
+    }
+    catch( std::exception &e )
+    {
+        FILE_LOG( logERROR ) << "[FindLine::RemoveOutliers] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+
+    return retVal;
+}
+GC_STATUS FindLine::TriagePoints( vector< Point2d > &pts )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        if ( 7 > pts.size() )
+        {
+            FILE_LOG( logERROR ) << "[FindLine::TriagePoints] Point count to few to triage";
+            retVal = GC_ERR;
+        }
+        else
+        {
+            vector< Point2d > ptTemp = pts;
+            sort( ptTemp.begin(), ptTemp.end(), []( Point2d a, Point2d b ) {
+                return a.y > b.y; } );
+
+            pts.clear();
+            double medianY = ptTemp[ ptTemp.size() / 2 ].y;
+            sort( ptTemp.begin(), ptTemp.end(), []( Point2d a, Point2d b ) {
+                return a.x > b.x; } );
+            for ( size_t i = 0; i < ptTemp.size(); ++i )
+            {
+                if ( 10.0 > fabs( medianY - ptTemp[ i ].y ) )
+                {
+                     pts.push_back( ptTemp[ i ] );
+                }
+            }
+            if ( pts.size() < 5 )
+            {
+                FILE_LOG( logERROR ) << "[FindLine::TriagePoints] Points do not form a line";
+                retVal = GC_ERR;
+            }
+        }
+    }
+    catch( std::exception &e )
+    {
+        FILE_LOG( logERROR ) << "[FindLine::TriagePoints] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+
     return retVal;
 }
 GC_STATUS FindLine::Find( const Mat &img, const vector< LineEnds > &lines, FindLineResult &result )
@@ -150,12 +242,27 @@ GC_STATUS FindLine::Find( const Mat &img, const vector< LineEnds > &lines, FindL
                     }
 #endif
 
-                    FindPointSet findPtSet;
                     double xCenter = ( lines[ 0 ].bot.x + lines[ lines.size() - 1 ].bot.x ) / 2.0;
-                    retVal = FitLineRANSAC( result.foundPoints, result.calcLinePts, xCenter, scratch );
+                    retVal = TriagePoints( result.foundPoints );
                     if ( GC_OK == retVal )
                     {
-                        result.findSuccess = true;
+                        retVal = FitLineRANSAC( result.foundPoints, result.calcLinePts, xCenter, scratch );
+                        if ( GC_OK == retVal )
+                        {
+                            result.findSuccess = true;
+                        }
+                    }
+                    if ( GC_OK != retVal )
+                    {
+                        retVal = RemoveOutliers( result.foundPoints, 5 );
+                        if ( GC_OK == retVal )
+                        {
+                            retVal = FitLineRANSAC( result.foundPoints, result.calcLinePts, xCenter, scratch );
+                            if ( GC_OK == retVal )
+                            {
+                                result.findSuccess = true;
+                            }
+                        }
                     }
                 }
             }
@@ -182,7 +289,7 @@ GC_STATUS FindLine::Preprocess( const cv::Mat &src, cv::Mat &dst )
     {
         try
         {
-            GaussianBlur( src, dst, Size( 3, 3 ), 3.0 );
+            GaussianBlur( src, dst, Size( 11, 11 ), 3.0 );
             medianBlur( dst, dst, 23 );
 
             Mat kern = getStructuringElement( MORPH_RECT, Size( 5, 11 ) );

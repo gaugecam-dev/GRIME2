@@ -1,0 +1,36 @@
+./grime2cli --calibrate --source "/media/kchapman/Elements/data/article_data/third_article_data/dataset/20221107_1200_GC_KOLA.JPG" \
+    --calib_json "/media/kchapman/Elements/data/article_data/third_article_data/KOLA_calib_stopsign.json" \
+    --result_image "/media/kchapman/Elements/data/article_data/third_article_data/calib_result_stopsign.png"
+./grime2cli --run_folder --timestamp_from_exif --timestamp_start_pos 0 --timestamp_format "yyyy-mm-ddTHH-MM" \
+    --source "/media/kchapman/Elements/data/article_data/third_article_data/dataset/" \
+    --calib_json "/media/kchapman/Elements/data/article_data/third_article_data/KOLA_calib_stopsign.json" \
+    --csv_file "/media/kchapman/Elements/data/article_data/third_article_data/results/results_stopsign_2023_01_22.csv" \
+    --result_folder "/media/kchapman/Elements/data/article_data/third_article_data/results/overlays_stopsign"
+
+./grime2cli --calibrate --source "/media/kchapman/Elements/data/article_data/third_article_data/dataset/20221006_1115_GC_KOLA.JPG" \
+    --calib_json "/media/kchapman/Elements/data/article_data/third_article_data/KOLA_calib_bowtie_start_days.json" \
+    --result_image "/media/kchapman/Elements/data/article_data/third_article_data/calib_result_bowtie_start_days.png"
+./grime2cli --run_folder --timestamp_from_exif --timestamp_start_pos 0 --timestamp_format "yyyy-mm-ddTHH-MM" \
+    --source "/media/kchapman/Elements/data/article_data/third_article_data/dataset/" \
+    --calib_json "/media/kchapman/Elements/data/article_data/third_article_data/KOLA_calib_bowtie_start_days.json" \
+    --csv_file "/media/kchapman/Elements/data/article_data/third_article_data/results/results_bowtie_start_days_2023_01_22.csv" \
+    --result_folder "/media/kchapman/Elements/data/article_data/third_article_data/results/overlays_bowtie_start_days"
+
+./grime2cli --calibrate --source "/media/kchapman/Elements/data/article_data/third_article_data/dataset/20221107_1200_GC_KOLA.JPG" \
+    --calib_json "/media/kchapman/Elements/data/article_data/third_article_data/KOLA_calib_bowtie_middle_days.json" \
+    --result_image "/media/kchapman/Elements/data/article_data/third_article_data/calib_result_bowtie_middle_days.png"
+./grime2cli --run_folder --timestamp_from_exif --timestamp_start_pos 0 --timestamp_format "yyyy-mm-ddTHH-MM" \
+    --source "/media/kchapman/Elements/data/article_data/third_article_data/dataset/" \
+    --calib_json "/media/kchapman/Elements/data/article_data/third_article_data/KOLA_calib_bowtie_middle_days.json" \
+    --csv_file "/media/kchapman/Elements/data/article_data/third_article_data/results/results_bowtie_middle_days_2023_01_22.csv" \
+    --result_folder "/media/kchapman/Elements/data/article_data/third_article_data/results/overlays_bowtie_middle_days"
+
+./grime2cli --calibrate --source "/media/kchapman/Elements/data/article_data/third_article_data/dataset/20221127_1200_GC_KOLA.JPG" \
+    --calib_json "/media/kchapman/Elements/data/article_data/third_article_data/KOLA_calib_bowtie_end_days.json" \
+    --result_image "/media/kchapman/Elements/data/article_data/third_article_data/calib_result_bowtie_end_days.png"
+./grime2cli --run_folder --timestamp_from_exif --timestamp_start_pos 0 --timestamp_format "yyyy-mm-ddTHH-MM" \
+    --source "/media/kchapman/Elements/data/article_data/third_article_data/dataset/" \
+    --calib_json "/media/kchapman/Elements/data/article_data/third_article_data/KOLA_calib_bowtie_end_days.json" \
+    --csv_file "/media/kchapman/Elements/data/article_data/third_article_data/results/results_bowtie_end_days_2023_01_22.csv" \
+    --result_folder "/media/kchapman/Elements/data/article_data/third_article_data/results/overlays_bowtie_end_days"
+

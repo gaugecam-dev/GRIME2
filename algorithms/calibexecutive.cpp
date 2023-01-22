@@ -13,7 +13,7 @@
 using namespace cv;
 using namespace std;
 using namespace boost;
-namespace fs = filesystem;
+namespace fs = boost::filesystem;
 namespace pt = property_tree;
 
 static double Distance( const Point2d p1, const Point2d p2 )
@@ -56,6 +56,11 @@ void CalibExecutive::clear()
 {
     bowTie.clear();
     stopSign.clear();
+}
+GC_STATUS CalibExecutive::GetTargetSearchROI( cv::Rect &rect )
+{
+    rect = "BowTie" == GetCalibType() ? bowTie.TargetRoi() : stopSign.TargetRoi();
+    return GC_OK;
 }
 GC_STATUS CalibExecutive::GetCalibParams( std::string &calibParams )
 {
@@ -290,6 +295,11 @@ GC_STATUS CalibExecutive::Calibrate( const cv::Mat &img, const std::string jsonP
                             err_msg = "CALIB FAIL: Stop sign calibration search bounding box could not be set";
                         }
                     }
+                    else
+                    {
+                        err_msg = "CALIB_FAIL: Using previous stop sign calibration";
+                        retVal = GC_OK;
+                    }
                 }
             }
             else
@@ -325,6 +335,28 @@ GC_STATUS CalibExecutive::AdjustStopSignForRotation( const Size imgSize, const F
 {
     GC_STATUS retVal = stopSign.AdjustStopSignForRotation( imgSize, calcLinePts, offsetAngle );
     return retVal;
+}
+GC_STATUS CalibExecutive::DrawAssocPts( const cv::Mat &img, cv::Mat &overlay, std::string &err_msg )
+{
+    {
+        GC_STATUS retVal = GC_OK;
+        if ( "BowTie" == paramsCurrent.calibType )
+        {
+            // CalibModelBowtie model = bowTie.GetModel();
+            retVal = bowTie.DrawAssocPts( img, overlay, err_msg );
+        }
+        else if ( "StopSign" == paramsCurrent.calibType )
+        {
+            retVal = stopSign.DrawAssocPts( img, overlay, err_msg );
+        }
+        else
+        {
+            FILE_LOG( logERROR ) << "[CalibExecutive::DrawAssocPts] Invalid calibration type=" <<
+                                    ( paramsCurrent.calibType.empty() ? "empty()" : paramsCurrent.calibType );
+            retVal = GC_ERR;
+        }
+        return retVal;
+    }
 }
 GC_STATUS CalibExecutive::DrawOverlay( const cv::Mat matIn, cv::Mat &imgMatOut )
 {
@@ -657,7 +689,7 @@ GC_STATUS CalibExecutive::Load( const string jsonFilepath, const Mat &img )
                                         retVal = stopSign.SearchObj().FindMoveTargets( img, stopSign.TargetRoi(), ptLft, ptRgt );
                                         if ( GC_OK == retVal )
                                         {
-                                            retVal = stopSign.AdjustCalib( ptLft, ptRgt );
+                                            retVal = stopSign.AdjustCalib( ptLft, ptRgt, stopSign.TargetRoi() );
                                         }
                                     }
                                 }

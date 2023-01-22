@@ -173,6 +173,12 @@ GC_STATUS GuiVisApp::GetImageOverlay( const IMG_BUFFERS nImgColor, const IMG_DIS
                  ( overlays & TARGET_ROI ) )
             {
                 hasCalib = true;
+                // if ( overlays & CALIB_SCALE ||
+                //      overlays & CALIB_GRID )
+                // {
+                //     string err_msg;
+                //     retVal = m_visApp.DrawAssocPts( m_matColor, matTemp, err_msg );
+                // }
                 retVal = m_visApp.DrawCalibOverlay( matTemp, m_matDisplay,
                                                     overlays & CALIB_SCALE,
                                                     overlays & CALIB_GRID,
@@ -617,12 +623,28 @@ GC_STATUS GuiVisApp::CreateAnimation( const std::string imageFolder, const std::
     //    sigMessage( string( "Create animation: " ) + ( GC_OK == retVal ? "SUCCESS" : "FAILURE" ) );
     return retVal;
 }
+GC_STATUS GuiVisApp::GetTargetSearchROI( cv::Rect &rect )
+{
+    GC_STATUS retVal = m_visApp.GetTargetSearchROI( rect );
+    if ( GC_OK == retVal )
+    {
+        if ( 0 > rect.x || m_matGray.cols < rect.width ||
+             0 > rect.y || m_matGray.rows < rect.height )
+        {
+            sigMessage( string( "Invalid calibration search ROI" ) );
+            retVal = GC_ERR;
+        }
+    }
+    return retVal;
+}
+
 GC_STATUS GuiVisApp::GetCalibParams( std::string &calibParams )
 {
     GC_STATUS retVal = m_visApp.GetCalibParams( calibParams );
     sigMessage( string( "Get calibration parameters: " ) + ( GC_OK == retVal ? "SUCCESS" : "FAILURE" ) );
     return retVal;
 }
+bool GuiVisApp::IsBowtieCalib() { return m_visApp.GetCalibType() == "BowTie"; }
 GC_STATUS GuiVisApp::LoadCalib( const std::string calibJson, const bool reCalib )
 {
     Mat noImg = Mat();
@@ -725,6 +747,8 @@ GC_STATUS GuiVisApp::CalcLinesInFolder( const std::string folder, const FindLine
                         for ( auto& p: fs::recursive_directory_iterator( f ) )
                         {
                             ext = p.path().extension().string();
+                            std::transform( ext.begin(), ext.end(), ext.begin(),
+                                               []( unsigned char c ){ return std::tolower( c ); } );
                             if ( ext == ".png" || ext == ".jpg" )
                             {
                                 images.push_back( p.path().string() );
@@ -941,7 +965,7 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
 
         if ( !params.resultCSVPath.empty() )
         {
-            cout << fs::path( params.resultCSVPath ).parent_path() << endl;
+            // cout << fs::path( params.resultCSVPath ).parent_path() << endl;
             if ( !fs::exists( fs::path( params.resultCSVPath ).parent_path() ) )
             {
                 fs::create_directories( fs::path( params.resultCSVPath ).parent_path() );
@@ -954,7 +978,7 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
             }
             else
             {
-                csvOut << "filename, timestamp, status, water level, line angle, level adjustment" << endl;
+                csvOut << "filename, timestamp, status, water level, line angle, level adjustment, illumination" << endl;
             }
         }
         if ( !params.resultImagePath.empty() )
@@ -1053,6 +1077,13 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                                     }
                                     else
                                     {
+                                        string illum_state = "N/A";
+                                        retVal = m_visApp.GetIllumination( images[ i ], illum_state );
+                                        if ( GC_OK != retVal )
+                                        {
+                                            illum_state = "N/A";
+                                        }
+
                                         resultString = filename + ",";
                                         resultString += timestamp + ",";
 
@@ -1089,7 +1120,8 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                                                       ( findData.findlineResult.findSuccess ? "SUCCESS" : "FAIL" ) << "," <<
                                                       findData.findlineResult.waterLevelAdjusted.y << "," <<
                                                       findData.findlineResult.calcLinePts.angleWorld << "," <<
-                                                      findData.findlineResult.offsetMovePts.ctrWorld.y << endl;
+                                                      findData.findlineResult.offsetMovePts.ctrWorld.y << "," <<
+                                                      illum_state << endl;
                                         }
                                         if ( !params.resultImagePath.empty() )
                                         {

@@ -203,6 +203,50 @@ GC_STATUS CalibBowtie::Calibrate( const std::vector< cv::Point2d > pixelPts, con
     }
     return retVal;
 }
+GC_STATUS CalibBowtie::DrawAssocPts( const cv::Mat &img, cv::Mat &overlay, std::string &err_msg )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        err_msg.clear();
+        if ( img.empty() )
+        {
+            err_msg = "[CalibBowtie::DrawAssocPts] Needs non-empty input images";
+            FILE_LOG( logERROR ) << "[CalibBowtie::DrawAssocPts] Needs non-empty input images";
+            retVal = GC_ERR;
+        }
+        else
+        {
+            if ( CV_8UC1 == img.type() )
+            {
+                cvtColor( img, overlay, COLOR_GRAY2BGR );
+            }
+            else
+            {
+                img.copyTo( overlay );
+            }
+            char buf[ 256 ];
+            for ( size_t i = 0; i < m_model.pixelPoints.size(); ++i )
+            {
+                // circle( overlay, m_model.pixelPoints[ i ], 3, Scalar( 0, 255, 0 ), FILLED );
+                Point textStart = Point( m_model.pixelPoints[ i ].x - 10, m_model.pixelPoints[ i ].y - 50 );
+                sprintf( buf, "%d p:x=%d y=%d", static_cast< int >( i ), cvRound( m_model.pixelPoints[ i ].x ), cvRound( m_model.pixelPoints[ i ].y ) );
+                putText( overlay, buf, textStart, FONT_HERSHEY_PLAIN, 2.0, Scalar( 0, 255, 255 ), 1 );
+
+                textStart.y += 25;
+                sprintf( buf, "w:x=%.1f y=%.1f", m_model.worldPoints[ i ].x, m_model.worldPoints[ i ].y );
+                putText( overlay, to_string( i ), textStart, FONT_HERSHEY_PLAIN, 2.0, Scalar( 0, 255, 255 ), 1 );
+            }
+        }
+    }
+    catch( const Exception &e )
+    {
+        err_msg = "[CalibBowtie::DrawAssocPts] EXCEPTION";
+        FILE_LOG( logERROR ) << "[CalibBowtie::DrawAssocPts] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+    return retVal;
+}
 GC_STATUS CalibBowtie::GetSearchRegionBoundingRect( cv::Rect &rect )
 {
     GC_STATUS retVal = GC_OK;
@@ -282,18 +326,19 @@ GC_STATUS CalibBowtie::DrawOverlay( const cv::Mat img, cv::Mat &imgOut, const bo
                 }
                 else
                 {
-                    line( imgOut, m_model.searchLineSet[ 0 ].top, m_model.searchLineSet[ 0 ].bot, Scalar( 255, 0, 0 ), textStroke );
-                    line( imgOut, m_model.searchLineSet[ 0 ].top, m_model.searchLineSet[ m_model.searchLineSet.size() - 1 ].top, Scalar( 255, 0, 0 ), textStroke );
-                    line( imgOut, m_model.searchLineSet[ m_model.searchLineSet.size() - 1 ].top, m_model.searchLineSet[ m_model.searchLineSet.size() - 1 ].bot, Scalar( 255, 0, 0 ), textStroke );
-                    line( imgOut, m_model.searchLineSet[ 0 ].bot, m_model.searchLineSet[ m_model.searchLineSet.size() - 1 ].bot, Scalar( 255, 0, 0 ), textStroke );
-                    if ( numeric_limits< double >::epsilon() <= fabs( moveOffset.x ) && numeric_limits< double >::epsilon() <= fabs( moveOffset.y ) )
+                    if ( numeric_limits< double >::epsilon() <= fabs( moveOffset.x ) || numeric_limits< double >::epsilon() <= fabs( moveOffset.y ) )
                     {
                         Point off( cvRound( moveOffset.x ), cvRound( moveOffset.y ) );
-                        line( imgOut, m_model.searchLineSet[ 0 ].top + off, m_model.searchLineSet[ 0 ].bot + off, Scalar( 0, 0, 255 ), 1 );
-                        line( imgOut, m_model.searchLineSet[ 0 ].top + off, m_model.searchLineSet[ m_model.searchLineSet.size() - 1 ].top + off, Scalar( 0, 0, 255 ), 1 );
-                        line( imgOut, m_model.searchLineSet[ m_model.searchLineSet.size() - 1 ].top + off, m_model.searchLineSet[ m_model.searchLineSet.size() - 1 ].bot + off, Scalar( 0, 0, 255 ), 1 );
-                        line( imgOut, m_model.searchLineSet[ 0 ].bot + off, m_model.searchLineSet[ m_model.searchLineSet.size() - 1 ].bot + off, Scalar( 0, 0, 255 ), 1 );
+                        line( imgOut, m_model.searchLineSet[ 0 ].top + off, m_model.searchLineSet[ 0 ].bot + off, Scalar( 0, 0, 255 ), textStroke );
+                        line( imgOut, m_model.searchLineSet[ 0 ].top + off, m_model.searchLineSet[ m_model.searchLineSet.size() - 1 ].top + off, Scalar( 0, 0, 255 ), textStroke );
+                        line( imgOut, m_model.searchLineSet[ m_model.searchLineSet.size() - 1 ].top + off, m_model.searchLineSet[ m_model.searchLineSet.size() - 1 ].bot + off, Scalar( 0, 0, 255 ), textStroke );
+                        line( imgOut, m_model.searchLineSet[ 0 ].bot + off, m_model.searchLineSet[ m_model.searchLineSet.size() - 1 ].bot + off, Scalar( 0, 0, 255 ), textStroke );
                     }
+                    int originalRectWidth = std::max( textStroke >> 1, 1 );
+                    line( imgOut, m_model.searchLineSet[ 0 ].top, m_model.searchLineSet[ 0 ].bot, Scalar( 255, 0, 0 ), originalRectWidth );
+                    line( imgOut, m_model.searchLineSet[ 0 ].top, m_model.searchLineSet[ m_model.searchLineSet.size() - 1 ].top, Scalar( 255, 0, 0 ), originalRectWidth );
+                    line( imgOut, m_model.searchLineSet[ m_model.searchLineSet.size() - 1 ].top, m_model.searchLineSet[ m_model.searchLineSet.size() - 1 ].bot, Scalar( 255, 0, 0 ), originalRectWidth );
+                    line( imgOut, m_model.searchLineSet[ 0 ].bot, m_model.searchLineSet[ m_model.searchLineSet.size() - 1 ].bot, Scalar( 255, 0, 0 ), originalRectWidth );
                 }
             }
 
@@ -339,6 +384,28 @@ GC_STATUS CalibBowtie::DrawOverlay( const cv::Mat img, cv::Mat &imgOut, const bo
 
                             }
                             putText( imgOut, msg, Point( cvRound( lftX ) - 120, cvRound( yPos ) + 15 ), FONT_HERSHEY_PLAIN, fontScale, Scalar( 0, 0, 255 ), textStroke );
+                        }
+                    }
+                    // zero level line
+                    Point2d zeroLft_world, zeroRgt_world;
+                    Point2d zeroLft_pixel, zeroRgt_pixel;
+                    retVal = PixelToWorld( Point2d( lftX, startPoint ), zeroLft_world );
+                    if ( GC_OK == retVal )
+                    {
+                        retVal = PixelToWorld( Point2d( rgtX, startPoint ), zeroRgt_world );
+                        if ( GC_OK == retVal )
+                        {
+                            retVal = WorldToPixel( Point2d( zeroLft_world.x, 0.0 ), zeroLft_pixel );
+                            if ( GC_OK == retVal )
+                            {
+                                retVal = WorldToPixel( Point2d( zeroRgt_world.x, 0.0 ), zeroRgt_pixel );
+                                if ( GC_OK == retVal )
+                                {
+                                    putText( imgOut, "0.0", Point( zeroLft_pixel.x - 70, cvRound( zeroLft_pixel.y - 10 ) ),
+                                             FONT_HERSHEY_PLAIN, fontScale, Scalar( 0, 0, 255 ), textStroke );
+                                    line( imgOut, zeroLft_pixel, zeroRgt_pixel, Scalar( 0, 0, 255 ), textStroke );
+                                }
+                            }
                         }
                     }
                 }
@@ -403,6 +470,19 @@ GC_STATUS CalibBowtie::DrawOverlay( const cv::Mat img, cv::Mat &imgOut, const bo
                                         line( imgOut, pt1, pt2, Scalar( 0, 255, 255 ), textStroke );
                                         if ( ( rowInt % 2 ) == 1 )
                                             circle( imgOut, pt1, circleSize, Scalar( 0, 255, 0 ), textStroke );
+                                    }
+                                }
+                                // zero level line
+                                Point2d zeroLft_pixel, zeroRgt_pixel;
+                                retVal = WorldToPixel( Point2d( topLft.x, 0.0 ), zeroLft_pixel );
+                                if ( GC_OK == retVal )
+                                {
+                                    retVal = WorldToPixel( Point2d( botRgt.x, 0.0 ), zeroRgt_pixel );
+                                    if ( GC_OK == retVal )
+                                    {
+                                        putText( imgOut, "0.0", Point( zeroLft_pixel.x - 70, cvRound( zeroLft_pixel.y - 10 ) ),
+                                                 FONT_HERSHEY_PLAIN, fontScale, Scalar( 0, 0, 255 ), textStroke );
+                                        line( imgOut, zeroLft_pixel, zeroRgt_pixel, Scalar( 0, 0, 255 ), textStroke * 2 );
                                     }
                                 }
                             }

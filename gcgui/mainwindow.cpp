@@ -166,7 +166,16 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->widget_overlayCheckboxes->hide();
 
     GC_STATUS retVal = m_visApp.LoadCalib( ui->lineEdit_calibVisionResult_json->text().toStdString(), false );
-    if ( GC_OK != retVal )
+    if ( GC_OK == retVal )
+    {
+        m_rectRubberBand.setLeft( qRound( static_cast< double >( m_rectROI.left() ) * m_scaleFactor ) );
+        m_rectRubberBand.setTop( qRound( static_cast< double >( m_rectROI.top() ) * m_scaleFactor ) );
+        m_rectRubberBand.setRight( qRound( static_cast< double >( m_rectROI.right() ) * m_scaleFactor ) );
+        m_rectRubberBand.setBottom( qRound( static_cast< double >( m_rectROI.bottom() ) * m_scaleFactor ) );
+        m_pRubberBand->setGeometry( m_rectRubberBand );
+        ui->radioButton_calibBowtie->setChecked( m_visApp.IsBowtieCalib() );
+    }
+    else
     {
         ui->textEdit_msgs->append( "Could not load calibration from " + ui->lineEdit_calibVisionResult_json->text() );
     }
@@ -509,6 +518,27 @@ void MainWindow::ZoomTo( const int width, const int height )
     else
     {
         ui->horizontalSlider_zoom->setValue( nScale );
+    }
+}
+void MainWindow::UpdateTargetRect()
+{
+    Rect rect;
+    GC_STATUS retVal = m_visApp.GetTargetSearchROI( rect );
+    if ( GC_OK == retVal )
+    {
+        m_rectROI.setX( rect.x );
+        m_rectROI.setY( rect.y );
+        m_rectROI.setWidth( rect.width );
+        m_rectROI.setHeight( rect.height );
+        m_rectRubberBand.setLeft( qRound( static_cast< double >( m_rectROI.left() ) * m_scaleFactor ) );
+        m_rectRubberBand.setTop( qRound( static_cast< double >( m_rectROI.top() ) * m_scaleFactor ) );
+        m_rectRubberBand.setRight( qRound( static_cast< double >( m_rectROI.right() ) * m_scaleFactor ) );
+        m_rectRubberBand.setBottom( qRound( static_cast< double >( m_rectROI.bottom() ) * m_scaleFactor ) );
+        m_pRubberBand->setGeometry( m_rectRubberBand );
+    }
+    else
+    {
+        ui->statusBar->showMessage( "Could not set target search ROI properly" );
     }
 }
 void MainWindow::UpdateCalibSearchRegion()
@@ -1128,6 +1158,22 @@ void MainWindow::on_toolButton_imageFolder_browse_clicked()
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // vision calibration
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+void MainWindow::on_pushButton_visionCalibrateLoad_clicked()
+{
+    GC_STATUS retVal = m_visApp.LoadCalib( ui->lineEdit_calibVisionResult_json->text().toStdString(), false );
+    if ( GC_OK == retVal )
+    {
+        UpdateTargetRect();
+        ui->radioButton_calibBowtie->setChecked( m_visApp.IsBowtieCalib() );
+        UpdateGUIEnables();
+        UpdateCalibType();
+        UpdateCalibSearchRegion();
+    }
+    else
+    {
+        ui->textEdit_msgs->append( "Could not load calibration from " + ui->lineEdit_calibVisionResult_json->text() );
+    }
+}
 void MainWindow::on_pushButton_visionCalibrate_clicked()
 {
     QString strFolder = ui->lineEdit_imageFolder->text();
@@ -1177,6 +1223,10 @@ void MainWindow::on_pushButton_visionCalibrate_clicked()
     if ( 0 == ret && GC_OK == retVal )
     {
         retVal = m_visApp.Calibrate( strFilepath.toStdString(), jsonControlStr );
+        if ( GC_OK != retVal )
+        {
+            ui->statusBar->showMessage( "Calibration failed" );
+        }
         ui->checkBox_showCalib->setChecked( true );
         m_pComboBoxImageToView->setCurrentText( "Overlay" );
         UpdatePixmapTarget();

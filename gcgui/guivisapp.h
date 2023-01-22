@@ -79,6 +79,9 @@ public:
     GC_STATUS Calibrate( const std::string imgFilepath, const string jsonControl );
     GC_STATUS PixelToWorld( const cv::Point2d pixelPt, cv::Point2d &worldPt );
     GC_STATUS GetCalibParams( std::string &calibParams );
+    GC_STATUS GetTargetSearchROI( cv::Rect &rect );
+    GC_STATUS DrawAssocPts( const cv::Mat &img, cv::Mat &overlay, std::string &err_msg );
+    bool IsBowtieCalib();
 
     // findline app methods
     GC_STATUS GetMetadata( const std::string imgFilepath, std::string &data );

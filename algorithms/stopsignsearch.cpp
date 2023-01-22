@@ -17,6 +17,8 @@
 #include "stopsignsearch.h"
 #include <random>
 #include <iostream>
+#include <algorithm>
+#include <chrono>
 #include "opencv2/imgcodecs.hpp"
 #include "bresenham.h"
 
@@ -182,7 +184,7 @@ GC_STATUS StopsignSearch::FindMoveTargets( const Mat &img, const Rect targetRoi,
             {
                 Mat matIn = img( targetRoi );
                 if ( img.type() == CV_8UC3 )
-                    cvtColor( img, matIn, COLOR_BGR2GRAY );
+                    cvtColor( matIn, matIn, COLOR_BGR2GRAY );
 
                 cv::Ptr< CLAHE > clahe = createCLAHE( 1.0 );
                 clahe->apply( matIn, matIn );
@@ -199,7 +201,7 @@ GC_STATUS StopsignSearch::FindMoveTargets( const Mat &img, const Rect targetRoi,
 #ifdef DEBUG_STOPSIGN_TEMPL
                 Mat color;
                 if ( img.type() == CV_8UC1 )
-                    cvtColor( img, color, COLOR_BGR2GRAY );
+                    cvtColor( matIn, color, COLOR_BGR2GRAY );
                 else
                     img.copyTo( color );
 #endif
@@ -216,7 +218,7 @@ GC_STATUS StopsignSearch::FindMoveTargets( const Mat &img, const Rect targetRoi,
                 for ( size_t j = 0; j < templIdx.size(); ++j )
                 {
                     maxMaxVal = -9999999;
-                    imwrite( "/var/tmp/water/stopsign_move_target" + to_string(j) + ".png", templates[ j ].ptTemplates[ 5 ].templ );
+                    // imwrite( "/var/tmp/water/stopsign_move_target" + to_string(j) + ".png", templates[ j ].ptTemplates[ 5 ].templ );
                     for ( size_t i = 0; i < templates[ j ].ptTemplates.size(); ++i )
                     {
                         matchTemplate( matIn, templates[ j ].ptTemplates[ i ].templ, response, TM_CCORR_NORMED, templates[ j ].ptTemplates[ i ].mask );
@@ -228,20 +230,20 @@ GC_STATUS StopsignSearch::FindMoveTargets( const Mat &img, const Rect targetRoi,
                             maxMaxPt = Point2d( maxPt ) + templates[ j ].ptTemplates[ i ].offset;
                             if ( 0 == j )
                             {
-                                ptLeft = maxMaxPt + Point2d( targetRoi.x, targetRoi.y );
+                                ptLeft = maxMaxPt;
                             }
                             else
                             {
-                                ptRight = maxMaxPt + Point2d( targetRoi.x, targetRoi.y );
+                                ptRight = maxMaxPt;
                             }
                         }
                     }
                     if ( 0.0 < maxMaxVal )
                     {
 #ifdef DEBUG_STOPSIGN_TEMPL
-                        line( color, Point( cvRound( maxMaxPt.x - 10 ), cvRound( maxMaxPt.y ) ),
+                        line( color( targetRoi ), Point( cvRound( maxMaxPt.x - 10 ), cvRound( maxMaxPt.y ) ),
                               Point( cvRound( maxMaxPt.x + 10 ), cvRound( maxMaxPt.y ) ), Scalar( 0, 255, 0 ), 1 );
-                        line( color, Point( cvRound( maxMaxPt.x ), cvRound( maxMaxPt.y - 10 ) ),
+                        line( color( targetRoi ), Point( cvRound( maxMaxPt.x ), cvRound( maxMaxPt.y - 10 ) ),
                               Point( cvRound( maxMaxPt.x ), cvRound( maxMaxPt.y + 10 ) ), Scalar( 0, 255, 0 ), 1 );
                         imwrite( "/var/tmp/water/stopsign_move_target_found.png", color );
 #endif

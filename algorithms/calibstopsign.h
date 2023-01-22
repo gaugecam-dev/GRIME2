@@ -92,13 +92,14 @@ public:
     GC_STATUS Save( const std::string jsonCalFilepath );
     GC_STATUS CalcHomographies();
     GC_STATUS Calibrate( const cv::Mat &img, const std::string &controlJson, std::string &err_msg );
-    GC_STATUS AdjustCalib( const cv::Point2d ptLft, const cv::Point2d ptRgt );
+    GC_STATUS AdjustCalib( const cv::Point2d ptLft, const cv::Point2d ptRgt, const cv::Rect searchROI );
     GC_STATUS AdjustStopSignForRotation( const cv::Size imgSize, const FindPointSet &calcLinePts, double &offsetAngle );
 
     GC_STATUS PixelToWorld( const cv::Point2d ptPixel, cv::Point2d &ptWorld );
     GC_STATUS WorldToPixel( const cv::Point2d ptWorld, cv::Point2d &ptPixel );
     GC_STATUS DrawOverlay( const cv::Mat &img, cv::Mat &result, const bool drawCalibScale, const bool drawCalibGrid,
                            const bool drawMoveROIs, const bool drawSearchROI , const bool drawTargetSearchROI );
+    GC_STATUS DrawAssocPts( const cv::Mat &img, cv::Mat &overlay, std::string &err_msg );
     GC_STATUS GetCalibParams( std::string &calibParams );
 
     void clear();
