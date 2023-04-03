@@ -114,11 +114,7 @@ class CalibJsonItems
 public:
     CalibJsonItems() :
         facetLength( 0.7 ),
-        zeroOffset( 2.0 ),
-        botLftPtToLft( -0.5 ),
-        botLftPtToTop( 1.0 ),
-        botLftPtToRgt( 1.5 ),
-        botLftPtToBot( -3.0 )
+        zeroOffset( 2.0 )
     {}
     CalibJsonItems( const std::string worldPosCsvFile,
                     const std::string calibResultJson,
@@ -127,10 +123,6 @@ public:
                     const double moveGrowROIPercent,
                     const double worldFacetLength,
                     const double worldZeroOffset,
-                    const double offsetToLft,
-                    const double offsetToTop,
-                    const double offsetToRgt,
-                    const double offsetToBot,
                     const LineSearchRoi searchPoly ) :
         worldTargetPosition_csvFile( worldPosCsvFile ),
         calibVisionResult_json( calibResultJson ),
@@ -139,10 +131,6 @@ public:
         moveROIGrowPercent( moveGrowROIPercent ),
         facetLength( worldFacetLength ),
         zeroOffset( worldZeroOffset ),
-        botLftPtToLft( offsetToLft ),
-        botLftPtToTop( offsetToTop ),
-        botLftPtToRgt( offsetToRgt ),
-        botLftPtToBot( offsetToBot ),
         lineSearchPoly( searchPoly )
     {}
 
@@ -155,10 +143,6 @@ public:
         moveROIGrowPercent = 10.0;
         facetLength = -1.0;
         zeroOffset = 0.0;
-        botLftPtToBot = -1.0;
-        botLftPtToTop = -1.0;
-        botLftPtToRgt = -1.0;
-        botLftPtToBot = -1.0;
         lineSearchPoly.clear();
     }
 
@@ -169,10 +153,6 @@ public:
     double moveROIGrowPercent;
     double facetLength;
     double zeroOffset;
-    double botLftPtToLft;                            ///< Distance from bottom left stop sign corner to search ROI left
-    double botLftPtToTop;                            ///< Distance from bottom left stop sign corner to search ROI top
-    double botLftPtToRgt;                            ///< Distance from bottom left stop sign corner to search ROI right
-    double botLftPtToBot;                            ///< Distance from bottom left stop sign corner to search ROI bottom
     LineSearchRoi lineSearchPoly;
 };
 

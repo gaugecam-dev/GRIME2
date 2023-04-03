@@ -147,7 +147,7 @@ GC_STATUS FindLine::TriagePoints( vector< Point2d > &pts )
                 return a.x > b.x; } );
             for ( size_t i = 0; i < ptTemp.size(); ++i )
             {
-                if ( 10.0 > fabs( medianY - ptTemp[ i ].y ) )
+                if ( 17.0 > fabs( medianY - ptTemp[ i ].y ) )
                 {
                      pts.push_back( ptTemp[ i ] );
                 }
@@ -613,7 +613,7 @@ GC_STATUS FindLine::DrawResult( const Mat &img, Mat &imgOut, const FindLineResul
                 }
                 for ( size_t i = 0; i < result.msgs.size(); ++i )
                 {
-                    putText( imgOut, result.msgs[ i ], Point( 3, ( static_cast< int >( i ) + 1 ) * textRowSpacing ), FONT_HERSHEY_PLAIN, fontScale, Scalar( 0, 255, 255 ), textStroke );
+                    putText( imgOut, result.msgs[ i ], Point( 3, ( static_cast< int >( i ) + 1 ) * textRowSpacing + 50 ), FONT_HERSHEY_PLAIN, fontScale, Scalar( 0, 255, 255 ), textStroke );
                 }
             }
         }

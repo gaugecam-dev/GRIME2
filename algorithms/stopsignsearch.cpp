@@ -728,6 +728,7 @@ GC_STATUS StopsignSearch::CreateTemplateOverlay( const std::string debugFolder )
         }
         else
         {
+            imwrite ("/var/tmp/water/center_template.png", templates[ 0 ].ptTemplates[ templates[ 0 ].ptTemplates.size() >> 1 ].templ );
             char buf[ 512 ];
             Mat scratch, tempColor = Mat::zeros( Size( templates[ 0 ].ptTemplates[ 0 ].mask.cols * 2,
                                                        templates[ 0 ].ptTemplates[ 0 ].mask.rows ), CV_8UC3 );

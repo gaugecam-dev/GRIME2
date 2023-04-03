@@ -75,15 +75,15 @@ enum IMG_DISPLAY_OVERLAYS
     SEARCH_ROI = 2048
 };
 
-static const double DEFAULT_MIN_LINE_ANGLE = -2.0;                             ///< Default minimum line find angle
-static const double DEFAULT_MAX_LINE_ANGLE = 2.0;                              ///< Default maximum line find angle
+static const double DEFAULT_MIN_LINE_ANGLE = -1.5;                             ///< Default minimum line find angle
+static const double DEFAULT_MAX_LINE_ANGLE = 3.5;                              ///< Default maximum line find angle
 static const int FIT_LINE_RANSAC_TRIES_TOTAL = 100;                             ///< Fit line RANSAC total tries
 static const int FIT_LINE_RANSAC_TRIES_EARLY_OUT = 50;                          ///< Fit line RANSAC early out tries
 static const int FIT_LINE_RANSAC_POINT_COUNT = 5;                               ///< Fit line RANSAC early out tries
 static const int MIN_DEFAULT_INT = -std::numeric_limits< int >::max();          ///< Minimum value for an integer
 static const double MIN_DEFAULT_DBL = -std::numeric_limits< double >::max();    ///< Minimum value for a double
 static const int GC_BOWTIE_TEMPLATE_DIM = 56;                                   ///< Default bowtie template size
-static const int GC_STOPSIGN_TEMPLATE_DIM = 79;                                 ///< Default bowtie template size
+static const int GC_STOPSIGN_TEMPLATE_DIM = 51;                                 ///< Default bowtie template size
 static const int GC_IMAGE_SIZE_WIDTH = 800;                                     ///< Default image width
 static const int GC_IMAGE_SIZE_HEIGHT = 600;                                    ///< Default image height
 static const double MIN_BOWTIE_FIND_SCORE = 0.55;                               ///< Minimum bow tie sccore
@@ -204,16 +204,8 @@ public:
         targetSearchRegion( cv::Rect( -1, -1, -1, -1 ) ),
         facetLength( -1.0 ),
         zeroOffset( 2.0 ),
-        botLftPtToLft( -0.5 ),
-        botLftPtToTop( 1.0 ),
-        botLftPtToRgt( 1.5 ),
-        botLftPtToBot( -3.0 ),
         center( cv::Point2d( -1.0, -1.0 ) ),
-        angle( -9999999.0 ),
-        hsvLow( cv::Scalar( 0, 0, 0 ) ),
-        hsvHigh( cv::Scalar( 0, 0, 0 ) ),
-        hsvLow1( cv::Scalar( -9999999, -9999999, -9999999 ) ),
-        hsvHigh1( cv::Scalar( -9999999, -9999999, -9999999 ) )
+        angle( -9999999.0 )
     {}
 
     // TODO: Update doxygen
@@ -235,19 +227,8 @@ public:
                       const cv::Rect symbolSearchROI,
                       const double facetLen,
                       const double zeroOffsetVertical,
-                      const double offsetToLft,
-                      const double offsetToTop,
-                      const double offsetToRgt,
-                      const double offsetToBot,
                       const cv::Point2d centerPoint,
-                      const double symbolAngle,
-                      const cv::Scalar colorOfSymbol,
-                      const int colorRngMin,
-                      const int colorRngMax,
-                      const cv::Scalar hsvLow = cv::Scalar( -9999999, -9999999, -9999999 ),
-                      const cv::Scalar hsvHigh = cv::Scalar( -9999999, -9999999, -9999999 ),
-                      const cv::Scalar hsvLow1 = cv::Scalar( -9999999, -9999999, -9999999 ),
-                      const cv::Scalar hsvHigh1 = cv::Scalar( -9999999, -9999999, -9999999 ) ) :
+                      const double symbolAngle ) :
         validCalib( isCalibValid ),
         imgSize( imageSize ),
         pixelPoints( pixelPts ),
@@ -257,19 +238,8 @@ public:
         targetSearchRegion( symbolSearchROI ),
         facetLength( facetLen ),
         zeroOffset( zeroOffsetVertical ),
-        botLftPtToLft( offsetToLft ),
-        botLftPtToTop( offsetToTop ),
-        botLftPtToRgt( offsetToRgt ),
-        botLftPtToBot( offsetToBot ),
         center( centerPoint ),
-        angle( symbolAngle ),
-        symbolColor( colorOfSymbol ),
-        colorRangeMin( colorRngMin ),
-        colorRangeMax( colorRngMax ),
-        hsvLow( hsvLow ),
-        hsvHigh( hsvHigh ),
-        hsvLow1( hsvLow1 ),
-        hsvHigh1( hsvHigh1 )
+        angle( symbolAngle )
     {}
 
     /**
@@ -287,19 +257,8 @@ public:
         targetSearchRegion = cv::Rect( -1, -1, -1, -1 );
         facetLength = -1.0;
         zeroOffset = 2.0;
-        botLftPtToLft = -0.5;
-        botLftPtToTop = 1.0;
-        botLftPtToRgt = 1.5;
-        botLftPtToBot = -3.0;
         center = cv::Point2d( -1.0, -1.0 );
         angle = -9999999.0;
-        symbolColor = cv::Scalar( 0, 0, 0 );
-        colorRangeMin = 20;
-        colorRangeMax = 20;
-        hsvLow = cv::Scalar( 0, 0, 0 );
-        hsvHigh = cv::Scalar( 0, 0, 0 );
-        hsvLow1 = cv::Scalar( -9999999, -9999999, -9999999 );
-        hsvHigh1 = cv::Scalar( -9999999, -9999999, -9999999 );
     }
 
     bool validCalib;
@@ -311,20 +270,9 @@ public:
     std::vector< LineEnds > searchLineSet;           ///< Vector of search lines to be searched for the water line
     cv::Rect targetSearchRegion;                     ///< Region within which to perform line and move search
     double facetLength;                              ///< Length of a stop sign facet in world units
-    double zeroOffset;                              ///< Distance from bottom left stop sign corner to zero vertical position
-    double botLftPtToLft;                            ///< Distance from bottom left stop sign corner to search ROI left
-    double botLftPtToTop;                            ///< Distance from bottom left stop sign corner to search ROI top
-    double botLftPtToRgt;                            ///< Distance from bottom left stop sign corner to search ROI right
-    double botLftPtToBot;                            ///< Distance from bottom left stop sign corner to search ROI bottom
+    double zeroOffset;                               ///< Distance from bottom left stop sign corner to zero vertical position
     cv::Point2d center;                              ///< Center of symbol
     double angle;                                    ///< Angle of symbol
-    cv::Scalar symbolColor;
-    int colorRangeMin;
-    int colorRangeMax;
-    cv::Scalar hsvLow;
-    cv::Scalar hsvHigh;
-    cv::Scalar hsvLow1;
-    cv::Scalar hsvHigh1;
 };
 
 /**
@@ -552,6 +500,7 @@ public:
      */
     FindLineResult( const bool findOk,
                     const std::string captureTime,
+                    const std::string illumination_state,
                     const cv::Point2d adjustedWaterLevel,
                     const FindPointSet lineEndPoints,
                     const FindPointSet moveRefPoints,
@@ -565,6 +514,7 @@ public:
                     const std::vector< std::string > messages ) :
         findSuccess( findOk ),
         timestamp( captureTime ),
+        illum_state( illumination_state ),
         waterLevelAdjusted( adjustedWaterLevel ),
         calcLinePts( lineEndPoints ),
         refMovePts( moveRefPoints ),
@@ -589,6 +539,7 @@ public:
     {
         findSuccess = false;
         timestamp = std::string( "1955-09-24T12:05:00" );
+        illum_state = "N/A";
         waterLevelAdjusted = cv::Point2d( -9999999.9, -9999999.9 );
         calcLinePts.clear();
         refMovePts.clear();
@@ -608,6 +559,7 @@ public:
 
     bool findSuccess;                       ///< true=Successful find, false=Failed find
     std::string timestamp;                  ///< time of image capture
+    std::string illum_state;                ///< illum_state of image capture
     cv::Point2d waterLevelAdjusted;         ///< World coordinate water level adjust for any detected motion of the calibration target
     FindPointSet calcLinePts;               ///< Found water level line
     FindPointSet refMovePts;                ///< Line between the move targets at the time of calibration

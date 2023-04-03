@@ -275,83 +275,41 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &contr
                 }
                 else
                 {
-                    Point2d lftTop, rgtTop, lftBot, rgtBot;
-                    retVal = CalcSearchROI( model.zeroOffset, model.botLftPtToLft, model.botLftPtToTop,
-                                            model.botLftPtToRgt, model.botLftPtToBot,
-                                            lftTop, rgtTop, lftBot, rgtBot );
-
-                    Point2d pt;
-                    retVal = WorldToPixel( lftTop, pt );
+#ifdef DEBUG_FIND_CALIB_SYMBOL
+                    Mat temp_img;
+                    img.copyTo( temp_img );
+                    // cvtColor( img, temp_img, COLOR_GRAY2BGR );
+                    line( temp_img, model.waterlineSearchCorners[ 0 ], model.waterlineSearchCorners[ 1 ], Scalar( 0, 0, 255 ), 7 );
+                    line( temp_img, model.waterlineSearchCorners[ 0 ], model.waterlineSearchCorners[ 2 ], Scalar( 0, 255, 255 ), 7 );
+                    line( temp_img, model.waterlineSearchCorners[ 3 ], model.waterlineSearchCorners[ 1 ], Scalar( 0, 255, 0 ), 7 );
+                    line( temp_img, model.waterlineSearchCorners[ 3 ], model.waterlineSearchCorners[ 2 ], Scalar( 255, 0, 0 ), 7 );
+                    imwrite( "/var/tmp/water/test_search_roi_0.png", temp_img );
+                    Mat color;
+                    img.copyTo( color );
+                    circle( color, model.waterlineSearchCorners[ 0 ], 11, Scalar( 0, 0, 255 ), 3 );
+                    circle( color, model.waterlineSearchCorners[ 1 ], 11, Scalar( 0, 255, 255 ), 3 );
+                    circle( color, model.waterlineSearchCorners[ 2 ], 11, Scalar( 255, 0, 0 ), 3 );
+                    circle( color, model.waterlineSearchCorners[ 3 ], 11, Scalar( 0, 255, 0 ), 3 );
+                    imwrite( "/var/tmp/water/roi_pts.png", color );
+#endif
+                    SearchLines searchLines;
+                    retVal = searchLines.CalcSearchLines( model.waterlineSearchCorners, model.searchLineSet );
                     if ( GC_OK != retVal )
                     {
-                        err_msg = "CALIB FAIL [stop sign] Could not calculate left top search roi point";
+                        err_msg = "CALIB FAIL [stop sign] Invalid search lines (is 4-pt bounding poly correct?)";
+                        FILE_LOG( logERROR ) << "[CalibStopSign::Calibrate] Invalid search lines (is 4-pt bounding poly correct?)";
+                        retVal = GC_OK;
                     }
                     else
                     {
-                        model.waterlineSearchCorners[ 0 ] = Point( cvRound( pt.x ), cvRound( pt.y ) );
-                        retVal = WorldToPixel( rgtTop, pt );
+                        retVal = CalcCenterAngle( model.worldPoints, model.center, model.angle );
                         if ( GC_OK != retVal )
                         {
-                            err_msg = "CALIB FAIL [stop sign] Could not calculate right top search roi point";
+                            err_msg = "CALIB FAIL [stop sign] Could not stop sign angle";
                         }
                         else
                         {
-                            model.waterlineSearchCorners[ 1 ] = Point( cvRound( pt.x ), cvRound( pt.y ) );
-                            retVal = WorldToPixel( rgtBot, pt );
-                            if ( GC_OK != retVal )
-                            {
-                                err_msg = "CALIB FAIL [stop sign] Could not calculate right bottom search roi point";
-                            }
-                            else
-                            {
-                                model.waterlineSearchCorners[ 2 ] = Point( cvRound( pt.x ), cvRound( pt.y ) );
-                                retVal = WorldToPixel( lftBot, pt );
-                                if ( GC_OK != retVal )
-                                {
-                                    err_msg = "CALIB FAIL [stop sign] Could not calculate left bottom search roi point";
-                                }
-                                else
-                                {
-                                    model.waterlineSearchCorners[ 3 ] = Point( cvRound( pt.x ), cvRound( pt.y ) );
-#ifdef DEBUG_FIND_CALIB_SYMBOL
-                                    Mat temp_img;
-                                    img.copyTo( temp_img );
-                                    // cvtColor( img, temp_img, COLOR_GRAY2BGR );
-                                    line( temp_img, model.waterlineSearchCorners[ 0 ], model.waterlineSearchCorners[ 1 ], Scalar( 0, 0, 255 ), 7 );
-                                    line( temp_img, model.waterlineSearchCorners[ 0 ], model.waterlineSearchCorners[ 2 ], Scalar( 0, 255, 255 ), 7 );
-                                    line( temp_img, model.waterlineSearchCorners[ 3 ], model.waterlineSearchCorners[ 1 ], Scalar( 0, 255, 0 ), 7 );
-                                    line( temp_img, model.waterlineSearchCorners[ 3 ], model.waterlineSearchCorners[ 2 ], Scalar( 255, 0, 0 ), 7 );
-                                    imwrite( "/var/tmp/water/test_search_roi_0.png", temp_img );
-                                    Mat color;
-                                    img.copyTo( color );
-                                    circle( color, model.waterlineSearchCorners[ 0 ], 11, Scalar( 0, 0, 255 ), 3 );
-                                    circle( color, model.waterlineSearchCorners[ 1 ], 11, Scalar( 0, 255, 255 ), 3 );
-                                    circle( color, model.waterlineSearchCorners[ 2 ], 11, Scalar( 255, 0, 0 ), 3 );
-                                    circle( color, model.waterlineSearchCorners[ 3 ], 11, Scalar( 0, 255, 0 ), 3 );
-                                    imwrite( "/var/tmp/water/roi_pts.png", color );
-#endif
-                                    SearchLines searchLines;
-                                    retVal = searchLines.CalcSearchLines( model.waterlineSearchCorners, model.searchLineSet );
-                                    if ( GC_OK != retVal )
-                                    {
-                                        err_msg = "CALIB FAIL [stop sign] Invalid search lines (is 4-pt bounding poly correct?)";
-                                        FILE_LOG( logERROR ) << "[CalibStopSign::Calibrate] Invalid search lines (is 4-pt bounding poly correct?)";
-                                        retVal = GC_OK;
-                                    }
-                                    else
-                                    {
-                                        retVal = CalcCenterAngle( model.worldPoints, model.center, model.angle );
-                                        if ( GC_OK != retVal )
-                                        {
-                                            err_msg = "CALIB FAIL [stop sign] Could not stop sign angle";
-                                        }
-                                        else
-                                        {
-                                            model.imgSize = img.size();
-                                        }
-                                    }
-                                }
-                            }
+                            model.imgSize = img.size();
                         }
                     }
                 }
@@ -594,16 +552,6 @@ GC_STATUS CalibStopSign::Load( const std::string jsonCalString )
             model.imgSize.height = ptreeTop.get< int >( "imageHeight", 0 );
             model.facetLength = ptreeTop.get< double >( "facetLength", -1.0 );
             model.zeroOffset = ptreeTop.get< double >( "zeroOffset", 0.0 );
-            model.botLftPtToLft = ptreeTop.get< double >( "botLftPtToLft", 0.0 );
-            model.botLftPtToTop = ptreeTop.get< double >( "botLftPtToTop", 0.0 );
-            model.botLftPtToRgt = ptreeTop.get< double >( "botLftPtToRgt", 0.0 );
-            model.botLftPtToBot = ptreeTop.get< double >( "botLftPtToBot", 0.0 );
-            double blueVal = ptreeTop.get< double >( "symbolColor_blue", 0.0 );
-            double greenVal = ptreeTop.get< double >( "symbolColor_green", 0.0 );
-            double redVal = ptreeTop.get< double >( "symbolColor_red", 0.0 );
-            model.symbolColor = Scalar( blueVal, greenVal, redVal );
-            model.colorRangeMin = ptreeTop.get< int >( "colorRangeMin", 20 );
-            model.colorRangeMax = ptreeTop.get< int >( "colorRangeMax", 20 );
 
             Point2d ptTemp;
             property_tree::ptree::const_assoc_iterator it = ptreeTop.find( "PixelToWorld" );
@@ -739,17 +687,6 @@ GC_STATUS CalibStopSign::Save( const std::string jsonCalFilepath )
                 fileStream << "  \"imageHeight\":" << model.imgSize.height << "," << endl;
                 fileStream << "  \"facetLength\":" << model.facetLength << "," << endl;
                 fileStream << "  \"zeroOffset\":" << model.zeroOffset << "," << endl;
-                fileStream << "  \"botLftPtToLft\":" << model.botLftPtToLft << "," << endl;
-                fileStream << "  \"botLftPtToTop\":" << model.botLftPtToTop << "," << endl;
-                fileStream << "  \"botLftPtToRgt\":" << model.botLftPtToRgt << "," << endl;
-                fileStream << "  \"botLftPtToBot\":" << model.botLftPtToBot << "," << endl;
-
-                fileStream << "  \"symbolColor_blue\":" << model.symbolColor.val[ 0 ] << "," << endl;
-                fileStream << "  \"symbolColor_green\":" << model.symbolColor.val[ 1 ] << "," << endl;
-                fileStream << "  \"symbolColor_red\":" << model.symbolColor.val[ 2 ] << "," << endl;
-
-                fileStream << "  \"colorRangeMin\":" << model.colorRangeMin << "," << endl;
-                fileStream << "  \"colorRangeMax\":" << model.colorRangeMax << "," << endl;
 
                 fileStream << "  \"PixelToWorld\": " << endl;
                 fileStream << "  {" << endl;

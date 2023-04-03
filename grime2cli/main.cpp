@@ -197,6 +197,8 @@ GC_STATUS RunFolder( const Grime2CLIParams cliParams )
                 }
             }
 
+            sort( images.begin(), images.end() );
+
             if ( images.empty() )
             {
                 FILE_LOG( logERROR ) << "No images found in " << cliParams.src_imagePath << endl;
@@ -231,10 +233,11 @@ GC_STATUS RunFolder( const Grime2CLIParams cliParams )
                                 fs::path( images[ i ] ).stem().string() + "_result.png";
                     }
                     params.imagePath = images[ i ];
-                    cout << fs::path( images[ i ] ).filename().string();
+                    cout << '[' << i + 1 << " of " << images.size() << "] " << fs::path( images[ i ] ).filename().string();
                     retVal = visApp.CalcLine( params, result );
-                    cout << ( GC_OK == retVal ? ": SUCCESS" : " FAILURE" ) << endl;
+                    cout << ( GC_OK == retVal ? ": SUCCESS " : " FAILURE " ) << result.waterLevelAdjusted.y << " cm" << '\r' << std::flush;
                 }
+                cout << endl;
             }
         }
     }

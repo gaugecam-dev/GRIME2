@@ -264,7 +264,7 @@ public:
                                         const FindLineResult &result, const bool overwrite = false );
 
     // TODO: Add doxygen comments
-    GC_STATUS GetIllumination( const std::string filepath, std::string &timestamp );
+    GC_STATUS GetIllumination( const std::string filepath, std::string &illum_state );
 
 private:
     std::string m_calibFilepath;

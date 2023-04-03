@@ -170,22 +170,12 @@ GC_STATUS CalibExecutive::SetCalibFromJson( const std::string &jsonParams )
             stopSign.Model().facetLength = paramsCurrent.facetLength;
             // stopSign.Model().zeroOffset = paramsCurrent.zeroOffset;
             stopSign.Model().zeroOffset = top_level.get< double >( "zeroOffset", 0.0 );
-            stopSign.Model().botLftPtToLft = top_level.get< double >( "botLftPtToLft", -0.5 );
-            stopSign.Model().botLftPtToTop = top_level.get< double >( "botLftPtToTop", 1.0 );
-            stopSign.Model().botLftPtToRgt = top_level.get< double >( "botLftPtToRgt", 1.5 );
-            stopSign.Model().botLftPtToBot = top_level.get< double >( "botLftPtToBot", -3.0 );
             stopSign.Model().targetSearchRegion = paramsCurrent.targetSearchROI;
             stopSign.Model().waterlineSearchCorners.clear();
             stopSign.Model().waterlineSearchCorners.push_back( paramsCurrent.lineSearch_lftTop );
             stopSign.Model().waterlineSearchCorners.push_back( paramsCurrent.lineSearch_rgtTop );
             stopSign.Model().waterlineSearchCorners.push_back( paramsCurrent.lineSearch_lftBot );
             stopSign.Model().waterlineSearchCorners.push_back( paramsCurrent.lineSearch_rgtBot );
-            double blueVal = top_level.get< double >( "symbolColor_blue", -1 );
-            double greenVal = top_level.get< double >( "symbolColor_green", -1 );
-            double redVal = top_level.get< double >( "symbolColor_red", -1 );
-            stopSign.Model().symbolColor = Scalar( blueVal, greenVal, redVal );
-            stopSign.Model().colorRangeMin = top_level.get< int >( "colorRangeMin", 20 );
-            stopSign.Model().colorRangeMax = top_level.get< int >( "colorRangeMax", 20 );
         }
         else if ( "BowTie" == paramsCurrent.calibType )
         {
@@ -1011,10 +1001,6 @@ GC_STATUS CalibExecutive::FormStopsignCalibJsonString( const CalibJsonItems &ite
         json += "\"calibWorldPt_csv\": \"" + items.worldTargetPosition_csvFile + "\", ";
         json += "\"facetLength\": " + std::to_string( items.facetLength ) + ", ";
         json += "\"zeroOffset\": " + std::to_string( items.zeroOffset ) + ", ";
-        json += "\"botLftPtToLft\": " + std::to_string( items.botLftPtToLft ) + ", ";
-        json += "\"botLftPtToTop\": " + std::to_string( items.botLftPtToTop ) + ", ";
-        json += "\"botLftPtToRgt\": " + std::to_string( items.botLftPtToRgt ) + ", ";
-        json += "\"botLftPtToBot\": " + std::to_string( items.botLftPtToBot ) + ", ";
         json += "\"moveSearchROIGrowPercent\": " + std::to_string( items.moveROIGrowPercent ) + ", ";
         json += "\"drawCalib\": 0, ";
         json += "\"drawMoveSearchROIs\": 0, ";
@@ -1090,12 +1076,6 @@ GC_STATUS CalibExecutive::GetCalibStopsignJsonItems( const std::string &jsonStr,
         items.lineSearchPoly.lftBot.y = top_level.get< int >( "searchPoly_lftBot_y", -1 );
         items.lineSearchPoly.rgtBot.x = top_level.get< int >( "searchPoly_rgtBot_x", -1 );
         items.lineSearchPoly.rgtBot.y = top_level.get< int >( "searchPoly_rgtBot_y", -1 );
-
-        items.botLftPtToLft = top_level.get< double >( "botLftPtToLft", -0.5 );
-        items.botLftPtToTop = top_level.get< double >( "botLftPtToTop", 1.0 );
-        items.botLftPtToRgt = top_level.get< double >( "botLftPtToRgt", 1.5 );
-        items.botLftPtToBot = top_level.get< double >( "botLftPtToBot", -3.0 );
-
     }
     catch( Exception &e )
     {

@@ -150,9 +150,9 @@ GC_STATUS VisApp::GetImageTimestamp( const std::string filepath, std::string &ti
     }
     return retVal;
 }
-GC_STATUS VisApp::GetIllumination( const std::string filepath, std::string &timestamp )
+GC_STATUS VisApp::GetIllumination( const std::string filepath, std::string &illum_state )
 {
-    GC_STATUS retVal = m_metaData.GetExifData( filepath, "Illumination", timestamp );
+    GC_STATUS retVal = m_metaData.GetExifData( filepath, "Illumination", illum_state );
     if ( GC_OK != retVal )
     {
         FILE_LOG( logERROR ) << "[VisApp::ListMetadata] Could not retrieve exif illumination from " << filepath;
@@ -277,9 +277,6 @@ GC_STATUS VisApp::CalcFindLine( const Mat &img, FindLineResult &result )
                                                                      result.foundMovePts.rgtWorld.x - result.foundMovePts.lftWorld.x ) * ( 180.0 / CV_PI );
                             result.calibOffsets.offsetCenterPt = ( result.foundMovePts.lftWorld + result.foundMovePts.rgtWorld ) / 2.0;
 
-                            sprintf( buffer, "Adjust: %.3f", result.offsetMovePts.ctrWorld.y );
-                            result.msgs.push_back( buffer );
-
                             retVal = AdjustSearchAreaForMovement( m_calibExec.SearchLines(), searchLinesAdj, result.offsetMovePts.ctrPixel );
                         }
                     }
@@ -321,7 +318,8 @@ GC_STATUS VisApp::CalcFindLine( const Mat &img, FindLineResult &result )
                     }
                     else
                     {
-                        snprintf( buffer, 256, "%s/waterline angle diff: %.3f", m_calibExec.GetCalibType().c_str(), result.symbolToWaterLineAngle );
+                        // snprintf( buffer, 256, "%s/waterline angle diff: %.3f", m_calibExec.GetCalibType().c_str(), result.symbolToWaterLineAngle );
+                        snprintf( buffer, 256, "CalibType: %s", m_calibExec.GetCalibType().c_str() );
                         result.msgs.push_back( buffer );
 
                         result.calcLinePts.angleWorld = atan2( result.calcLinePts.rgtWorld.y - result.calcLinePts.lftWorld.y,
@@ -330,6 +328,9 @@ GC_STATUS VisApp::CalcFindLine( const Mat &img, FindLineResult &result )
                         result.msgs.push_back( buffer );
 
                         snprintf( buffer, 256, "Level: %.3f", result.calcLinePts.ctrWorld.y );
+                        result.msgs.push_back( buffer );
+
+                        sprintf( buffer, "Adjust: %.3f", result.offsetMovePts.ctrWorld.y );
                         result.msgs.push_back( buffer );
 
                         result.waterLevelAdjusted.x = result.calcLinePts.ctrWorld.x + result.offsetMovePts.ctrWorld.x;
@@ -351,14 +352,14 @@ GC_STATUS VisApp::CalcFindLine( const Mat &img, FindLineResult &result )
                             result.calibReprojectOffset_y = -9999999.0;
                             result.calibReprojectOffset_dist = -9999999.0;;
                         }
-                        snprintf( buffer, 256, "Reproject error:" );
-                        result.msgs.push_back( buffer );
-                        snprintf( buffer, 256, "   x=%0.3e", result.calibReprojectOffset_x );
-                        result.msgs.push_back( buffer );
-                        snprintf( buffer, 256, "   y=%0.3e", result.calibReprojectOffset_y );
-                        result.msgs.push_back( buffer );
-                        snprintf( buffer, 256, "   Euclid. dist=%0.3e", result.calibReprojectOffset_dist );
-                        result.msgs.push_back( buffer );
+//                        snprintf( buffer, 256, "Reproject error:" );
+//                        result.msgs.push_back( buffer );
+//                        snprintf( buffer, 256, "   x=%0.3e", result.calibReprojectOffset_x );
+//                        result.msgs.push_back( buffer );
+//                        snprintf( buffer, 256, "   y=%0.3e", result.calibReprojectOffset_y );
+//                        result.msgs.push_back( buffer );
+//                        snprintf( buffer, 256, "   Euclid. dist=%0.3e", result.calibReprojectOffset_dist );
+//                        result.msgs.push_back( buffer );
                     }
                 }
             }
@@ -574,6 +575,7 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result 
                 }
                 if ( GC_OK == retVal)
                 {
+                    retVal = GetIllumination( params.imagePath, result.illum_state );
                     m_calibFilepath = params.calibFilepath;
 
                     retVal = CalcFindLine( img, result );
@@ -736,6 +738,7 @@ GC_STATUS VisApp::WriteFindlineResultToCSV( const std::string resultCSV, const s
                 csvFile << "findSuccess,";
 
                 csvFile << "timestamp,";
+                csvFile << "illum_state,";
                 csvFile << "waterLevel,";
                 csvFile << "waterLevelAdjusted,";
                 csvFile << "xRMSE, yRMSE, EuclidDistRMSE,";
@@ -784,6 +787,7 @@ GC_STATUS VisApp::WriteFindlineResultToCSV( const std::string resultCSV, const s
             csvFile << imgPath << ",";
             csvFile << ( result.findSuccess ? "true" : "false" ) << ",";
             csvFile << result.timestamp << ",";
+            csvFile << result.illum_state << ",";
 
             csvFile << fixed << setprecision( 3 );
             csvFile << result.calcLinePts.ctrWorld.y << ",";

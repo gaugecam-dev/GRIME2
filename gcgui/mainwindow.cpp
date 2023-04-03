@@ -384,10 +384,6 @@ int MainWindow::ReadSettings( const QString filepath )
         ui->checkBox_calibSearchROI->setChecked( !pSettings->value( "useWholeImage", true ).toBool() );
         ui->doubleSpinBox_stopSignFacetLength->setValue( pSettings->value( "stopSignFacetLength", 0.599 ).toDouble() ); // 7.1875 inches
         ui->doubleSpinBox_stopSignZeroOffset->setValue( pSettings->value( "stopSignZeroOffset", 2.0 ).toDouble() );
-        ui->doubleSpinBox_stopSignROILeft->setValue( pSettings->value( "stopSignROILeft", -0.5 ).toDouble() );
-        ui->doubleSpinBox_stopSignROITop->setValue( pSettings->value( "stopSignROITop", 1.0 ).toDouble() );
-        ui->doubleSpinBox_stopSignROIRight->setValue( pSettings->value( "stopSignROIRight", 1.5 ).toDouble() );
-        ui->doubleSpinBox_stopSignROIBottom->setValue( pSettings->value( "stopSignROIBottom", 3.0 ).toDouble() );
         ui->spinBox_moveSearchROIGrowPercent->setValue( pSettings->value( "moveSearchROIGrowPercent", 0 ).toInt() );
 
         ui->lineEdit_findLineTopFolder->setText( pSettings->value( "findLineFolder", QString( __CONFIGURATION_FOLDER ) ).toString() );
@@ -480,10 +476,6 @@ int MainWindow::WriteSettings( const QString filepath )
         pSettings->setValue( "useWholeImage", !ui->checkBox_calibSearchROI->isChecked() );
         pSettings->setValue( "stopSignFacetLength", ui->doubleSpinBox_stopSignFacetLength->value() );
         pSettings->setValue( "stopSignZeroOffset", ui->doubleSpinBox_stopSignZeroOffset->value() );
-        pSettings->setValue( "stopSignROILeft", ui->doubleSpinBox_stopSignROILeft->value() );
-        pSettings->setValue( "stopSignROITop", ui->doubleSpinBox_stopSignROITop->value() );
-        pSettings->setValue( "stopSignROIRight", ui->doubleSpinBox_stopSignROIRight->value() );
-        pSettings->setValue( "stopSignROIBottom", ui->doubleSpinBox_stopSignROIBottom->value() );
         pSettings->setValue( "moveSearchROIGrowPercent", ui->spinBox_moveSearchROIGrowPercent->value() );
 
         pSettings->setValue( "findLineFolder", ui->lineEdit_findLineTopFolder->text() );
@@ -1195,10 +1187,6 @@ void MainWindow::on_pushButton_visionCalibrate_clicked()
                                cv::Rect( m_rectROI.x(), m_rectROI.y(), m_rectROI.width(), m_rectROI.height() ),
                                ui->spinBox_moveSearchROIGrowPercent->value() + 100, ui->doubleSpinBox_stopSignFacetLength->value(),
                                ui->doubleSpinBox_stopSignZeroOffset->value(),
-                               ui->doubleSpinBox_stopSignROILeft->value(),
-                               ui->doubleSpinBox_stopSignROITop->value(),
-                               ui->doubleSpinBox_stopSignROIRight->value(),
-                               ui->doubleSpinBox_stopSignROIBottom->value(),
                                LineSearchRoi( Point( m_lineSearchPoly.lftTop.x(), m_lineSearchPoly.lftTop.y() ),
                                               Point( m_lineSearchPoly.rgtTop.x(), m_lineSearchPoly.rgtTop.y() ),
                                               Point( m_lineSearchPoly.lftBot.x(), m_lineSearchPoly.lftBot.y() ),
@@ -1372,10 +1360,6 @@ void MainWindow::on_pushButton_findLineCurrentImage_clicked()
                                        cv::Rect( m_rectROI.x(), m_rectROI.y(), m_rectROI.width(), m_rectROI.height() ),
                                        ui->spinBox_moveSearchROIGrowPercent->value() + 100, ui->doubleSpinBox_stopSignFacetLength->value(),
                                        ui->doubleSpinBox_stopSignZeroOffset->value(),
-                                       ui->doubleSpinBox_stopSignROILeft->value(),
-                                       ui->doubleSpinBox_stopSignROITop->value(),
-                                       ui->doubleSpinBox_stopSignROIRight->value(),
-                                       ui->doubleSpinBox_stopSignROIBottom->value(),
                                        LineSearchRoi( Point( m_lineSearchPoly.lftTop.x(), m_lineSearchPoly.lftTop.y() ),
                                                       Point( m_lineSearchPoly.rgtTop.x(), m_lineSearchPoly.rgtTop.y() ),
                                                       Point( m_lineSearchPoly.lftBot.x(), m_lineSearchPoly.lftBot.y() ),
