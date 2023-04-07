@@ -89,6 +89,17 @@ GC_STATUS VisApp::Calibrate( const string imgFilepath, const string jsonControl,
         else
         {
             retVal = m_calibExec.Calibrate( img, jsonControl, rmseDist, rmseX, rmseY, err_msg );
+            if ( GC_OK != retVal )
+            {
+                Mat imgGray, imgContrast;
+                cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE();
+                clahe->setClipLimit( 4 );
+                clahe->apply(imgGray, imgContrast);
+                // imwrite( "/var/tmp/thrive/clahe.png", imgContrast );
+                medianBlur( imgContrast, imgGray, 11 );
+                // imwrite( "/var/tmp/thrive/median.png", imgGray );
+                retVal = m_calibExec.Calibrate( imgGray, jsonControl, rmseDist, rmseX, rmseY, err_msg );
+            }
             if ( GC_OK == retVal )
             {
                 Mat imgOut;
@@ -128,6 +139,25 @@ GC_STATUS VisApp::Calibrate( const string imgFilepath, const string jsonControl,
         else
         {
             retVal = m_calibExec.Calibrate( img, jsonControl, rmseDist, rmseX, rmseY, err_msg );
+            if ( GC_OK != retVal )
+            {
+                Mat imgGray, imgContrast;
+                if ( CV_8UC3 == img.type() )
+                {
+                    cvtColor( img, imgGray, COLOR_BGR2GRAY );
+                }
+                else
+                {
+                    imgGray = img;
+                }
+                cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE();
+                clahe->setClipLimit( 4 );
+                clahe->apply(imgGray, imgContrast);
+                // imwrite( "/var/tmp/thrive/clahe.png", imgContrast );
+                medianBlur( imgContrast, imgGray, 11 );
+                // imwrite( "/var/tmp/thrive/median.png", imgGray );
+                retVal = m_calibExec.Calibrate( imgGray, jsonControl, rmseDist, rmseX, rmseY, err_msg );
+            }
         }
     }
     catch( Exception &e )
@@ -399,6 +429,25 @@ GC_STATUS VisApp::CalcLine( const Mat &img, const string timestamp, const bool i
                 string err_msg;
                 double rmseDist, rmseX, rmseY;
                 retVal = m_calibExec.Calibrate( img, "", rmseDist, rmseX, rmseY, err_msg );
+                if ( GC_OK != retVal )
+                {
+                    Mat imgGray, imgContrast;
+                    if ( CV_8UC3 == img.type() )
+                    {
+                        cvtColor( img, imgGray, COLOR_BGR2GRAY );
+                    }
+                    else
+                    {
+                        imgGray = img;
+                    }
+                    cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE();
+                    clahe->setClipLimit( 4 );
+                    clahe->apply(imgGray, imgContrast);
+                    // imwrite( "/var/tmp/thrive/clahe.png", imgContrast );
+                    medianBlur( imgContrast, imgGray, 11 );
+                    // imwrite( "/var/tmp/thrive/median.png", imgGray );
+                    retVal = m_calibExec.Calibrate( imgGray, "", rmseDist, rmseX, rmseY, err_msg );
+                }
                 if ( GC_OK != retVal )
                 {
                     FindPointSet findPtSet;

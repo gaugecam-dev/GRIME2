@@ -172,10 +172,25 @@ GC_STATUS CalibExecutive::SetCalibFromJson( const std::string &jsonParams )
             stopSign.Model().zeroOffset = top_level.get< double >( "zeroOffset", 0.0 );
             stopSign.Model().targetSearchRegion = paramsCurrent.targetSearchROI;
             stopSign.Model().waterlineSearchCorners.clear();
+
             stopSign.Model().waterlineSearchCorners.push_back( paramsCurrent.lineSearch_lftTop );
             stopSign.Model().waterlineSearchCorners.push_back( paramsCurrent.lineSearch_rgtTop );
             stopSign.Model().waterlineSearchCorners.push_back( paramsCurrent.lineSearch_lftBot );
             stopSign.Model().waterlineSearchCorners.push_back( paramsCurrent.lineSearch_rgtBot );
+            sort( stopSign.Model().waterlineSearchCorners.begin(), stopSign.Model().waterlineSearchCorners.end(),
+                  []( Point const &a, Point const &b ) { return ( a.y < b.y ); } );
+            if ( stopSign.Model().waterlineSearchCorners[ 0 ].x > stopSign.Model().waterlineSearchCorners[ 1 ].x )
+            {
+                Point ptTemp = stopSign.Model().waterlineSearchCorners[ 0 ];
+                stopSign.Model().waterlineSearchCorners[ 0 ] = stopSign.Model().waterlineSearchCorners[ 1 ];
+                stopSign.Model().waterlineSearchCorners[ 1 ] = ptTemp;
+            }
+            if ( stopSign.Model().waterlineSearchCorners[ 2 ].x > stopSign.Model().waterlineSearchCorners[ 3 ].x )
+            {
+                Point ptTemp = stopSign.Model().waterlineSearchCorners[ 2 ];
+                stopSign.Model().waterlineSearchCorners[ 2 ] = stopSign.Model().waterlineSearchCorners[ 3 ];
+                stopSign.Model().waterlineSearchCorners[ 3 ] = ptTemp;
+            }
         }
         else if ( "BowTie" == paramsCurrent.calibType )
         {
@@ -212,8 +227,8 @@ GC_STATUS CalibExecutive::Calibrate( const cv::Mat &img, const std::string jsonP
                 }
                 else
                 {
-                    err_msg = "CALIB FAIL: No available stop sign calibration control string";
-                    FILE_LOG( logERROR ) << "[CalibExecutive::Calibrate] No available stop sign calibration control string";
+                    err_msg = "CALIB FAIL: No available octagon calibration control string";
+                    FILE_LOG( logERROR ) << "[CalibExecutive::Calibrate] No available octagon calibration control string";
                     retVal = GC_ERR;
                 }
             }
@@ -267,29 +282,20 @@ GC_STATUS CalibExecutive::Calibrate( const cv::Mat &img, const std::string jsonP
             }
             else if ( "StopSign" == paramsCurrent.calibType )
             {
-                if ( CV_8UC1 == img.type() )
+                imgFixed = img;
+                retVal = CalibrateStopSign( imgFixed, jsonParamsWhich, err_msg );
+                if ( GC_OK == retVal )
                 {
-                    err_msg = "CALIB FAIL: Stop sign calibration needs color image";
-                    FILE_LOG( logERROR ) << "[CalibExecutive::Calibrate] Stop sign calibration needs color image";
-                    retVal = GC_ERR;
+                    retVal = stopSign.GetSearchRegionBoundingRect( searchBB );
+                    if ( GC_OK != retVal )
+                    {
+                        err_msg = "CALIB FAIL: Octagon calibration search bounding box could not be set";
+                    }
                 }
                 else
                 {
-                    imgFixed = img;
-                    retVal = CalibrateStopSign( imgFixed, jsonParamsWhich, err_msg );
-                    if ( GC_OK == retVal )
-                    {
-                        retVal = stopSign.GetSearchRegionBoundingRect( searchBB );
-                        if ( GC_OK != retVal )
-                        {
-                            err_msg = "CALIB FAIL: Stop sign calibration search bounding box could not be set";
-                        }
-                    }
-                    else
-                    {
-                        err_msg = "CALIB_FAIL: Using previous stop sign calibration";
-                        retVal = GC_OK;
-                    }
+                    err_msg = "CALIB_FAIL: Octagon calibration failed";
+                    retVal = GC_ERR;
                 }
             }
             else
@@ -487,19 +493,10 @@ GC_STATUS CalibExecutive::CalibrateStopSign( const cv::Mat &img, const string &c
 
     try
     {
-        if ( CV_8UC3 != img.type() )
+        retVal = stopSign.Calibrate( img, controlJson, err_msg );
+        if ( GC_OK == retVal )
         {
-            err_msg = "CALIB FAIL: Color image required for stop sign calibration";
-            FILE_LOG( logERROR ) << "[VisApp::CalibrateStopSign] A color image (RGB) is required for stop sign calibration";
-            retVal = GC_ERR;
-        }
-        else
-        {
-            retVal = stopSign.Calibrate( img, controlJson, err_msg );
-            if ( GC_OK == retVal )
-            {
-                retVal = stopSign.Save( paramsCurrent.calibResultJsonFilepath );
-            }
+            retVal = stopSign.Save( paramsCurrent.calibResultJsonFilepath );
         }
     }
     catch( Exception &e )

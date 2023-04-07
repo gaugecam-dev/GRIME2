@@ -1168,6 +1168,7 @@ void MainWindow::on_pushButton_visionCalibrateLoad_clicked()
 }
 void MainWindow::on_pushButton_visionCalibrate_clicked()
 {
+    ui->checkBox_showCalib->setChecked( false );
     QString strFolder = ui->lineEdit_imageFolder->text();
     if ( !strFolder.endsWith( '/') )
         strFolder += '/';
@@ -1215,7 +1216,10 @@ void MainWindow::on_pushButton_visionCalibrate_clicked()
         {
             ui->statusBar->showMessage( "Calibration failed" );
         }
-        ui->checkBox_showCalib->setChecked( true );
+        else
+        {
+            ui->checkBox_showCalib->setChecked( true );
+        }
         m_pComboBoxImageToView->setCurrentText( "Overlay" );
         UpdatePixmapTarget();
     }
