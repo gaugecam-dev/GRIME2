@@ -22,8 +22,8 @@
 #include "opencv2/imgcodecs.hpp"
 #include "bresenham.h"
 
-#ifdef DEBUG_STOPSIGN_TEMPL
-#undef DEBUG_STOPSIGN_TEMPL
+#ifndef DEBUG_STOPSIGN_TEMPL
+#define DEBUG_STOPSIGN_TEMPL
 #include <boost/filesystem.hpp>
 using namespace boost;
 namespace fs = filesystem;
@@ -728,7 +728,10 @@ GC_STATUS StopsignSearch::CreateTemplateOverlay( const std::string debugFolder )
         }
         else
         {
-            imwrite ("/var/tmp/water/center_template.png", templates[ 0 ].ptTemplates[ templates[ 0 ].ptTemplates.size() >> 1 ].templ );
+#ifdef DEBUG_STOPSIGN_TEMPL
+            imwrite( DEBUG_FOLDER + string( "center_template.png" ), templates[ 0 ].ptTemplates[ templates[ 0 ].ptTemplates.size() >> 1 ].templ );
+            imwrite( DEBUG_FOLDER + string( "center_mask.png" ), templates[ 0 ].ptTemplates[ templates[ 0 ].ptTemplates.size() >> 1 ].mask );
+#endif
             char buf[ 512 ];
             Mat scratch, tempColor = Mat::zeros( Size( templates[ 0 ].ptTemplates[ 0 ].mask.cols * 2,
                                                        templates[ 0 ].ptTemplates[ 0 ].mask.rows ), CV_8UC3 );

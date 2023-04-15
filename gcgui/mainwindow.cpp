@@ -50,7 +50,7 @@ static const char __CONFIGURATION_FOLDER[] = "./config/";
 static const char __SETTINGS_FILEPATH[] = "./config/settings.cfg";
 #endif
 
-static double Distance( const double x1, const int y1, const int x2, const int y2 )
+static double Distance( const double x1, const double y1, const double x2, const double y2 )
 {
     return sqrt( ( x2 - x1 ) * ( x2 - x1 ) + ( y2 - y1 ) * ( y2 - y1 ) );
 }
@@ -794,13 +794,11 @@ void MainWindow::mouseMoveEvent( QMouseEvent *pEvent )
             {
                 world = Point2d( -9999999.9, -9999999.9 );
             }
-
-            ui->textEdit_measures->setText( "PIXEL" );
-            QString strMsg = QString( "X=" ) + QString::number( nX ) + " Y=" + QString::number( nY );
-            ui->textEdit_measures->append( strMsg );
-            ui->textEdit_measures->append( "WORLD" );
-            strMsg = QString( "X1=" ) + QString::number( world.x ) + " Y1=" + QString::number( world.y );
-            ui->textEdit_measures->append( strMsg );
+            QString strMsg = QString( "Pix X=" ) + QString::number( nX ) + " Y=" + QString::number( nY );
+            ui->textEdit_measures->setText( strMsg );
+            char buf[ 32 ];
+            sprintf( buf, "Wor X1=%.1f Y1=%.1f", world.x, world.y );
+            ui->textEdit_measures->append( buf );
         }
     }
     else
@@ -965,35 +963,40 @@ void MainWindow::on_actionZoomToFit_triggered() { ZoomTo( m_imgWidth, m_imgHeigh
 void MainWindow::on_actionZoom100_triggered() { ui->horizontalSlider_zoom->setValue( 100 ); }
 void MainWindow::UpdateRulerMeasurement()
 {
-    double lenPix = Distance( m_lineOne.p1().x(), m_lineOne.p1().y(), m_lineOne.p2().x(), m_lineOne.p2().y() );
+//    QPoint pt = m_pLabelImgDisplay->mapFrom( ui->centralWidget, m_lineOne.p1() );
+//    pt.setY( pt.y() - ui->mainToolBar->height() );
+    int nX1 = qRound( static_cast< double >( m_lineOne.p1().x() ) / 1.0 );
+    int nY1 = qRound( static_cast< double >( m_lineOne.p1().y() ) / 1.0 );
+
+//    pt = m_pLabelImgDisplay->mapFrom( ui->centralWidget, m_lineOne.p2() );
+//    pt.setY( pt.y() - ui->mainToolBar->height() );
+    int nX2 = qRound( static_cast< double >( m_lineOne.p2().x() ) / 1.0 );
+    int nY2 = qRound( static_cast< double >( m_lineOne.p2().y() ) / 1.0 );
+
+    double lenPix = Distance( nX1, nY1, nX2, nY2 );
 
     Point2d world1, world2;
-    GC_STATUS retVal1 = m_visApp.PixelToWorld( Point2d( m_lineOne.p1().x(), m_lineOne.p1().y() ), world1 );
+    GC_STATUS retVal1 = m_visApp.PixelToWorld( Point2d( static_cast< double >( nX1 ), static_cast< double >( nY1 ) ), world1 );
     if ( GC_OK != retVal1 )
     {
         world1 = Point2d( -9999999.9, -9999999.9 );
     }
-    GC_STATUS retVal2 = m_visApp.PixelToWorld( Point2d( m_lineOne.p2().x(), m_lineOne.p2().y() ), world2 );
+    GC_STATUS retVal2 = m_visApp.PixelToWorld( Point2d( static_cast< double >( nX2 ), static_cast< double >( nY2 ) ), world2 );
     if ( GC_OK != retVal2 )
     {
         world2 = Point2d( -9999999.9, -9999999.9 );
     }
     double lenWorld = ( GC_OK != retVal1 || GC_OK != retVal2 ) ? -9999999.9 :  Distance( world1.x, world1.y, world2.x, world2.y );
 
-    ui->textEdit_measures->setText( "PIXEL" );
-    QString strMsg = QString( "X1=" ) + QString::number( m_lineOne.p1().x() ) + " Y1=" + QString::number( m_lineOne.p1().y() );
-    ui->textEdit_measures->append( strMsg );
-    strMsg = QString( "X2=" ) + QString::number( m_lineOne.p2().x() ) + " Y2=" + QString::number( m_lineOne.p2().y() );
-    ui->textEdit_measures->append( strMsg );
-    strMsg = QString( "Length=" ) + QString::number( lenPix );
-    ui->textEdit_measures->append( strMsg );
-    ui->textEdit_measures->append( "WORLD" );
-    strMsg = QString( "X1=" ) + QString::number( world1.x ) + " Y1=" + QString::number( world1.y );
-    ui->textEdit_measures->append( strMsg );
-    strMsg = QString( "X2=" ) + QString::number( world2.x ) + " Y2=" + QString::number( world2.y );
-    ui->textEdit_measures->append( strMsg );
-    strMsg = QString( "Length=" ) + QString::number( lenWorld );
-    ui->textEdit_measures->append( strMsg );
+    char buf[ 32 ];
+    sprintf( buf, "Len Pix=%0.1f Wor=%0.3f", lenPix, lenWorld);
+    ui->textEdit_measures->setText( buf );
+    sprintf( buf, "w1(%0.1f, %0.1f)", world1.x, world1.y );
+    ui->textEdit_measures->append( buf );
+    sprintf( buf, "w2(%0.1f, %0.1f)", world2.x, world2.y );
+    ui->textEdit_measures->append( buf );
+    sprintf( buf, "p1(%d, %d) p2(%d, %d)", nX1, nY1, nX2, nY2);
+    ui->textEdit_measures->append( buf );
 }
 void MainWindow::UpdateRegionButton()
 {
