@@ -986,14 +986,12 @@ void MainWindow::UpdateRulerMeasurement()
     {
         world2 = Point2d( -9999999.9, -9999999.9 );
     }
-    double lenWorld = ( GC_OK != retVal1 || GC_OK != retVal2 ) ? -9999999.9 :  Distance( world1.x, world1.y, world2.x, world2.y );
+    double lenWorld = ( GC_OK != retVal1 || GC_OK != retVal2 ) ? -9999999.9 : Distance( world1.x, world1.y, world2.x, world2.y );
 
     char buf[ 32 ];
     sprintf( buf, "Len Pix=%0.1f Wor=%0.3f", lenPix, lenWorld);
     ui->textEdit_measures->setText( buf );
-    sprintf( buf, "w1(%0.1f, %0.1f)", world1.x, world1.y );
-    ui->textEdit_measures->append( buf );
-    sprintf( buf, "w2(%0.1f, %0.1f)", world2.x, world2.y );
+    sprintf( buf, "w1(%0.1f, %0.1f) w2(%0.1f, %0.1f)", world1.x, world1.y, world2.x, world2.y );
     ui->textEdit_measures->append( buf );
     sprintf( buf, "p1(%d, %d) p2(%d, %d)", nX1, nY1, nX2, nY2);
     ui->textEdit_measures->append( buf );
