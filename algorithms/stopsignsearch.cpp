@@ -22,8 +22,8 @@
 #include "opencv2/imgcodecs.hpp"
 #include "bresenham.h"
 
-#ifndef DEBUG_STOPSIGN_TEMPL
-#define DEBUG_STOPSIGN_TEMPL
+#ifdef DEBUG_STOPSIGN_TEMPL
+#undef DEBUG_STOPSIGN_TEMPL
 #include <boost/filesystem.hpp>
 using namespace boost;
 namespace fs = filesystem;
@@ -53,6 +53,42 @@ StopsignSearch::StopsignSearch()
     }
 #endif
 }
+GC_STATUS StopsignSearch::FindScale( const cv::Mat &img, std::vector< cv::Point2d > &pts )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        pts.clear();
+        Mat imgScaled;
+        resize( img, imgScaled, Size(), 2.0, 2.0, INTER_CUBIC );
+        retVal = Find( imgScaled, pts );
+        if ( GC_OK == retVal )
+        {
+            for ( size_t i = 0; i < pts.size(); ++i )
+            {
+                pts[ i ] *= 0.5;
+            }
+        }
+        else
+        {
+            resize( img, imgScaled, Size(), 4.0, 4.0, INTER_CUBIC );
+            retVal = Find( imgScaled, pts );
+            if ( GC_OK == retVal )
+            {
+                for ( size_t i = 0; i < pts.size(); ++i )
+                {
+                    pts[ i ] *= 0.25;
+                }
+            }
+        }
+    }
+    catch( const cv::Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[StopsignSearch::FindScale] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+    return retVal;
+}
 GC_STATUS StopsignSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &pts )
 {
     GC_STATUS retVal = GC_OK;
@@ -67,7 +103,7 @@ GC_STATUS StopsignSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &
         {
             if ( templates.empty() )
             {
-                retVal = Init( GC_STOPSIGN_TEMPLATE_DIM, 5 );
+                retVal = Init( GC_STOPSIGN_TEMPLATE_DIM, 7 );
             }
             if ( templates.empty() || GC_OK != retVal )
             {
@@ -173,7 +209,7 @@ GC_STATUS StopsignSearch::FindMoveTargets( const Mat &img, const Rect targetRoi,
         {
             if ( templates.empty() )
             {
-                retVal = Init( GC_STOPSIGN_TEMPLATE_DIM, 5 );
+                retVal = Init( GC_STOPSIGN_TEMPLATE_DIM, 7 );
             }
             if ( GC_OK != retVal || templates.empty() )
             {
