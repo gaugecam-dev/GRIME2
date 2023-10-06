@@ -1234,7 +1234,7 @@
                         </font>
                        </property>
                        <property name="text">
-                        <string>Stop sign</string>
+                        <string>Octagon</string>
                        </property>
                       </widget>
                      </item>
@@ -1432,7 +1432,7 @@
                    </font>
                   </property>
                   <property name="title">
-                   <string>Stop sign</string>
+                   <string>Octagon</string>
                   </property>
                   <layout class="QVBoxLayout" name="verticalLayout_14">
                    <item>
