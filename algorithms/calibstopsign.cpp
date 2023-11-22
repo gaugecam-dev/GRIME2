@@ -24,7 +24,7 @@
 #ifdef _WIN32
 static const char DEBUG_FOLDER[] = "c:/gaugecam/";
 #else
-static const char DEBUG_FOLDER[] = "/var/tmp/water/";
+static const char DEBUG_FOLDER[] = "/var/tmp/gaugecam/";
 #endif
 #endif
 

@@ -30,7 +30,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 # defines
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 DEFINES += BOOST_ALL_NO_LIB BOOST_BIND_GLOBAL_PLACEHOLDERS
-CONFIG += c++11
+CONFIG += c++17
 
 win32 {
     DEFINES += NOMINMAX

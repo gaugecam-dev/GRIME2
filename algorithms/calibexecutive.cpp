@@ -873,6 +873,7 @@ GC_STATUS CalibExecutive::CalculateRMSE( const cv::Mat &img, double &rmseEuclide
     catch( Exception &e )
     {
         FILE_LOG( logERROR ) << "[CalibBowtie::CalculateRMSE] " << e.what();
+        retVal = GC_EXCEPT;
     }
 
     return retVal;

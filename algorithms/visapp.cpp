@@ -40,7 +40,7 @@ namespace pt = property_tree;
 #ifdef _WIN32
 static const char DEBUG_FOLDER[] = "c:/gaugecam/";
 #else
-static const char DEBUG_FOLDER[] = "/var/tmp/water/";
+static const char DEBUG_FOLDER[] = "/var/tmp/gaugecam/";
 #endif
 #endif
 
@@ -153,9 +153,9 @@ GC_STATUS VisApp::Calibrate( const string imgFilepath, const string jsonControl,
                 cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE();
                 clahe->setClipLimit( 4 );
                 clahe->apply(imgGray, imgContrast);
-                // imwrite( "/var/tmp/thrive/clahe.png", imgContrast );
+                // imwrite( "/var/tmp/gaugecam/clahe.png", imgContrast );
                 medianBlur( imgContrast, imgGray, 11 );
-                // imwrite( "/var/tmp/thrive/median.png", imgGray );
+                // imwrite( "/var/tmp/gaugecam/median.png", imgGray );
                 retVal = m_calibExec.Calibrate( imgGray, jsonControl, rmseDist, rmseX, rmseY, err_msg );
             }
         }
