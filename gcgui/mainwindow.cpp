@@ -909,8 +909,8 @@ void MainWindow::on_lineEdit_imageFolder_textEdited( const QString &strPath )
         ui->listWidget_imageFolder->clear();
         for ( size_t i = 0; i < m_imageFilePaths.size(); ++i )
         {
-            filesystem::path p( m_imageFilePaths[ i ] );
-            if ( filesystem::exists( p ) )
+            fs::path p( m_imageFilePaths[ i ] );
+            if ( fs::exists( p ) )
             {
                 ui->listWidget_imageFolder->addItem( QString::fromStdString( p.filename().string() ) );
             }
