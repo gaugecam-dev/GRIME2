@@ -36,6 +36,7 @@ namespace fs = boost::filesystem;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~ BOW-TIE ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // --calibrate --source "./config/2012_demo/06/NRmarshDN-12-06-30-10-30.jpg" --calib_json "./config/calib.json" --csv_file "./config/calibration_target_world_coordinates.csv" --result_image "/var/tmp/water/calib_result.png"
+// --create_calib --source "/media/kchapman/Elements/data/sunwater/2024_01_08_cal_images/002.jpg" --calib_json "/media/kchapman/Elements/data/sunwater/2024_01_08_cal_images/calib_002.json" --csv_file "/media/kchapman/Elements/data/sunwater/2024_01_08_cal_images/calibration_target_world_coordinates.csv" --result_image "/var/tmp/water/calib_result.png" --waterline_roi 810 270 1000 270 800 800 990 830 --calib_roi 600 200 614 678
 // --find_line --timestamp_from_filename --timestamp_start_pos 10 --timestamp_format "yy-mm-dd-HH-MM" --source "./config/2012_demo/06/NRmarshDN-12-06-30-10-30.jpg" --calib_json "./config/calib.json" --result_image "/var/tmp/water/find_line_result.png"
 // --run_folder --timestamp_from_filename --timestamp_start_pos 10 --timestamp_format "yy-mm-dd-HH-MM" --source "./config/2012_demo/06/" --calib_json "./config/calib.json" --csv_file "/var/tmp/water/folder.csv" --result_folder "/var/tmp/water/"
 
@@ -47,6 +48,7 @@ namespace fs = boost::filesystem;
 // forward declarations
 void ShowVersion();
 GC_STATUS Calibrate( const Grime2CLIParams cliParams );
+GC_STATUS CreateCalibrate( const Grime2CLIParams cliParams );
 GC_STATUS FindWaterLevel( const Grime2CLIParams cliParams );
 GC_STATUS RunFolder( const Grime2CLIParams cliParams );
 GC_STATUS CreateGIF( const Grime2CLIParams cliParams );
@@ -85,6 +87,10 @@ int main( int argc, char *argv[] )
             if ( CALIBRATE == params.opToPerform )
             {
                 retVal = Calibrate( params );
+            }
+            else if ( CREATE_CALIB == params.opToPerform )
+            {
+                retVal = CreateCalibrate( params );
             }
             else if ( FIND_LINE == params.opToPerform )
             {
@@ -162,6 +168,77 @@ GC_STATUS Calibrate( const Grime2CLIParams cliParams )
                     retVal = GC_ERR;
                 }
             }
+        }
+    }
+    catch( const cv::Exception &e )
+    {
+        FILE_LOG( logERROR ) << e.what();
+        retVal = GC_EXCEPT;
+    }
+
+    cout << "Calibrate: " << ( GC_OK == retVal ? "SUCCESS" : "FAILURE" ) << endl;
+
+    return retVal;
+}
+GC_STATUS CreateCalibrate( const Grime2CLIParams cliParams )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        VisApp vis;
+        cv::Mat img = cv::Mat();
+        if ( !cliParams.src_imagePath.empty() )
+        {
+            img = cv::imread( cliParams.src_imagePath );
+            if ( img.empty() )
+            {
+                cout << "FAIL: Could not read calibration image " << cliParams.src_imagePath;
+                FILE_LOG( logERROR ) << "FAIL: Could not read calibration image " << cliParams.src_imagePath;
+                retVal = GC_ERR;
+            }
+        }
+        if ( 0 <= cliParams.waterline_region.lftTop.x && 0 <= cliParams.waterline_region.lftTop.y &&
+             0 <= cliParams.waterline_region.lftTop.x && 0 <= cliParams.waterline_region.lftTop.x &&
+             0 <= cliParams.waterline_region.lftTop.x && 0 <= cliParams.waterline_region.lftTop.x &&
+             0 <= cliParams.waterline_region.lftTop.x && 0 <= cliParams.waterline_region.lftTop.x )
+        {
+            cv::Mat imgResult;
+            string jsonStr, err_msg;
+            CalibExecutive calibExec;
+            CalibJsonItems items( cliParams.csvPath, cliParams.calib_jsonPath,
+                                  ( 0 > cliParams.calib_roi.x ? false : true ),
+                                  cliParams.calib_roi, cliParams.move_roi_grow_percent,
+                                  -1, -1, cliParams.waterline_region );
+            retVal = calibExec.FormBowtieCalibJsonString( items, jsonStr );
+            if ( GC_OK == retVal )
+            {
+                double rmseDist, rmseX, rmseY;
+                if ( cliParams.result_imagePath.empty() )
+                {
+                    retVal = calibExec.Calibrate( img, jsonStr, rmseDist, rmseX, rmseY, err_msg );
+                }
+                else
+                {
+                    calibExec.EnableAllOverlays();
+                    retVal = calibExec.Calibrate( img, jsonStr, imgResult, rmseDist, rmseX, rmseY, err_msg, true );
+                    if ( GC_OK == retVal && !imgResult.empty() )
+                    {
+                        bool bRet = imwrite( cliParams.result_imagePath, imgResult );
+                        if ( !bRet )
+                        {
+                            cout << "FAIL: Could not write calibration result image " << cliParams.result_imagePath;
+                            FILE_LOG( logERROR ) << "FAIL: Could not write calibration result image " << cliParams.src_imagePath;
+                            retVal = GC_ERR;
+                        }
+                    }
+                }
+            }
+        }
+        else
+        {
+            cout << "FAIL: Invalid waterline search region";
+            FILE_LOG( logERROR ) << "FAIL: Invalid waterline search region";
+            retVal = GC_ERR;
         }
     }
     catch( const cv::Exception &e )

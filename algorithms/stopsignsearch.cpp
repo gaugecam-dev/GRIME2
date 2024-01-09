@@ -22,8 +22,8 @@
 #include "opencv2/imgcodecs.hpp"
 #include "bresenham.h"
 
-#ifdef DEBUG_STOPSIGN_TEMPL
-#undef DEBUG_STOPSIGN_TEMPL
+#ifndef DEBUG_STOPSIGN_TEMPL
+#define DEBUG_STOPSIGN_TEMPL
 #include <boost/filesystem.hpp>
 using namespace boost;
 namespace fs = filesystem;
@@ -119,13 +119,13 @@ GC_STATUS StopsignSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &
                 cv::Ptr< CLAHE > clahe = createCLAHE( 1.0 );
                 clahe->apply( matIn, matIn );
 #ifdef DEBUG_STOPSIGN_TEMPL
-                imwrite( "/var/tmp/water/template_stopsign_clahe.png", matIn );
+                imwrite( string( DEBUG_FOLDER ) + "template_stopsign_clahe.png", matIn );
 #endif
 
                 // GaussianBlur( matIn, matIn, Size( 5, 5 ), 1.0 );
                 medianBlur( matIn, matIn, 7 );
 #ifdef DEBUG_STOPSIGN_TEMPL
-                imwrite( "/var/tmp/water/template_stopsign_median.png", matIn );
+                imwrite( string( DEBUG_FOLDER ) + "template_stopsign_median.png", matIn );
 #endif
 
 #ifdef DEBUG_STOPSIGN_TEMPL
@@ -170,7 +170,7 @@ GC_STATUS StopsignSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &
                 retVal = RefineFind( img, pts );
 
 #ifdef DEBUG_STOPSIGN_TEMPL
-                imwrite( "/var/tmp/water/stopsign_find_template.png", color );
+                imwrite( string(DEBUG_FOLDER) + "stopsign_find_template.png", color );
                 for ( size_t i = 0; i < pts.size(); ++i )
                 {
                     line( color, Point( cvRound( pts[ i ].x - 10 ), cvRound( pts[ i ].y ) ),
@@ -178,7 +178,7 @@ GC_STATUS StopsignSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &
                     line( color, Point( cvRound( pts[ i ].x ), cvRound( pts[ i ].y - 10 ) ),
                           Point( cvRound( pts[ i ].x ), cvRound( pts[ i ].y + 10 ) ), Scalar( 0, 255, 0 ), 1 );
                 }
-                imwrite( "/var/tmp/water/stopsign_find_line.png", color );
+                imwrite( string(DEBUG_FOLDER) + "stopsign_find_line.png", color );
 #endif
             }
             if ( 8 != pts.size() )
@@ -225,13 +225,13 @@ GC_STATUS StopsignSearch::FindMoveTargets( const Mat &img, const Rect targetRoi,
                 cv::Ptr< CLAHE > clahe = createCLAHE( 1.0 );
                 clahe->apply( matIn, matIn );
 #ifdef DEBUG_STOPSIGN_TEMPL
-                imwrite( "/var/tmp/water/template_stopsign_clahe.png", matIn );
+                imwrite( string(DEBUG_FOLDER) + "template_stopsign_clahe.png", matIn );
 #endif
 
                 // GaussianBlur( matIn, matIn, Size( 5, 5 ), 1.0 );
                 medianBlur( matIn, matIn, 7 );
 #ifdef DEBUG_STOPSIGN_TEMPL
-                imwrite( "/var/tmp/water/template_stopsign_median.png", matIn );
+                imwrite( string(DEBUG_FOLDER) + "template_stopsign_median.png", matIn );
 #endif
 
 #ifdef DEBUG_STOPSIGN_TEMPL
@@ -254,7 +254,7 @@ GC_STATUS StopsignSearch::FindMoveTargets( const Mat &img, const Rect targetRoi,
                 for ( size_t j = 0; j < templIdx.size(); ++j )
                 {
                     maxMaxVal = -9999999;
-                    // imwrite( "/var/tmp/water/stopsign_move_target" + to_string(j) + ".png", templates[ j ].ptTemplates[ 5 ].templ );
+                    // imwrite( string(DEBUG_FOLDER) + "stopsign_move_target" + to_string(j) + ".png", templates[ j ].ptTemplates[ 5 ].templ );
                     for ( size_t i = 0; i < templates[ j ].ptTemplates.size(); ++i )
                     {
                         matchTemplate( matIn, templates[ j ].ptTemplates[ i ].templ, response, TM_CCORR_NORMED, templates[ j ].ptTemplates[ i ].mask );
@@ -281,7 +281,7 @@ GC_STATUS StopsignSearch::FindMoveTargets( const Mat &img, const Rect targetRoi,
                               Point( cvRound( maxMaxPt.x + 10 ), cvRound( maxMaxPt.y ) ), Scalar( 0, 255, 0 ), 1 );
                         line( color( targetRoi ), Point( cvRound( maxMaxPt.x ), cvRound( maxMaxPt.y - 10 ) ),
                               Point( cvRound( maxMaxPt.x ), cvRound( maxMaxPt.y + 10 ) ), Scalar( 0, 255, 0 ), 1 );
-                        imwrite( "/var/tmp/water/stopsign_move_target_found.png", color );
+                        imwrite( string(DEBUG_FOLDER) + "stopsign_move_target_found.png", color );
 #endif
                     }
                     else

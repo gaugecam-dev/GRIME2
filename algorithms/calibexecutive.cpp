@@ -108,12 +108,12 @@ GC_STATUS CalibExecutive::Recalibrate( const Mat &img, const std::string calibTy
     return retVal;
 }
 GC_STATUS CalibExecutive::Calibrate( const Mat &img, const std::string jsonParams, cv::Mat &imgResult,
-                                     double &rmseDist, double &rmseX, double &rmseY, string &err_msg )
+                                     double &rmseDist, double &rmseX, double &rmseY, string &err_msg, const bool drawAll )
 {
     GC_STATUS retVal = Calibrate( img, jsonParams, rmseDist, rmseX, rmseY, err_msg );
     if ( GC_OK == retVal )
     {
-        retVal = DrawOverlay( img, imgResult );
+        retVal = DrawOverlay( img, imgResult, drawAll );
     }
     return retVal;
 }
@@ -354,11 +354,19 @@ GC_STATUS CalibExecutive::DrawAssocPts( const cv::Mat &img, cv::Mat &overlay, st
         return retVal;
     }
 }
-GC_STATUS CalibExecutive::DrawOverlay( const cv::Mat matIn, cv::Mat &imgMatOut )
+GC_STATUS CalibExecutive::DrawOverlay( const cv::Mat matIn, cv::Mat &imgMatOut, const bool drawAll )
 {
-    GC_STATUS retVal = DrawOverlay( matIn, imgMatOut, paramsCurrent.drawCalibScale, paramsCurrent.drawCalibGrid,
-                                    paramsCurrent.drawMoveSearchROIs, paramsCurrent.drawWaterLineSearchROI,
-                                    paramsCurrent.drawTargetSearchROI );
+    GC_STATUS retVal = GC_OK;
+    if ( drawAll )
+    {
+        retVal = DrawOverlay( matIn, imgMatOut, false, true, true, true, true );
+    }
+    else
+    {
+        retVal = DrawOverlay( matIn, imgMatOut, paramsCurrent.drawCalibScale, paramsCurrent.drawCalibGrid,
+                                        paramsCurrent.drawMoveSearchROIs, paramsCurrent.drawWaterLineSearchROI,
+                                        paramsCurrent.drawTargetSearchROI );
+    }
     return retVal;
 }
 GC_STATUS CalibExecutive::DrawOverlay( const cv::Mat matIn, cv::Mat &imgMatOut, const bool drawCalibScale, const bool drawCalibGrid,

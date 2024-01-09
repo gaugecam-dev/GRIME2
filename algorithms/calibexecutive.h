@@ -166,7 +166,7 @@ public:
     GC_STATUS Calibrate( const cv::Mat &img, const std::string jsonParams,
                          double &rmseDist, double &rmseX, double &rmseY, string &err_msg );
     GC_STATUS Calibrate( const cv::Mat &img, const std::string jsonParams, cv::Mat &imgResult,
-                         double &rmseDist, double &rmseX, double &rmseY, string &err_msg );
+                         double &rmseDist, double &rmseX, double &rmseY, string &err_msg , const bool drawAll = false );
     GC_STATUS Recalibrate( const cv::Mat &img, const std::string calibType,
                            double &rmseDist, double &rmseX, double &rmseY, string &err_msg );
     GC_STATUS PixelToWorld( const cv::Point2d pixelPt, cv::Point2d &worldPt );
@@ -174,7 +174,7 @@ public:
     GC_STATUS GetMoveSearchROIs( cv::Rect &rectLeft, cv::Rect &rectRight );
     GC_STATUS SetMoveSearchROIs( const cv::Mat img, const cv::Rect rectLeft, const cv::Rect rectRight );
     GC_STATUS DetectMove( std::vector< cv::Point2d > &origPos, std::vector< cv::Point2d > &newPos );
-    GC_STATUS DrawOverlay( const cv::Mat matIn, cv::Mat &imgMatOut );
+    GC_STATUS DrawOverlay( const cv::Mat matIn, cv::Mat &imgMatOut , const bool drawAll = false );
     GC_STATUS DrawOverlay( const cv::Mat matIn, cv::Mat &imgMatOut, const bool drawCalibScale, const bool drawCalibGrid,
                            const bool drawMoveROIs, const bool drawSearchROI, const bool drawTargetROI,
                            const cv::Point2d moveOffset = cv::Point2d( 0.0, 0.0 ) );
@@ -195,6 +195,14 @@ public:
     static GC_STATUS FormBowtieCalibJsonString( const CalibJsonItems &items, std::string &json );
     static GC_STATUS FormStopsignCalibJsonString( const CalibJsonItems &items, std::string &json );
     GC_STATUS GetCalibStopsignJsonItems( const std::string &jsonStr, CalibJsonItems &items );
+    void EnableAllOverlays()
+    {
+        paramsCurrent.drawCalibScale = true;
+        paramsCurrent.drawCalibGrid = true;
+        paramsCurrent.drawMoveSearchROIs = true;
+        paramsCurrent.drawWaterLineSearchROI = true;
+        paramsCurrent.drawTargetSearchROI = true;
+    }
 
 private:
     CalibBowtie bowTie;

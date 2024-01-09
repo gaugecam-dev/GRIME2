@@ -1,6 +1,8 @@
 #ifndef ARGHANDLER_H
 #define ARGHANDLER_H
 #include "../algorithms/log.h"
+#include "../algorithms/calibexecutive.h"
+#include <opencv2/core.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/exception/diagnostic_information.hpp>
 #include <string>
@@ -17,6 +19,7 @@ bool IsExistingImagePath( const string imgPath );
 typedef enum GRIME2_CLI_OPERATIONS
 {
     CALIBRATE,
+    CREATE_CALIB,
     FIND_LINE,
     RUN_FOLDER,
     MAKE_GIF,
@@ -34,7 +37,13 @@ public:
         timestamp_startPos( -1 ),
         timeStamp_length( -1 ),
         delay_ms( 250 ),
-        scale( 0.2 )
+        scale( 0.2 ),
+        calib_roi(cv::Rect(-1,-1,-1,-1)),
+        waterline_region(gc::LineSearchRoi(cv::Point(-1,-1),
+                                           cv::Point(-1,-1),
+                                           cv::Point(-1,-1),
+                                           cv::Point(-1,-1))),
+        move_roi_grow_percent(10.0)
     {}
     void clear()
     {
@@ -51,6 +60,9 @@ public:
         timeStamp_length = -1;
         delay_ms = 250;
         scale = 0.2;
+        calib_roi = cv::Rect(-1, -1, -1, -1);
+        waterline_region.clear();
+        move_roi_grow_percent = 110.0;
     }
     bool verbose;
     GRIME2_CLI_OP opToPerform;
@@ -65,6 +77,9 @@ public:
     int timeStamp_length;
     int delay_ms;
     double scale;
+    cv::Rect calib_roi;
+    gc::LineSearchRoi waterline_region;
+    double move_roi_grow_percent;
 
 };
 int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
@@ -122,6 +137,11 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                 else if ( "calibrate" == string( argv[ i ] ).substr( 2 ) )
                 {
                     params.opToPerform = CALIBRATE;
+                }
+                else if ( "create_calib" == string( argv[ i ] ).substr( 2 ) )
+                {
+                    params.opToPerform = CREATE_CALIB;
+                    params.calib_type = "BowTie";
                 }
                 else if ( "find_line" == string( argv[ i ] ).substr( 2 ) )
                 {
@@ -327,6 +347,7 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                     {
                         params.src_imagePath = argv[ ++i ];
                         if ( CALIBRATE == params.opToPerform ||
+                             CREATE_CALIB == params.opToPerform ||
                              FIND_LINE == params.opToPerform ||
                              SHOW_METADATA == params.opToPerform )
                         {
@@ -360,6 +381,56 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                         FILE_LOG( logERROR ) << "[ArgHandler] No value supplied on --source request";
                         retVal = -1;
                         break;
+                    }
+                }
+                else if ( "move_roi_grow" == string( argv[ i ] ).substr( 2 ) )
+                {
+                    if ( i + 1 < argc )
+                    {
+                        params.move_roi_grow_percent = stod( string( argv[ ++i ] ) );
+                    }
+                    else
+                    {
+                        FILE_LOG( logERROR ) << "[ArgHandler] No value supplied on --source request";
+                        retVal = -1;
+                    }
+                }
+                else if ( "calib_roi" == string( argv[ i ] ).substr( 2 ) )
+                {
+                    if ( i + 4 < argc )
+                    {
+                        params.calib_roi.x = stoi( string( argv[ ++i ] ) );
+                        params.calib_roi.y = stoi( string( argv[ ++i ] ) );
+                        params.calib_roi.width = stoi( string( argv[ ++i ] ) );
+                        params.calib_roi.height = stoi( string( argv[ ++i ] ) );
+                    }
+                    else
+                    {
+                        FILE_LOG( logERROR ) << "[GetArgs()] Not enough paramters for calib roi (need 4)";
+                        retVal = -1;
+                    }
+                }
+                else if ( "waterline_roi" == string( argv[ i ] ).substr( 2 ) )
+                {
+                    if ( i + 8 < argc )
+                    {
+                        int tl_x = stoi( string( argv[ ++i ] ) );
+                        int tl_y = stoi( string( argv[ ++i ] ) );
+                        int tr_x = stoi( string( argv[ ++i ] ) );
+                        int tr_y = stoi( string( argv[ ++i ] ) );
+                        int bl_x = stoi( string( argv[ ++i ] ) );
+                        int bl_y = stoi( string( argv[ ++i ] ) );
+                        int br_x = stoi( string( argv[ ++i ] ) );
+                        int br_y = stoi( string( argv[ ++i ] ) );
+                        params.waterline_region = gc::LineSearchRoi( cv::Point( tl_x, tl_y ),
+                                                                     cv::Point( tr_x, tr_y ),
+                                                                     cv::Point( bl_x, bl_y ),
+                                                                     cv::Point( br_x, br_y ) );
+                    }
+                    else
+                    {
+                        FILE_LOG( logERROR ) << "[GetArgs()] Not enough paramters for waterline region (need 8)";
+                        retVal = -1;
                     }
                 }
                 else
@@ -421,6 +492,18 @@ void PrintHelp()
             "                 [--result_image <Result overlay image> OPTIONAL]" << endl <<
             "        Loads image with calibration target. Loads an existing calibration," << endl <<
             "        performs a new calibration if a source image is supplied," << endl <<
+            "        then stores the calibration to the specified json file. An optional" << endl <<
+            "        result image with the calibration result can be created." << endl;
+    cout << "FORMAT: grime2cli --create_calibrate <Target image> " << endl <<
+            "                  --csv_file <CSV file with bow tie target xy positions>" << endl <<
+            "                  --calib_json <json filepath for file to be created>" << endl <<
+            "                  --waterline_roi <tl_x> <tl_y> <tr_x> <tr_y> <bl_x> <bl_y> <br_x> btr_y>" << endl <<
+            "                          top-left, top-right, bottom-left, bottom-right points of waterline search region"
+            "                 [--calib_roi <left> <top> <width> <height> OPTIONAL if not used, whole image is searched]" << endl <<
+            "                 [--move_roi_grow <growth percentage> OPTIONAL]" << endl <<
+            "                 [--result_image <Result overlay image> OPTIONAL]" << endl <<
+            "        For stopsign calibration json file creation only." << endl <<
+            "        Performs a calibration if a source image is supplied," << endl <<
             "        then stores the calibration to the specified json file. An optional" << endl <<
             "        result image with the calibration result can be created." << endl;
     cout << "FORMAT: grime2cli --find_line --timestamp_from_filename or --timestamp_from_exif " << endl <<
