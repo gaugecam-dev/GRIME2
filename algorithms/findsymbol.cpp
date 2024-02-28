@@ -13,8 +13,8 @@
 #include <algorithm>
 #include <iterator>
 
-#ifndef DEBUG_FIND_CALIB_SYMBOL
-#define DEBUG_FIND_CALIB_SYMBOL
+#ifdef DEBUG_FIND_CALIB_SYMBOL
+#undef DEBUG_FIND_CALIB_SYMBOL
 #include <iostream>
 #include <opencv2/imgcodecs.hpp>
 static const std::string DEBUG_RESULT_FOLDER = "/var/tmp/water/";

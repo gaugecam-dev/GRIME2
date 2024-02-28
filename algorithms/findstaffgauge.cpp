@@ -6,8 +6,8 @@
 using namespace cv;
 using namespace std;
 
-#ifndef __DEBUG_STAFFGAUGE
-#define __DEBUG_STAFFGAUGE
+#ifdef __DEBUG_STAFFGAUGE
+#undef __DEBUG_STAFFGAUGE
 #define SET_DEBUG_FOLDER
 #endif
 

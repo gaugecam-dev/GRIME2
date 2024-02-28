@@ -34,8 +34,8 @@ using namespace std;
 using namespace boost;
 namespace fs = filesystem;
 
-#ifndef DEBUG_VISAPP_FEATURES
-#define DEBUG_VISAPP_FEATURES
+#ifdef DEBUG_VISAPP_FEATURES
+#undef DEBUG_VISAPP_FEATURES
 #ifdef WIN32
 static string DEBUG_FOLDER = "c:/gaugecam/debug/visappfeats/";
 #else

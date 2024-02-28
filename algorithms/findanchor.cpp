@@ -21,8 +21,8 @@
 using namespace cv;
 using namespace std;
 
-#ifndef DEBUG_FIND_ANCHOR
-#define DEBUG_FIND_ANCHOR
+#ifdef DEBUG_FIND_ANCHOR
+#undef DEBUG_FIND_ANCHOR
 #include <iostream>
 #include <opencv2/imgcodecs.hpp>
 #include <boost/filesystem.hpp>
