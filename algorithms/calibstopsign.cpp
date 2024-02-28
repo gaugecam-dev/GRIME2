@@ -17,18 +17,18 @@
 #include <iterator>
 #include "searchlines.h"
 
-#ifdef DEBUG_FIND_CALIB_SYMBOL
-#undef DEBUG_FIND_CALIB_SYMBOL
+#ifndef DEBUG_FIND_CALIB_SYMBOL
+#define DEBUG_FIND_CALIB_SYMBOL
 #include <iostream>
 #include <boost/filesystem.hpp>
 #ifdef _WIN32
 static const char DEBUG_FOLDER[] = "c:/gaugecam/";
 #else
-static const char DEBUG_FOLDER[] = "/var/tmp/gaugecam/";
+static const string DEBUG_FOLDER = string( "/var/tmp/gaugecam/" );
 #endif
 #endif
 
-static const double MIN_SYMBOL_CONTOUR_SIZE = 30;
+static const double MIN_SYMBOL_CONTOUR_SIZE = 8;
 using namespace cv;
 using namespace std;
 using namespace boost;
@@ -57,9 +57,9 @@ CalibStopSign::CalibStopSign() :
         }
 #endif
 #ifdef DEBUG_FIND_CALIB_SYMBOL
-        if ( !filesystem::exists( DEBUG_FOLDER ) )
+        if ( !fs::exists( DEBUG_FOLDER ) )
         {
-            bool bRet = filesystem::create_directories( DEBUG_FOLDER );
+            bool bRet = fs::create_directories( DEBUG_FOLDER );
             if ( !bRet )
             {
                 FILE_LOG( logWARNING ) << "[CalibStopSign::CalibStopSign] Could not create debug folder " << DEBUG_FOLDER;
@@ -378,8 +378,12 @@ GC_STATUS CalibStopSign::AdjustStopSignForRotation( const Size imgSize, const Fi
                                        ( calcLinePts.lftPixel.x - calcLinePts.rgtPixel.x ) ) * ( 180.0 / CV_PI );
         if ( 90.0 < stopSignAngle )
             stopSignAngle += -180.0;
+        else if ( -90.0 > stopSignAngle )
+            stopSignAngle += 180.0;
         if ( 90.0 < waterLineAngle )
             waterLineAngle += -180.0;
+        else if ( -90.0 > waterLineAngle )
+            waterLineAngle += 180.0;
 
         // cout << "Stop sign angle=" << stopSignAngle << " Waterline angle=" << waterLineAngle << endl;
 
@@ -404,13 +408,14 @@ GC_STATUS CalibStopSign::AdjustStopSignForRotation( const Size imgSize, const Fi
 
         // line( mask, calcLinePts.lftPixel, calcLinePts.rgtPixel, Scalar( 0 ), 7 );
 
+//        imwrite( "/var/tmp/gaugecam/stopsign_angle_pre_adjusted.png", mask );
         Mat rotMatrix = cv::getRotationMatrix2D( model.pixelPoints[ 5 ], offsetAngle, 1.0 );
         warpAffine( mask, mask, rotMatrix, mask.size() );
 
-        // line( mask, calcLinePts.lftPixel, calcLinePts.rgtPixel, Scalar( 255 ), 5 );
-        // putText( mask, "ADJUSTED", Point( model.pixelPoints[ 7 ].x, model.pixelPoints[ 0 ].y - 70 ), FONT_HERSHEY_PLAIN, 3.0, Scalar( 255 ), 3 );
+//        line( mask, calcLinePts.lftPixel, calcLinePts.rgtPixel, Scalar( 255 ), 5 );
+//        putText( mask, "ADJUSTED", Point( model.pixelPoints[ 7 ].x, model.pixelPoints[ 0 ].y - 70 ), FONT_HERSHEY_PLAIN, 3.0, Scalar( 255 ), 3 );
 
-        // imwrite( "/var/tmp/water/stopsign_angle_adjusted.png", mask );
+//        imwrite( "/var/tmp/gaugecam/stopsign_angle_adjusted.png", mask );
 
         vector< vector< Point > > contours;
         findContours( mask, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE );
@@ -833,6 +838,11 @@ GC_STATUS CalibStopSign::FindCorners( const cv::Mat &mask, const std::vector< cv
 
     try
     {
+//        vector< vector< Point > > conts;
+//        conts.push_back( contour );
+//        drawContours( mask, conts, -1, Scalar(128), 3);
+//        imwrite( "/var/tmp/water/mask_conts.png", mask );
+
         if ( contour.size() < MIN_SYMBOL_CONTOUR_SIZE )
         {
             FILE_LOG( logERROR ) << "[CalibStopSign::CalibStopSignCorners] Contour must have at least " << MIN_SYMBOL_CONTOUR_SIZE << " contour points";
@@ -850,7 +860,8 @@ GC_STATUS CalibStopSign::FindCorners( const cv::Mat &mask, const std::vector< cv
 #ifdef DEBUG_FIND_CALIB_SYMBOL
             Mat color;
             cvtColor( mask, color, COLOR_GRAY2BGR );
-            imwrite( DEBUG_FOLDER + "candidate_contour.png", edges );
+            imwrite( DEBUG_FOLDER + "candidate_contour1.png", edges );
+            imwrite( DEBUG_FOLDER + "candidate_contour_mask1.png", mask );
 #endif
             Rect bb = boundingRect( contour );
             int swathSize = bb.height / 5;
@@ -941,6 +952,7 @@ GC_STATUS CalibStopSign::FindCorners( const cv::Mat &mask, const std::vector< cv
     }
     catch( cv::Exception &e )
     {
+        cout << e.what() << endl;
         FILE_LOG( logERROR ) << "[CalibStopSign::CalibStopSignCorners] " << e.what();
         retVal = GC_EXCEPT;
     }
@@ -1056,6 +1068,7 @@ GC_STATUS CalibStopSign::FindDiagonals( const cv::Mat &mask, const std::vector< 
 #ifdef DEBUG_FIND_CALIB_SYMBOL
             Mat color;
             cvtColor( mask, color, COLOR_GRAY2BGR );
+            imwrite( DEBUG_FOLDER + "candidate_contour_mask.png", mask );
             imwrite( DEBUG_FOLDER + "candidate_contour.png", edges );
 #endif
             Rect bb = boundingRect( contour );
