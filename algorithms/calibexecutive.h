@@ -225,6 +225,7 @@ private:
                              double &rmseEuclideanDist, double &rmseX, double &rmseY );
     GC_STATUS CalculateRMSE( const cv::Mat &img, double &rmseEuclideanDist, double &rmseX, double &rmseY );
     GC_STATUS SetCalibFromJson( const std::string &jsonParams );
+    GC_STATUS TestROIPositions( const int cols, const int rows );
 };
 
 } // namespace gc

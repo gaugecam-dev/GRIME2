@@ -162,8 +162,6 @@ GC_STATUS CalibExecutive::SetCalibFromJson( const std::string &jsonParams )
         paramsCurrent.lineSearch_rgtBot.x = top_level.get< int >( "searchPoly_rgtBot_x", -1 );
         paramsCurrent.lineSearch_rgtBot.y = top_level.get< int >( "searchPoly_rgtBot_y", -1 );
 
-        Mat imgFixed;
-        Rect searchBB;
         if ( "StopSign" == paramsCurrent.calibType )
         {
             stopSign.Model().controlJson = jsonParams;
@@ -206,6 +204,31 @@ GC_STATUS CalibExecutive::SetCalibFromJson( const std::string &jsonParams )
     catch( boost::exception &e )
     {
         FILE_LOG( logERROR ) << "[CalibExecutive::Calibrate] " << diagnostic_information( e );
+        retVal = GC_EXCEPT;
+    }
+    return retVal;
+}
+GC_STATUS CalibExecutive::TestROIPositions( const int cols, const int rows )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        if ( 0 > paramsCurrent.lineSearch_lftTop.x || 0 > paramsCurrent.lineSearch_lftTop.y ||
+             cols <= paramsCurrent.lineSearch_lftTop.x || rows <= paramsCurrent.lineSearch_lftTop.y ||
+             0 > paramsCurrent.lineSearch_lftBot.x || 0 > paramsCurrent.lineSearch_lftBot.y ||
+             cols <= paramsCurrent.lineSearch_lftBot.x || rows <= paramsCurrent.lineSearch_lftBot.y ||
+             0 > paramsCurrent.lineSearch_rgtTop.x || 0 > paramsCurrent.lineSearch_rgtTop.y ||
+             cols <= paramsCurrent.lineSearch_rgtTop.x || rows <= paramsCurrent.lineSearch_rgtTop.y ||
+             0 > paramsCurrent.lineSearch_rgtBot.x || 0 > paramsCurrent.lineSearch_rgtBot.y ||
+             cols <= paramsCurrent.lineSearch_rgtBot.x || rows <= paramsCurrent.lineSearch_rgtBot.y )
+        {
+            FILE_LOG( logERROR ) <<  "[CalibExecutive::TestROIPositions] Target or waterline search region out-of-bounds";
+            retVal = GC_ERR;
+        }
+    }
+    catch( boost::exception &e )
+    {
+        FILE_LOG( logERROR ) << "[CalibExecutive::TestROIPositions] " << diagnostic_information( e );
         retVal = GC_EXCEPT;
     }
     return retVal;
@@ -256,65 +279,74 @@ GC_STATUS CalibExecutive::Calibrate( const cv::Mat &img, const std::string jsonP
         {
             retVal = SetCalibFromJson( jsonParamsWhich );
         }
+
         if ( GC_OK != retVal )
         {
             err_msg = "CALIB FAIL: Could not set calib parameters from json string";
         }
         else
         {
-            Mat imgFixed;
-            Rect searchBB;
-            if ( "BowTie" == paramsCurrent.calibType )
+            retVal = TestROIPositions( img.cols, img.rows );
+            if ( GC_OK != retVal )
             {
-                if ( CV_8UC3 == img.type() )
+                err_msg = "CALIB FAIL: Target or waterline search region out-of-bounds";
+            }
+            else
+            {
+                Mat imgFixed;
+                Rect searchBB;
+                if ( "BowTie" == paramsCurrent.calibType )
                 {
-                    cvtColor( img, imgFixed, cv::COLOR_BGR2GRAY );
+                    if ( CV_8UC3 == img.type() )
+                    {
+                        cvtColor( img, imgFixed, cv::COLOR_BGR2GRAY );
+                    }
+                    else
+                    {
+                        imgFixed = img;
+                    }
+                    retVal = CalibrateBowTie( imgFixed, jsonParamsWhich, err_msg );
+                    if ( GC_OK == retVal )
+                    {
+                        retVal = bowTie.GetSearchRegionBoundingRect( searchBB );
+                    }
                 }
-                else
+                else if ( "StopSign" == paramsCurrent.calibType )
                 {
                     imgFixed = img;
-                }
-                retVal = CalibrateBowTie( imgFixed, jsonParamsWhich, err_msg );
-                if ( GC_OK == retVal )
-                {
-                    retVal = bowTie.GetSearchRegionBoundingRect( searchBB );
-                }
-            }
-            else if ( "StopSign" == paramsCurrent.calibType )
-            {
-                imgFixed = img;
-                retVal = CalibrateStopSign( imgFixed, jsonParamsWhich, err_msg );
-                if ( GC_OK == retVal )
-                {
-                    retVal = stopSign.GetSearchRegionBoundingRect( searchBB );
-                    if ( GC_OK != retVal )
+                    retVal = CalibrateStopSign( imgFixed, jsonParamsWhich, err_msg );
+                    if ( GC_OK == retVal )
                     {
-                        err_msg = "CALIB FAIL: Octagon calibration search bounding box could not be set";
+                        retVal = stopSign.GetSearchRegionBoundingRect( searchBB );
+                        if ( GC_OK != retVal )
+                        {
+                            err_msg = "CALIB FAIL: Octagon calibration search bounding box could not be set";
+                        }
+                    }
+                    else
+                    {
+                        err_msg = "CALIB_FAIL: Octagon calibration failed";
+                        retVal = GC_ERR;
                     }
                 }
                 else
                 {
-                    err_msg = "CALIB_FAIL: Octagon calibration failed";
+
+                    err_msg = "CALIB FAIL: Invalid calibration type=" + ( paramsCurrent.calibType.empty() ? "empty()" : paramsCurrent.calibType );
+                    FILE_LOG( logERROR ) << "[CalibExecutive::Calibrate] Invalid calibration type=" <<
+                                            ( paramsCurrent.calibType.empty() ? "empty()" : paramsCurrent.calibType );
                     retVal = GC_ERR;
                 }
-            }
-            else
-            {
 
-                err_msg = "CALIB FAIL: Invalid calibration type=" + ( paramsCurrent.calibType.empty() ? "empty()" : paramsCurrent.calibType );
-                FILE_LOG( logERROR ) << "[CalibExecutive::Calibrate] Invalid calibration type=" <<
-                                        ( paramsCurrent.calibType.empty() ? "empty()" : paramsCurrent.calibType );
-                retVal = GC_ERR;
-            }
-
-            if ( GC_OK == retVal )
-            {
-                retVal = CalculateRMSE( imgFixed( searchBB ), rmseDist, rmseX, rmseY );
-                if ( GC_OK != retVal )
+                if ( GC_OK == retVal )
                 {
-                    rmseDist = rmseX = rmseY = -9999999.0;
-                    FILE_LOG( logWARNING ) << "[CalibBowtie::Calibrate] Could not calculate RMSE";
-                    retVal = GC_OK;
+                    retVal = CalculateRMSE( imgFixed( searchBB ), rmseDist, rmseX, rmseY );
+                    if ( GC_OK != retVal )
+                    {
+                        rmseDist = rmseX = rmseY = -9999999.0;
+                        FILE_LOG( logWARNING ) << "[CalibBowtie::Calibrate] Could not calculate RMSE";
+                        retVal = GC_OK;
+                    }
                 }
             }
         }
