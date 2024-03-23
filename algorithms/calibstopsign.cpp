@@ -17,8 +17,8 @@
 #include <iterator>
 #include "searchlines.h"
 
-#ifndef DEBUG_FIND_CALIB_SYMBOL
-#define DEBUG_FIND_CALIB_SYMBOL
+#ifdef DEBUG_FIND_CALIB_SYMBOL
+#undef DEBUG_FIND_CALIB_SYMBOL
 #include <iostream>
 #include <boost/filesystem.hpp>
 #ifdef _WIN32
