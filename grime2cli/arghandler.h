@@ -3,7 +3,7 @@
 #include "../algorithms/log.h"
 #include "../algorithms/calibexecutive.h"
 #include <opencv2/core.hpp>
-#include <boost/filesystem.hpp>
+#include <filesystem>
 #include <boost/exception/diagnostic_information.hpp>
 #include <string>
 #include <iostream>
@@ -11,7 +11,7 @@
 
 using namespace std;
 using namespace boost;
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 static FILE *g_logFile = nullptr;
 
 bool IsExistingImagePath( const string imgPath );
@@ -140,8 +140,18 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                 }
                 else if ( "create_calib" == string( argv[ i ] ).substr( 2 ) )
                 {
-                    params.opToPerform = CREATE_CALIB;
-                    params.calib_type = "BowTie";
+                    if ( i + 1 < argc )
+                    {
+                        params.opToPerform = CREATE_CALIB;
+                        string calType = string( argv[ ++i ] );
+                        params.calib_type = string::npos == calType.find( "bowtie" ) ? "StopSign" : "BowTie";
+                    }
+                    else
+                    {
+                        FILE_LOG( logERROR ) << "[ArgHandler] No calibration type supplied on --fps request";
+                        retVal = -1;
+                        break;
+                    }
                 }
                 else if ( "find_line" == string( argv[ i ] ).substr( 2 ) )
                 {
@@ -494,7 +504,8 @@ void PrintHelp()
             "        performs a new calibration if a source image is supplied," << endl <<
             "        then stores the calibration to the specified json file. An optional" << endl <<
             "        result image with the calibration result can be created." << endl;
-    cout << "FORMAT: grime2cli --create_calibrate <Target image> " << endl <<
+    cout << "FORMAT: grime2cli --create_calibrate <type (must be bowtie or stopsign> " << endl <<
+            "                  --source <Target image>" << endl <<
             "                  --csv_file <CSV file with bow tie target xy positions>" << endl <<
             "                  --calib_json <json filepath for file to be created>" << endl <<
             "                  --waterline_roi <tl_x> <tl_y> <tr_x> <tr_y> <bl_x> <bl_y> <br_x> btr_y>" << endl <<

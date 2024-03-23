@@ -32,7 +32,7 @@
 #include <string>
 #include <vector>
 #include <limits>
-#include <opencv2/core/core.hpp>
+#include <opencv2/core.hpp>
 #include "gc_types.h"
 
 namespace gc

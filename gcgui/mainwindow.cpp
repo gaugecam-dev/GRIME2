@@ -33,14 +33,14 @@
 #include <boost/signals2.hpp>
 #include <boost/bind/bind.hpp>
 #include <boost/chrono.hpp>
-#include <boost/filesystem.hpp>
+#include <filesystem>
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "../algorithms/calibexecutive.h"
 
 using namespace std;
 using namespace boost;
-namespace fs = boost::filesystem;
+// namespace fs = std::filesystem;
 
 #ifdef WIN32
 static const char __CONFIGURATION_FOLDER[] = "c:/gaugecam/config/";
@@ -1201,7 +1201,6 @@ void MainWindow::on_pushButton_visionCalibrate_clicked()
     }
     else if ( ui->radioButton_calibStopSign->isChecked() )
     {
-
         ret = CalibExecutive::FormStopsignCalibJsonString( calibItems, jsonControlStr );
     }
     else

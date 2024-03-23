@@ -1,5 +1,5 @@
 TEMPLATE = app
-CONFIG += console c++11
+CONFIG += console c++17
 CONFIG -= app_bundle
 CONFIG -= qt
 
@@ -40,6 +40,7 @@ HEADERS += \
     ../algorithms/findline.h \
     ../algorithms/gifanim/gifanim.h \
     ../algorithms/gc_types.h \
+    ../algorithms/labelroi.h \
     ../algorithms/log.h \
     ../algorithms/metadata.h \
     ../algorithms/timestampconvert.h \

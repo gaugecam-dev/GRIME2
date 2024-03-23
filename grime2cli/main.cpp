@@ -17,7 +17,7 @@
 #include <iostream>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/imgcodecs.hpp>
-#include <boost/filesystem.hpp>
+#include <filesystem>
 #include "arghandler.h"
 #include "../algorithms/visapp.h"
 #include "../algorithms/calibexecutive.h"
@@ -25,7 +25,7 @@
 using namespace gc;
 using namespace std;
 using namespace boost;
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 // example command lines
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~ GENERAL ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -36,7 +36,8 @@ namespace fs = boost::filesystem;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~ BOW-TIE ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // --calibrate --source "./config/2012_demo/06/NRmarshDN-12-06-30-10-30.jpg" --calib_json "./config/calib.json" --csv_file "./config/calibration_target_world_coordinates.csv" --result_image "/var/tmp/water/calib_result.png"
-// --create_calib --source "/media/kchapman/Elements/data/sunwater/2024_01_08_cal_images/002.jpg" --calib_json "/media/kchapman/Elements/data/sunwater/2024_01_08_cal_images/calib_002.json" --csv_file "/media/kchapman/Elements/data/sunwater/2024_01_08_cal_images/calibration_target_world_coordinates.csv" --result_image "/var/tmp/water/calib_result.png" --waterline_roi 810 270 1000 270 800 800 990 830 --calib_roi 600 200 614 678
+// --create_calib bowtie --source "/media/kchapman/Elements/data/sunwater/2024_01_08_cal_images/002.jpg" --calib_json "/media/kchapman/Elements/data/sunwater/2024_01_08_cal_images/calib_002.json" --csv_file "/media/kchapman/Elements/data/sunwater/2024_01_08_cal_images/calibration_target_world_coordinates.csv" --result_image "/var/tmp/water/calib_result.png" --waterline_roi 810 270 1000 270 800 800 990 830 --calib_roi 600 200 614 678
+// --create_calib stopsign --source "/media/coffee_sig/KOLA_images/OneDrive_2_3-9-2024/config/bowtie_night.JPG" --calib_json "/media/coffee_sig/KOLA_images/OneDrive_2_3-9-2024/config/calib_002.json" --csv_file "/media/coffee_sig/KOLA_images/OneDrive_2_3-9-2024/config/calibration_target_world_coordinates.csv" --result_image "/var/tmp/water/calib_result.png" --waterline_roi 810 270 1000 270 800 800 990 830 --calib_roi 876 112 500 500
 // --find_line --timestamp_from_filename --timestamp_start_pos 10 --timestamp_format "yy-mm-dd-HH-MM" --source "./config/2012_demo/06/NRmarshDN-12-06-30-10-30.jpg" --calib_json "./config/calib.json" --result_image "/var/tmp/water/find_line_result.png"
 // --run_folder --timestamp_from_filename --timestamp_start_pos 10 --timestamp_format "yy-mm-dd-HH-MM" --source "./config/2012_demo/06/" --calib_json "./config/calib.json" --csv_file "/var/tmp/water/folder.csv" --result_folder "/var/tmp/water/"
 
@@ -209,7 +210,14 @@ GC_STATUS CreateCalibrate( const Grime2CLIParams cliParams )
                                   ( 0 > cliParams.calib_roi.x ? false : true ),
                                   cliParams.calib_roi, cliParams.move_roi_grow_percent,
                                   -1, -1, cliParams.waterline_region );
-            retVal = calibExec.FormBowtieCalibJsonString( items, jsonStr );
+            if ( string::npos == cliParams.calib_type.find( "BowTie" ) )
+            {
+                retVal = calibExec.FormStopsignCalibJsonString( items, jsonStr );
+            }
+            else
+            {
+                retVal = calibExec.FormBowtieCalibJsonString( items, jsonStr );
+            }
             if ( GC_OK == retVal )
             {
                 double rmseDist, rmseX, rmseY;

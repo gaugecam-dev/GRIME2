@@ -72,6 +72,7 @@ HEADERS += \
 	../algorithms/findline.h \
 	../algorithms/gc_types.h \
 	../algorithms/gifanim/gifanim.h \
+    ../algorithms/labelroi.h \
         ../algorithms/log.h \
         ../algorithms/metadata.h \
         ../algorithms/searchlines.h \

@@ -21,8 +21,8 @@
 #include <sstream>
 #include <iostream>
 #include <algorithm>
+#include <filesystem>
 #include <opencv2/imgcodecs.hpp>
-#include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/algorithm.hpp>
 #include <boost/property_tree/json_parser.hpp>
@@ -32,7 +32,7 @@
 using namespace cv;
 using namespace std;
 using namespace boost;
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 namespace pt = property_tree;
 
 #ifdef DEBUG_BOWTIE_FIND
