@@ -21,8 +21,8 @@
 #include <cstdlib>
 #include <iostream>
 #include <algorithm>
+#include <filesystem>
 #include <boost/bind/bind.hpp>
-#include <boost/filesystem.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/exception/exception.hpp>
 #include <boost/exception/diagnostic_information.hpp>
@@ -32,7 +32,7 @@
 using namespace cv;
 using namespace std;
 using namespace boost;
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 namespace pt = property_tree;
 
 // forward declarations

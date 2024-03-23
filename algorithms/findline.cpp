@@ -35,8 +35,7 @@ static const std::string DEBUG_RESULT_FOLDER = "/var/tmp/water/";
 using namespace cv;
 using namespace std;
 #ifdef DEBUG_FIND_LINE
-using namespace boost;
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 #endif
 
 static const int MEDIAN_FILTER_KERN_SIZE = 9;

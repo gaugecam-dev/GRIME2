@@ -4,7 +4,7 @@
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/calib3d.hpp>
 #include <boost/foreach.hpp>
-#include <boost/filesystem.hpp>
+#include <filesystem>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/exception/exception.hpp>
@@ -32,7 +32,7 @@ static const double MIN_SYMBOL_CONTOUR_SIZE = 8;
 using namespace cv;
 using namespace std;
 using namespace boost;
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 namespace gc
 {

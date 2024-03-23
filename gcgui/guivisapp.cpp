@@ -20,6 +20,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
+#include <filesystem>
 #include "../algorithms/log.h"
 #include <sstream>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -27,7 +28,6 @@
 #include <opencv2/videoio.hpp>
 #include <boost/chrono.hpp>
 #include <boost/date_time.hpp>
-#include <boost/filesystem.hpp>
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
@@ -39,7 +39,7 @@
 using namespace cv;
 using namespace std;
 using namespace boost;
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 #ifdef _WIN32
 static const char LOG_FILE_FOLDER[] = "c:/temp/gaugecam/";

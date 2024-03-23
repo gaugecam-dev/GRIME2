@@ -23,7 +23,7 @@
 #include <vector>
 #include <opencv2/core.hpp>
 #include <boost/foreach.hpp>
-#include <boost/filesystem.hpp>
+#include <filesystem>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/exception/exception.hpp>
@@ -38,7 +38,7 @@
 using namespace cv;
 using namespace std;
 using namespace boost;
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 namespace gc
 {

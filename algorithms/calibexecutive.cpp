@@ -5,7 +5,7 @@
 #include <opencv2/imgcodecs.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/algorithm.hpp>
-#include <boost/filesystem.hpp>
+#include <filesystem>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/exception/diagnostic_information.hpp>
@@ -13,7 +13,7 @@
 using namespace cv;
 using namespace std;
 using namespace boost;
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 namespace pt = property_tree;
 
 static double Distance( const Point2d p1, const Point2d p2 )
@@ -654,7 +654,11 @@ GC_STATUS CalibExecutive::Load( const string jsonFilepath, const Mat &img )
         else
         {
             std::string jsonString;
-            fs::load_string_file( jsonFilepath, jsonString );
+            std::ifstream t( jsonFilepath );
+            std::stringstream buffer;
+            buffer << t.rdbuf();
+            jsonString = buffer.str();
+            // fs::load_string_file( jsonFilepath, jsonString );
 
             stringstream ss;
             ss << jsonString;

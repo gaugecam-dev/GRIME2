@@ -22,7 +22,6 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include <boost/filesystem.hpp>
 #include <boost/foreach.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
@@ -32,7 +31,6 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/imgcodecs.hpp>
-#include "findline.h"
 #include "searchlines.h"
 
 #ifdef __DEBUG_CALIB
@@ -46,7 +44,7 @@
 using namespace cv;
 using namespace std;
 using namespace boost;
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 namespace gc
 {
