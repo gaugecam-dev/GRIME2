@@ -186,7 +186,6 @@ GC_STATUS CreateCalibrate( const Grime2CLIParams cliParams )
     GC_STATUS retVal = GC_OK;
     try
     {
-        VisApp vis;
         cv::Mat img = cv::Mat();
         if ( !cliParams.src_imagePath.empty() )
         {
@@ -209,7 +208,8 @@ GC_STATUS CreateCalibrate( const Grime2CLIParams cliParams )
             CalibJsonItems items( cliParams.csvPath, cliParams.calib_jsonPath,
                                   ( 0 > cliParams.calib_roi.x ? false : true ),
                                   cliParams.calib_roi, cliParams.move_roi_grow_percent,
-                                  -1, -1, cliParams.waterline_region );
+                                  cliParams.facet_length, cliParams.zero_offset,
+                                  cliParams.waterline_region );
             if ( string::npos == cliParams.calib_type.find( "BowTie" ) )
             {
                 retVal = calibExec.FormStopsignCalibJsonString( items, jsonStr );

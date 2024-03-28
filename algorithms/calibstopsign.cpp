@@ -190,7 +190,6 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &contr
         matHomogWorldToPix.copyTo( oldHomogWorldToPix );
         oldModel = model;
 
-        std::vector< StopSignCandidate > candidates;
         bool useRoi = -1 != model.targetSearchRegion.x &&
                 -1 != model.targetSearchRegion.y &&
                 -1 != model.targetSearchRegion.width &&
@@ -204,6 +203,8 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &contr
             {
                 pixPtsRoi.push_back( model.pixelPoints[ i ] + ptOffset );
             }
+//            imwrite("/var/tmp/water/orig.png", img);
+//            imwrite("/var/tmp/water/orig_roi.png", img( model.targetSearchRegion ));
             retVal = stopsignSearch.Find( img( model.targetSearchRegion ), model.pixelPoints );
             if ( GC_OK == retVal )
             {
@@ -1827,7 +1828,7 @@ GC_STATUS CalibStopSign::CalcGridDrawPoints( std::vector< StopSignLine > &horzLi
 
     return retVal;
 }
-GC_STATUS CalibStopSign::CalcSearchROI( const double zeroOffset, const double botLftPtToLft, const double botLftPtToTop,
+GC_STATUS CalibStopSign::CalcSearchROI( const double botLftPtToLft, const double botLftPtToTop,
                                         const double botLftPtToRgt, const double botLftPtToBot, cv::Point2d &lftTop,
                                         cv::Point2d &rgtTop, cv::Point2d &lftBot, cv::Point2d &rgtBot )
 {

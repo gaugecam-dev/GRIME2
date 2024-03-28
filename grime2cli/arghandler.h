@@ -43,6 +43,8 @@ public:
                                            cv::Point(-1,-1),
                                            cv::Point(-1,-1),
                                            cv::Point(-1,-1))),
+        facet_length(-1.0),
+        zero_offset(-1.0),
         move_roi_grow_percent(10.0)
     {}
     void clear()
@@ -62,6 +64,8 @@ public:
         scale = 0.2;
         calib_roi = cv::Rect(-1, -1, -1, -1);
         waterline_region.clear();
+        facet_length = -1.0;
+        zero_offset = -1.0;
         move_roi_grow_percent = 110.0;
     }
     bool verbose;
@@ -79,6 +83,8 @@ public:
     double scale;
     cv::Rect calib_roi;
     gc::LineSearchRoi waterline_region;
+    double facet_length;
+    double zero_offset;
     double move_roi_grow_percent;
 
 };
@@ -393,6 +399,30 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                         break;
                     }
                 }
+                else if ( "facet_length" == string( argv[ i ] ).substr( 2 ) )
+                {
+                    if ( i + 1 < argc )
+                    {
+                        params.facet_length = stod( string( argv[ ++i ] ) );
+                    }
+                    else
+                    {
+                        FILE_LOG( logERROR ) << "[ArgHandler] No value supplied on --facet_length request";
+                        retVal = -1;
+                    }
+                }
+                else if ( "zero_offset" == string( argv[ i ] ).substr( 2 ) )
+                {
+                    if ( i + 1 < argc )
+                    {
+                        params.zero_offset = stod( string( argv[ ++i ] ) );
+                    }
+                    else
+                    {
+                        FILE_LOG( logERROR ) << "[ArgHandler] No value supplied on --zero_offset request";
+                        retVal = -1;
+                    }
+                }
                 else if ( "move_roi_grow" == string( argv[ i ] ).substr( 2 ) )
                 {
                     if ( i + 1 < argc )
@@ -401,7 +431,7 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                     }
                     else
                     {
-                        FILE_LOG( logERROR ) << "[ArgHandler] No value supplied on --source request";
+                        FILE_LOG( logERROR ) << "[ArgHandler] No value supplied on --move_roi_grow request";
                         retVal = -1;
                     }
                 }
@@ -511,6 +541,8 @@ void PrintHelp()
             "                  --waterline_roi <tl_x> <tl_y> <tr_x> <tr_y> <bl_x> <bl_y> <br_x> btr_y>" << endl <<
             "                          top-left, top-right, bottom-left, bottom-right points of waterline search region"
             "                 [--calib_roi <left> <top> <width> <height> OPTIONAL if not used, whole image is searched]" << endl <<
+            "                 [--facet_length <length of facet in world units>]" << endl <<
+            "                 [--zero_offset <distance from octo to zero water level in world units>]" << endl <<
             "                 [--move_roi_grow <growth percentage> OPTIONAL]" << endl <<
             "                 [--result_image <Result overlay image> OPTIONAL]" << endl <<
             "        For stopsign calibration json file creation only." << endl <<
