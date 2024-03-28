@@ -135,7 +135,7 @@ GC_STATUS StopsignSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &
                 else
                     img.copyTo( color );
 #endif
-
+                // imwrite("/var/tmp/water/img_in.png", matIn);
                 pts.clear();
                 Mat response;
                 for ( size_t j = 0; j < templates.size(); ++j )

@@ -138,7 +138,7 @@ private:
     GC_STATUS CalcGridDrawPoints (std::vector< StopSignLine > &horzLines, std::vector< StopSignLine > &vertLines );
     GC_STATUS GetXEdgeMinDiffX( const double xWorld, cv::Point2d &ptPix, const bool isTopSideY );
     GC_STATUS GetXEdgeMinDiffY( const double yWorld, cv::Point2d &ptPix, const bool isRightSideX );
-    GC_STATUS CalcSearchROI( const double zeroOffset, const double botLftPtToLft, const double botLftPtToTop,
+    GC_STATUS CalcSearchROI( const double botLftPtToLft, const double botLftPtToTop,
                              const double botLftPtToRgt, const double botLftPtToBot, cv::Point2d &lftTop,
                              cv::Point2d &rgtTop, cv::Point2d &lftBot, cv::Point2d &rgtBot );
     GC_STATUS TestCalibration( bool &isValid );

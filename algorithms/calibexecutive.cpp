@@ -295,16 +295,16 @@ GC_STATUS CalibExecutive::Calibrate( const cv::Mat &img, const std::string jsonP
             {
                 Mat imgFixed;
                 Rect searchBB;
+                if ( CV_8UC3 == img.type() )
+                {
+                    cvtColor( img, imgFixed, cv::COLOR_BGR2GRAY );
+                }
+                else
+                {
+                    imgFixed = img;
+                }
                 if ( "BowTie" == paramsCurrent.calibType )
                 {
-                    if ( CV_8UC3 == img.type() )
-                    {
-                        cvtColor( img, imgFixed, cv::COLOR_BGR2GRAY );
-                    }
-                    else
-                    {
-                        imgFixed = img;
-                    }
                     retVal = CalibrateBowTie( imgFixed, jsonParamsWhich, err_msg );
                     if ( GC_OK == retVal )
                     {
@@ -313,7 +313,6 @@ GC_STATUS CalibExecutive::Calibrate( const cv::Mat &img, const std::string jsonP
                 }
                 else if ( "StopSign" == paramsCurrent.calibType )
                 {
-                    imgFixed = img;
                     retVal = CalibrateStopSign( imgFixed, jsonParamsWhich, err_msg );
                     if ( GC_OK == retVal )
                     {
@@ -1070,6 +1069,7 @@ GC_STATUS CalibExecutive::FormStopsignCalibJsonString( const CalibJsonItems &ite
         json += "\"searchPoly_rgtBot_x\": " + std::to_string( items.lineSearchPoly.rgtBot.x ) + ", ";
         json += "\"searchPoly_rgtBot_y\": " + std::to_string( items.lineSearchPoly.rgtBot.y ) + ", ";
         json += "\"calibResult_json\": \"" + items.calibVisionResult_json + "\"}";
+        cout << json << endl;
     }
     catch( Exception &e )
     {
