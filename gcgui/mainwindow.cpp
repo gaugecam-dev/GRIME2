@@ -1624,3 +1624,69 @@ void MainWindow::on_pushButton_test_clicked()
 {
     ui->statusBar->showMessage( "No test enabled" );
 }
+
+void MainWindow::on_pushButton_createCalibCommandLine_clicked()
+{
+    if ( ui->radioButton_calibBowtie->isChecked() )
+    {
+        // --create_calib bowtie --source "/media/kchapman/Elements/data/sunwater/2024_01_08_cal_images/002.jpg" --calib_json "/media/kchapman/Elements/data/sunwater/2024_01_08_cal_images/calib_002.json" --csv_file "/media/kchapman/Elements/data/sunwater/2024_01_08_cal_images/calibration_target_world_coordinates.csv" --result_image "/var/tmp/water/calib_result.png" --waterline_roi 810 270 1000 270 800 800 990 830 --calib_roi 600 200 614 678
+        string msg = "--create_calib bowtie ";
+        string folder = ui->lineEdit_imageFolder->text().toStdString();
+        if ( '/' != folder[ folder.size() - 1 ] )
+            folder += '/';
+        msg += "--source \"" + folder + ui->listWidget_imageFolder->currentItem()->text().toStdString() + "\" ";
+        msg += "--calib_json \"" + ui->lineEdit_calibVisionResult_json->text().toStdString() + "\" ";
+        msg += "--csv_file \"" + ui->lineEdit_calibVisionTarget_csv->text().toStdString() + "\" ";
+        msg += "--result_image \"\" ";
+        msg += "--waterline_roi " + to_string(m_lineSearchPoly.lftTop.x()) + " " + to_string(m_lineSearchPoly.lftTop.y()) + " ";
+        msg += to_string(m_lineSearchPoly.rgtTop.x()) + " " + to_string(m_lineSearchPoly.rgtTop.y()) + " ";
+        msg += to_string(m_lineSearchPoly.lftBot.x()) + " " + to_string(m_lineSearchPoly.lftBot.y()) + " ";
+        msg += to_string(m_lineSearchPoly.rgtBot.x()) + " " + to_string(m_lineSearchPoly.rgtBot.y()) + " ";
+        msg += "--calib_roi " + to_string( m_rectROI.x() ) + " " + to_string( m_rectROI.y() ) +" ";
+        msg += to_string( m_rectROI.width() ) + " " + to_string( m_rectROI.height() );
+        ui->textEdit_msgs->setText( QString( msg.c_str() ) );
+    }
+    else
+    {
+        //--create_calib stopsign --source "/media/kchapman/Elements/data/sunwater/image004.jpg" --calib_json "/media/kchapman/Elements/data/sunwater/2024_01_08_cal_images/calib_004.json" --result_image "/var/tmp/water/calib_result.png" --zero_offset 3.2 --facet_length 0.599 --waterline_roi 1059 529 1266 546 1266 858 1066 843 --calib_roi 502 271 399 446
+        string msg = "--create_calib stopsign ";
+        string folder = ui->lineEdit_imageFolder->text().toStdString();
+        if ( '/' != folder[ folder.size() - 1 ] )
+            folder += '/';
+        msg += "--source \"" + folder + ui->listWidget_imageFolder->currentItem()->text().toStdString() + "\" ";
+        msg += "--calib_json \"" + ui->lineEdit_calibVisionResult_json->text().toStdString() + "\" ";
+        msg += "--result_image \"\" ";
+        msg += "--zero_offset " + to_string(ui->doubleSpinBox_stopSignZeroOffset->value()) + " ";
+        msg += "--facet_length " + to_string(ui->doubleSpinBox_stopSignFacetLength->value()) + " ";
+        msg += "--waterline_roi " + to_string(m_lineSearchPoly.lftTop.x()) + " " + to_string(m_lineSearchPoly.lftTop.y()) + " ";
+        msg += to_string(m_lineSearchPoly.rgtTop.x()) + " " + to_string(m_lineSearchPoly.rgtTop.y()) + " ";
+        msg += to_string(m_lineSearchPoly.lftBot.x()) + " " + to_string(m_lineSearchPoly.lftBot.y()) + " ";
+        msg += to_string(m_lineSearchPoly.rgtBot.x()) + " " + to_string(m_lineSearchPoly.rgtBot.y()) + " ";
+        msg += "--calib_roi " + to_string( m_rectROI.x() ) + " " + to_string( m_rectROI.y() ) +" ";
+        msg += to_string( m_rectROI.width() ) + " " + to_string( m_rectROI.height() );
+        ui->textEdit_msgs->setText( QString( msg.c_str() ) );
+    }
+}
+void MainWindow::on_pushButton_createFindCommandLine_clicked()
+{
+    if ( ui->radioButton_folderOfImages->isChecked() )
+    {
+        // --run_folder --timestamp_from_filename --timestamp_start_pos 10 --timestamp_format "yy-mm-dd-HH-MM" --source "./config/2012_demo/06/" --calib_json "./config/calib.json" --csv_file "/var/tmp/water/folder.csv" --result_folder "/var/tmp/water/"
+        string msg = "--run_folder ";
+        msg += ui->radioButton_dateTimeInFilename->isChecked() ? "--timestamp_from_filename " : "--timestamp_from_exif ";
+        msg += "--timestamp_start_pos " + to_string( ui->spinBox_timeStringPosZero->value() ) + " ";
+        msg += "--timestamp_format " + ui->lineEdit_timestampFormat->text().toStdString() + " ";
+        msg += "--source " + ui->lineEdit_findLineTopFolder->text().toStdString() + " ";
+        msg += "--calib_json " + ui->lineEdit_calibVisionResult_json->text().toStdString() + " ";
+        if ( ui->checkBox_createFindLine_csvResultsFile->isChecked() )
+            msg += "--csv_file " + ui->lineEdit_findLine_resultCSVFile->text().toStdString() + " ";
+        if ( ui->checkBox_createFindLine_annotatedResults->isChecked() )
+            msg += "--result_folder " + ui->lineEdit_findLine_annotatedResultFolder->text().toStdString() + " ";
+        ui->textEdit_msgs->setText( QString( msg.c_str() ) );
+    }
+    else
+    {
+        ui->textEdit_msgs->setText( "Nested folder command line option not available" );
+    }
+}
+
