@@ -95,6 +95,8 @@ private slots:
     void on_pushButton_createAnimation_clicked();
     void on_pushButton_animationStop_clicked();
     void on_pushButton_test_clicked();
+    void on_pushButton_createCalibCommandLine_clicked();
+    void on_pushButton_createFindCommandLine_clicked();
 
 private:
     Ui::MainWindow *ui;
