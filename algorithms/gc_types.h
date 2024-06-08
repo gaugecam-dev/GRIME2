@@ -75,8 +75,8 @@ enum IMG_DISPLAY_OVERLAYS
     SEARCH_ROI = 2048
 };
 
-static const double DEFAULT_MIN_LINE_ANGLE = -1.5;                             ///< Default minimum line find angle
-static const double DEFAULT_MAX_LINE_ANGLE = 3.5;                              ///< Default maximum line find angle
+static const double DEFAULT_MIN_LINE_ANGLE = -2.0;                              ///< Default minimum line find angle
+static const double DEFAULT_MAX_LINE_ANGLE = 2.0;                               ///< Default maximum line find angle
 static const int FIT_LINE_RANSAC_TRIES_TOTAL = 100;                             ///< Fit line RANSAC total tries
 static const int FIT_LINE_RANSAC_TRIES_EARLY_OUT = 50;                          ///< Fit line RANSAC early out tries
 static const int FIT_LINE_RANSAC_POINT_COUNT = 5;                               ///< Fit line RANSAC early out tries

@@ -24,11 +24,11 @@
 #ifdef DEBUG_FIND_LINE
 #undef DEBUG_FIND_LINE
 #include <iostream>
-#include <boost/filesystem.hpp>
+#include <filesystem>
 #ifdef WIN32
-static const std::string DEBUG_RESULT_FOLDER = "c:/water/";
+static const std::string DEBUG_RESULT_FOLDER = "c:/gaugecam/";
 #else
-static const std::string DEBUG_RESULT_FOLDER = "/var/tmp/water/";
+static const std::string DEBUG_RESULT_FOLDER = "/var/tmp/gaugecam/";
 #endif
 #endif
 

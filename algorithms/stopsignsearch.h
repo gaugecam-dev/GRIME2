@@ -62,7 +62,7 @@ public:
 
     GC_STATUS Init( const int templateDim, const int rotateCnt );
     GC_STATUS Find( const cv::Mat &img, std::vector< cv::Point2d > &pts );
-    GC_STATUS FindScale( const cv::Mat &img, std::vector< cv::Point2d > &pts );
+    GC_STATUS FindScale( const cv::Mat &img, std::vector< cv::Point2d > &pts, const double scale );
     GC_STATUS FindMoveTargets( const cv::Mat &img, const cv::Rect targetRoi, cv::Point2d &ptLeft, cv::Point2d &ptRight );
 
 private:
@@ -82,6 +82,8 @@ private:
     GC_STATUS GetSlopeIntercept( const cv::Point2d one, const cv::Point2d two, double &slope, double &intercept, bool &isVertical );
     GC_STATUS LineIntersection( const LineEnds line1, const LineEnds line2, cv::Point2d &r );
     GC_STATUS CalcPointsFromLines( const std::vector< LineEnds > lines, std::vector< cv::Point2d > &pts );
+    GC_STATUS GetOctagonMask( const cv::Mat &img, cv::Mat &mask );
+    GC_STATUS AdjustResponseSpace( cv::Mat &response, const size_t j );
 };
 
 } // namespace gc
