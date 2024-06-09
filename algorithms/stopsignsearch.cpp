@@ -108,7 +108,7 @@ GC_STATUS StopsignSearch::GetOctagonMask( const Mat &img, Mat &mask )
                 if ( area_max < area )
                 {
                     area_max = area;
-                    idx = i;
+                    idx = static_cast< int >( i );
                 }
             }
             if ( 0 > idx )

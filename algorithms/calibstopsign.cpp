@@ -1909,7 +1909,6 @@ GC_STATUS CalibStopSign::TestCalibration( bool &isValid )
             for ( size_t i = 1; i < model.pixelPoints.size(); ++i )
             {
                 dist = distance( model.pixelPoints[ i - 1 ], model.pixelPoints[ i ] );
-                cout << dist << endl;
                 if ( dist < distMin )
                 {
                     distMin = dist;
