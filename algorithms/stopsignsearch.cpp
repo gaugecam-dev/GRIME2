@@ -53,38 +53,177 @@ StopsignSearch::StopsignSearch()
     }
 #endif
 }
-GC_STATUS StopsignSearch::FindScale( const cv::Mat &img, std::vector< cv::Point2d > &pts )
+GC_STATUS StopsignSearch::FindScale( const cv::Mat &img, std::vector< cv::Point2d > &pts, const double scale )
 {
     GC_STATUS retVal = GC_OK;
     try
     {
         pts.clear();
         Mat imgScaled;
-        resize( img, imgScaled, Size(), 2.0, 2.0, INTER_CUBIC );
+        resize( img, imgScaled, Size(), scale, scale, INTER_CUBIC );
         retVal = Find( imgScaled, pts );
         if ( GC_OK == retVal )
         {
             for ( size_t i = 0; i < pts.size(); ++i )
             {
-                pts[ i ] *= 0.5;
-            }
-        }
-        else
-        {
-            resize( img, imgScaled, Size(), 4.0, 4.0, INTER_CUBIC );
-            retVal = Find( imgScaled, pts );
-            if ( GC_OK == retVal )
-            {
-                for ( size_t i = 0; i < pts.size(); ++i )
-                {
-                    pts[ i ] *= 0.25;
-                }
+                pts[ i ] *= ( 1.0 / scale );
             }
         }
     }
     catch( const cv::Exception &e )
     {
         FILE_LOG( logERROR ) << "[StopsignSearch::FindScale] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+    return retVal;
+}
+GC_STATUS StopsignSearch::GetOctagonMask( const Mat &img, Mat &mask )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        if ( img.empty() )
+        {
+            FILE_LOG( logERROR ) << "[StopsignSearch::AdjustRawImage] Empty raw image";
+            retVal = GC_ERR;
+        }
+        else
+        {
+#ifdef DEBUG_STOPSIGN_TEMPL
+            imwrite( "/var/tmp/gaugecam/raw_image.png", img );
+#endif
+            double thr = threshold( img, mask, 1, 255, THRESH_OTSU );
+            threshold( img, mask, std::max( 0.0, thr * 0.9 ), 255, THRESH_BINARY_INV );
+            rectangle( mask, Rect( 23, 23, mask.cols - 7, mask.rows - 7 ), Scalar( 0 ), 51 );
+#ifdef DEBUG_STOPSIGN_TEMPL
+            imwrite( "/var/tmp/gaugecam/raw_threshed.png", mask );
+#endif
+            int idx = -1;
+            double area, area_max =  -999999999;
+            vector< vector< Point > > contours;
+            findContours( mask, contours, RETR_LIST, CHAIN_APPROX_SIMPLE );
+            for ( size_t i = 0; i < contours.size(); ++i )
+            {
+                area = contourArea( contours[ i ] );
+                if ( area_max < area )
+                {
+                    area_max = area;
+                    idx = i;
+                }
+            }
+            if ( 0 > idx )
+            {
+                mask.setTo( 255 );
+            }
+            else
+            {
+                mask.setTo( 255 );
+                drawContours( mask, vector< vector< Point > >( 1, contours[ idx ] ), -1, Scalar( 0 ), FILLED );
+            }
+#ifdef DEBUG_STOPSIGN_TEMPL
+            imwrite( "/var/tmp/gaugecam/raw_mask.png", mask );
+#endif
+        }
+    }
+    catch( const cv::Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[AdjustRawImage::FindScale] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+    return retVal;
+}
+GC_STATUS StopsignSearch::AdjustResponseSpace( Mat &response, const size_t j )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        if ( response.empty() )
+        {
+            FILE_LOG( logERROR ) << "[StopsignSearch::AdjustResponseSpace] Empty response space image";
+            retVal = GC_ERR;
+        }
+        else
+        {
+#ifdef DEBUG_STOPSIGN_TEMPL
+            Mat scratch;
+            normalize( response, scratch, 0, 1, NORM_MINMAX );
+            scratch.convertTo( scratch, CV_8UC1, 255 );
+            imwrite("/var/tmp/gaugecam/response.png", scratch);
+#endif
+            Mat mask = Mat::zeros( response.size(), CV_8UC1 );
+            vector< Point > contour;
+            switch( j )
+            {
+                case 0:
+                    contour.push_back( Point( 0, mask.rows - 1 ) );
+                    contour.push_back( Point( mask.cols - 1, mask.rows - 1 ) );
+                    contour.push_back( Point( mask.cols - 1, 0 ) );
+                    break;
+                case 1:
+                    contour.push_back( Point( 0, 0 ) );
+                    contour.push_back( Point( mask.cols - 1, mask.rows - 1 ) );
+                    contour.push_back( Point( 0, mask.rows - 1 ) );
+                    break;
+                case 2:
+                    contour.push_back( Point( 0, 0 ) );
+                    contour.push_back( Point( mask.cols - 1, mask.rows - 1 ) );
+                    contour.push_back( Point( 0, mask.rows - 1 ) );
+                    break;
+                case 3:
+                    contour.push_back( Point( mask.cols - 1, 0 ) );
+                    contour.push_back( Point( 0, 0 ) );
+                    contour.push_back( Point( 0, mask.rows - 1 ) );
+                    break;
+                case 4:
+                    contour.push_back( Point( mask.cols - 1, 0 ) );
+                    contour.push_back( Point( 0, 0 ) );
+                    contour.push_back( Point( 0, mask.rows - 1 ) );
+                    break;
+                case 5:
+                    contour.push_back( Point( 0, 0 ) );
+                    contour.push_back( Point( mask.cols - 1, mask.rows - 1 ) );
+                    contour.push_back( Point( mask.cols - 1, 0 ) );
+                    break;
+                case 6:
+                    contour.push_back( Point( 0, 0 ) );
+                    contour.push_back( Point( mask.cols - 1, mask.rows - 1 ) );
+                    contour.push_back( Point( mask.cols - 1, 0 ) );
+                    break;
+                case 7:
+                    contour.push_back( Point( 0, mask.rows - 1 ) );
+                    contour.push_back( Point( mask.cols - 1, mask.rows - 1 ) );
+                    contour.push_back( Point( mask.cols - 1, 0 ) );
+                    break;
+                default:
+                    contour.push_back( Point( 0, 0 ) );
+                    contour.push_back( Point( 0, mask.rows - 1 ) );
+                    contour.push_back( Point( mask.cols - 1, mask.rows - 1 ) );
+                    contour.push_back( Point( mask.cols - 1, 0 ) );
+                    break;
+            }
+            drawContours( mask, vector< vector< Point > >( 1, contour ), -1, Scalar( 255 ), FILLED );
+            drawContours( mask, vector< vector< Point > >( 1, contour ), -1, Scalar( 0 ), 7 );
+            response.setTo( 0, mask == 255 );
+#ifdef DEBUG_STOPSIGN_TEMPL
+            normalize( response, scratch, 0, 1, NORM_MINMAX );
+            scratch.convertTo( scratch, CV_8UC1, 255 );
+            imwrite("/var/tmp/gaugecam/response_adj.png", scratch);
+            double maxVal;
+            Point maxPt;
+            minMaxLoc( response, nullptr, &maxVal, nullptr, &maxPt );
+            Mat color;
+            cvtColor( scratch, color, COLOR_GRAY2BGR );
+            line( color, Point( cvRound( maxPt.x - 10 ), cvRound( maxPt.y ) ),
+                  Point( cvRound( maxPt.x + 10 ), cvRound( maxPt.y ) ), Scalar( 0, 0, 255 ), 1 );
+            line( color, Point( cvRound( maxPt.x ), cvRound( maxPt.y - 10 ) ),
+                  Point( cvRound( maxPt.x ), cvRound( maxPt.y + 10 ) ), Scalar( 0, 0, 255 ), 1 );
+            imwrite("/var/tmp/gaugecam/response_max.png", color);
+#endif
+        }
+    }
+    catch( const cv::Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[StopsignSearch::AdjustResponseSpace] " << e.what();
         retVal = GC_EXCEPT;
     }
     return retVal;
@@ -103,7 +242,7 @@ GC_STATUS StopsignSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &
         {
             if ( templates.empty() )
             {
-                retVal = Init( GC_STOPSIGN_TEMPLATE_DIM, 7 );
+                retVal = Init( GC_STOPSIGN_TEMPLATE_DIM, 5 );
             }
             if ( templates.empty() || GC_OK != retVal )
             {
@@ -116,26 +255,18 @@ GC_STATUS StopsignSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &
                 if ( img.type() == CV_8UC3 )
                     cvtColor( img, matIn, COLOR_BGR2GRAY );
 
-                cv::Ptr< CLAHE > clahe = createCLAHE( 1.0 );
-                clahe->apply( matIn, matIn );
-#ifdef DEBUG_STOPSIGN_TEMPL
-                imwrite( string( DEBUG_FOLDER ) + "template_stopsign_clahe.png", matIn );
-#endif
-
-                // GaussianBlur( matIn, matIn, Size( 5, 5 ), 1.0 );
-                medianBlur( matIn, matIn, 7 );
-#ifdef DEBUG_STOPSIGN_TEMPL
-                imwrite( string( DEBUG_FOLDER ) + "template_stopsign_median.png", matIn );
-#endif
+                Mat mask;
+                retVal = GetOctagonMask( matIn, mask );
 
 #ifdef DEBUG_STOPSIGN_TEMPL
                 Mat color;
                 if ( img.type() == CV_8UC1 )
-                    cvtColor( img, color, COLOR_BGR2GRAY );
+                    cvtColor( matIn, color, COLOR_GRAY2BGR );
                 else
                     img.copyTo( color );
+                imwrite("/var/tmp/gaugecam/img_in_find.png", matIn);
 #endif
-                // imwrite("/var/tmp/water/img_in.png", matIn);
+
                 pts.clear();
                 Mat response;
                 for ( size_t j = 0; j < templates.size(); ++j )
@@ -145,6 +276,10 @@ GC_STATUS StopsignSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &
                     for ( size_t i = 0; i < templates[ j ].ptTemplates.size(); ++i )
                     {
                         matchTemplate( matIn, templates[ j ].ptTemplates[ i ].templ, response, TM_CCORR_NORMED, templates[ j ].ptTemplates[ i ].mask );
+                        int l = ( mask.cols - response.cols ) >> 1;
+                        int r = ( mask.rows - response.rows ) >> 1;
+                        response.setTo( 0.0, mask( Rect( l, r, response.cols, response.rows ) ) == 255 );
+                        retVal = AdjustResponseSpace( response, j );
 
                         double maxVal;
                         Point maxPt;
@@ -154,6 +289,11 @@ GC_STATUS StopsignSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &
                             maxMaxVal = maxVal;
                             maxMaxPt = Point2d( maxPt ) + templates[ j ].ptTemplates[ i ].offset;
                         }
+#ifdef DEBUG_STOPSIGN_TEMPL
+                        normalize( response, response, 0, 1, NORM_MINMAX );
+                        response.convertTo( response, CV_8UC1, 255 );
+                        imwrite("/var/tmp/gaugecam/response.png", response);
+#endif
                     }
                     if ( 0.0 < maxMaxVal )
                     {
@@ -167,7 +307,13 @@ GC_STATUS StopsignSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &
                     }
                 }
 
+                std::vector< cv::Point2d > pts_temp = pts;
                 retVal = RefineFind( img, pts );
+                if ( GC_OK != retVal )
+                {
+                    pts = pts_temp;
+                    retVal = GC_OK;
+                }
 
 #ifdef DEBUG_STOPSIGN_TEMPL
                 imwrite( string(DEBUG_FOLDER) + "stopsign_find_template.png", color );
@@ -424,7 +570,7 @@ GC_STATUS StopsignSearch::RefineFind( const Mat &img, vector< Point2d > &pts )
                         mask = 0;
                         line( mask, lineSet[ i ].top, lineSet[ i ].bot, Scalar( 255 ), 15 );
                         mask &= edges;
-                        // imwrite( "/var/tmp/water/line_edges.png", mask );
+                        // imwrite( "/var/tmp/gaugecam/line_edges.png", mask );
 
                         findNonZero( mask, lineEdges );
 
@@ -463,7 +609,7 @@ GC_STATUS StopsignSearch::RefineFind( const Mat &img, vector< Point2d > &pts )
                                       Point( cvRound( pts[ i ].x ), cvRound( pts[ i ].y + 10 ) ), Scalar( 255, 0, 0 ), 1 );
                                 line( color, lineEndSet[ i ].bot, lineEndSet[ i ].top, Scalar( 0, 255, 0 ), 1 );
                             }
-                            imwrite( "/var/tmp/water/nighttime.png", color );
+                            imwrite( "/var/tmp/gaugecam/nighttime.png", color );
                         }
 #endif
                     }
@@ -503,12 +649,12 @@ GC_STATUS StopsignSearch::Init( const int templateDim, const int rotateCnt )
                 }
             }
         }
-#ifdef DEBUG_STOPSIGN_TEMPL
-        if ( GC_OK == retVal )
-        {
-            retVal = CreateTemplateOverlay( DEBUG_FOLDER );
-        }
-#endif
+//#ifdef DEBUG_STOPSIGN_TEMPL
+//        if ( GC_OK == retVal )
+//        {
+//            retVal = CreateTemplateOverlay( DEBUG_FOLDER );
+//        }
+//#endif
     }
     catch( const cv::Exception &e )
     {
@@ -575,7 +721,7 @@ GC_STATUS StopsignSearch::CreatePointTemplates( const int templateDim, const int
             FILE_LOG( logERROR ) << "[StopsignSearch::CreatePointTemplates] Must have more than one rotation template each direction";
             retVal = GC_ERR;
         }
-        else if ( 40 > templateDim )
+        else if ( 15 > templateDim )
         {
             FILE_LOG( logERROR ) << "[StopsignSearch::CreatePointTemplates] Template dimension must be at least 40";
             retVal = GC_ERR;
@@ -671,7 +817,7 @@ GC_STATUS StopsignSearch::DrawCorner( const int templateDim, cv::Mat &templ, cv:
         }
         else
         {
-            int blackLineWidth = 5;
+            int blackLineWidth = 7;
             int tempRotDim = cvRound( static_cast< double >( templateDim ) * 1.415 );
             tempRotDim += ( 0 == tempRotDim % 2 ? 1 : 0 );
             int rectTopAndLeft = ( tempRotDim - templateDim ) >> 1;
@@ -702,7 +848,7 @@ GC_STATUS StopsignSearch::DrawCorner( const int templateDim, cv::Mat &templ, cv:
             contour.push_back( Point( templateDim, ( ( templateDim >> 1 ) + blackLineWidth ) ) );
             contour.push_back( Point( ( templateDim >> 1 ) + ortho_dist, ( templateDim >> 1 ) + blackLineWidth ) );
             drawContours( mask( rect ), vector< vector< Point > >( 1, contour ), -1, Scalar( 0 ), FILLED );
-            // imwrite( DEBUG_FOLDER + "mask_001.png", mask );
+            // imwrite( "/var/tmp/gaugecam/mask_001.png", mask );
 
             contour.clear();
             contour.push_back( Point( ( templateDim >> 1 ), ( templateDim >> 1 ) ) );
@@ -719,7 +865,7 @@ GC_STATUS StopsignSearch::DrawCorner( const int templateDim, cv::Mat &templ, cv:
             // imwrite( DEBUG_FOLDER + "templ_001.png", templ );
 
             templ( rect ).setTo( 0, templ( rect ) > 200 );
-            // imwrite( DEBUG_FOLDER + "templ_002.png", templ );
+            // imwrite( "/var/tmp/gaugecam/templ_002.png", templ );
         }
     }
     catch( const cv::Exception &e )

@@ -89,17 +89,6 @@ GC_STATUS VisApp::Calibrate( const string imgFilepath, const string jsonControl,
         else
         {
             retVal = m_calibExec.Calibrate( img, jsonControl, rmseDist, rmseX, rmseY, err_msg );
-            if ( GC_OK != retVal )
-            {
-                Mat imgGray, imgContrast;
-                cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE();
-                clahe->setClipLimit( 4 );
-                clahe->apply(imgGray, imgContrast);
-                // imwrite( "/var/tmp/thrive/clahe.png", imgContrast );
-                medianBlur( imgContrast, imgGray, 11 );
-                // imwrite( "/var/tmp/thrive/median.png", imgGray );
-                retVal = m_calibExec.Calibrate( imgGray, jsonControl, rmseDist, rmseX, rmseY, err_msg );
-            }
             if ( GC_OK == retVal )
             {
                 Mat imgOut;
@@ -139,25 +128,6 @@ GC_STATUS VisApp::Calibrate( const string imgFilepath, const string jsonControl,
         else
         {
             retVal = m_calibExec.Calibrate( img, jsonControl, rmseDist, rmseX, rmseY, err_msg );
-            if ( GC_OK != retVal )
-            {
-                Mat imgGray, imgContrast;
-                if ( CV_8UC3 == img.type() )
-                {
-                    cvtColor( img, imgGray, COLOR_BGR2GRAY );
-                }
-                else
-                {
-                    imgGray = img;
-                }
-                cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE();
-                clahe->setClipLimit( 4 );
-                clahe->apply(imgGray, imgContrast);
-                // imwrite( "/var/tmp/gaugecam/clahe.png", imgContrast );
-                medianBlur( imgContrast, imgGray, 11 );
-                // imwrite( "/var/tmp/gaugecam/median.png", imgGray );
-                retVal = m_calibExec.Calibrate( imgGray, jsonControl, rmseDist, rmseX, rmseY, err_msg );
-            }
         }
     }
     catch( Exception &e )
@@ -167,6 +137,12 @@ GC_STATUS VisApp::Calibrate( const string imgFilepath, const string jsonControl,
     }
     return retVal;
 }
+GC_STATUS VisApp::SetMinMaxFindLineAngles( const double minAngle, const double maxAngle )
+{
+    GC_STATUS retVal = m_findLine.SetLineFindAngleBounds( minAngle, maxAngle );
+    return retVal;
+}
+
 GC_STATUS VisApp::GetImageTimestamp( const std::string filepath, std::string &timestamp )
 {
     GC_STATUS retVal = m_metaData.GetExifData( filepath, "DateTimeOriginal", timestamp );
@@ -431,25 +407,6 @@ GC_STATUS VisApp::CalcLine( const Mat &img, const string timestamp, const bool i
                 retVal = m_calibExec.Calibrate( img, "", rmseDist, rmseX, rmseY, err_msg );
                 if ( GC_OK != retVal )
                 {
-                    Mat imgGray, imgContrast;
-                    if ( CV_8UC3 == img.type() )
-                    {
-                        cvtColor( img, imgGray, COLOR_BGR2GRAY );
-                    }
-                    else
-                    {
-                        imgGray = img;
-                    }
-                    cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE();
-                    clahe->setClipLimit( 4 );
-                    clahe->apply(imgGray, imgContrast);
-                    // imwrite( "/var/tmp/thrive/clahe.png", imgContrast );
-                    medianBlur( imgContrast, imgGray, 11 );
-                    // imwrite( "/var/tmp/thrive/median.png", imgGray );
-                    retVal = m_calibExec.Calibrate( imgGray, "", rmseDist, rmseX, rmseY, err_msg );
-                }
-                if ( GC_OK != retVal )
-                {
                     FindPointSet findPtSet;
                     retVal = m_calibExec.FindMoveTargets( img, findPtSet );
                 }
@@ -616,6 +573,7 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result 
                         retVal = m_calibExec.Load( params.calibFilepath, params.isStopSignCalib ? img : noImg );
                         if ( GC_OK != retVal )
                         {
+                            result.calibSuccess = false;
                             result.msgs.push_back( "Could not load calibration" );
                             FILE_LOG( logERROR ) << "[VisApp::CalcLine] Could not load calibration=" << params.calibFilepath ;
                             retVal = GC_ERR;
@@ -634,23 +592,23 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result 
                         FILE_LOG( logERROR ) << "[VisApp::CalcLine] Could not calc line in image";
                         retVal = GC_ERR;
                     }
-                    m_findLineResult = result;
-                    if ( !params.resultCSVPath.empty() )
+                }
+                m_findLineResult = result;
+                if ( !params.resultCSVPath.empty() )
+                {
+                    WriteFindlineResultToCSV( params.resultCSVPath, params.imagePath, result );
+                }
+                if ( !params.resultImagePath.empty() )
+                {
+                    Mat color;
+                    GC_STATUS retVal1 = DrawLineFindOverlay( img, color, result );
+                    if ( GC_OK == retVal1 )
                     {
-                        retVal = WriteFindlineResultToCSV( params.resultCSVPath, params.imagePath, result );
-                    }
-                    if ( !params.resultImagePath.empty() )
-                    {
-                        Mat color;
-                        retVal = DrawLineFindOverlay( img, color, result );
-                        if ( GC_OK == retVal )
+                        bool isOk = imwrite( params.resultImagePath, color );
+                        if ( !isOk)
                         {
-                            bool isOk = imwrite( params.resultImagePath, color );
-                            if ( !isOk)
-                            {
-                                FILE_LOG( logERROR ) << "[VisApp::CalcLine] Could not write result image to " << params.resultImagePath;
-                                retVal = GC_ERR;
-                            }
+                            FILE_LOG( logERROR ) << "[VisApp::CalcLine] Could not write result image to " << params.resultImagePath;
+                            retVal1 = GC_ERR;
                         }
                     }
                 }

@@ -128,6 +128,7 @@ public:
     string GetCalibType() { return m_calibExec.GetCalibType(); }
     GC_STATUS GetTargetSearchROI( cv::Rect &rect );
     GC_STATUS GetCalibParams( std::string &calibParams );
+    GC_STATUS SetMinMaxFindLineAngles( const double minAngle, const double maxAngle );
     GC_STATUS GetStopsignColor( cv::Scalar &color, double &minRange, double &maxRange );
     GC_STATUS SetStopsignColor( const cv::Scalar color, const double minRange, const double maxRange, cv::Scalar &hsv );
     GC_STATUS DrawCalibOverlay( const cv::Mat matIn, cv::Mat &imgMatOut );

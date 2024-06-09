@@ -212,7 +212,19 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &contr
             }
             if ( GC_OK != retVal )
             {
-                retVal = stopsignSearch.FindScale( img( model.targetSearchRegion ), model.pixelPoints );
+                retVal = stopsignSearch.FindScale( img( model.targetSearchRegion ), model.pixelPoints, 2.0 );
+                if ( GC_OK == retVal )
+                {
+                    retVal = TestCalibration( model.validCalib );
+                }
+                if ( GC_OK != retVal )
+                {
+                    retVal = stopsignSearch.FindScale( img( model.targetSearchRegion ), model.pixelPoints, 4.0 );
+                    if ( GC_OK == retVal )
+                    {
+                        retVal = TestCalibration( model.validCalib );
+                    }
+                }
             }
         }
         else
@@ -224,7 +236,19 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &contr
             }
             if ( GC_OK != retVal )
             {
-                retVal = stopsignSearch.FindScale( img, model.pixelPoints );
+                retVal = stopsignSearch.FindScale( img, model.pixelPoints, 2.0 );
+                if ( GC_OK == retVal )
+                {
+                    retVal = TestCalibration( model.validCalib );
+                }
+                if ( GC_OK != retVal )
+                {
+                    retVal = stopsignSearch.FindScale( img, model.pixelPoints, 4.0 );
+                    if ( GC_OK == retVal )
+                    {
+                        retVal = TestCalibration( model.validCalib );
+                    }
+                }
             }
         }
         if ( GC_OK != retVal )
@@ -1885,6 +1909,7 @@ GC_STATUS CalibStopSign::TestCalibration( bool &isValid )
             for ( size_t i = 1; i < model.pixelPoints.size(); ++i )
             {
                 dist = distance( model.pixelPoints[ i - 1 ], model.pixelPoints[ i ] );
+                cout << dist << endl;
                 if ( dist < distMin )
                 {
                     distMin = dist;
@@ -1906,6 +1931,7 @@ GC_STATUS CalibStopSign::TestCalibration( bool &isValid )
             }
             distAvg += dist;
             distAvg /= static_cast< double >( model.pixelPoints.size() );
+
             if ( distMax - distMin < 0.35 * distAvg )
             {
                 isValid = true;

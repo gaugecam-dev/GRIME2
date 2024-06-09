@@ -75,8 +75,8 @@ enum IMG_DISPLAY_OVERLAYS
     SEARCH_ROI = 2048
 };
 
-static const double DEFAULT_MIN_LINE_ANGLE = -1.5;                             ///< Default minimum line find angle
-static const double DEFAULT_MAX_LINE_ANGLE = 3.5;                              ///< Default maximum line find angle
+static const double DEFAULT_MIN_LINE_ANGLE = -2.0;                              ///< Default minimum line find angle
+static const double DEFAULT_MAX_LINE_ANGLE = 2.0;                               ///< Default maximum line find angle
 static const int FIT_LINE_RANSAC_TRIES_TOTAL = 100;                             ///< Fit line RANSAC total tries
 static const int FIT_LINE_RANSAC_TRIES_EARLY_OUT = 50;                          ///< Fit line RANSAC early out tries
 static const int FIT_LINE_RANSAC_POINT_COUNT = 5;                               ///< Fit line RANSAC early out tries
@@ -486,6 +486,7 @@ public:
     /**
      * @brief Constructor to set the object to a valid state
      * @param findOk                true=Successful find, false=Failed find
+     * @param calibOk               true=Successful good calib, false=Failed find
      * @param adjustedWaterLevel    World coordinate water level adjust for any detected motion of the calibration target
      * @param lineEndPoints         Found water level line
      * @param moveRefPoints         Line between the move targets at the time of calibration
@@ -499,6 +500,7 @@ public:
      * @param messages              Vector of strings with messages about the line find
      */
     FindLineResult( const bool findOk,
+                    const bool calibOk,
                     const std::string captureTime,
                     const std::string illumination_state,
                     const cv::Point2d adjustedWaterLevel,
@@ -513,6 +515,7 @@ public:
                     const std::vector< std::vector< cv::Point > > twoDerivDiag,
                     const std::vector< std::string > messages ) :
         findSuccess( findOk ),
+        calibSuccess( calibOk ),
         timestamp( captureTime ),
         illum_state( illumination_state ),
         waterLevelAdjusted( adjustedWaterLevel ),
@@ -538,6 +541,7 @@ public:
     void clear()
     {
         findSuccess = false;
+        calibSuccess = true;
         timestamp = std::string( "1955-09-24T12:05:00" );
         illum_state = "N/A";
         waterLevelAdjusted = cv::Point2d( -9999999.9, -9999999.9 );
@@ -558,6 +562,7 @@ public:
     }
 
     bool findSuccess;                       ///< true=Successful find, false=Failed find
+    bool calibSuccess;                      ///< true=Successful calibration, false=Failed calibration
     std::string timestamp;                  ///< time of image capture
     std::string illum_state;                ///< illum_state of image capture
     cv::Point2d waterLevelAdjusted;         ///< World coordinate water level adjust for any detected motion of the calibration target

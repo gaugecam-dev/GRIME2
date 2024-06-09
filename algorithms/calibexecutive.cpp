@@ -322,7 +322,7 @@ GC_STATUS CalibExecutive::Calibrate( const cv::Mat &img, const std::string jsonP
                             err_msg = "CALIB FAIL: Octagon calibration search bounding box could not be set";
                         }
                     }
-                    else
+                    if ( GC_OK != retVal )
                     {
                         err_msg = "CALIB_FAIL: Octagon calibration failed";
                         retVal = GC_ERR;
@@ -533,6 +533,17 @@ GC_STATUS CalibExecutive::CalibrateStopSign( const cv::Mat &img, const string &c
     try
     {
         retVal = stopSign.Calibrate( img, controlJson, err_msg );
+        if ( GC_OK != retVal )
+        {
+            Mat matIn;
+
+            // GaussianBlur( matIn, matIn, Size( 5, 5 ), 1.0 );
+            medianBlur( img, matIn, 7 );
+
+            Mat kern = getStructuringElement( MORPH_ELLIPSE, Size( 5, 5 ) );
+            erode( matIn, matIn, kern, Point( -1, -1 ), 1 );
+            retVal = stopSign.Calibrate( matIn, controlJson, err_msg );
+        }
         if ( GC_OK == retVal )
         {
             retVal = stopSign.Save( paramsCurrent.calibResultJsonFilepath );
@@ -710,19 +721,19 @@ GC_STATUS CalibExecutive::Load( const string jsonFilepath, const Mat &img )
                             {
                                 string err_msg;
                                 retVal = CalibrateStopSign( img, controlJson, err_msg );
-                                if ( GC_OK != retVal )
-                                {
-                                    retVal = stopSign.Load( ss.str() );
-                                    if ( GC_OK == retVal )
-                                    {
-                                        cv::Point2d ptLft, ptRgt;
-                                        retVal = stopSign.SearchObj().FindMoveTargets( img, stopSign.TargetRoi(), ptLft, ptRgt );
-                                        if ( GC_OK == retVal )
-                                        {
-                                            retVal = stopSign.AdjustCalib( ptLft, ptRgt, stopSign.TargetRoi() );
-                                        }
-                                    }
-                                }
+//                                if ( GC_OK != retVal )
+//                                {
+//                                    retVal = stopSign.Load( ss.str() );
+//                                    if ( GC_OK == retVal )
+//                                    {
+//                                        cv::Point2d ptLft, ptRgt;
+//                                        retVal = stopSign.SearchObj().FindMoveTargets( img, stopSign.TargetRoi(), ptLft, ptRgt );
+//                                        if ( GC_OK == retVal )
+//                                        {
+//                                            retVal = stopSign.AdjustCalib( ptLft, ptRgt, stopSign.TargetRoi() );
+//                                        }
+//                                    }
+//                                }
                             }
                         }
                     }
@@ -1069,7 +1080,7 @@ GC_STATUS CalibExecutive::FormStopsignCalibJsonString( const CalibJsonItems &ite
         json += "\"searchPoly_rgtBot_x\": " + std::to_string( items.lineSearchPoly.rgtBot.x ) + ", ";
         json += "\"searchPoly_rgtBot_y\": " + std::to_string( items.lineSearchPoly.rgtBot.y ) + ", ";
         json += "\"calibResult_json\": \"" + items.calibVisionResult_json + "\"}";
-        cout << json << endl;
+        // cout << json << endl;
     }
     catch( Exception &e )
     {
