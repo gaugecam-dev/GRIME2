@@ -528,91 +528,101 @@ GC_STATUS FindLine::DrawResult( const Mat &img, Mat &imgOut, const FindLineResul
                 int textStroke = std::max( 1, cvRound( static_cast< double >( imgOut.rows ) / 300.0 ) );
                 int textRowSpacing = cvRound( static_cast< double >( imgOut.rows ) / 40.0 );
                 double fontScale = static_cast< double >( imgOut.rows ) / 500.0;
-
-                if ( ( overlayTypes & DIAG_ROWSUMS ) && !result.diagRowSums.empty() )
+                if ( result.calibSuccess )
                 {
-                    for ( size_t i = 0; i < result.diagRowSums.size(); ++i )
+                    if ( ( overlayTypes & DIAG_ROWSUMS ) && !result.diagRowSums.empty() )
                     {
-                        if ( result.diagRowSums[ i ].size() > 1 )
+                        for ( size_t i = 0; i < result.diagRowSums.size(); ++i )
                         {
-                            for ( size_t j = 1; j < result.diagRowSums[ i ].size(); ++j )
+                            if ( result.diagRowSums[ i ].size() > 1 )
                             {
-                                line( imgOut, result.diagRowSums[ i ][ j - 1 ], result.diagRowSums[ i ][ j ], Scalar( 0, 255, 255 ), 2 );
+                                for ( size_t j = 1; j < result.diagRowSums[ i ].size(); ++j )
+                                {
+                                    line( imgOut, result.diagRowSums[ i ][ j - 1 ], result.diagRowSums[ i ][ j ], Scalar( 0, 255, 255 ), 2 );
+                                }
                             }
                         }
                     }
-                }
 
-                if ( ( overlayTypes & FINDLINE_1ST_DERIV ) && !result.diag1stDeriv.empty() )
-                {
-                    for ( size_t i = 0; i < result.diag1stDeriv.size(); ++i )
+                    if ( ( overlayTypes & FINDLINE_1ST_DERIV ) && !result.diag1stDeriv.empty() )
                     {
-                        if ( result.diag1stDeriv[ i ].size() > 1 )
+                        for ( size_t i = 0; i < result.diag1stDeriv.size(); ++i )
                         {
-                            for ( size_t j = 1; j < result.diag1stDeriv[ i ].size(); ++j )
+                            if ( result.diag1stDeriv[ i ].size() > 1 )
                             {
-                                line( imgOut, result.diag1stDeriv[ i ][ j - 1 ], result.diag1stDeriv[ i ][ j ], Scalar( 0, 0, 255 ), 2 );
+                                for ( size_t j = 1; j < result.diag1stDeriv[ i ].size(); ++j )
+                                {
+                                    line( imgOut, result.diag1stDeriv[ i ][ j - 1 ], result.diag1stDeriv[ i ][ j ], Scalar( 0, 0, 255 ), 2 );
+                                }
                             }
                         }
                     }
-                }
 
-                if ( ( overlayTypes & FINDLINE_2ND_DERIV ) && !result.diag2ndDeriv.empty() )
-                {
-                    for ( size_t i = 0; i < result.diag2ndDeriv.size(); ++i )
+                    if ( ( overlayTypes & FINDLINE_2ND_DERIV ) && !result.diag2ndDeriv.empty() )
                     {
-                        if ( result.diag2ndDeriv[ i ].size() > 1 )
+                        for ( size_t i = 0; i < result.diag2ndDeriv.size(); ++i )
                         {
-                            for ( size_t j = 1; j < result.diag2ndDeriv[ i ].size(); ++j )
+                            if ( result.diag2ndDeriv[ i ].size() > 1 )
                             {
-                                line( imgOut, result.diag2ndDeriv[ i ][ j - 1 ], result.diag2ndDeriv[ i ][ j ], Scalar( 255, 127, 127 ), 2 );
+                                for ( size_t j = 1; j < result.diag2ndDeriv[ i ].size(); ++j )
+                                {
+                                    line( imgOut, result.diag2ndDeriv[ i ][ j - 1 ], result.diag2ndDeriv[ i ][ j ], Scalar( 255, 127, 127 ), 2 );
+                                }
                             }
                         }
                     }
-                }
 
-                if ( !result.findSuccess )
-                {
-                    line( imgOut, Point2d( 0.0, 0.0 ), Point2d( img.cols - 1, img.rows - 1 ), Scalar( 0, 0, 255 ), 3 );
-                    line( imgOut, Point2d( 0.0, img.rows - 1 ), Point2d( img.cols - 1, 0.0 ), Scalar( 0, 0, 255 ), 3 );
-                    putText( imgOut, "BAD FIND", Point( 5, textRowSpacing * 2 ), FONT_HERSHEY_PLAIN, fontScale, Scalar( 0, 0, 255 ), textStroke );
-                    for ( size_t i = 0; i < result.foundPoints.size(); ++i )
+                    if ( !result.findSuccess )
                     {
-                        circle( imgOut, result.foundPoints[ i ], max( 3, circleSize >> 1 ), Scalar( 0, 255, 255 ), FILLED );
+                        line( imgOut, Point2d( 0.0, 0.0 ), Point2d( img.cols - 1, img.rows - 1 ), Scalar( 0, 0, 255 ), 3 );
+                        line( imgOut, Point2d( 0.0, img.rows - 1 ), Point2d( img.cols - 1, 0.0 ), Scalar( 0, 0, 255 ), 3 );
+                        putText( imgOut, "BAD FIND", Point( 5, textRowSpacing * 2 ), FONT_HERSHEY_PLAIN, fontScale, Scalar( 0, 0, 255 ), textStroke );
+                        for ( size_t i = 0; i < result.foundPoints.size(); ++i )
+                        {
+                            circle( imgOut, result.foundPoints[ i ], max( 3, circleSize >> 1 ), Scalar( 0, 255, 255 ), FILLED );
+                        }
+                    }
+                    else
+                    {
+                        if ( ( overlayTypes & FINDLINE ) )
+                        {
+                            line( imgOut, result.calcLinePts.lftPixel, result.calcLinePts.rgtPixel, Scalar( 255, 0, 0 ), textStroke + 1 );
+                            circle( imgOut, result.calcLinePts.ctrPixel, circleSize + textStroke, Scalar( 0, 255, 0 ), textStroke );
+                            line( imgOut, Point2d( result.calcLinePts.ctrPixel.x - circleSize - textStroke * 2,
+                                                   result.calcLinePts.ctrPixel.y - circleSize - textStroke * 2 ),
+                                          Point2d( result.calcLinePts.ctrPixel.x + circleSize + textStroke * 2,
+                                                   result.calcLinePts.ctrPixel.y + circleSize + textStroke * 2 ), Scalar( 0, 0, 255 ), textStroke );
+                            line( imgOut, Point2d( result.calcLinePts.ctrPixel.x + circleSize + textStroke * 2,
+                                                   result.calcLinePts.ctrPixel.y - circleSize - textStroke * 2 ),
+                                          Point2d( result.calcLinePts.ctrPixel.x - circleSize - textStroke * 2,
+                                                   result.calcLinePts.ctrPixel.y + circleSize + textStroke * 2 ), Scalar( 0, 0, 255 ), textStroke );
+                        }
+
+                        if ( ( overlayTypes & MOVE_FIND ) )
+                        {
+                            line( imgOut, result.refMovePts.lftPixel, result.refMovePts.rgtPixel, Scalar( 0, 0, 255 ), circleSize );
+                            line( imgOut, result.foundMovePts.lftPixel, result.foundMovePts.rgtPixel, Scalar( 0, 255, 0 ), ( circleSize >> 1 ) - 1 );
+                        }
+                    }
+                    if ( 3 < result.foundPoints.size() && ( overlayTypes & RANSAC_POINTS ) )
+                    {
+                        for ( size_t i = 0; i < result.foundPoints.size(); ++i )
+                        {
+                            circle( imgOut, result.foundPoints[ i ], max( 3, circleSize >> 1 ), Scalar( 0, 255, 255 ), FILLED );
+                        }
+                    }
+                    for ( size_t i = 0; i < result.msgs.size(); ++i )
+                    {
+                        putText( imgOut, result.msgs[ i ], Point( 3, ( static_cast< int >( i ) + 1 ) * textRowSpacing + 50 ), FONT_HERSHEY_PLAIN, fontScale, Scalar( 0, 255, 255 ), textStroke );
                     }
                 }
                 else
                 {
-                    if ( ( overlayTypes & FINDLINE ) )
-                    {
-                        line( imgOut, result.calcLinePts.lftPixel, result.calcLinePts.rgtPixel, Scalar( 255, 0, 0 ), textStroke + 1 );
-                        circle( imgOut, result.calcLinePts.ctrPixel, circleSize + textStroke, Scalar( 0, 255, 0 ), textStroke );
-                        line( imgOut, Point2d( result.calcLinePts.ctrPixel.x - circleSize - textStroke * 2,
-                                               result.calcLinePts.ctrPixel.y - circleSize - textStroke * 2 ),
-                                      Point2d( result.calcLinePts.ctrPixel.x + circleSize + textStroke * 2,
-                                               result.calcLinePts.ctrPixel.y + circleSize + textStroke * 2 ), Scalar( 0, 0, 255 ), textStroke );
-                        line( imgOut, Point2d( result.calcLinePts.ctrPixel.x + circleSize + textStroke * 2,
-                                               result.calcLinePts.ctrPixel.y - circleSize - textStroke * 2 ),
-                                      Point2d( result.calcLinePts.ctrPixel.x - circleSize - textStroke * 2,
-                                               result.calcLinePts.ctrPixel.y + circleSize + textStroke * 2 ), Scalar( 0, 0, 255 ), textStroke );
-                    }
-
-                    if ( ( overlayTypes & MOVE_FIND ) )
-                    {
-                        line( imgOut, result.refMovePts.lftPixel, result.refMovePts.rgtPixel, Scalar( 0, 0, 255 ), circleSize );
-                        line( imgOut, result.foundMovePts.lftPixel, result.foundMovePts.rgtPixel, Scalar( 0, 255, 0 ), ( circleSize >> 1 ) - 1 );
-                    }
-                }
-                if ( 3 < result.foundPoints.size() && ( overlayTypes & RANSAC_POINTS ) )
-                {
-                    for ( size_t i = 0; i < result.foundPoints.size(); ++i )
-                    {
-                        circle( imgOut, result.foundPoints[ i ], max( 3, circleSize >> 1 ), Scalar( 0, 255, 255 ), FILLED );
-                    }
-                }
-                for ( size_t i = 0; i < result.msgs.size(); ++i )
-                {
-                    putText( imgOut, result.msgs[ i ], Point( 3, ( static_cast< int >( i ) + 1 ) * textRowSpacing + 50 ), FONT_HERSHEY_PLAIN, fontScale, Scalar( 0, 255, 255 ), textStroke );
+                     putText( imgOut, "CALIBRATION FAILURE", Point( 3, 200 ), FONT_HERSHEY_PLAIN, fontScale * 2.0, Scalar( 0, 0, 255 ), textStroke * 2 );
+                     line( imgOut, Point( 0, imgOut.rows >> 2 ), Point( imgOut.cols - 1, imgOut.rows >> 2 ), Scalar( 0, 0, 255 ), textStroke * 2 );
+                     line( imgOut, Point( 0, 3 * ( imgOut.rows >> 2 ) ), Point( imgOut.cols - 1, 3 * ( imgOut.rows >> 2 ) ), Scalar( 0, 0, 255 ), textStroke * 2 );
+                     line( imgOut, Point( imgOut.cols >> 2, 0 ), Point( imgOut.cols >> 2, imgOut.rows - 1 ), Scalar( 0, 0, 255 ), textStroke * 2 );
+                     line( imgOut, Point( 3 * ( imgOut.cols >> 2 ), 0 ), Point( 3 * ( imgOut.cols >> 2 ), imgOut.rows - 1 ), Scalar( 0, 0, 255 ), textStroke * 2 );
                 }
             }
         }

@@ -573,6 +573,7 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result 
                         retVal = m_calibExec.Load( params.calibFilepath, params.isStopSignCalib ? img : noImg );
                         if ( GC_OK != retVal )
                         {
+                            result.calibSuccess = false;
                             result.msgs.push_back( "Could not load calibration" );
                             FILE_LOG( logERROR ) << "[VisApp::CalcLine] Could not load calibration=" << params.calibFilepath ;
                             retVal = GC_ERR;
