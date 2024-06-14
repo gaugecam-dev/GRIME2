@@ -286,7 +286,7 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                     }
                     else
                     {
-                        FILE_LOG( logERROR ) << "[ArgHandler] No value supplied on --result_image request";
+                        FILE_LOG( logERROR ) << "[ArgHandler] No value supplied on --calib_json request";
                         retVal = -1;
                         break;
                     }
@@ -296,27 +296,30 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                     if ( i + 1 < argc )
                     {
                         params.result_imagePath = string( argv[ ++i ] );
-                        if ( ( MAKE_GIF != params.opToPerform &&
-                               string::npos == params.result_imagePath.find( ".png" ) &&
-                               string::npos == params.result_imagePath.find( ".jpg" ) ) ||
-                             ( MAKE_GIF == params.opToPerform &&
-                               string::npos == params.result_imagePath.find( ".gif" ) ) )
+                        if ( !params.result_imagePath.empty() )
                         {
-                            FILE_LOG( logERROR ) << "[ArgHandler] Image file " << params.result_imagePath << " extension not recognized";
-                            retVal = -1;
-                            break;
-                        }
-                        else
-                        {
-                            string result_folder = fs::path( params.result_imagePath ).parent_path().string();
-                            if ( !fs::exists( result_folder ) )
+                            if ( ( MAKE_GIF != params.opToPerform &&
+                                   string::npos == params.result_imagePath.find( ".png" ) &&
+                                   string::npos == params.result_imagePath.find( ".jpg" ) ) ||
+                                 ( MAKE_GIF == params.opToPerform &&
+                                   string::npos == params.result_imagePath.find( ".gif" ) ) )
                             {
-                                bool isOk = fs::create_directories( result_folder );
-                                if ( !isOk )
+                                FILE_LOG( logERROR ) << "[ArgHandler] Image file " << params.result_imagePath << " extension not recognized";
+                                retVal = -1;
+                                break;
+                            }
+                            else
+                            {
+                                string result_folder = fs::path( params.result_imagePath ).parent_path().string();
+                                if ( !fs::exists( result_folder ) )
                                 {
-                                    FILE_LOG( logERROR ) << "[ArgHandler] Could not create result image folder: " << result_folder;
-                                    retVal = -1;
-                                    break;
+                                    bool isOk = fs::create_directories( result_folder );
+                                    if ( !isOk )
+                                    {
+                                        FILE_LOG( logERROR ) << "[ArgHandler] Could not create result image folder: " << result_folder;
+                                        retVal = -1;
+                                        break;
+                                    }
                                 }
                             }
                         }

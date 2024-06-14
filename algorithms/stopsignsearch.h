@@ -55,23 +55,58 @@ public:
     std::vector< StopSignTemplate > ptTemplates;
 };
 
+class OctoTemplate
+{
+public:
+    OctoTemplate() :
+        radius( -9999999 ),
+        thickness( -9999999 ),
+        mask_pix_count( 1 ),
+        offset( cv::Point2d( -1.0, -1.0 ) )
+    {}
+
+    int radius;
+    int thickness;
+    int mask_pix_count;
+    cv::Point2d offset;
+    cv::Mat mask;
+    cv::Mat templ;
+};
+
+class OctoTemplateSet
+{
+public:
+    OctoTemplateSet() {}
+
+    void clear()
+    {
+        templates.clear();
+    }
+
+    std::vector< OctoTemplate > templates;
+};
+
 class StopsignSearch
 {
 public:
     StopsignSearch();
 
-    GC_STATUS Init( const int templateDim, const int rotateCnt );
+    GC_STATUS Init( const int templateDim, const int rotateCnt, const cv::Size searchRoiSize );
     GC_STATUS Find( const cv::Mat &img, std::vector< cv::Point2d > &pts );
     GC_STATUS FindScale( const cv::Mat &img, std::vector< cv::Point2d > &pts, const double scale );
     GC_STATUS FindMoveTargets( const cv::Mat &img, const cv::Rect targetRoi, cv::Point2d &ptLeft, cv::Point2d &ptRight );
 
 private:
     std::vector< StopSignTemplateSet > templates;
+    OctoTemplateSet octoTemplates;
 
     GC_STATUS RotateImage( const cv::Mat &src, cv::Mat &dst, const double angle );
     GC_STATUS DrawCorner( const int templateDim, cv::Mat &templ, cv::Mat &mask, cv::Point2d &center );
+    GC_STATUS DrawOctagon( const int templateDim, const int radius, const int thickness, cv::Mat &templ, cv::Mat &mask, cv::Point2d &center );
     GC_STATUS RotatePointTemplates( const size_t idx, const double angle );
     GC_STATUS CreatePointTemplates( const int templateDim, const int rotateCnt, std::vector< StopSignTemplate > &ptTemplates );
+    GC_STATUS CreateOctoTemplates( const int radBeg, const int radEnd, const int radInc,
+                                   const int beg_thickness, std::vector< OctoTemplate > &ptTemplates );
     GC_STATUS CreateTemplateOverlay( const std::string debugFolder );
     GC_STATUS RefineFind( const cv::Mat &img, std::vector< cv::Point2d > &pts );
     GC_STATUS AdjustLineLength( const LineEnds &a, const double newLength, LineEnds &newLine );
@@ -82,7 +117,7 @@ private:
     GC_STATUS GetSlopeIntercept( const cv::Point2d one, const cv::Point2d two, double &slope, double &intercept, bool &isVertical );
     GC_STATUS LineIntersection( const LineEnds line1, const LineEnds line2, cv::Point2d &r );
     GC_STATUS CalcPointsFromLines( const std::vector< LineEnds > lines, std::vector< cv::Point2d > &pts );
-    GC_STATUS GetOctagonMask( const cv::Mat &img, cv::Mat &mask );
+    GC_STATUS CoarseOctoMask( const cv::Mat &img, cv::Mat &mask );
     GC_STATUS AdjustResponseSpace( cv::Mat &response, const size_t j );
 };
 

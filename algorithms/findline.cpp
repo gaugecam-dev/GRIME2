@@ -733,10 +733,10 @@ GC_STATUS FindLine::CalcRowSums( const Mat &img, const vector< LineEnds > &lines
     {
         try
         {
-            Mat color;
-            cvtColor( img, color, COLOR_GRAY2BGR );
-            line( color, lines[ 0 ].top, lines[ 0 ].bot, Scalar( 0, 0, 255 ), 3 );
-            line( color, lines[ lines.size() - 1 ].top, lines[ lines.size() - 1 ].bot, Scalar( 0, 0, 255 ), 3 );
+//            Mat color;
+//            cvtColor( img, color, COLOR_GRAY2BGR );
+//            line( color, lines[ 0 ].top, lines[ 0 ].bot, Scalar( 0, 0, 255 ), 3 );
+//            line( color, lines[ lines.size() - 1 ].top, lines[ lines.size() - 1 ].bot, Scalar( 0, 0, 255 ), 3 );
             // imwrite( "/var/tmp/water/orig.png", color );
 
 

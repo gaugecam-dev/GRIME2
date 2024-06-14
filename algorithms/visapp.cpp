@@ -161,7 +161,7 @@ GC_STATUS VisApp::GetIllumination( const std::string filepath, std::string &illu
     GC_STATUS retVal = m_metaData.GetExifData( filepath, "Illumination", illum_state );
     if ( GC_OK != retVal )
     {
-        FILE_LOG( logERROR ) << "[VisApp::ListMetadata] Could not retrieve exif illumination from " << filepath;
+        illum_state = "N/A";
     }
     return retVal;
 }
