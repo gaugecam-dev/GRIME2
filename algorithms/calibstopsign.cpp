@@ -205,7 +205,11 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &contr
             }
 //            imwrite("/var/tmp/water/orig.png", img);
 //            imwrite("/var/tmp/water/orig_roi.png", img( model.targetSearchRegion ));
-            retVal = stopsignSearch.Find( img( model.targetSearchRegion ), model.pixelPoints );
+            retVal = stopsignSearch.Find( img( model.targetSearchRegion ), model.pixelPoints, true );
+            if ( GC_OK != retVal )
+            {
+                retVal = stopsignSearch.Find( img( model.targetSearchRegion ), model.pixelPoints, false );
+            }
             if ( GC_OK == retVal )
             {
                 retVal = TestCalibration( model.validCalib );
