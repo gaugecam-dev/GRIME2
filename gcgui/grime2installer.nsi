@@ -130,7 +130,7 @@ Section "GaugeCam Files" grime2
 
   SetOutPath "$INSTDIR\prereqs"
   File "${INSTALLFILEPATH_PREREQS}\VC_redist.x64.exe"
-  File "${INSTALLFILEPATH_PREREQS}\ExifTool_install_12.26_64.exe"
+  File "${INSTALLFILEPATH_PREREQS}\ExifTool_install_12.28_64.exe"
 
   SetOutPath "$INSTDIR"
   File "${INSTALLFILEPATH_GCGUI}\grime2.exe"
