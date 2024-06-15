@@ -22,8 +22,8 @@
 #include "opencv2/imgcodecs.hpp"
 #include "bresenham.h"
 
-#ifndef DEBUG_STOPSIGN_TEMPL
-#define DEBUG_STOPSIGN_TEMPL
+#ifdef DEBUG_STOPSIGN_TEMPL
+#undef DEBUG_STOPSIGN_TEMPL
 #include <boost/filesystem.hpp>
 using namespace boost;
 namespace fs = filesystem;
@@ -162,12 +162,16 @@ GC_STATUS StopsignSearch::CoarseOctoMask( const Mat &img, Mat &mask )
             for ( size_t i = 0; i < octoTemplates.templates.size(); ++i )
             {
                 response = Mat();
+#ifdef DEBUG_STOPSIGN_TEMPL
                 imwrite("/var/tmp/gaugecam/response_templ.png", octoTemplates.templates[ i ].templ );
                 imwrite("/var/tmp/gaugecam/response_mask.png", octoTemplates.templates[ i ].mask );
+#endif
                 matchTemplate( img, octoTemplates.templates[ i ].templ, response, TM_CCORR_NORMED, octoTemplates.templates[ i ].mask );
+#ifdef DEBUG_STOPSIGN_TEMPL
                 normalize( response, response_8u, 0, 1, NORM_MINMAX );
                 response_8u.convertTo( response_8u, CV_8UC1, 255 );
                 imwrite("/var/tmp/gaugecam/response.png", response_8u);
+#endif
 
                 minMaxLoc( response, nullptr, &maxVal, nullptr, &maxPt );
                 maxVal *= octoTemplates.templates[ i ].mask_pix_count;
@@ -182,6 +186,7 @@ GC_STATUS StopsignSearch::CoarseOctoMask( const Mat &img, Mat &mask )
             {
                 mask = Mat::zeros( img.size(), CV_8UC1 );
                 circle( mask, maxMaxPt, octoTemplates.templates[ maxRadIdx ].radius, Scalar(255), octoTemplates.templates[ maxRadIdx ].thickness );
+#ifdef DEBUG_STOPSIGN_TEMPL
                 Mat color;
                 cvtColor( img, color, COLOR_GRAY2BGR );
                 line( color, Point( cvRound( maxMaxPt.x - 10 ), cvRound( maxMaxPt.y ) ),
@@ -191,6 +196,7 @@ GC_STATUS StopsignSearch::CoarseOctoMask( const Mat &img, Mat &mask )
                 circle( color, maxMaxPt, octoTemplates.templates[ maxRadIdx ].radius - ( octoTemplates.templates[ maxRadIdx ].thickness >> 1 ), Scalar(0,0,255), 3);
                 circle( color, maxMaxPt, octoTemplates.templates[ maxRadIdx ].radius + ( octoTemplates.templates[ maxRadIdx ].thickness >> 1 ), Scalar(0,0,255), 3);
                 imwrite( "/var/tmp/gaugecam/coarseFind1.png", color );
+#endif
             }
 #ifdef DEBUG_STOPSIGN_TEMPL
             Mat color;
@@ -335,9 +341,21 @@ GC_STATUS StopsignSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &
                 if ( img.type() == CV_8UC3 )
                     cvtColor( img, matIn, COLOR_BGR2GRAY );
 
-                Mat  mask;
-                retVal = CoarseOctoMask( matIn, mask );
-                imwrite( "/var/tmp/gaugecam/response_mask.png", mask );
+                Mat  mask = Mat::ones( img.size(), CV_8UC1 );
+
+                int radBeg = round( std::min( img.cols, img.rows ) * 0.2 );
+                int radEnd = round( std::min( img.cols, img.rows ) * 0.45 );
+                int radInc = round( ( radEnd - radBeg ) / 20.0 );
+
+                octoTemplates.clear();
+                retVal = CreateOctoTemplates( radBeg, radEnd, radInc, 50, octoTemplates.templates );
+                if ( GC_OK == retVal )
+                {
+                    retVal = CoarseOctoMask( matIn, mask );
+#ifdef DEBUG_STOPSIGN_TEMPL
+                    imwrite( "/var/tmp/gaugecam/response_mask.png", mask );
+#endif
+                }
 
 #ifdef DEBUG_STOPSIGN_TEMPL
                 Mat color;
@@ -357,12 +375,15 @@ GC_STATUS StopsignSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &
                     for ( size_t i = 0; i < templates[ j ].ptTemplates.size(); ++i )
                     {
                         matchTemplate( matIn, templates[ j ].ptTemplates[ i ].templ, response, TM_CCORR_NORMED, templates[ j ].ptTemplates[ i ].mask );
+#ifdef DEBUG_STOPSIGN_TEMPL
                         imwrite("/var/tmp/gaugecam/response_001.png", response);
-
+#endif
                         int l = ( mask.cols - response.cols ) >> 1;
                         int r = ( mask.rows - response.rows ) >> 1;
                         response.setTo( 0.0, mask( Rect( l, r, response.cols, response.rows ) ) == 0 );
+#ifdef DEBUG_STOPSIGN_TEMPL
                         imwrite("/var/tmp/gaugecam/response_mask.tiff", response);
+#endif
                         retVal = AdjustResponseSpace( response, j );
 
 
@@ -740,12 +761,6 @@ GC_STATUS StopsignSearch::Init( const int templateDim, const int rotateCnt, cons
 //            retVal = CreateTemplateOverlay( DEBUG_FOLDER );
 //        }
 //#endif
-        int radBeg = round( std::min( searchRoiSize.width, searchRoiSize.height ) * 0.2 );
-        int radEnd = round( std::min( searchRoiSize.width, searchRoiSize.height ) * 0.45 );
-        int radInc = round( ( radEnd - radBeg ) / 20.0 );
-
-        octoTemplates.clear();
-        retVal = CreateOctoTemplates( radBeg, radEnd, radInc, 50, octoTemplates.templates );
     }
     catch( const cv::Exception &e )
     {
@@ -892,8 +907,8 @@ GC_STATUS StopsignSearch::CreatePointTemplates( const int templateDim, const int
                         retVal = RotateImage( templZero, templ, static_cast< double >( rotateCnt - i ) );
                         if ( GC_OK == retVal )
                         {
-                            imwrite( "/var/tmp/gaugecam/templ_" + to_string( i ) + ".png", templ );
-                            imwrite( "/var/tmp/gaugecam/mask_" + to_string( i ) + ".png", mask );
+                            // imwrite( "/var/tmp/gaugecam/templ_" + to_string( i ) + ".png", templ );
+                            // imwrite( "/var/tmp/gaugecam/mask_" + to_string( i ) + ".png", mask );
                             ptTemplates[ i ].mask = mask.clone();
                             ptTemplates[ i ].templ = templ.clone();
                             ptTemplates[ i ].angle = static_cast< double >( rotateCnt - i );
@@ -906,8 +921,8 @@ GC_STATUS StopsignSearch::CreatePointTemplates( const int templateDim, const int
                                 retVal = RotateImage( templZero, templ, angle );
                                 if ( GC_OK == retVal )
                                 {
-                                    imwrite( "/var/tmp/gaugecam/templ_" + to_string( i ) + ".png", templ );
-                                    imwrite( "/var/tmp/gaugecam/mask_" + to_string( i ) + ".png", mask );
+                                    // imwrite( "/var/tmp/gaugecam/templ_" + to_string( i ) + ".png", templ );
+                                    // imwrite( "/var/tmp/gaugecam/mask_" + to_string( i ) + ".png", mask );
                                     ptTemplates[ rotateCnt + i + 1 ].mask = mask.clone();
                                     ptTemplates[ rotateCnt + i + 1 ].templ = templ.clone();
                                     ptTemplates[ rotateCnt + i + 1 ].angle = angle;
