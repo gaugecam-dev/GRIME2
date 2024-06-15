@@ -53,7 +53,7 @@ StopsignSearch::StopsignSearch()
     }
 #endif
 }
-GC_STATUS StopsignSearch::FindScale( const cv::Mat &img, std::vector< cv::Point2d > &pts, const double scale )
+GC_STATUS StopsignSearch::FindScale( const cv::Mat &img, std::vector< cv::Point2d > &pts, const double scale, const bool do_coarse_prefind )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -61,7 +61,7 @@ GC_STATUS StopsignSearch::FindScale( const cv::Mat &img, std::vector< cv::Point2
         pts.clear();
         Mat imgScaled;
         resize( img, imgScaled, Size(), scale, scale, INTER_CUBIC );
-        retVal = Find( imgScaled, pts );
+        retVal = Find( imgScaled, pts, do_coarse_prefind );
         if ( GC_OK == retVal )
         {
             for ( size_t i = 0; i < pts.size(); ++i )
@@ -314,7 +314,7 @@ GC_STATUS StopsignSearch::AdjustResponseSpace( Mat &response, const size_t j )
     }
     return retVal;
 }
-GC_STATUS StopsignSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &pts )
+GC_STATUS StopsignSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &pts, const bool do_coarse_prefind )
 {
     GC_STATUS retVal = GC_OK;
     try

@@ -229,21 +229,25 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &contr
         }
         else
         {
-            retVal = stopsignSearch.Find( img, model.pixelPoints );
+            retVal = stopsignSearch.Find( img, model.pixelPoints, true );
+            if ( GC_OK != retVal )
+            {
+                retVal = stopsignSearch.Find( img, model.pixelPoints, false );
+            }
             if ( GC_OK == retVal )
             {
                 retVal = TestCalibration( model.validCalib );
             }
             if ( GC_OK != retVal )
             {
-                retVal = stopsignSearch.FindScale( img, model.pixelPoints, 2.0 );
+                retVal = stopsignSearch.FindScale( img, model.pixelPoints, 2.0, true );
                 if ( GC_OK == retVal )
                 {
                     retVal = TestCalibration( model.validCalib );
                 }
                 if ( GC_OK != retVal )
                 {
-                    retVal = stopsignSearch.FindScale( img, model.pixelPoints, 4.0 );
+                    retVal = stopsignSearch.FindScale( img, model.pixelPoints, 4.0, true );
                     if ( GC_OK == retVal )
                     {
                         retVal = TestCalibration( model.validCalib );
