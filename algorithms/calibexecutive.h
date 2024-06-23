@@ -166,7 +166,8 @@ public:
     GC_STATUS Calibrate( const cv::Mat &img, const std::string jsonParams,
                          double &rmseDist, double &rmseX, double &rmseY, string &err_msg );
     GC_STATUS Calibrate( const cv::Mat &img, const std::string jsonParams, cv::Mat &imgResult,
-                         double &rmseDist, double &rmseX, double &rmseY, string &err_msg , const bool drawAll = false );
+                         double &rmseDist, double &rmseX, double &rmseY, string &err_msg,
+                         const bool drawAll = false );
     GC_STATUS Recalibrate( const cv::Mat &img, const std::string calibType,
                            double &rmseDist, double &rmseX, double &rmseY, string &err_msg );
     GC_STATUS PixelToWorld( const cv::Point2d pixelPt, cv::Point2d &worldPt );
@@ -190,7 +191,7 @@ public:
     std::string &GetCalibType() { return paramsCurrent.calibType; } // BowTie or StopSign
     GC_STATUS GetCalibParams( std::string &calibParams );
     GC_STATUS GetTargetSearchROI( cv::Rect &rect );
-    cv::Point2d GetStopSignMoveOffset() { return stopSign.MoveOffset(); }
+    GC_STATUS SetAdjustedSearchROI( std::vector< LineEnds > &searchLinesAdj );
 
     static GC_STATUS FormBowtieCalibJsonString( const CalibJsonItems &items, std::string &json );
     static GC_STATUS FormStopsignCalibJsonString( const CalibJsonItems &items, std::string &json );
@@ -216,7 +217,7 @@ private:
     GC_STATUS CalibrateStopSign( const cv::Mat &img, const string &controlJson, string &err_msg );
 
     GC_STATUS FindMoveTargetsBowTie( const cv::Mat &img, FindPointSet &ptsFound );
-    GC_STATUS FindMoveTargetsStopSign( const cv::Mat &img, FindPointSet &ptsFound );
+    GC_STATUS FindMoveTargetsStopSign( FindPointSet &ptsFound );
     GC_STATUS MoveRefPointBowTie( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt );
     GC_STATUS MoveRefPointStopSign( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt );
 

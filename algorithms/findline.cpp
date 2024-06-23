@@ -215,7 +215,6 @@ GC_STATUS FindLine::Find( const Mat &img, const vector< LineEnds > &lines, FindL
 #endif
                     size_t start;
                     Point2d linePt;
-                    vector< uint > rowSums;
                     string timestamp = result.timestamp;
                     result.timestamp = timestamp;
                     size_t linesPerSwath = lines.size() / 10;
@@ -260,6 +259,10 @@ GC_STATUS FindLine::Find( const Mat &img, const vector< LineEnds > &lines, FindL
                             if ( GC_OK == retVal )
                             {
                                 result.findSuccess = true;
+                            }
+                            else
+                            {
+                                result.clear();
                             }
                         }
                     }
@@ -737,7 +740,7 @@ GC_STATUS FindLine::CalcRowSums( const Mat &img, const vector< LineEnds > &lines
 //            cvtColor( img, color, COLOR_GRAY2BGR );
 //            line( color, lines[ 0 ].top, lines[ 0 ].bot, Scalar( 0, 0, 255 ), 3 );
 //            line( color, lines[ lines.size() - 1 ].top, lines[ lines.size() - 1 ].bot, Scalar( 0, 0, 255 ), 3 );
-            // imwrite( "/var/tmp/water/orig.png", color );
+            // imwrite( "/var/tmp/gaugecam/orig.png", color );
 
 
             rowSums.clear();

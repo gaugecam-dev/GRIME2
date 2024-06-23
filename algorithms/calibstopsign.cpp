@@ -40,11 +40,12 @@ namespace gc
 static double elongation( Moments m );
 static double distance( Point2d a, Point2d b );
 
-CalibStopSign::CalibStopSign() :
-    moveOffset( Point2d( 0.0, 0.0 ) )
+CalibStopSign::CalibStopSign()
 {
     try
     {
+        moveRefLftPt = cv::Point2d( -1.0, -1.0 );
+        moveRefRgtPt = cv::Point2d( -1.0, -1.0 );
 #ifdef _WIN32
         if ( !fs::exists( CACHE_FOLDER ) )
         {
@@ -77,7 +78,6 @@ void CalibStopSign::clear()
     // matHomogPixToWorld = Mat();
     // matHomogWorldToPix = Mat();
     model.clear();
-    moveOffset = Point2d( 0.0, 0.0 );
 }
 GC_STATUS CalibStopSign::GetCalibParams( std::string &calibParams )
 {
@@ -148,32 +148,6 @@ GC_STATUS CalibStopSign::DrawAssocPts( const cv::Mat &img, cv::Mat &overlay, str
     }
     return retVal;
 }
-GC_STATUS CalibStopSign::AdjustCalib( const cv::Point2d ptLft, const cv::Point2d ptRgt, const Rect searchROI )
-{
-    GC_STATUS retVal = GC_OK;
-    try
-    {
-        double offset_x_lft = ( model.pixelPoints[ 0 ].x - searchROI.x ) - ptLft.x;
-        double offset_y_lft = ( model.pixelPoints[ 0 ].y - searchROI.y ) - ptLft.y;
-        double offset_x_rgt = ( model.pixelPoints[ 1 ].x - searchROI.x ) - ptRgt.x;
-        double offset_y_rgt = ( model.pixelPoints[ 1 ].y - searchROI.y ) - ptRgt.y;
-        moveOffset.x = ( offset_x_lft + offset_x_rgt ) / 2.0;
-        moveOffset.y = ( offset_y_lft + offset_y_rgt ) / 2.0;
-
-        for ( size_t i = 0; i < model.pixelPoints.size(); ++i )
-        {
-            model.pixelPoints[ i ] += moveOffset;
-        }
-        retVal = CalcHomographies();
-    }
-    catch( cv::Exception &e )
-    {
-        FILE_LOG( logERROR ) << "[CalibStopSign::AdjustCalib] " << e.what();
-        retVal = GC_EXCEPT;
-    }
-
-    return retVal;
-}
 // symbolPoints are clockwise ordered with 0 being the topmost left point
 GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &controlJson, string &err_msg )
 {
@@ -203,8 +177,8 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &contr
             {
                 pixPtsRoi.push_back( model.pixelPoints[ i ] + ptOffset );
             }
-//            imwrite("/var/tmp/water/orig.png", img);
-//            imwrite("/var/tmp/water/orig_roi.png", img( model.targetSearchRegion ));
+//            imwrite("/var/tmp/gaugecam/orig.png", img);
+//            imwrite("/var/tmp/gaugecam/orig_roi.png", img( model.targetSearchRegion ));
             retVal = stopsignSearch.Find( img( model.targetSearchRegion ), model.pixelPoints, true );
             if ( GC_OK != retVal )
             {
@@ -221,14 +195,14 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &contr
                 {
                     retVal = TestCalibration( model.validCalib );
                 }
-                if ( GC_OK != retVal )
-                {
-                    retVal = stopsignSearch.FindScale( img( model.targetSearchRegion ), model.pixelPoints, 4.0 );
-                    if ( GC_OK == retVal )
-                    {
-                        retVal = TestCalibration( model.validCalib );
-                    }
-                }
+//                if ( GC_OK != retVal )
+//                {
+//                    retVal = stopsignSearch.FindScale( img( model.targetSearchRegion ), model.pixelPoints, 4.0 );
+//                    if ( GC_OK == retVal )
+//                    {
+//                        retVal = TestCalibration( model.validCalib );
+//                    }
+//                }
             }
         }
         else
@@ -249,14 +223,14 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &contr
                 {
                     retVal = TestCalibration( model.validCalib );
                 }
-                if ( GC_OK != retVal )
-                {
-                    retVal = stopsignSearch.FindScale( img, model.pixelPoints, 4.0, true );
-                    if ( GC_OK == retVal )
-                    {
-                        retVal = TestCalibration( model.validCalib );
-                    }
-                }
+//                if ( GC_OK != retVal )
+//                {
+//                    retVal = stopsignSearch.FindScale( img, model.pixelPoints, 4.0, true );
+//                    if ( GC_OK == retVal )
+//                    {
+//                        retVal = TestCalibration( model.validCalib );
+//                    }
+//                }
             }
         }
         if ( GC_OK != retVal )
@@ -330,14 +304,14 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &contr
                         line( temp_img, model.waterlineSearchCorners[ 0 ], model.waterlineSearchCorners[ 2 ], Scalar( 0, 255, 255 ), 7 );
                         line( temp_img, model.waterlineSearchCorners[ 3 ], model.waterlineSearchCorners[ 1 ], Scalar( 0, 255, 0 ), 7 );
                         line( temp_img, model.waterlineSearchCorners[ 3 ], model.waterlineSearchCorners[ 2 ], Scalar( 255, 0, 0 ), 7 );
-                        imwrite( "/var/tmp/water/test_search_roi_0.png", temp_img );
+                        imwrite( "/var/tmp/gaugecam/test_search_roi_0.png", temp_img );
                         Mat color;
                         img.copyTo( color );
                         circle( color, model.waterlineSearchCorners[ 0 ], 11, Scalar( 0, 0, 255 ), 3 );
                         circle( color, model.waterlineSearchCorners[ 1 ], 11, Scalar( 0, 255, 255 ), 3 );
                         circle( color, model.waterlineSearchCorners[ 2 ], 11, Scalar( 255, 0, 0 ), 3 );
                         circle( color, model.waterlineSearchCorners[ 3 ], 11, Scalar( 0, 255, 0 ), 3 );
-                        imwrite( "/var/tmp/water/roi_pts.png", color );
+                        imwrite( "/var/tmp/gaugecam/roi_pts.png", color );
 #endif
                         SearchLines searchLines;
                         retVal = searchLines.CalcSearchLines( model.waterlineSearchCorners, model.searchLineSet );
@@ -400,6 +374,27 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &contr
 
     return retVal;
 }
+GC_STATUS CalibStopSign::MoveRefPoint(  cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt, const bool force )
+{
+    GC_STATUS retVal = GC_OK;
+    if ( force || ( 0.0 >= moveRefLftPt.x ||  0.0 >= moveRefLftPt.y ||
+                  ( 0.0 >= moveRefRgtPt.x ||  0.0 >= moveRefRgtPt.y ) ) )
+    {
+        if ( 8 != model.pixelPoints.size() )
+        {
+            FILE_LOG( logERROR ) << "[CalibBowtie::MoveRefPoint] Cannot retrieve move reference point from an uncalibrated system";
+            retVal = GC_ERR;
+        }
+        else
+        {
+            moveRefLftPt = model.pixelPoints[ 5 ];
+            moveRefRgtPt = model.pixelPoints[ 4 ];
+        }
+    }
+    lftRefPt = moveRefLftPt;
+    rgtRefPt = moveRefRgtPt;
+    return retVal;
+}
 GC_STATUS CalibStopSign::AdjustStopSignForRotation( const Size imgSize, const FindPointSet &calcLinePts, double &offsetAngle )
 {
     GC_STATUS retVal = GC_OK;
@@ -436,7 +431,7 @@ GC_STATUS CalibStopSign::AdjustStopSignForRotation( const Size imgSize, const Fi
         // circle( mask, model.pixelPoints[ 5 ], 13, Scalar( 128 ), 3 );
         // line( mask, calcLinePts.lftPixel, calcLinePts.rgtPixel, Scalar( 255 ), 5 );
         // putText( mask, "ORIGINAL", Point( model.pixelPoints[ 7 ].x, model.pixelPoints[ 0 ].y - 70 ), FONT_HERSHEY_PLAIN, 3.0, Scalar( 255 ), 3 );
-        // imwrite( "/var/tmp/water/stopsign_angle_original.png", mask );
+        // imwrite( "/var/tmp/gaugecam/stopsign_angle_original.png", mask );
         // rectangle( mask, Rect( model.pixelPoints[ 7 ].x - 10, 0, 500, model.pixelPoints[ 0 ].y - 10 ), Scalar( 0 ), FILLED );
 
         // line( mask, calcLinePts.lftPixel, calcLinePts.rgtPixel, Scalar( 0 ), 7 );
@@ -874,7 +869,7 @@ GC_STATUS CalibStopSign::FindCorners( const cv::Mat &mask, const std::vector< cv
 //        vector< vector< Point > > conts;
 //        conts.push_back( contour );
 //        drawContours( mask, conts, -1, Scalar(128), 3);
-//        imwrite( "/var/tmp/water/mask_conts.png", mask );
+//        imwrite( "/var/tmp/gaugecam/mask_conts.png", mask );
 
         if ( contour.size() < MIN_SYMBOL_CONTOUR_SIZE )
         {
@@ -1499,11 +1494,6 @@ GC_STATUS CalibStopSign::DrawOverlay( const cv::Mat &img, cv::Mat &result, const
                         }
                         line( result, model.pixelPoints[ 0 ], model.pixelPoints[ model.pixelPoints.size() - 1 ], Scalar( 255, 0, 0 ), lineWidth );
 
-                        Point2d ptLftTopPix( 0.0, 0.0 );
-                        Point2d ptRgtTopPix( static_cast< double >( result.cols - 1 ), 0.0 );
-                        Point2d ptLftBotPix( 0.0, static_cast< double >( result.rows - 1 ) );
-                        Point2d ptRgtBotPix( static_cast< double >( result.cols - 1 ), static_cast< double >( result.rows - 1 ) );
-
                         if ( drawCalibScale )
                         {
                             double lftX = ( model.searchLineSet[ 0 ].top.x + model.searchLineSet[ 0 ].bot.x ) / 2.0;
@@ -1619,6 +1609,11 @@ GC_STATUS CalibStopSign::DrawOverlay( const cv::Mat &img, cv::Mat &result, const
                         line( result, model.searchLineSet[ 0 ].top, model.searchLineSet[ model.searchLineSet.size() - 1 ].top, Scalar( 255, 0, 0 ), textStroke );
                         line( result, model.searchLineSet[ model.searchLineSet.size() - 1 ].top, model.searchLineSet[ model.searchLineSet.size() - 1 ].bot, Scalar( 255, 0, 0 ), textStroke );
                         line( result, model.searchLineSet[ 0 ].bot, model.searchLineSet[ model.searchLineSet.size() - 1 ].bot, Scalar( 255, 0, 0 ), textStroke );
+
+                        if ( 4 == model.waterlineSearchCornersAdj.size() )
+                        {
+                            polylines( result, model.waterlineSearchCornersAdj, true, Scalar( 0, 0, 255 ), std::max( textStroke >> 1, 1 ) );
+                        }
                     }
                 }
             }

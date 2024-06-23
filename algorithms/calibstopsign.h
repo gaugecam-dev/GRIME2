@@ -92,7 +92,6 @@ public:
     GC_STATUS Save( const std::string jsonCalFilepath );
     GC_STATUS CalcHomographies();
     GC_STATUS Calibrate( const cv::Mat &img, const std::string &controlJson, std::string &err_msg );
-    GC_STATUS AdjustCalib( const cv::Point2d ptLft, const cv::Point2d ptRgt, const cv::Rect searchROI );
     GC_STATUS AdjustStopSignForRotation( const cv::Size imgSize, const FindPointSet &calcLinePts, double &offsetAngle );
 
     GC_STATUS PixelToWorld( const cv::Point2d ptPixel, cv::Point2d &ptWorld );
@@ -101,6 +100,7 @@ public:
                            const bool drawMoveROIs, const bool drawSearchROI , const bool drawTargetSearchROI );
     GC_STATUS DrawAssocPts( const cv::Mat &img, cv::Mat &overlay, std::string &err_msg );
     GC_STATUS GetCalibParams( std::string &calibParams );
+    GC_STATUS MoveRefPoint( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt, const bool force = false );
 
     void clear();
 
@@ -110,7 +110,6 @@ public:
      */
     std::vector< LineEnds > &SearchLineSet() { return model.searchLineSet; }
     std::string ControlJson() { return model.controlJson; }
-    cv::Point2d &MoveOffset() { return moveOffset; }
     CalibModelSymbol &Model() { return model; }
     StopsignSearch &SearchObj() { return stopsignSearch; }
     GC_STATUS GetSearchRegionBoundingRect( cv::Rect &rect );
@@ -122,7 +121,9 @@ private:
     cv::Mat matHomogWorldToPix;
     CalibModelSymbol model;
     StopsignSearch stopsignSearch;
-    cv::Point2d moveOffset;
+    cv::Point2d moveRefLftPt;
+    cv::Point2d moveRefRgtPt;
+
 
     GC_STATUS RotateImage( const cv::Mat &src, cv::Mat &dst, const double angle );
     GC_STATUS GetNonZeroPoints( cv::Mat &img, std::vector< cv::Point > &pts );

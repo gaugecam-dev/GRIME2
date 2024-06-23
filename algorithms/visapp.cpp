@@ -194,6 +194,10 @@ GC_STATUS VisApp::AdjustSearchAreaForMovement( const std::vector< LineEnds > &se
             FILE_LOG( logERROR ) << "[VisApp::AdjustSearchAreaForMovement] No lines in search line vector";
             retVal = GC_ERR;
         }
+        else if ( 0.0 == offsets.x && 0.0 == offsets.y )
+        {
+            searchLinesAdj = searchLines;
+        }
         else
         {
             searchLinesAdj.clear();
@@ -222,69 +226,73 @@ GC_STATUS VisApp::CalcFindLine( const Mat &img, FindLineResult &result )
         result.msgs.push_back( buffer );
 
         vector< LineEnds > searchLinesAdj;
-        if ( "StopSign" == m_calibExec.GetCalibType() )
+        retVal = m_calibExec.MoveRefPoint( result.refMovePts.lftPixel, result.refMovePts.rgtPixel );
+        if ( GC_OK == retVal )
+        {
+            result.refMovePts.ctrPixel = Point2d( ( result.refMovePts.lftPixel.x + result.refMovePts.rgtPixel.x ) / 2.0,
+                                                  ( result.refMovePts.lftPixel.y + result.refMovePts.rgtPixel.y ) / 2.0 );
+            retVal = PixelToWorld( result.refMovePts );
+            if ( GC_OK != retVal )
+            {
+                result.msgs.push_back( "Could not calculate world coordinates for move reference points" );
+            }
+        }
+        else
         {
             result.refMovePts.setZero();
-            result.foundMovePts.setZero();
-            result.offsetMovePts.setZero();
-            Point2d moveOffset = m_calibExec.GetStopSignMoveOffset();
-#if 1
-            retVal = AdjustSearchAreaForMovement( m_calibExec.SearchLines(), searchLinesAdj, moveOffset );
-#else
-            searchLinesAdj = m_calibExec.SearchLines();
-#endif
+            retVal = GC_OK;
         }
-        else if ( "BowTie" == m_calibExec.GetCalibType() )
+        if ( GC_OK == retVal )
         {
-            retVal = m_calibExec.MoveRefPoint( result.refMovePts.lftPixel, result.refMovePts.rgtPixel );
-            if ( GC_OK == retVal )
+            retVal = m_calibExec.FindMoveTargets( img, result.foundMovePts );
+            if ( GC_OK != retVal )
             {
-                result.refMovePts.ctrPixel = Point2d( ( result.refMovePts.lftPixel.x + result.refMovePts.rgtPixel.x ) / 2.0,
-                                                      ( result.refMovePts.lftPixel.y + result.refMovePts.rgtPixel.y ) / 2.0 );
-                retVal = PixelToWorld( result.refMovePts );
+                result.msgs.push_back( "Could not calculate move offsets" );
+            }
+            else
+            {
+                retVal = PixelToWorld( result.foundMovePts );
                 if ( GC_OK != retVal )
                 {
-                    result.msgs.push_back( "Could not calculate world coordinates for move reference points" );
+                    result.msgs.push_back( "Could not calculate world coordinates for found move points" );
                 }
                 else
                 {
-                    retVal = m_calibExec.FindMoveTargets( img, result.foundMovePts );
-                    if ( GC_OK != retVal )
+                    if ( 0.0 < result.refMovePts.lftPixel.x ||  0.0 < result.refMovePts.rgtPixel.y ||
+                         0.0 < result.refMovePts.lftPixel.x ||  0.0 < result.refMovePts.rgtPixel.y )
                     {
-                        result.msgs.push_back( "Could not calculate move offsets" );
+                        result.offsetMovePts.lftPixel.x = result.foundMovePts.lftPixel.x - result.refMovePts.lftPixel.x;
+                        result.offsetMovePts.lftPixel.y = result.foundMovePts.lftPixel.y - result.refMovePts.lftPixel.y;
+                        result.offsetMovePts.ctrPixel.x = result.foundMovePts.ctrPixel.x - result.refMovePts.ctrPixel.x;
+                        result.offsetMovePts.ctrPixel.y = result.foundMovePts.ctrPixel.y - result.refMovePts.ctrPixel.y;
+                        result.offsetMovePts.rgtPixel.x = result.foundMovePts.rgtPixel.x - result.refMovePts.rgtPixel.x;
+                        result.offsetMovePts.rgtPixel.y = result.foundMovePts.rgtPixel.y - result.refMovePts.rgtPixel.y;
+
+                        result.offsetMovePts.lftWorld.x = result.foundMovePts.lftWorld.x - result.refMovePts.lftWorld.x;
+                        result.offsetMovePts.lftWorld.y = result.foundMovePts.lftWorld.y - result.refMovePts.lftWorld.y;
+                        result.offsetMovePts.ctrWorld.x = result.foundMovePts.ctrWorld.x - result.refMovePts.ctrWorld.x;
+                        result.offsetMovePts.ctrWorld.y = result.foundMovePts.ctrWorld.y - result.refMovePts.ctrWorld.y;
+                        result.offsetMovePts.rgtWorld.x = result.foundMovePts.rgtWorld.x - result.refMovePts.rgtWorld.x;
+                        result.offsetMovePts.rgtWorld.y = result.foundMovePts.rgtWorld.y - result.refMovePts.rgtWorld.y;
+
+                        result.calibOffsets.calibAngle = atan2( result.refMovePts.rgtWorld.y - result.refMovePts.lftWorld.y,
+                                                                result.refMovePts.rgtWorld.x - result.refMovePts.lftWorld.x ) * ( 180.0 / CV_PI );
+                        result.calibOffsets.calibCenterPt = ( result.refMovePts.lftWorld + result.refMovePts.rgtWorld ) / 2.0;
+                        result.calibOffsets.offsetAngle = atan2( result.foundMovePts.rgtWorld.y - result.foundMovePts.lftWorld.y,
+                                                                 result.foundMovePts.rgtWorld.x - result.foundMovePts.lftWorld.x ) * ( 180.0 / CV_PI );
+                        result.calibOffsets.offsetCenterPt = ( result.foundMovePts.lftWorld + result.foundMovePts.rgtWorld ) / 2.0;
                     }
                     else
                     {
-                        retVal = PixelToWorld( result.foundMovePts );
-                        if ( GC_OK != retVal )
-                        {
-                            result.msgs.push_back( "Could not calculate world coordinates for found move points" );
-                        }
-                        else
-                        {
-                            result.offsetMovePts.lftPixel.x = result.foundMovePts.lftPixel.x - result.refMovePts.lftPixel.x;
-                            result.offsetMovePts.lftPixel.y = result.foundMovePts.lftPixel.y - result.refMovePts.lftPixel.y;
-                            result.offsetMovePts.ctrPixel.x = result.foundMovePts.ctrPixel.x - result.refMovePts.ctrPixel.x;
-                            result.offsetMovePts.ctrPixel.y = result.foundMovePts.ctrPixel.y - result.refMovePts.ctrPixel.y;
-                            result.offsetMovePts.rgtPixel.x = result.foundMovePts.rgtPixel.x - result.refMovePts.rgtPixel.x;
-                            result.offsetMovePts.rgtPixel.y = result.foundMovePts.rgtPixel.y - result.refMovePts.rgtPixel.y;
+                        result.offsetMovePts.setZero();
+                        result.calibOffsets.clear();
+                    }
 
-                            result.offsetMovePts.lftWorld.x = result.foundMovePts.lftWorld.x - result.refMovePts.lftWorld.x;
-                            result.offsetMovePts.lftWorld.y = result.foundMovePts.lftWorld.y - result.refMovePts.lftWorld.y;
-                            result.offsetMovePts.ctrWorld.x = result.foundMovePts.ctrWorld.x - result.refMovePts.ctrWorld.x;
-                            result.offsetMovePts.ctrWorld.y = result.foundMovePts.ctrWorld.y - result.refMovePts.ctrWorld.y;
-                            result.offsetMovePts.rgtWorld.x = result.foundMovePts.rgtWorld.x - result.refMovePts.rgtWorld.x;
-                            result.offsetMovePts.rgtWorld.y = result.foundMovePts.rgtWorld.y - result.refMovePts.rgtWorld.y;
-
-                            result.calibOffsets.calibAngle = atan2( result.refMovePts.rgtWorld.y - result.refMovePts.lftWorld.y,
-                                                                    result.refMovePts.rgtWorld.x - result.refMovePts.lftWorld.x ) * ( 180.0 / CV_PI );
-                            result.calibOffsets.calibCenterPt = ( result.refMovePts.lftWorld + result.refMovePts.rgtWorld ) / 2.0;
-                            result.calibOffsets.offsetAngle = atan2( result.foundMovePts.rgtWorld.y - result.foundMovePts.lftWorld.y,
-                                                                     result.foundMovePts.rgtWorld.x - result.foundMovePts.lftWorld.x ) * ( 180.0 / CV_PI );
-                            result.calibOffsets.offsetCenterPt = ( result.foundMovePts.lftWorld + result.foundMovePts.rgtWorld ) / 2.0;
-
-                            retVal = AdjustSearchAreaForMovement( m_calibExec.SearchLines(), searchLinesAdj, result.offsetMovePts.ctrPixel );
-                        }
+                    retVal = AdjustSearchAreaForMovement( m_calibExec.SearchLines(), searchLinesAdj, result.offsetMovePts.ctrPixel );
+                    if ( GC_OK == retVal )
+                    {
+                        retVal = m_calibExec.SetAdjustedSearchROI( searchLinesAdj );
+                        retVal = GC_OK;
                     }
                 }
             }

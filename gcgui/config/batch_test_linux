@@ -2,16 +2,16 @@
 ./grime2cli --version
 ./grime2cli --help
 ./grime2cli --show_metadata --source "./config/2022_demo/20220715_KOLA_GaugeCam_001.JPG"
-./grime2cli --make_gif --source "./config/2012_demo/06/" --result_image "/var/tmp/water/demo.gif" --scale 0.20 --delay_ms 1000
+./grime2cli --make_gif --source "./config/2012_demo/06/" --result_image "/var/tmp/gaugecam/demo.gif" --scale 0.20 --delay_ms 1000
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~ BOW-TIE ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-./grime2cli --calibrate --source "./config/2012_demo/06/NRmarshDN-12-06-30-10-30.jpg" --calib_json "./config/calib.json" --csv_file "./config/calibration_target_world_coordinates.csv" --result_image "/var/tmp/water/calib_result.png"
-./grime2cli --find_line --timestamp_from_filename --timestamp_start_pos 10 --timestamp_format "yy-mm-dd-HH-MM" --source "./config/2012_demo/06/NRmarshDN-12-06-30-10-30.jpg" --calib_json "./config/calib.json" --result_image "/var/tmp/water/find_line_result.png"
-./grime2cli --run_folder --timestamp_from_filename --timestamp_start_pos 10 --timestamp_format "yy-mm-dd-HH-MM" --source "./config/2012_demo/06/" --calib_json "./config/calib.json" --csv_file "/var/tmp/water/folder.csv" --result_folder "/var/tmp/water/"
+./grime2cli --calibrate --source "./config/2012_demo/06/NRmarshDN-12-06-30-10-30.jpg" --calib_json "./config/calib.json" --csv_file "./config/calibration_target_world_coordinates.csv" --result_image "/var/tmp/gaugecam/calib_result.png"
+./grime2cli --find_line --timestamp_from_filename --timestamp_start_pos 10 --timestamp_format "yy-mm-dd-HH-MM" --source "./config/2012_demo/06/NRmarshDN-12-06-30-10-30.jpg" --calib_json "./config/calib.json" --result_image "/var/tmp/gaugecam/find_line_result.png"
+./grime2cli --run_folder --timestamp_from_filename --timestamp_start_pos 10 --timestamp_format "yy-mm-dd-HH-MM" --source "./config/2012_demo/06/" --calib_json "./config/calib.json" --csv_file "/var/tmp/gaugecam/folder.csv" --result_folder "/var/tmp/gaugecam/"
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~ STOP SIGN ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-./grime2cli --calibrate --source "./config/2022_demo/20220715_KOLA_GaugeCam_001.JPG" --calib_json "./config/calib_stopsign.json" --result_image "/var/tmp/water/calib_result_stopsign.png"
-./grime2cli --find_line --timestamp_from_exif --timestamp_start_pos 0 --timestamp_format "yyyy-mm-dd-HH-MM" --source "./config/2022_demo/20220715_KOLA_GaugeCam_001.JPG" --calib_json "./config/calib_stopsign.json" --result_image "/var/tmp/water/find_line_result_stopsign.png"
-./grime2cli --run_folder --timestamp_from_exif --timestamp_start_pos 0 --timestamp_format "yyyy-mm-dd-HH-MM" --source "./config/2022_demo/" --calib_json "./config/calib_stopsign.json" --csv_file "/var/tmp/water/folder_stopsign.csv" --result_folder "/var/tmp/water/"
+./grime2cli --calibrate --source "./config/2022_demo/20220715_KOLA_GaugeCam_001.JPG" --calib_json "./config/calib_stopsign.json" --result_image "/var/tmp/gaugecam/calib_result_stopsign.png"
+./grime2cli --find_line --timestamp_from_exif --timestamp_start_pos 0 --timestamp_format "yyyy-mm-dd-HH-MM" --source "./config/2022_demo/20220715_KOLA_GaugeCam_001.JPG" --calib_json "./config/calib_stopsign.json" --result_image "/var/tmp/gaugecam/find_line_result_stopsign.png"
+./grime2cli --run_folder --timestamp_from_exif --timestamp_start_pos 0 --timestamp_format "yyyy-mm-dd-HH-MM" --source "./config/2022_demo/" --calib_json "./config/calib_stopsign.json" --csv_file "/var/tmp/gaugecam/folder_stopsign.csv" --result_folder "/var/tmp/gaugecam/"
 
-./grime2cli --create_calib stopsign --source "./config/2022_demo/20220715_KOLA_GaugeCam_001.JPG" --calib_json "./config/calib.json" --result_image "./results/20220715_KOLA_GaugeCam_001_calib_overlay.png" --zero_offset 4.000000 --facet_length 0.599000 --waterline_roi 1076 783 1268 788 1061 1051 1259 1056 --calib_roi 1010 466 315 337
+./grime2cli --create_calib bowtie --source "./config/2012_demo/05/NRmarshDN-12-05-31-23-45.jpg" --calib_json "./config/calib.json" --csv_file "./config/calibration_target_world_coordinates.csv" --result_image "" --waterline_roi 474 84 591 84 483 580 604 582 --calib_roi 317 29 436 555

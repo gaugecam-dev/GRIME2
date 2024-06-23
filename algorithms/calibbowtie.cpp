@@ -337,6 +337,10 @@ GC_STATUS CalibBowtie::DrawOverlay( const cv::Mat img, cv::Mat &imgOut, const bo
                     line( imgOut, m_model.searchLineSet[ 0 ].top, m_model.searchLineSet[ m_model.searchLineSet.size() - 1 ].top, Scalar( 255, 0, 0 ), originalRectWidth );
                     line( imgOut, m_model.searchLineSet[ m_model.searchLineSet.size() - 1 ].top, m_model.searchLineSet[ m_model.searchLineSet.size() - 1 ].bot, Scalar( 255, 0, 0 ), originalRectWidth );
                     line( imgOut, m_model.searchLineSet[ 0 ].bot, m_model.searchLineSet[ m_model.searchLineSet.size() - 1 ].bot, Scalar( 255, 0, 0 ), originalRectWidth );
+                    if ( 4 == m_model.waterlineSearchCornersAdj.size() )
+                    {
+                        polylines( imgOut, m_model.waterlineSearchCornersAdj, true, Scalar( 0, 0, 255 ), std::max( textStroke >> 1, 1 ) );
+                    }
                 }
             }
 

@@ -172,6 +172,7 @@ public:
         pixelPoints.clear();
         worldPoints.clear();
         waterlineSearchCorners.clear();
+        waterlineSearchCornersAdj.clear();
         searchLineSet.clear();
         moveSearchRegionLft = cv::Rect( -1, -1, -1, -1 );
         moveSearchRegionRgt = cv::Rect( -1, -1, -1, -1 );
@@ -185,6 +186,7 @@ public:
     std::vector< cv::Point2d > pixelPoints;          ///< Vector of pixel points ordered to match the world point vector
     std::vector< cv::Point2d > worldPoints;          ///< Vector of world points ordered to match the pixel point vector
     std::vector< cv::Point > waterlineSearchCorners; ///< Vector of search ROI corners (start at top-left, clockwise
+    std::vector< cv::Point > waterlineSearchCornersAdj;
     std::vector< LineEnds > searchLineSet;           ///< Vector of search lines to be searched for the water line
     cv::Rect moveSearchRegionLft;                    ///< Left move search region (to search for top-left bowtie)
     cv::Rect moveSearchRegionRgt;                    ///< Right move search region (to search for top-right bowtie)
@@ -253,6 +255,7 @@ public:
         pixelPoints.clear();
         worldPoints.clear();
         waterlineSearchCorners.clear();
+        waterlineSearchCornersAdj.clear();
         searchLineSet.clear();
         targetSearchRegion = cv::Rect( -1, -1, -1, -1 );
         facetLength = -1.0;
@@ -267,12 +270,14 @@ public:
     std::vector< cv::Point2d > pixelPoints;          ///< Vector of pixel points ordered to match the world point vector
     std::vector< cv::Point2d > worldPoints;          ///< Vector of world points ordered to match the pixel point vector
     std::vector< cv::Point > waterlineSearchCorners; ///< Vector of search ROI corners (start at top-left, clockwise
+    std::vector< cv::Point > waterlineSearchCornersAdj;
     std::vector< LineEnds > searchLineSet;           ///< Vector of search lines to be searched for the water line
     cv::Rect targetSearchRegion;                     ///< Region within which to perform line and move search
     double facetLength;                              ///< Length of a stop sign facet in world units
     double zeroOffset;                               ///< Distance from bottom left stop sign corner to zero vertical position
     cv::Point2d center;                              ///< Center of symbol
     double angle;                                    ///< Angle of symbol
+
 };
 
 /**

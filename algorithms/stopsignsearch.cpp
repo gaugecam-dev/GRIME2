@@ -328,7 +328,7 @@ GC_STATUS StopsignSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &
         {
             if ( templates.empty() )
             {
-                retVal = Init( GC_STOPSIGN_TEMPLATE_DIM, 5, img.size() );
+                retVal = Init( GC_STOPSIGN_TEMPLATE_DIM, 5 );
             }
             if ( templates.empty() || GC_OK != retVal )
             {
@@ -341,20 +341,25 @@ GC_STATUS StopsignSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &
                 if ( img.type() == CV_8UC3 )
                     cvtColor( img, matIn, COLOR_BGR2GRAY );
 
-                Mat  mask = Mat::ones( img.size(), CV_8UC1 );
+                Mat  mask = Mat::ones( img.size(), CV_8UC1 ) * 255;
 
                 int radBeg = round( std::min( img.cols, img.rows ) * 0.2 );
                 int radEnd = round( std::min( img.cols, img.rows ) * 0.45 );
                 int radInc = round( ( radEnd - radBeg ) / 20.0 );
 
-                octoTemplates.clear();
-                retVal = CreateOctoTemplates( radBeg, radEnd, radInc, 50, octoTemplates.templates );
-                if ( GC_OK == retVal )
+                if ( do_coarse_prefind )
                 {
-                    retVal = CoarseOctoMask( matIn, mask );
+                    if ( octoTemplates.templates.empty() )
+                    {
+                        retVal = CreateOctoTemplates( radBeg, radEnd, radInc, 50, octoTemplates.templates );
+                        if ( GC_OK == retVal )
+                        {
+                            retVal = CoarseOctoMask( matIn, mask );
+                        }
 #ifdef DEBUG_STOPSIGN_TEMPL
-                    imwrite( "/var/tmp/gaugecam/response_mask.png", mask );
+                        imwrite( "/var/tmp/gaugecam/response_mask.png", mask );
 #endif
+                    }
                 }
 
 #ifdef DEBUG_STOPSIGN_TEMPL
@@ -461,7 +466,7 @@ GC_STATUS StopsignSearch::FindMoveTargets( const Mat &img, const Rect targetRoi,
         {
             if ( templates.empty() )
             {
-                retVal = Init( GC_STOPSIGN_TEMPLATE_DIM, 7, img.size() );
+                retVal = Init( GC_STOPSIGN_TEMPLATE_DIM, 7 );
             }
             if ( GC_OK != retVal || templates.empty() )
             {
@@ -730,7 +735,7 @@ GC_STATUS StopsignSearch::RefineFind( const Mat &img, vector< Point2d > &pts )
     }
     return retVal;
 }
-GC_STATUS StopsignSearch::Init( const int templateDim, const int rotateCnt, const Size searchRoiSize )
+GC_STATUS StopsignSearch::Init( const int templateDim, const int rotateCnt )
 {
     GC_STATUS retVal = GC_OK;
 

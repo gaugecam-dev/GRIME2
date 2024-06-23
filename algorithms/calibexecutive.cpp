@@ -108,7 +108,8 @@ GC_STATUS CalibExecutive::Recalibrate( const Mat &img, const std::string calibTy
     return retVal;
 }
 GC_STATUS CalibExecutive::Calibrate( const Mat &img, const std::string jsonParams, cv::Mat &imgResult,
-                                     double &rmseDist, double &rmseX, double &rmseY, string &err_msg, const bool drawAll )
+                                     double &rmseDist, double &rmseX, double &rmseY, string &err_msg,
+                                     const bool drawAll )
 {
     GC_STATUS retVal = Calibrate( img, jsonParams, rmseDist, rmseX, rmseY, err_msg );
     if ( GC_OK == retVal )
@@ -766,6 +767,47 @@ cv::Rect &CalibExecutive::TargetRoi()
     FILE_LOG( logERROR ) << "[CalibExecutive::TargetRoi] No calibration type currently set";
     return nullRect;
 }
+GC_STATUS CalibExecutive::SetAdjustedSearchROI( std::vector< LineEnds > &searchLinesAdj )
+{
+    GC_STATUS retVal = GC_OK;
+    if ( searchLinesAdj.empty() )
+    {
+        if ( "BowTie" == paramsCurrent.calibType )
+        {
+            bowTie.GetModel().waterlineSearchCornersAdj.clear();
+        }
+        else
+        {
+            stopSign.Model().waterlineSearchCornersAdj.clear();
+        }
+    }
+    else
+    {
+        int last = searchLinesAdj.size() - 1;
+        if ( "BowTie" == paramsCurrent.calibType )
+        {
+            bowTie.GetModel().waterlineSearchCornersAdj.clear();
+            bowTie.GetModel().waterlineSearchCornersAdj.push_back( searchLinesAdj[ 0 ].top );
+            bowTie.GetModel().waterlineSearchCornersAdj.push_back( searchLinesAdj[ last ].top );
+            bowTie.GetModel().waterlineSearchCornersAdj.push_back( searchLinesAdj[ last ].bot );
+            bowTie.GetModel().waterlineSearchCornersAdj.push_back( searchLinesAdj[ 0 ].bot );
+        }
+        else if ( "StopSign" == paramsCurrent.calibType )
+        {
+            stopSign.Model().waterlineSearchCornersAdj.clear();
+            stopSign.Model().waterlineSearchCornersAdj.push_back( searchLinesAdj[ 0 ].top );
+            stopSign.Model().waterlineSearchCornersAdj.push_back( searchLinesAdj[ last ].top );
+            stopSign.Model().waterlineSearchCornersAdj.push_back( searchLinesAdj[ last ].bot );
+            stopSign.Model().waterlineSearchCornersAdj.push_back( searchLinesAdj[ 0 ].bot );
+        }
+        else
+        {
+            FILE_LOG( logERROR ) << "[CalibExecutive::SetAdjustedSearchROI] Invalid calib type";
+            retVal = GC_ERR;
+        }
+    }
+    return retVal;
+}
 std::vector< LineEnds > &CalibExecutive::SearchLines()
 {
     if ( "BowTie" == paramsCurrent.calibType )
@@ -810,7 +852,7 @@ GC_STATUS CalibExecutive::FindMoveTargets( const Mat &img, FindPointSet &ptsFoun
     }
     else if ( "StopSign" == paramsCurrent.calibType )
     {
-        retVal = FindMoveTargetsStopSign( img, ptsFound );
+        retVal = FindMoveTargetsStopSign( ptsFound );
     }
     else
     {
@@ -820,13 +862,21 @@ GC_STATUS CalibExecutive::FindMoveTargets( const Mat &img, FindPointSet &ptsFoun
 
     return retVal;
 }
-GC_STATUS CalibExecutive::FindMoveTargetsStopSign( const Mat &img, FindPointSet &ptsFound )
+GC_STATUS CalibExecutive::FindMoveTargetsStopSign( FindPointSet &ptsFound )
 {
-    GC_STATUS retVal = stopSign.SearchObj().FindMoveTargets( img, bowTie.TargetRoi(), ptsFound.lftPixel, ptsFound.rgtPixel );
-    if ( GC_OK == retVal )
+    GC_STATUS retVal = GC_OK;
+    CalibModelSymbol model = stopSign.Model();
+    if ( 8 == model.pixelPoints.size() )
     {
+        ptsFound.lftPixel = model.pixelPoints[ 5 ];
+        ptsFound.rgtPixel = model.pixelPoints[ 4 ];
         ptsFound.ctrPixel.x = ( ptsFound.lftPixel.x + ptsFound.rgtPixel.x ) / 2.0;
         ptsFound.ctrPixel.y = ( ptsFound.lftPixel.y + ptsFound.rgtPixel.y ) / 2.0;
+    }
+    else
+    {
+        FILE_LOG( logERROR ) << "[FindLine::FindMoveTargetsStopSign] Valid calibration required";
+        retVal = GC_ERR;
     }
     return retVal;
 }
@@ -844,9 +894,13 @@ GC_STATUS CalibExecutive::MoveRefPoint( cv::Point2d &lftRefPt, cv::Point2d &rgtR
 {
     GC_STATUS retVal = GC_OK;
 
-    if ( "BowTie" == paramsCurrent.calibType )
+    if ( "StopSign" == paramsCurrent.calibType )
     {
-        retVal = MoveRefPointBowTie( lftRefPt, rgtRefPt );
+        retVal = stopSign.MoveRefPoint( lftRefPt, rgtRefPt );
+    }
+    else if ( "BowTie" == paramsCurrent.calibType )
+    {
+        retVal = bowTie.MoveRefPoint( lftRefPt, rgtRefPt );
     }
     else
     {
@@ -854,11 +908,6 @@ GC_STATUS CalibExecutive::MoveRefPoint( cv::Point2d &lftRefPt, cv::Point2d &rgtR
         retVal = GC_ERR;
     }
 
-    return retVal;
-}
-GC_STATUS CalibExecutive::MoveRefPointBowTie( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt )
-{
-    GC_STATUS retVal = bowTie.MoveRefPoint( lftRefPt, rgtRefPt );
     return retVal;
 }
 GC_STATUS CalibExecutive::CalculateRMSE( const cv::Mat &img, double &rmseEuclideanDist, double &rmseX, double &rmseY )

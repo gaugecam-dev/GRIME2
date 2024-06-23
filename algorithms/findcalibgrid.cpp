@@ -25,7 +25,7 @@
 
 #ifdef DEBUG_FIND_CALIB_GRID
 #undef DEBUG_FIND_CALIB_GRID
-static const std::string DEBUG_RESULT_FOLDER = "/var/tmp/water/";
+static const std::string DEBUG_RESULT_FOLDER = "/var/tmp/gaugecam/";
 #endif
 
 using namespace cv;

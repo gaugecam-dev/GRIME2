@@ -1087,6 +1087,7 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                                         resultString = filename + ",";
                                         resultString += timestamp + ",";
 
+                                        sigImageUpdate();
                                         retVal = m_visApp.CalcLine( img, timestamp, params.isStopSignCalib );
                                         msg = filename + ( GC_OK == retVal ? " SUCCESS\n" : " FAILURE\n" );
                                         if ( GC_OK == retVal )

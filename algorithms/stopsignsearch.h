@@ -91,7 +91,7 @@ class StopsignSearch
 public:
     StopsignSearch();
 
-    GC_STATUS Init( const int templateDim, const int rotateCnt, const cv::Size searchRoiSize );
+    GC_STATUS Init( const int templateDim, const int rotateCnt );
     GC_STATUS Find( const cv::Mat &img, std::vector< cv::Point2d > &pts, const bool do_coarse_prefind = false );
     GC_STATUS FindScale( const cv::Mat &img, std::vector< cv::Point2d > &pts, const double scale, const bool do_coarse_prefind = false );
     GC_STATUS FindMoveTargets( const cv::Mat &img, const cv::Rect targetRoi, cv::Point2d &ptLeft, cv::Point2d &ptRight );

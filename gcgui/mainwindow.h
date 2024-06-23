@@ -58,6 +58,7 @@ signals:
     void sig_visAppMessage( QString imgPath );
     void sig_updateProgess( int );
     void sig_visAppLineFound( const QString imgPath );
+    void sig_updateImage();
 
 private slots:
     void on_actionZoomToFit_triggered();
@@ -75,6 +76,8 @@ private slots:
     void on_toolButton_clearMsgs_clicked();
     void on_visAppMessage(string);
     void do_visAppMessage(QString);
+    void on_updateImage();
+    void do_updateImage();
     void on_updateProgress( const int );
     void do_updateProgress( const int );
     void on_pushButton_clearTable_clicked();

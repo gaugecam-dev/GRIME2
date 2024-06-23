@@ -256,6 +256,7 @@ void MainWindow::createConnections()
 
     connect( this, SIGNAL( sig_visAppMessage(QString) ), this, SLOT( do_visAppMessage(QString) ) );
     connect( this, SIGNAL( sig_updateProgess(int) ),     this, SLOT( do_updateProgress(int) ) );
+    connect( this, SIGNAL( sig_updateImage() ), this, SLOT( do_updateImage() ) );
 
     m_visApp.sigMessage.connect( bind( &MainWindow::on_visAppMessage, this, boost::placeholders::_1 ) );
     m_visApp.sigProgress.connect( bind( &MainWindow::on_updateProgress, this, boost::placeholders::_1 ) );
@@ -723,10 +724,12 @@ void MainWindow::paintEvent( QPaintEvent * )
 }
 void MainWindow::on_pushButton_clearTable_clicked() { ClearTable(); }
 void MainWindow::on_tableAddRow( const string row_string ) { AddRow( row_string ); }
+void MainWindow::on_updateImage() { emit sig_updateImage(); }
+void MainWindow::do_updateImage() { UpdatePixmapTarget(); }
 void MainWindow::on_updateProgress( const int value ) { emit sig_updateProgess( value ); }
 void MainWindow::do_updateProgress( const int value ) { ui->progressBar_imageLoad->setValue( std::min( 100, std::max( 0, value ) ) ); }
-void MainWindow::on_visAppMessage(string msg) { emit sig_visAppMessage( QString::fromStdString( msg ) ); }
-void MainWindow::do_visAppMessage(QString msg)
+void MainWindow::on_visAppMessage( string msg ) { emit sig_visAppMessage( QString::fromStdString( msg ) ); }
+void MainWindow::do_visAppMessage( QString msg )
 {
     if ( msg.contains( "update image only" ) )
     {
@@ -1629,7 +1632,7 @@ void MainWindow::on_pushButton_createCalibCommandLine_clicked()
 {
     if ( ui->radioButton_calibBowtie->isChecked() )
     {
-        // --create_calib bowtie --source "/media/kchapman/Elements/data/sunwater/2024_01_08_cal_images/002.jpg" --calib_json "/media/kchapman/Elements/data/sunwater/2024_01_08_cal_images/calib_002.json" --csv_file "/media/kchapman/Elements/data/sunwater/2024_01_08_cal_images/calibration_target_world_coordinates.csv" --result_image "/var/tmp/water/calib_result.png" --waterline_roi 810 270 1000 270 800 800 990 830 --calib_roi 600 200 614 678
+        // --create_calib bowtie --source "/media/kchapman/Elements/data/sunwater/2024_01_08_cal_images/002.jpg" --calib_json "/media/kchapman/Elements/data/sunwater/2024_01_08_cal_images/calib_002.json" --csv_file "/media/kchapman/Elements/data/sunwater/2024_01_08_cal_images/calibration_target_world_coordinates.csv" --result_image "/var/tmp/gaugecam/calib_result.png" --waterline_roi 810 270 1000 270 800 800 990 830 --calib_roi 600 200 614 678
         string msg = "--create_calib bowtie ";
         string folder = ui->lineEdit_imageFolder->text().toStdString();
         if ( '/' != folder[ folder.size() - 1 ] )
@@ -1648,7 +1651,7 @@ void MainWindow::on_pushButton_createCalibCommandLine_clicked()
     }
     else
     {
-        //--create_calib stopsign --source "/media/kchapman/Elements/data/sunwater/image004.jpg" --calib_json "/media/kchapman/Elements/data/sunwater/2024_01_08_cal_images/calib_004.json" --result_image "/var/tmp/water/calib_result.png" --zero_offset 3.2 --facet_length 0.599 --waterline_roi 1059 529 1266 546 1266 858 1066 843 --calib_roi 502 271 399 446
+        //--create_calib stopsign --source "/media/kchapman/Elements/data/sunwater/image004.jpg" --calib_json "/media/kchapman/Elements/data/sunwater/2024_01_08_cal_images/calib_004.json" --result_image "/var/tmp/gaugecam/calib_result.png" --zero_offset 3.2 --facet_length 0.599 --waterline_roi 1059 529 1266 546 1266 858 1066 843 --calib_roi 502 271 399 446
         string msg = "--create_calib stopsign ";
         string folder = ui->lineEdit_imageFolder->text().toStdString();
         if ( '/' != folder[ folder.size() - 1 ] )
@@ -1671,7 +1674,7 @@ void MainWindow::on_pushButton_createFindCommandLine_clicked()
 {
     if ( ui->radioButton_folderOfImages->isChecked() )
     {
-        // --run_folder --timestamp_from_filename --timestamp_start_pos 10 --timestamp_format "yy-mm-dd-HH-MM" --source "./config/2012_demo/06/" --calib_json "./config/calib.json" --csv_file "/var/tmp/water/folder.csv" --result_folder "/var/tmp/water/"
+        // --run_folder --timestamp_from_filename --timestamp_start_pos 10 --timestamp_format "yy-mm-dd-HH-MM" --source "./config/2012_demo/06/" --calib_json "./config/calib.json" --csv_file "/var/tmp/gaugecam/folder.csv" --result_folder "/var/tmp/gaugecam/"
         string msg = "--run_folder ";
         msg += ui->radioButton_dateTimeInFilename->isChecked() ? "--timestamp_from_filename " : "--timestamp_from_exif ";
         msg += "--timestamp_start_pos " + to_string( ui->spinBox_timeStringPosZero->value() ) + " ";

@@ -54,6 +54,7 @@ public:
     typedef boost::signals2::signal< void( const std::string ) > VisAppMsgSig;
     typedef boost::signals2::signal< void( const int ) > VisAppProgressSig;
     typedef boost::signals2::signal< void( const string ) > VisAppUpdateTable;
+    typedef boost::signals2::signal< void() > VisAppUpdateImage;
 
     GuiVisApp();
     ~GuiVisApp();
@@ -95,6 +96,7 @@ public:
 
     // signals
     VisAppMsgSig sigMessage;
+    VisAppUpdateImage sigImageUpdate;
     VisAppProgressSig sigProgress;
     VisAppUpdateTable sigTableAddRow;
 
