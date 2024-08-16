@@ -369,14 +369,14 @@ public:
      * @brief Constructor to set the object to an uninitialized state
      */
     FindPointSet() :
-        anglePixel( MIN_DEFAULT_DBL ),
-        angleWorld( MIN_DEFAULT_DBL ),
-        lftPixel( cv::Point2d( MIN_DEFAULT_DBL, MIN_DEFAULT_DBL ) ),
-        lftWorld( cv::Point2d( MIN_DEFAULT_DBL, MIN_DEFAULT_DBL ) ),
+        anglePixel( -99999 ),
+        angleWorld( -99999 ),
+        lftPixel( cv::Point2d( -1, -1 ) ),
+        lftWorld( cv::Point2d( -1, -1 ) ),
         ctrPixel( cv::Point2d( 0.0, 0.0 ) ),
-        ctrWorld( cv::Point2d( MIN_DEFAULT_DBL, MIN_DEFAULT_DBL ) ),
-        rgtPixel( cv::Point2d( MIN_DEFAULT_DBL, MIN_DEFAULT_DBL ) ),
-        rgtWorld( cv::Point2d( MIN_DEFAULT_DBL, MIN_DEFAULT_DBL ) )
+        ctrWorld( cv::Point2d( -1, -1 ) ),
+        rgtPixel( cv::Point2d( -1, -1 ) ),
+        rgtWorld( cv::Point2d( -1, -1 ) )
     {}
 
     /**
@@ -403,14 +403,14 @@ public:
      */
     void clear()
     {
-        anglePixel = MIN_DEFAULT_DBL;
-        angleWorld = MIN_DEFAULT_DBL;
-        lftPixel = cv::Point2d( MIN_DEFAULT_DBL, MIN_DEFAULT_DBL );
-        lftWorld = cv::Point2d( MIN_DEFAULT_DBL, MIN_DEFAULT_DBL );
+        anglePixel = -99999;
+        angleWorld = -99999;
+        lftPixel = cv::Point2d( -1, -1 );
+        lftWorld = cv::Point2d( -1, -1 );
         ctrPixel = cv::Point2d( 0.0, 0.0 );
-        ctrWorld = cv::Point2d( MIN_DEFAULT_DBL, MIN_DEFAULT_DBL );
-        rgtPixel = cv::Point2d( MIN_DEFAULT_DBL, MIN_DEFAULT_DBL );
-        rgtWorld = cv::Point2d( MIN_DEFAULT_DBL, MIN_DEFAULT_DBL );
+        ctrWorld = cv::Point2d( -1, -1 );
+        rgtPixel = cv::Point2d( -1, -1 );
+        rgtWorld = cv::Point2d( -1, -1 );
     }
 
     /**

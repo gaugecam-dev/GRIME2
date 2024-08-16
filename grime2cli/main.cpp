@@ -43,7 +43,7 @@ namespace fs = std::filesystem;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~ STOP SIGN ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // --calibrate --source "./config/2022_demo/20220715_KOLA_GaugeCam_001.JPG" --calib_json "./config/calib_stopsign.json" --result_image "/var/tmp/gaugecam/calib_result_stopsign.png"
-// --find_line --timestamp_from_exif --timestamp_start_pos 0 --timestamp_format "yyyy-mm-dd-HH-MM" --source "./config/2022_demo/20220715_KOLA_GaugeCam_001.JPG" --calib_json "./config/calib_stopsign.json" --result_image "/var/tmp/gaugecam/find_line_result_stopsign.png"
+// --find_line --timestamp_from_exif --timestamp_start_pos 0 --timestamp_format "yyyy-mm-dd-HH-MM" --source "./config/2022_demo/20220715_KOLA_GaugeCam_001.JPG" --calib_json "./config/calib_stopsign.json" --csv_file "/var/tmp/gaugecam/folder_stopsign.csv" --result_image "/var/tmp/gaugecam/find_line_result_stopsign.png"
 // --run_folder --timestamp_from_exif --timestamp_start_pos 0 --timestamp_format "yyyy-mm-dd-HH-MM" --source "./config/2022_demo/" --calib_json "./config/calib_stopsign.json" --csv_file "/var/tmp/gaugecam/folder_stopsign.csv" --result_folder "/var/tmp/gaugecam/"
 
 // forward declarations
