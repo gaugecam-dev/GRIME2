@@ -1029,7 +1029,7 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                     }
                     else
                     {
-                        string tmStr, timestamp, resultString, graphData;
+                        string timestamp, resultString;
                         for ( size_t i = 0; i < images.size(); ++i )
                         {
                             if ( !m_isRunning )
@@ -1129,24 +1129,22 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                                             Mat color, colorTemp;
                                             string resultFilepath = resultFolderAdj + fs::path( images[ i ] ).stem().string() + "_overlay.png";
 
-#if 1
+#if 0
                                             retVal = GetImageOverlay( BUF_OVERLAY, drawTypes );
 #else
-                                            bool drawCalib = false;
-                                            if ( ( CALIB_GRID & drawTypes ) || ( CALIB_SCALE & drawTypes ) || ( SEARCH_ROI & drawTypes ) )
+                                            imwrite( "/var/tmp/gaugecam/orig.png", img );
+                                            retVal = m_visApp.DrawCalibOverlay( img, colorTemp, CALIB_SCALE & drawTypes, CALIB_GRID & drawTypes, false, SEARCH_ROI & drawTypes, false );
+                                            if ( GC_OK != retVal  )
                                             {
-                                                drawCalib = true;
-                                                retVal = m_visApp.DrawCalibOverlay( img, colorTemp );
-                                                if ( GC_OK != retVal  )
-                                                {
-                                                    FILE_LOG( logWARNING ) << "Could not draw overlay on findline image " << resultFilepath;
-                                                }
+                                                FILE_LOG( logWARNING ) << "Could not draw overlay on findline image " << resultFilepath;
                                             }
-                                            retVal = m_visApp.DrawLineFindOverlay( drawCalib ? colorTemp : img, color, findData.findlineResult, drawTypes );
+                                            imwrite( "/var/tmp/gaugecam/overlay.png", colorTemp );
+                                            retVal = m_visApp.DrawLineFindOverlay( colorTemp, color, findData.findlineResult, drawTypes );
 #endif
                                             if ( GC_OK == retVal )
                                             {
-                                                bool bRet = imwrite( resultFilepath, m_matDisplay );
+//                                                bool bRet = imwrite( resultFilepath, m_matDisplay );
+                                                bool bRet = imwrite( resultFilepath, color );
                                                 if ( !bRet )
                                                 {
                                                     FILE_LOG( logWARNING ) << "Could not write result image to " << resultFilepath;

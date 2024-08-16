@@ -341,6 +341,7 @@ GC_STATUS FindWaterLevel( const Grime2CLIParams cliParams )
     params.imagePath = cliParams.src_imagePath;
     params.calibFilepath = cliParams.calib_jsonPath;
     params.resultImagePath = cliParams.result_imagePath;
+    params.resultCSVPath = cliParams.csvPath;
     params.timeStampFormat = cliParams.timestamp_format;
     params.timeStampType = cliParams.timestamp_type == "from_filename" ? FROM_FILENAME : FROM_EXIF;
     params.timeStampStartPos = cliParams.timestamp_startPos;
