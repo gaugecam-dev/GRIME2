@@ -3,15 +3,15 @@
 ;Written by Joost Verburg
 
 !ifndef INSTALLFILEPATH_QT
-!define INSTALLFILEPATH_QT "..\thirdparty\qt\qt_5_15_1\x64\bin"
+!define INSTALLFILEPATH_QT "..\thirdparty\qt\qt_6.7.2\x64\vc19\bin"
 !endif
 
 !ifndef INSTALLFILEPATH_OPENCV
-!define INSTALLFILEPATH_OPENCV "..\thirdparty\opencv\opencv_455\bin\vc19"
+!define INSTALLFILEPATH_OPENCV "..\thirdparty\opencv\opencv_4.10.0\x64\vc19\bin"
 !endif
 
 ; !ifndef INSTALLFILEPATH_BOOST
-; !define INSTALLFILEPATH_BOOST "..\thirdparty\boost\boost_1_78_0\vc141\bin"
+; !define INSTALLFILEPATH_BOOST "..\thirdparty\boost\boost_1.86\x64\vc19\bin"
 ; !endif
 
 ; !ifndef INSTALLFILEPATH_FFMPEG
@@ -23,7 +23,7 @@
 !endif
 
 !ifndef INSTALLFILEPATH_RELEASE
-!define INSTALLFILEPATH_RELEASE "..\..\build-grime2-Desktop_Qt_5_15_1_MSVC2019_64bit-Release"
+!define INSTALLFILEPATH_RELEASE "..\build\Desktop_x86_windows_msvc2022_pe_64bit-Release"
 !endif
 
 !ifndef INSTALLFILEPATH_GCGUI
@@ -130,24 +130,24 @@ Section "GaugeCam Files" grime2
 
   SetOutPath "$INSTDIR\prereqs"
   File "${INSTALLFILEPATH_PREREQS}\VC_redist.x64.exe"
-  File "${INSTALLFILEPATH_PREREQS}\ExifTool_install_12.28_64.exe"
+  File "${INSTALLFILEPATH_PREREQS}\ExifTool_install_12.92_64.exe"
 
   SetOutPath "$INSTDIR"
   File "${INSTALLFILEPATH_GCGUI}\grime2.exe"
   File "${INSTALLFILEPATH_GRIME2CLI}\grime2cli.exe"
   File "${INSTALLFILEPATH_CONFIG}\batch_test_win.bat"
-  File "${INSTALLFILEPATH_QT}\Qt5Core.dll"
-  File "${INSTALLFILEPATH_QT}\Qt5Gui.dll"
-  File "${INSTALLFILEPATH_QT}\Qt5Widgets.dll"
-  File "${INSTALLFILEPATH_OPENCV}\opencv_core455.dll"
-  ; File "${INSTALLFILEPATH_OPENCV}\opencv_dnn455.dll"
-  File "${INSTALLFILEPATH_OPENCV}\opencv_imgproc455.dll"
-  File "${INSTALLFILEPATH_OPENCV}\opencv_imgcodecs455.dll"
-  File "${INSTALLFILEPATH_OPENCV}\opencv_videoio455.dll"
-  File "${INSTALLFILEPATH_OPENCV}\opencv_video455.dll"
-  File "${INSTALLFILEPATH_OPENCV}\opencv_calib3d455.dll"
-  File "${INSTALLFILEPATH_OPENCV}\opencv_flann455.dll"
-  File "${INSTALLFILEPATH_OPENCV}\opencv_features2d455.dll"
+  File "${INSTALLFILEPATH_QT}\Qt6Core.dll"
+  File "${INSTALLFILEPATH_QT}\Qt6Gui.dll"
+  File "${INSTALLFILEPATH_QT}\Qt6Widgets.dll"
+  File "${INSTALLFILEPATH_OPENCV}\opencv_core4100.dll"
+  ; File "${INSTALLFILEPATH_OPENCV}\opencv_dnn4100.dll"
+  File "${INSTALLFILEPATH_OPENCV}\opencv_imgproc4100.dll"
+  File "${INSTALLFILEPATH_OPENCV}\opencv_imgcodecs4100.dll"
+  File "${INSTALLFILEPATH_OPENCV}\opencv_videoio4100.dll"
+  File "${INSTALLFILEPATH_OPENCV}\opencv_video4100.dll"
+  File "${INSTALLFILEPATH_OPENCV}\opencv_calib3d4100.dll"
+  File "${INSTALLFILEPATH_OPENCV}\opencv_flann4100.dll"
+  File "${INSTALLFILEPATH_OPENCV}\opencv_features2d4100.dll"
   ; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ; now linked statically
   ; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -197,7 +197,7 @@ Section "Prerequisites_exiftool"
   IfFileExists "C:\Program Files\ExifTool\ExifTool.exe" alreadyInstalledExifTool beginExifTool
   beginExifTool:
     MessageBox MB_OK "Your system does not appear to have ExifTool installed.$\n$\nPress OK to install it."
-    ExecWait "..\prereqs\ExifTool_install_12.26_64.exe"
+    ExecWait "..\prereqs\ExifTool_install_12.92_64.exe"
     Goto endExifTool
   alreadyInstalledExifTool:
     DetailPrint "ExifTool already installed"

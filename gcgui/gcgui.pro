@@ -36,10 +36,10 @@ win32 {
     DEFINES += NOMINMAX
     DEFINES += WIN32_LEAN_AND_MEAN
     DEFINES += _WIN32_WINNT=0x0501
-    OPENCV_INCLUDES = c:/opencv/opencv_455/include
-    OPENCV_LIBS = C:/opencv/opencv_455/x64/lib/vc19
-    BOOST_INCLUDES = C:/Boost/include/boost-1_78
-    BOOST_LIBS = C:/Boost/lib
+    OPENCV_INCLUDES = c:/opencv/opencv_4.10.0/include
+    OPENCV_LIBS = C:/opencv/opencv_4.10.0/x64/vc19/lib
+    BOOST_INCLUDES = C:/Boost/boost_1_86/include
+    BOOST_LIBS = C:/Boost/boost_1_86/lib
 }
 
 # win32:RC_ICONS += ./icons/coffee_logo.png
@@ -72,7 +72,7 @@ HEADERS += \
 	../algorithms/findline.h \
 	../algorithms/gc_types.h \
 	../algorithms/gifanim/gifanim.h \
-    ../algorithms/labelroi.h \
+        ../algorithms/labelroi.h \
         ../algorithms/log.h \
         ../algorithms/metadata.h \
         ../algorithms/searchlines.h \
@@ -117,28 +117,28 @@ else {
             -L$$OPENCV_LIBS
 
     CONFIG(debug, debug|release) {
-        LIBS += -lopencv_core455d \
-	        -lopencv_imgproc455d \
-		-lopencv_imgcodecs455d \
-		-lopencv_videoio455d \
-		-lopencv_video455d \
-		-lopencv_calib3d455d \
-		-llibboost_filesystem-vc142-mt-gd-x64-1_78 \
-		-llibboost_date_time-vc142-mt-gd-x64-1_78 \
-		-llibboost_system-vc142-mt-gd-x64-1_78 \
-		-llibboost_chrono-vc142-mt-gd-x64-1_78 \
+        LIBS += -lopencv_core4100d \
+                -lopencv_imgproc4100d \
+                -lopencv_imgcodecs4100d \
+                -lopencv_videoio4100d \
+                -lopencv_video4100d \
+                -lopencv_calib3d4100d \
+                -llibboost_filesystem-vc143-mt-gd-x64-1_86 \
+                -llibboost_date_time-vc143-mt-gd-x64-1_86 \
+                -llibboost_system-vc143-mt-gd-x64-1_86 \
+                -llibboost_chrono-vc143-mt-gd-x64-1_86 \
                 -ladvapi32
     } else {
-        LIBS += -lopencv_core455 \
-	        -lopencv_imgproc455 \
-		-lopencv_imgcodecs455 \
-		-lopencv_videoio455 \
-		-lopencv_video455 \
-		-lopencv_calib3d455 \
-		-llibboost_filesystem-vc142-mt-x64-1_78 \
-		-llibboost_date_time-vc142-mt-x64-1_78 \
-		-llibboost_system-vc142-mt-x64-1_78 \
-		-llibboost_chrono-vc142-mt-x64-1_78 \
+        LIBS += -lopencv_core4100 \
+                -lopencv_imgproc4100 \
+                -lopencv_imgcodecs4100 \
+                -lopencv_videoio4100 \
+                -lopencv_video4100 \
+                -lopencv_calib3d4100 \
+                -llibboost_filesystem-vc143-mt-x64-1_86 \
+                -llibboost_date_time-vc143-mt-x64-1_86 \
+                -llibboost_system-vc143-mt-x64-1_86 \
+                -llibboost_chrono-vc143-mt-x64-1_86 \
                 -ladvapi32
     }
 }
