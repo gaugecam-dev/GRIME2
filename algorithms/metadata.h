@@ -18,7 +18,7 @@
  * @brief A file for a class to add/retrieve metadata to/from images
  *
  * \author Kenneth W. Chapman
- * \copyright Copyright (C) 2010-2021, Kenneth W. Chapman <coffeesig@gmail.com>, all rights reserved.\n
+ * \copyright Copyright (C) 2010-2024, Kenneth W. Chapman <coffeesig@gmail.com>, all rights reserved.\n
  * This project is released under the Apache License, Version 2.0.
  * \bug No known bugs.
  */

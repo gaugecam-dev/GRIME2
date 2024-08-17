@@ -550,9 +550,9 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result 
                                                                          params.timeStampFormat, result.timestamp );
                 }
             }
-            else if ( FROM_EXTERNAL == params.timeStampType )
+            else
             {
-                FILE_LOG( logERROR ) << "Timestamp passed into method not yet implemented";
+                FILE_LOG( logERROR ) << "Invalid timestamp type";
                 retVal = GC_ERR;
             }
 

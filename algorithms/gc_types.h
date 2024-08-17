@@ -18,7 +18,7 @@
  * @brief An include file with data classes, enums and constants used by the gaugecam libraries.
  *
  * \author Kenneth W. Chapman
- * \copyright Copyright (C) 2010-2021, Kenneth W. Chapman <coffeesig@gmail.com>, all rights reserved.\n
+ * \copyright Copyright (C) 2010-2024, Kenneth W. Chapman <coffeesig@gmail.com>, all rights reserved.\n
  * This project is released under the Apache License, Version 2.0.
  * \bug No known bugs.
  */
@@ -53,8 +53,7 @@ enum GC_STATUS
 enum GC_TIMESTAMP_TYPE
 {
     FROM_FILENAME = 0,  ///< Extract timestamp from filename using specified format
-    FROM_EXIF,          ///< Get timestamp from image file exif data using specified format
-    FROM_EXTERNAL       ///< Pass filename to algorithm using YYYY-MM-DDThh:mm::ss format (ISO)
+    FROM_EXIF           ///< Get timestamp from image file exif data using specified format
 };
 
 /// enum for draw selections

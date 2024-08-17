@@ -945,6 +945,65 @@ bool GuiVisApp::isRunningFindLine()
 {
     return m_threadType != FIND_LINES_THREAD ? false : m_isRunning;
 }
+inline GC_STATUS GuiVisApp::AccumRunImageCLIString( const FindLineParams params, std::string &cliString, std::string &resultFolder )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        cliString.clear();
+        resultFolder.clear();
+
+        // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // example cli parameters
+        // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // --find_line
+        // --timestamp_from_exif
+        // --timestamp_start_pos 0
+        // --timestamp_format "yyyy-mm-dd-HH-MM"
+        // --calib_json "./config/calib_stopsign.json"
+        // --csv_file "/var/tmp/gaugecam/folder_stopsign.csv"
+        // --source "./config/2022_demo/20220715_KOLA_GaugeCam_001.JPG"
+        // --result_image "/var/tmp/gaugecam/find_line_result_stopsign.png"
+        // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        cliString = "--find_line ";
+        if ( FROM_FILENAME == params.timeStampType )
+        {
+            cliString += "--timestamp_from_filename ";
+        }
+        else if ( FROM_EXIF == params.timeStampType )
+        {
+            cliString += "--timestamp_from_exif ";
+        }
+        cliString += "--timestamp_start_pos ";
+        cliString += to_string( params.timeStampStartPos );
+        cliString += " --timestamp_format ";
+        cliString += params.timeStampFormat;
+        cliString += " --calib_json ";
+        cliString += params.calibFilepath;
+        if ( !params.resultCSVPath.empty() )
+        {
+            cliString += " --csv_file ";
+            cliString += params.resultCSVPath;
+        }
+        cliString += " ";
+        if ( !params.resultImagePath.empty() )
+        {
+            resultFolder = params.resultImagePath;
+            if ( '/' != resultFolder[ resultFolder.size() - 1 ] )
+            {
+                resultFolder += '/';
+            }
+        }
+    }
+    catch( std::exception &e )
+    {
+        FILE_LOG( logERROR ) << "[VisApp::AccumRunImageCLIString] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+
+    return retVal;
+}
 GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &images,  const FindLineParams params, const IMG_DISPLAY_OVERLAYS drawTypes )
 {
     GC_STATUS retVal = GC_OK;
@@ -961,7 +1020,6 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
         // sort( images.begin(), images.end() );
 
         ofstream csvOut;
-        string resultFolderAdj = params.resultImagePath;
 
         if ( !params.resultCSVPath.empty() )
         {
@@ -1001,13 +1059,6 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
 
         if ( GC_OK == retVal )
         {
-            if ( '/' != resultFolderAdj[ resultFolderAdj.size() - 1 ] )
-                resultFolderAdj += '/';
-
-
-            FindData findData;
-            findData.findlineParams = params;
-
             if ( images.empty() )
             {
                 sigMessage( "No images found" );
@@ -1029,7 +1080,12 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                     }
                     else
                     {
-                        string timestamp, resultString;
+                        string cmdStringPrefix, cmdString, resultFolder;
+                        retVal = AccumRunImageCLIString( params, cmdStringPrefix, resultFolder );
+                        if ( GC_OK != retVal )
+                        {
+                            sigMessage( "Could not accumulate command line prefix string" );
+                        }
                         for ( size_t i = 0; i < images.size(); ++i )
                         {
                             if ( !m_isRunning )
@@ -1040,124 +1096,15 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                             }
                             else
                             {
-                                findData.findlineResult.clear();
-                                string filename = fs::path( images[ i ] ).filename().string();
-                                timestamp = "yyyy-mm-ddTHH:MM:SS";
-                                if ( FROM_FILENAME == params.timeStampType )
+                                cmdString = cmdStringPrefix + " --source ";
+                                cmdString += images[ i ];
+                                if ( !resultFolder.empty() )
                                 {
-                                    retVal = GcTimestampConvert::GetTimestampFromString( fs::path( images[ i ] ).filename().string(),
-                                                                                         params.timeStampStartPos, params.timeStampFormat, timestamp );
-                                }
-                                else if ( FROM_EXIF == params.timeStampType )
-                                {
-                                    string timestampTemp;
-                                    retVal = m_visApp.GetImageTimestamp( images[ i ], timestampTemp );
-                                    if ( GC_OK == retVal )
-                                    {
-                                        retVal = GcTimestampConvert::GetTimestampFromString( timestampTemp, params.timeStampStartPos,
-                                                                                             params.timeStampFormat, timestamp );
-                                    }
-                                }
-                                else if ( FROM_EXTERNAL == params.timeStampType )
-                                {
-                                    FILE_LOG( logERROR ) << "Timestamp passed into method not yet implemented";
-                                    retVal = GC_ERR;
-                                }
-
-                                if ( GC_OK != retVal )
-                                {
-                                    sigMessage( "Timestamp failure. Check source, format, and start position of timestamp" );
-                                }
-                                else
-                                {
-                                    img = imread( images[ i ], IMREAD_COLOR );
-                                    if ( img.empty() )
-                                    {
-                                        sigMessage( fs::path( images[ i ] ).filename().string() + " FAILURE: Could not open image" );
-                                    }
-                                    else
-                                    {
-                                        string illum_state = "N/A";
-                                        retVal = m_visApp.GetIllumination( images[ i ], illum_state );
-                                        if ( GC_OK != retVal )
-                                        {
-                                            illum_state = "N/A";
-                                        }
-
-                                        resultString = filename + ",";
-                                        resultString += timestamp + ",";
-
-                                        sigImageUpdate();
-                                        retVal = m_visApp.CalcLine( img, timestamp, params.isStopSignCalib );
-                                        msg = filename + ( GC_OK == retVal ? " SUCCESS\n" : " FAILURE\n" );
-                                        if ( GC_OK == retVal )
-                                        {
-                                            findData.findlineResult = m_visApp.GetFindLineResult();
-
-                                            sprintf( buffer, "Timestamp=%s\n", findData.findlineResult.timestamp.c_str() );
-                                            msg += string( buffer );
-
-                                            sprintf( buffer, "Water level=%.3f\n", findData.findlineResult.waterLevelAdjusted.y );
-                                            msg += string( buffer );
-                                            resultString += to_string( findData.findlineResult.waterLevelAdjusted.y );
-                                            sprintf( buffer, "Target movement x=%.3f, y=%.3f\n",
-                                                     findData.findlineResult.offsetMovePts.ctrWorld.x, findData.findlineResult.offsetMovePts.ctrWorld.y );
-                                            msg += string( buffer );
-                                        }
-                                        else
-                                        {
-                                            findData.findlineResult.clear();
-                                            msg += string( "Water level=FAIL" );
-                                            resultString += to_string( -9999999.0 );
-                                            findData.findlineResult.waterLevelAdjusted.y = -9999999.0;
-                                            findData.findlineResult.calcLinePts.angleWorld = -9999999.0;
-                                            findData.findlineResult.offsetMovePts.ctrWorld.y = -9999999.0;
-                                        }
-
-                                        findData.findlineResult.timestamp = timestamp;
-                                        if ( !params.resultCSVPath.empty() )
-                                        {
-                                            csvOut << std::setprecision( 3 ) << std::fixed << filename << "," << timestamp << "," <<
-                                                      ( findData.findlineResult.findSuccess ? "SUCCESS" : "FAIL" ) << "," <<
-                                                      findData.findlineResult.waterLevelAdjusted.y << "," <<
-                                                      findData.findlineResult.calcLinePts.angleWorld << "," <<
-                                                      findData.findlineResult.offsetMovePts.ctrWorld.y << "," <<
-                                                      illum_state << endl;
-                                        }
-                                        if ( !params.resultImagePath.empty() )
-                                        {
-                                            Mat color, colorTemp;
-                                            string resultFilepath = resultFolderAdj + fs::path( images[ i ] ).stem().string() + "_overlay.png";
-
-#if 0
-                                            retVal = GetImageOverlay( BUF_OVERLAY, drawTypes );
-#else
-                                            imwrite( "/var/tmp/gaugecam/orig.png", img );
-                                            retVal = m_visApp.DrawCalibOverlay( img, colorTemp, CALIB_SCALE & drawTypes, CALIB_GRID & drawTypes, false, SEARCH_ROI & drawTypes, false );
-                                            if ( GC_OK != retVal  )
-                                            {
-                                                FILE_LOG( logWARNING ) << "Could not draw overlay on findline image " << resultFilepath;
-                                            }
-                                            imwrite( "/var/tmp/gaugecam/overlay.png", colorTemp );
-                                            retVal = m_visApp.DrawLineFindOverlay( colorTemp, color, findData.findlineResult, drawTypes );
-#endif
-                                            if ( GC_OK == retVal )
-                                            {
-//                                                bool bRet = imwrite( resultFilepath, m_matDisplay );
-                                                bool bRet = imwrite( resultFilepath, color );
-                                                if ( !bRet )
-                                                {
-                                                    FILE_LOG( logWARNING ) << "Could not write result image to " << resultFilepath;
-                                                }
-                                            }
-                                        }
-
-                                        findData.findlineParams.imagePath = images[ i ];
-                                        retVal = LoadImageToApp( img );
-                                        sigMessage( "update image only" );
-                                        sigMessage( msg );
-                                        sigTableAddRow( resultString );
-                                    }
+                                    cmdString += " --result_image ";
+                                    string filename = fs::path( images[ i ] ).stem().string() + "_overlay.png";
+                                    fs::path full_path = fs::path( resultFolder ) / filename;
+                                    cmdString += full_path.string();
+                                    cout << cmdString << endl;
                                 }
                             }
                             progressVal = cvRound( 100.0 * static_cast< double >( i ) / static_cast< double >( images.size() ) ) + 1;
