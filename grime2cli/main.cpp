@@ -291,36 +291,23 @@ GC_STATUS RunFolder( const Grime2CLIParams cliParams )
             }
             else
             {
-                FindLineParams params;
-
-                params.calibFilepath = cliParams.calib_jsonPath;
-                params.resultCSVPath = cliParams.csvPath;
                 string result_folder = cliParams.result_imagePath;
                 if ( !result_folder.empty() )
                 {
                     if ( '/' != result_folder[ result_folder.size() - 1 ] )
                         result_folder += '/';
                 }
-                params.timeStampFormat = cliParams.timestamp_format;
-                params.timeStampType = cliParams.timestamp_type == "from_filename" ? FROM_FILENAME : FROM_EXIF;
-                params.timeStampStartPos = cliParams.timestamp_startPos;
 
-                VisApp visApp;
-                string resultJson;
-                FindLineResult result;
-
-                params.resultImagePath.clear();
+                Grime2CLIParams cliParamsAdj = cliParams;
                 for ( size_t i = 0; i < images.size(); ++i )
                 {
                     if ( !result_folder.empty() )
                     {
-                        params.resultImagePath = result_folder +
-                                fs::path( images[ i ] ).stem().string() + "_result.png";
+                        cliParamsAdj.result_imagePath = result_folder +
+                                fs::path( images[ i ] ).stem().string() + "_overlay.png";
                     }
-                    params.imagePath = images[ i ];
-                    cout << '[' << i + 1 << " of " << images.size() << "] " << fs::path( images[ i ] ).filename().string();
-                    retVal = visApp.CalcLine( params, result );
-                    cout << ( GC_OK == retVal ? ": SUCCESS " : " FAILURE " ) << result.waterLevelAdjusted.y << " cm" << '\r' << std::flush;
+                    cliParamsAdj.src_imagePath = images[ i ];
+                    retVal = FindWaterLevel( cliParamsAdj );
                 }
                 cout << endl;
             }

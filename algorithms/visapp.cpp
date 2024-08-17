@@ -453,20 +453,24 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result,
         resultJson.clear();
         if ( GC_OK != retVal )
         {
-            ss << "{\"image_path\": \"FAILURE\"}";
+            ss << "{";
+            ss << "\"STATUS\": \"FAILURE\",";
         }
         else
         {
             ss << "{";
-            ss << "\"status\": \"SUCCESS\",";
-            ss << "\"image_path\": \"" << params.imagePath << "\",";
-            ss << "\"calib_path\": \"" << params.calibFilepath << "\",";
-            ss << "\"result_path\": \"" << params.resultImagePath << "\",";
-            ss << "\"timestamp_type\": \"" << params.timeStampType << "\",";
-            ss << "\"timestamp_format\": \"" << params.timeStampFormat << "\",";
-            ss << "\"timestamp_start_pos\": " << params.timeStampStartPos << ",";
-            ss << "\"timestamp_length\": " << params.timeStampStartPos << ",";
-            ss << "\"timestamp\": \"" << result.timestamp << "\",";
+            ss << "\"STATUS\": \"SUCCESS\",";
+        }
+        ss << "\"image_path\": \"" << params.imagePath << "\",";
+        ss << "\"calib_path\": \"" << params.calibFilepath << "\",";
+        ss << "\"result_path\": \"" << params.resultImagePath << "\",";
+        ss << "\"timestamp_type\": \"" << params.timeStampType << "\",";
+        ss << "\"timestamp_format\": \"" << params.timeStampFormat << "\",";
+        ss << "\"timestamp_start_pos\": " << params.timeStampStartPos << ",";
+        ss << "\"timestamp_length\": " << params.timeStampStartPos << ",";
+        ss << "\"timestamp\": \"" << result.timestamp << "\",";
+        if ( GC_OK == retVal )
+        {
             ss << "\"origCalCenter_x\": " << result.calibOffsets.calibCenterPt.x << ",";
             ss << "\"origCalCenter_y\": " << result.calibOffsets.calibCenterPt.y << ",";
             ss << "\"origCalCenter_angle\": " << result.calibOffsets.calibAngle << ",";
@@ -499,17 +503,17 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result,
                     ss << ",";
             }
             ss << "],";
-            ss << "\"messages\": [";
-            for ( size_t i = 0; i < result.msgs.size(); ++i )
-            {
-                ss << "\"" << result.msgs[ i ] << "\"";
-                if ( result.msgs.size() - 1 != i )
-                    ss << ",";
-            }
-            ss << "]";
-            ss << "}";
-            resultJson = ss.str();
         }
+        ss << "\"messages\": [";
+        for ( size_t i = 0; i < result.msgs.size(); ++i )
+        {
+            ss << "\"" << result.msgs[ i ] << "\"";
+            if ( result.msgs.size() - 1 != i )
+                ss << ",";
+        }
+        ss << "]";
+        ss << "}";
+        resultJson = ss.str();
     }
     catch( std::exception &e )
     {

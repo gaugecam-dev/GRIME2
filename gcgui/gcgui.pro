@@ -53,6 +53,7 @@ SOURCES += \
 	../algorithms/findline.cpp \
 	../algorithms/gifanim/gifanim.cpp \
 	../algorithms/metadata.cpp \
+        ../algorithms/metadataex.cpp \
         ../algorithms/searchlines.cpp \
         ../algorithms/stopsignsearch.cpp \
         ../algorithms/visapp.cpp \
@@ -75,6 +76,7 @@ HEADERS += \
         ../algorithms/labelroi.h \
         ../algorithms/log.h \
         ../algorithms/metadata.h \
+        ../algorithms/metadataex.h \
         ../algorithms/searchlines.h \
         ../algorithms/stopsignsearch.h \
         ../algorithms/timestampconvert.h \
@@ -101,7 +103,9 @@ unix:!macx {
             -lboost_date_time \
             -lboost_system \
             -lboost_filesystem \
-            -lboost_chrono
+            -lboost_chrono \
+            -lpng \
+            -lexif
 }
 else {
     INCLUDEPATH += $$BOOST_INCLUDES \

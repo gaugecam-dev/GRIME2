@@ -1104,7 +1104,17 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                                     string filename = fs::path( images[ i ] ).stem().string() + "_overlay.png";
                                     fs::path full_path = fs::path( resultFolder ) / filename;
                                     cmdString += full_path.string();
-                                    cout << cmdString << endl;
+                                    cmdString = "/media/kchapman/Elements/Projects/GRIME2/build-grime2cli-Desktop-Debug/grime2cli " + cmdString;
+                                    int status = std::system( cmdString.c_str() );
+                                    if (status < 0)
+                                        std::cout << "Error: " << strerror(errno) << '\n';
+                                    else
+                                    {
+                                        if (WIFEXITED(status))
+                                            std::cout << "Program returned normally, exit code " << WEXITSTATUS(status) << '\n';
+                                        else
+                                            std::cout << "Program exited abnormaly\n";
+                                    }
                                 }
                             }
                             progressVal = cvRound( 100.0 * static_cast< double >( i ) / static_cast< double >( images.size() ) ) + 1;
