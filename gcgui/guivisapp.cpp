@@ -36,8 +36,6 @@
 #include "../algorithms/kalman.h"
 #include "../algorithms/wincmd.h"
 
-using namespace cv;
-using namespace std;
 using namespace boost;
 namespace fs = std::filesystem;
 
@@ -46,9 +44,6 @@ static const char LOG_FILE_FOLDER[] = "c:/temp/gaugecam/";
 #else
 static const char LOG_FILE_FOLDER[] = "/var/tmp/gaugecam/";
 #endif
-
-using namespace cv;
-using namespace std;
 
 std::mutex mtx_img;
 
@@ -81,7 +76,7 @@ GuiVisApp::GuiVisApp() :
 
 }
 GuiVisApp::~GuiVisApp() { Destroy(); }
-GC_STATUS GuiVisApp::Init( const string strConfigFolder, Size &sizeImg )
+GC_STATUS GuiVisApp::Init( const string strConfigFolder, cv::Size &sizeImg )
 {
     GC_STATUS retVal = GC_OK;
     if ( GC_OK == retVal )
@@ -100,7 +95,7 @@ GC_STATUS GuiVisApp::Init( const string strConfigFolder, Size &sizeImg )
 
     return retVal;
 }
-GC_STATUS GuiVisApp::InitBuffers( const Size sizeImg )
+GC_STATUS GuiVisApp::InitBuffers( const cv::Size sizeImg )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -109,9 +104,9 @@ GC_STATUS GuiVisApp::InitBuffers( const Size sizeImg )
         m_matColor.create( sizeImg, CV_8UC3 );
         m_matDisplay.create( sizeImg, CV_8UC3 );
     }
-    catch( const Exception &e )
+    catch( const cv::Exception &e )
     {
-        FILE_LOG( logERROR ) << __func__ << "EXCEPTION: " << string( e.what() );
+        FILE_LOG( logERROR ) << __func__ << "EXCEPTION: " << std::string( e.what() );
         retVal = GC_EXCEPT;
     }
     return retVal;
@@ -125,7 +120,7 @@ bool GuiVisApp::IsInitialized()
 {
     return ( m_matColor.empty() || m_matGray.empty() ) ? false : true;
 }
-GC_STATUS GuiVisApp::GetImage(const Size sizeImg, const size_t nStride, const int nType,
+GC_STATUS GuiVisApp::GetImage( const cv::Size sizeImg, const size_t nStride, const int nType,
                                uchar *pPix, const IMG_BUFFERS nImgColor, const IMG_DISPLAY_OVERLAYS overlays )
 {
     GC_STATUS retVal = GC_OK;
@@ -142,9 +137,9 @@ GC_STATUS GuiVisApp::GetImage(const Size sizeImg, const size_t nStride, const in
             retVal = GetImageColor( m_matDisplay, sizeImg, nStride, nType, pPix, false );
         }
     }
-    catch( const Exception &e )
+    catch( const cv::Exception &e )
     {
-        FILE_LOG( logERROR ) << __func__ << "EXCEPTION: " << string( e.what() );
+        FILE_LOG( logERROR ) << __func__ << "EXCEPTION: " << std::string( e.what() );
         retVal = GC_EXCEPT;
     }
     return retVal;
@@ -156,7 +151,7 @@ GC_STATUS GuiVisApp::GetImageOverlay( const IMG_BUFFERS nImgColor, const IMG_DIS
     {
         if ( BUF_GRAY == nImgColor )
         {
-            cvtColor( m_matGray, m_matDisplay, COLOR_GRAY2BGR );
+            cv::cvtColor( m_matGray, m_matDisplay, cv::COLOR_GRAY2BGR );
         }
         else if ( BUF_RGB == nImgColor )
         {
@@ -165,7 +160,7 @@ GC_STATUS GuiVisApp::GetImageOverlay( const IMG_BUFFERS nImgColor, const IMG_DIS
         else if ( BUF_OVERLAY == nImgColor )
         {
             bool hasCalib = false;
-            Mat matTemp = m_matColor.clone();
+            cv::Mat matTemp = m_matColor.clone();
             if ( ( overlays & CALIB_SCALE ) ||
                  ( overlays & CALIB_GRID ) ||
                  ( overlays & MOVE_ROIS ) ||
@@ -214,14 +209,14 @@ GC_STATUS GuiVisApp::GetImageOverlay( const IMG_BUFFERS nImgColor, const IMG_DIS
             }
         }
     }
-    catch( const Exception &e )
+    catch( const cv::Exception &e )
     {
-        FILE_LOG( logERROR ) << __func__ << "EXCEPTION: " << string( e.what() );
+        FILE_LOG( logERROR ) << __func__ << "EXCEPTION: " << std::string( e.what() );
         retVal = GC_EXCEPT;
     }
     return retVal;
 }
-GC_STATUS GuiVisApp::GetImageColor( Mat matImgSrc, const Size sizeImg, const size_t nStride,
+GC_STATUS GuiVisApp::GetImageColor( cv::Mat matImgSrc, const cv::Size sizeImg, const size_t nStride,
                                     const int nType, uchar *pPix, const bool bToRGB )
 {
     GC_STATUS retVal = GC_OK;
@@ -245,8 +240,8 @@ GC_STATUS GuiVisApp::GetImageColor( Mat matImgSrc, const Size sizeImg, const siz
                 size_t nBytes2Copy = static_cast< size_t >( sizeImg.width ) * 3;
                 if ( bToRGB )
                 {
-                    Mat matRGB;
-                    cvtColor( matImgSrc, matRGB, COLOR_BGR2RGB );
+                    cv::Mat matRGB;
+                    cv::cvtColor( matImgSrc, matRGB, cv::COLOR_BGR2RGB );
                     uchar *pPixSrc = matRGB.data;
                     for ( int nRow = 0; nRow < sizeImg.height; ++nRow )
                     {
@@ -273,8 +268,8 @@ GC_STATUS GuiVisApp::GetImageColor( Mat matImgSrc, const Size sizeImg, const siz
                 int nBytes2Copy = sizeImg.width * 3;
                 if ( bToRGB )
                 {
-                    Mat matRGB;
-                    cvtColor( matImgSrc, matRGB, COLOR_BGR2RGB );
+                    cv::Mat matRGB;
+                    cv::cvtColor( matImgSrc, matRGB, cv::COLOR_BGR2RGB );
                     uchar *pPixSrc = matRGB.data;
                     for ( int nRow = 0; nRow < sizeImg.height; ++nRow )
                     {
@@ -308,15 +303,15 @@ GC_STATUS GuiVisApp::GetImageColor( Mat matImgSrc, const Size sizeImg, const siz
                 retVal = GC_ERR;
             }
         }
-        catch( const Exception &e )
+        catch( const cv::Exception &e )
         {
-            FILE_LOG( logERROR ) << __func__ << "EXCEPTION: " << string( e.what() );
+            FILE_LOG( logERROR ) << __func__ << "EXCEPTION: " << std::string( e.what() );
             retVal = GC_EXCEPT;
         }
     }
     return retVal;
 }
-GC_STATUS GuiVisApp::GetImageGray( Mat matImgSrc, const Size sizeImg, const int nStride, const int nType, uchar *pPix )
+GC_STATUS GuiVisApp::GetImageGray( cv::Mat matImgSrc, const cv::Size sizeImg, const int nStride, const int nType, uchar *pPix )
 {
     GC_STATUS retVal = GC_OK;
     if ( nullptr == pPix )
@@ -368,15 +363,15 @@ GC_STATUS GuiVisApp::GetImageGray( Mat matImgSrc, const Size sizeImg, const int 
                 retVal = GC_ERR;
             }
         }
-        catch( const Exception &e )
+        catch( const cv::Exception &e )
         {
-            FILE_LOG( logERROR ) << __func__ << "EXCEPTION: " << string( e.what() );
+            FILE_LOG( logERROR ) << __func__ << "EXCEPTION: " << std::string( e.what() );
             retVal = GC_EXCEPT;
         }
     }
     return retVal;
 }
-GC_STATUS GuiVisApp::GetImageSize( Size &sizeImage )
+GC_STATUS GuiVisApp::GetImageSize( cv::Size &sizeImage )
 {
     GC_STATUS retVal = GC_OK;
     if ( !IsInitialized() )
@@ -392,8 +387,7 @@ GC_STATUS GuiVisApp::LoadImageToApp( const string strFilepath )
     GC_STATUS retVal = GC_OK;
     try
     {
-        string filename = fs::path( strFilepath ).filename().string();
-        Mat matTemp = imread( strFilepath, IMREAD_UNCHANGED );
+        cv::Mat matTemp = cv::imread( strFilepath, cv::IMREAD_UNCHANGED );
 
         if ( matTemp.empty() )
         {
@@ -405,14 +399,14 @@ GC_STATUS GuiVisApp::LoadImageToApp( const string strFilepath )
             retVal = LoadImageToApp( matTemp );
         }
     }
-    catch( const Exception &e )
+    catch( const cv::Exception &e )
     {
-        FILE_LOG( logERROR ) << __func__ << "EXCEPTION: " << string( e.what() );
+        FILE_LOG( logERROR ) << __func__ << "EXCEPTION: " << std::string( e.what() );
         retVal = GC_EXCEPT;
     }
     return retVal;
 }
-GC_STATUS GuiVisApp::LoadImageToApp( const Mat img )
+GC_STATUS GuiVisApp::LoadImageToApp( const cv::Mat img )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -425,7 +419,7 @@ GC_STATUS GuiVisApp::LoadImageToApp( const Mat img )
         }
         else
         {
-            Mat matTemp;
+            cv::Mat matTemp;
             retVal = AdjustImageSize( img, matTemp );
             if ( GC_OK == retVal )
             {
@@ -442,17 +436,17 @@ GC_STATUS GuiVisApp::LoadImageToApp( const Mat img )
                     if ( CV_8UC1 == img.type() )
                     {
                         img.copyTo( m_matGray );
-                        cvtColor( img, m_matColor, COLOR_GRAY2BGR );
+                        cvtColor( img, m_matColor, cv::COLOR_GRAY2BGR );
                     }
                     else if ( CV_8UC3 == img.type() )
                     {
                         img.copyTo( m_matColor );
-                        cvtColor( m_matColor, m_matGray, COLOR_BGR2GRAY );
+                        cvtColor( m_matColor, m_matGray, cv::COLOR_BGR2GRAY );
                     }
                     else if ( CV_8UC4 == img.type() )
                     {
-                        cvtColor( img, m_matColor, COLOR_BGRA2BGR );
-                        cvtColor( m_matColor, m_matGray, COLOR_BGRA2GRAY );
+                        cvtColor( img, m_matColor, cv::COLOR_BGRA2BGR );
+                        cvtColor( m_matColor, m_matGray, cv::COLOR_BGRA2GRAY );
                     }
                     else
                     {
@@ -463,9 +457,9 @@ GC_STATUS GuiVisApp::LoadImageToApp( const Mat img )
             }
         }
     }
-    catch( const Exception &e )
+    catch( const cv::Exception &e )
     {
-        FILE_LOG( logERROR ) << __func__ << "EXCEPTION: " << string( e.what() );
+        FILE_LOG( logERROR ) << __func__ << "EXCEPTION: " << std::string( e.what() );
         retVal = GC_EXCEPT;
     }
     return retVal;
@@ -489,9 +483,9 @@ GC_STATUS GuiVisApp::SaveImage( const string strFilepath, IMG_BUFFERS nColorType
             retVal = GC_ERR;
         }
     }
-    catch( const Exception &e )
+    catch( const cv::Exception &e )
     {
-        FILE_LOG( logERROR ) << __func__ << "EXCEPTION: " << string( e.what() );
+        FILE_LOG( logERROR ) << __func__ << "EXCEPTION: " << std::string( e.what() );
         retVal = GC_EXCEPT;
     }
     return retVal;
@@ -522,7 +516,7 @@ GC_STATUS GuiVisApp::WriteSettings( const string strJsonConfig )
 
     return retVal;
 }
-GC_STATUS GuiVisApp::AdjustImageSize( const Mat &matSrc, Mat &matDst )
+GC_STATUS GuiVisApp::AdjustImageSize( const cv::Mat &matSrc, cv::Mat &matDst )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -534,7 +528,7 @@ GC_STATUS GuiVisApp::AdjustImageSize( const Mat &matSrc, Mat &matDst )
             double imageRatio = ( wideRatio > highRatio ) ? wideRatio : highRatio;
             int newWide = cvRound( static_cast< double >( matSrc.cols ) * imageRatio );
             int newHigh = cvRound( static_cast< double >( matSrc.rows ) * imageRatio );
-            resize( matSrc, matDst, Size( newWide, newHigh ) );
+            cv::resize( matSrc, matDst, cv::Size( newWide, newHigh ) );
         }
         else
         {
@@ -542,7 +536,7 @@ GC_STATUS GuiVisApp::AdjustImageSize( const Mat &matSrc, Mat &matDst )
                 matDst = matSrc.clone();
         }
     }
-    catch( Exception &e )
+    catch( cv::Exception &e )
     {
         FILE_LOG( logERROR ) << " " << e.what();
         retVal = GC_EXCEPT;
@@ -647,7 +641,7 @@ GC_STATUS GuiVisApp::GetCalibParams( std::string &calibParams )
 bool GuiVisApp::IsBowtieCalib() { return m_visApp.GetCalibType() == "BowTie"; }
 GC_STATUS GuiVisApp::LoadCalib( const std::string calibJson, const bool reCalib )
 {
-    Mat noImg = Mat();
+    cv::Mat noImg = cv::Mat();
     GC_STATUS retVal = m_visApp.LoadCalib( calibJson, reCalib ? m_matColor : noImg );
     sigMessage( string( "Load calibration: " ) + ( GC_OK == retVal ? "SUCCESS" : "FAILURE" ) );
     return retVal;
@@ -698,14 +692,16 @@ GC_STATUS GuiVisApp::CalcLine( const FindLineParams params, FindLineResult &resu
         if ( GC_OK != retVal1 )
         {
             m_matDisplay = m_matColor.clone();
-            putText( m_matDisplay, "Calc line OK, could not display result", Point( 100, 100 ), FONT_HERSHEY_PLAIN, 1.8, Scalar( 0, 0, 255 ), 5 );
+            cv::putText( m_matDisplay, "Calc line OK, could not display result", cv::Point( 100, 100 ),
+                         cv::FONT_HERSHEY_PLAIN, 1.8, cv::Scalar( 0, 0, 255 ), 5 );
         }
         sigMessage( "Calculate level: SUCCESS" );
     }
     else
     {
         m_matDisplay = m_matColor.clone();
-        putText( m_matDisplay, "Calc line FAILED", Point( 100, 100 ), FONT_HERSHEY_PLAIN, 1.8, Scalar( 0, 0, 255 ), 5 );
+        cv::putText( m_matDisplay, "Calc line FAILED", cv::Point( 100, 100 ),
+                     cv::FONT_HERSHEY_PLAIN, 1.8, cv::Scalar( 0, 0, 255 ), 5 );
         sigMessage( "Calculate level: FAILURE" );
     }
     return retVal;
@@ -862,7 +858,7 @@ GC_STATUS GuiVisApp::CreateGIFThreadFunc( const string gifFilepath, const std::v
         }
         else
         {
-            Mat img = imread( images[ 0 ], IMREAD_COLOR );
+            cv::Mat img = cv::imread( images[ 0 ], cv::IMREAD_COLOR );
             if ( img.empty() )
             {
                 sigMessage( "Could not read first image " + images[ 0 ] );
@@ -871,7 +867,7 @@ GC_STATUS GuiVisApp::CreateGIFThreadFunc( const string gifFilepath, const std::v
             }
             else
             {
-                resize( img, img, Size(), scale, scale, INTER_CUBIC );
+                cv::resize( img, img, cv::Size(), scale, scale, cv::INTER_CUBIC );
                 retVal = m_visApp.BeginGIF( img.size(), static_cast< int >( images.size() ), gifFilepath, delay_ms );
                 if ( GC_OK == retVal )
                 {
@@ -888,7 +884,7 @@ GC_STATUS GuiVisApp::CreateGIFThreadFunc( const string gifFilepath, const std::v
                             }
                             else
                             {
-                                img = imread( images[ i ], IMREAD_COLOR );
+                                img = cv::imread( images[ i ], cv::IMREAD_COLOR );
                                 if ( img.empty() )
                                 {
                                     sigMessage( "Could not read image " + images[ i ] );
@@ -896,7 +892,7 @@ GC_STATUS GuiVisApp::CreateGIFThreadFunc( const string gifFilepath, const std::v
                                 }
                                 else
                                 {
-                                    resize( img, img, Size(), scale, scale, INTER_CUBIC );
+                                    cv::resize( img, img, cv::Size(), scale, scale, cv::INTER_CUBIC );
                                     retVal = m_visApp.AddImageToGIF( img );
                                     if ( GC_OK != retVal )
                                     {
@@ -1011,7 +1007,7 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
 
     try
     {
-        Mat img;
+        cv::Mat img;
         string msg;
         int progressVal = 0;
         char buffer[ 256 ];
@@ -1066,7 +1062,7 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
             }
             else
             {
-                img = imread( images[ 0 ], IMREAD_COLOR );
+                img = cv::imread( images[ 0 ], cv::IMREAD_COLOR );
                 if ( img.empty() )
                 {
                     sigMessage( fs::path( images[ 0 ] ).filename().string() + " FAILURE: Could not open image to load calibration" );
@@ -1106,12 +1102,13 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                                     cmdString += full_path.string();
                                     cmdString = "/media/kchapman/Elements/Projects/GRIME2/build-grime2cli-Desktop-Debug/grime2cli " + cmdString;
                                     int status = std::system( cmdString.c_str() );
-                                    if (status < 0)
-                                        std::cout << "Error: " << strerror(errno) << '\n';
+                                    if ( 0 > status )
+                                        std::cout << "Error: " << strerror( errno ) << '\n';
                                     else
                                     {
-                                        if (WIFEXITED(status))
-                                            std::cout << "Program returned normally, exit code " << WEXITSTATUS(status) << '\n';
+                                        status = ( ( ( status ) & 0xff00 ) >> 8 );
+                                        if ( status )
+                                            std::cout << "Program returned normally, exit code " << status << '\n';
                                         else
                                             std::cout << "Program exited abnormaly\n";
                                     }

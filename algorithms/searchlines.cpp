@@ -1,6 +1,9 @@
 #include "log.h"
 #include "searchlines.h"
 
+using namespace cv;
+using namespace std;
+
 static double DISTANCE( Point2d a, Point2d b ) { return sqrt( ( b.x - a.x ) * ( b.x - a.x ) +
                                                               ( b.y - a.y ) * ( b.y - a.y ) ); }
 

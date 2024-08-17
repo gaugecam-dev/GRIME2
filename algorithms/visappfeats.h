@@ -119,7 +119,7 @@ public:
 
     GC_STATUS ReadSettings( const std::string jsonFilepath );
     GC_STATUS WriteSettings( const std::string jsonFilepath );
-    GC_STATUS CalcMovement( const cv::Mat img, Point &ptOrig, cv::Point &ptMove, double &angle );
+    GC_STATUS CalcMovement( const cv::Mat img, cv::Point &ptOrig, cv::Point &ptMove, double &angle );
     cv::Rect GetAnchorROI() { return anchor.ModelRect(); }
     GC_STATUS SetAnchorRef( const string imgRefFilepath, const cv::Rect rect );
     GC_STATUS SetFeatROIs( const std::vector< LabelROIItem > &items );

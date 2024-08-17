@@ -35,8 +35,6 @@
 // Tutorial: https://www.youtube.com/watch?v=-3WVSxNLk_k
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-using namespace cv;
-using namespace std;
 using namespace boost;
 namespace fs = std::filesystem;
 
@@ -104,7 +102,7 @@ public:
                 property_tree::json_parser::read_json( jsonFilepath, pt );
                 property_tree::ptree ptMeta = pt.get_child( "_via_img_metadata" );
 
-                Rect rect;
+                cv::Rect rect;
                 LabelROIItem item;
 
                 int b, g, r;
@@ -116,7 +114,7 @@ public:
                     b = cvRound( 255.0 * static_cast< double >( std::rand() ) / static_cast< double >( RAND_MAX ) );
                     g = cvRound( 255.0 * static_cast< double >( std::rand() ) / static_cast< double >( RAND_MAX ) );
                     r = cvRound( 255.0 * static_cast< double >( std::rand() ) / static_cast< double >( RAND_MAX ) );
-                    item.color = Scalar( b, g, r );
+                    item.color = cv::Scalar( b, g, r );
 
                     ptAttr = region.second.get_child( "region_attributes" );
                     item.name = ptAttr.get< string >( "ROI" );
@@ -128,10 +126,10 @@ public:
                         rect.y = ptAttr.get< int >( "y" );
                         rect.width = ptAttr.get< int >( "width" );
                         rect.height = ptAttr.get< int >( "height" );
-                        item.contour.push_back( Point( rect.x, rect.y ) );
-                        item.contour.push_back( Point( rect.x + rect.width - 1, rect.y ) );
-                        item.contour.push_back( Point( rect.x + rect.width - 1, rect.y + rect.height - 1 ) );
-                        item.contour.push_back( Point( rect.x, rect.y + rect.height - 1 ) );
+                        item.contour.push_back( cv::Point( rect.x, rect.y ) );
+                        item.contour.push_back( cv::Point( rect.x + rect.width - 1, rect.y ) );
+                        item.contour.push_back( cv::Point( rect.x + rect.width - 1, rect.y + rect.height - 1 ) );
+                        item.contour.push_back( cv::Point( rect.x, rect.y + rect.height - 1 ) );
                         labeledRois.push_back( item );
                     }
                     else if ( "ellipse" == item.roi_type )
@@ -147,7 +145,7 @@ public:
                     {
                         for ( const auto &coord : ptAttr.get_child( "all_points_x" ) )
                         {
-                            item.contour.push_back( Point( coord.second.get_value< int >(), -999 ) );
+                            item.contour.push_back( cv::Point( coord.second.get_value< int >(), -999 ) );
                         }
                         int idx = 0;
                         for ( const auto &coord : ptAttr.get_child( "all_points_y" ) )

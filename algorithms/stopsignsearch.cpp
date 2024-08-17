@@ -177,7 +177,7 @@ GC_STATUS StopsignSearch::CoarseOctoMask( const Mat &img, Mat &mask )
                 maxVal *= octoTemplates.templates[ i ].mask_pix_count;
                 if ( maxVal > maxMaxVal )
                 {
-                    maxRadIdx = i;
+                    maxRadIdx = static_cast< int >( i );
                     maxMaxVal = maxVal;
                     maxMaxPt = Point2d( maxPt ) + octoTemplates.templates[ i ].offset;
                 }
@@ -343,9 +343,9 @@ GC_STATUS StopsignSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &
 
                 Mat  mask = Mat::ones( img.size(), CV_8UC1 ) * 255;
 
-                int radBeg = round( std::min( img.cols, img.rows ) * 0.2 );
-                int radEnd = round( std::min( img.cols, img.rows ) * 0.45 );
-                int radInc = round( ( radEnd - radBeg ) / 20.0 );
+                int radBeg = static_cast< int >( round( std::min( img.cols, img.rows ) * 0.2 ) );
+                int radEnd = static_cast< int >( round( std::min( img.cols, img.rows ) * 0.45 ) );
+                int radInc = static_cast< int >( round( ( radEnd - radBeg ) / 20.0 ) );
 
                 if ( do_coarse_prefind )
                 {
@@ -847,7 +847,7 @@ GC_STATUS StopsignSearch::CreateOctoTemplates( const int radBeg, const int radEn
             for ( int radius = radBeg; radius <= radEnd; radius += radInc )
             {
                 OctoTemplate ssTempScratch;
-                thickness_adj = std::round( ( beg_thickness * radius ) / static_cast< double >( radBeg ) );
+                thickness_adj = static_cast< int >( std::round( ( beg_thickness * radius ) / static_cast< double >( radBeg ) ) );
                 retVal = DrawOctagon( templDim, radius, thickness_adj, ssTempScratch.templ, ssTempScratch.mask, offset );
                 if ( GC_OK == retVal )
                 {

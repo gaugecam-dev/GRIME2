@@ -38,7 +38,6 @@
 #include "ui_mainwindow.h"
 #include "../algorithms/calibexecutive.h"
 
-using namespace std;
 using namespace boost;
 // namespace fs = std::filesystem;
 
@@ -515,7 +514,7 @@ void MainWindow::ZoomTo( const int width, const int height )
 }
 void MainWindow::UpdateTargetRect()
 {
-    Rect rect;
+    cv::Rect rect;
     GC_STATUS retVal = m_visApp.GetTargetSearchROI( rect );
     if ( GC_OK == retVal )
     {
@@ -791,11 +790,11 @@ void MainWindow::mouseMoveEvent( QMouseEvent *pEvent )
     {
         if ( !ui->actionSetRuler->isChecked() && !ui->actionSetSearchPoly->isChecked() )
         {
-            Point2d world;
-            GC_STATUS retVal = m_visApp.PixelToWorld( Point2d( nX, nY ), world );
+            cv::Point2d world;
+            GC_STATUS retVal = m_visApp.PixelToWorld( cv::Point2d( nX, nY ), world );
             if ( GC_OK != retVal )
             {
-                world = Point2d( -9999999.9, -9999999.9 );
+                world = cv::Point2d( -9999999.9, -9999999.9 );
             }
             QString strMsg = QString( "Pix X=" ) + QString::number( nX ) + " Y=" + QString::number( nY );
             ui->textEdit_measures->setText( strMsg );
@@ -978,16 +977,16 @@ void MainWindow::UpdateRulerMeasurement()
 
     double lenPix = Distance( nX1, nY1, nX2, nY2 );
 
-    Point2d world1, world2;
-    GC_STATUS retVal1 = m_visApp.PixelToWorld( Point2d( static_cast< double >( nX1 ), static_cast< double >( nY1 ) ), world1 );
+    cv::Point2d world1, world2;
+    GC_STATUS retVal1 = m_visApp.PixelToWorld( cv::Point2d( static_cast< double >( nX1 ), static_cast< double >( nY1 ) ), world1 );
     if ( GC_OK != retVal1 )
     {
-        world1 = Point2d( -9999999.9, -9999999.9 );
+        world1 = cv::Point2d( -9999999.9, -9999999.9 );
     }
-    GC_STATUS retVal2 = m_visApp.PixelToWorld( Point2d( static_cast< double >( nX2 ), static_cast< double >( nY2 ) ), world2 );
+    GC_STATUS retVal2 = m_visApp.PixelToWorld( cv::Point2d( static_cast< double >( nX2 ), static_cast< double >( nY2 ) ), world2 );
     if ( GC_OK != retVal2 )
     {
-        world2 = Point2d( -9999999.9, -9999999.9 );
+        world2 = cv::Point2d( -9999999.9, -9999999.9 );
     }
     double lenWorld = ( GC_OK != retVal1 || GC_OK != retVal2 ) ? -9999999.9 : Distance( world1.x, world1.y, world2.x, world2.y );
 
@@ -1192,10 +1191,10 @@ void MainWindow::on_pushButton_visionCalibrate_clicked()
                                cv::Rect( m_rectROI.x(), m_rectROI.y(), m_rectROI.width(), m_rectROI.height() ),
                                ui->spinBox_moveSearchROIGrowPercent->value() + 100, ui->doubleSpinBox_stopSignFacetLength->value(),
                                ui->doubleSpinBox_stopSignZeroOffset->value(),
-                               LineSearchRoi( Point( m_lineSearchPoly.lftTop.x(), m_lineSearchPoly.lftTop.y() ),
-                                              Point( m_lineSearchPoly.rgtTop.x(), m_lineSearchPoly.rgtTop.y() ),
-                                              Point( m_lineSearchPoly.lftBot.x(), m_lineSearchPoly.lftBot.y() ),
-                                              Point( m_lineSearchPoly.rgtBot.x(), m_lineSearchPoly.rgtBot.y() ) ) );
+                               LineSearchRoi( cv::Point( m_lineSearchPoly.lftTop.x(), m_lineSearchPoly.lftTop.y() ),
+                                              cv::Point( m_lineSearchPoly.rgtTop.x(), m_lineSearchPoly.rgtTop.y() ),
+                                              cv::Point( m_lineSearchPoly.lftBot.x(), m_lineSearchPoly.lftBot.y() ),
+                                              cv::Point( m_lineSearchPoly.rgtBot.x(), m_lineSearchPoly.rgtBot.y() ) ) );
     GC_STATUS retVal = GC_OK;
     int ret = -1;
     if ( ui->radioButton_calibBowtie->isChecked() )
@@ -1265,14 +1264,14 @@ void MainWindow::on_pushButton_resetSearchRegion_clicked()
 {
     if ( ui->actionSetROI->isChecked() )
     {
-        Size imgSize;
+        cv::Size imgSize;
         m_visApp.GetImageSize( imgSize );
         m_rectROI = QRect( imgSize.width / 10, imgSize.height / 10, imgSize.width >> 2, imgSize.height >> 2 );
         ScaleImage();
     }
     else if ( ui->actionSetSearchPoly->isChecked() )
     {
-        Size imgSize;
+        cv::Size imgSize;
         m_visApp.GetImageSize( imgSize );
         int width = imgSize.width >> 1;
         int height = imgSize.height >> 1;
@@ -1284,7 +1283,7 @@ void MainWindow::on_pushButton_resetSearchRegion_clicked()
     }
     else if ( ui->actionSetRuler->isChecked() )
     {
-        Size imgSize;
+        cv::Size imgSize;
         m_visApp.GetImageSize( imgSize );
         m_lineOne = QLine( QPoint( m_scaleFactor * imgSize.width / 10, m_scaleFactor * imgSize.height / 10 ),
                            QPoint( m_scaleFactor * ( imgSize.width / 10 + ( imgSize.width >> 1 ) ),
@@ -1367,10 +1366,10 @@ void MainWindow::on_pushButton_findLineCurrentImage_clicked()
                                        cv::Rect( m_rectROI.x(), m_rectROI.y(), m_rectROI.width(), m_rectROI.height() ),
                                        ui->spinBox_moveSearchROIGrowPercent->value() + 100, ui->doubleSpinBox_stopSignFacetLength->value(),
                                        ui->doubleSpinBox_stopSignZeroOffset->value(),
-                                       LineSearchRoi( Point( m_lineSearchPoly.lftTop.x(), m_lineSearchPoly.lftTop.y() ),
-                                                      Point( m_lineSearchPoly.rgtTop.x(), m_lineSearchPoly.rgtTop.y() ),
-                                                      Point( m_lineSearchPoly.lftBot.x(), m_lineSearchPoly.lftBot.y() ),
-                                                      Point( m_lineSearchPoly.rgtBot.x(), m_lineSearchPoly.rgtBot.y() ) ) );
+                                       LineSearchRoi( cv::Point( m_lineSearchPoly.lftTop.x(), m_lineSearchPoly.lftTop.y() ),
+                                                      cv::Point( m_lineSearchPoly.rgtTop.x(), m_lineSearchPoly.rgtTop.y() ),
+                                                      cv::Point( m_lineSearchPoly.lftBot.x(), m_lineSearchPoly.lftBot.y() ),
+                                                      cv::Point( m_lineSearchPoly.rgtBot.x(), m_lineSearchPoly.rgtBot.y() ) ) );
             int ret = CalibExecutive::FormStopsignCalibJsonString( calibItems, params.calibControlString );
             if ( 0 != ret )
             {
