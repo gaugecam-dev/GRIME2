@@ -45,7 +45,8 @@ public:
                                            cv::Point(-1,-1))),
         facet_length(-1.0),
         zero_offset(-1.0),
-        move_roi_grow_percent(10.0)
+        move_roi_grow_percent(10.0),
+        noCalibSave(false)
     {}
     void clear()
     {
@@ -67,6 +68,7 @@ public:
         facet_length = -1.0;
         zero_offset = -1.0;
         move_roi_grow_percent = 110.0;
+        noCalibSave = false;
     }
     bool verbose;
     GRIME2_CLI_OP opToPerform;
@@ -86,6 +88,7 @@ public:
     double facet_length;
     double zero_offset;
     double move_roi_grow_percent;
+    bool noCalibSave;
 
 };
 int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
@@ -143,6 +146,10 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                 else if ( "calibrate" == string( argv[ i ] ).substr( 2 ) )
                 {
                     params.opToPerform = CALIBRATE;
+                }
+                else if ( "no_calib_save" == string( argv[ i ] ).substr( 2 ) )
+                {
+                    params.noCalibSave = true;
                 }
                 else if ( "create_calib" == string( argv[ i ] ).substr( 2 ) )
                 {

@@ -74,8 +74,8 @@ enum IMG_DISPLAY_OVERLAYS
     SEARCH_ROI = 2048
 };
 
-static const double DEFAULT_MIN_LINE_ANGLE = -5.0;                              ///< Default minimum line find angle
-static const double DEFAULT_MAX_LINE_ANGLE = 5.0;                               ///< Default maximum line find angle
+static const double DEFAULT_MIN_LINE_ANGLE = -9.0;                              ///< Default minimum line find angle
+static const double DEFAULT_MAX_LINE_ANGLE = 9.0;                               ///< Default maximum line find angle
 static const int FIT_LINE_RANSAC_TRIES_TOTAL = 100;                             ///< Fit line RANSAC total tries
 static const int FIT_LINE_RANSAC_TRIES_EARLY_OUT = 50;                          ///< Fit line RANSAC early out tries
 static const int FIT_LINE_RANSAC_POINT_COUNT = 5;                               ///< Fit line RANSAC early out tries
@@ -221,6 +221,7 @@ public:
      */
     CalibModelSymbol( const bool isCalibValid,
                       const cv::Size imageSize,
+                      const std::vector< cv::Point2d > oldPixPts,
                       const std::vector< cv::Point2d > pixelPts,
                       const std::vector< cv::Point2d > worldPts,
                       const std::vector< cv::Point > waterLevelSearchCorners,
@@ -232,6 +233,7 @@ public:
                       const double symbolAngle ) :
         validCalib( isCalibValid ),
         imgSize( imageSize ),
+        oldPixelPoints( oldPixPts ),
         pixelPoints( pixelPts ),
         worldPoints( worldPts ),
         waterlineSearchCorners( waterLevelSearchCorners ),
@@ -251,6 +253,7 @@ public:
         validCalib = false;
         controlJson.clear();
         imgSize = cv::Size( -1, -1 );
+        oldPixelPoints.clear();
         pixelPoints.clear();
         worldPoints.clear();
         waterlineSearchCorners.clear();
@@ -266,6 +269,7 @@ public:
     bool validCalib;
     std::string controlJson;                         ///< Json control string
     cv::Size imgSize;                                ///< Dimensions of the calibration image
+    std::vector< cv::Point2d > oldPixelPoints;       ///< Vector of old pixel points
     std::vector< cv::Point2d > pixelPoints;          ///< Vector of pixel points ordered to match the world point vector
     std::vector< cv::Point2d > worldPoints;          ///< Vector of world points ordered to match the pixel point vector
     std::vector< cv::Point > waterlineSearchCorners; ///< Vector of search ROI corners (start at top-left, clockwise

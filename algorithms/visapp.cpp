@@ -444,9 +444,9 @@ GC_STATUS VisApp::CalcLine( const Mat &img, const string timestamp, const bool i
 
     return retVal;
 }
-GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result, string &resultJson )
+GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result, string &resultJson, const bool noCalibSav )
 {
-    GC_STATUS retVal = CalcLine( params, result );
+    GC_STATUS retVal = CalcLine( params, result, noCalibSav );
     try
     {
         stringstream ss;
@@ -524,7 +524,7 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result,
 
     return retVal;
 }
-GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result )
+GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result, const bool noCalibSave )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -582,7 +582,7 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result 
                     if ( params.isStopSignCalib || ( params.calibFilepath != m_calibFilepath && !params.isStopSignCalib ) )
                     {
                         Mat noImg = Mat();
-                        retVal = m_calibExec.Load( params.calibFilepath, params.isStopSignCalib ? img : noImg );
+                        retVal = m_calibExec.Load( params.calibFilepath, params.isStopSignCalib ? img : noImg, params.isStopSignCalib && noCalibSave ? true : false );
                         if ( GC_OK != retVal )
                         {
                             result.calibSuccess = false;

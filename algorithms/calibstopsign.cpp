@@ -164,9 +164,9 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &contr
         matHomogWorldToPix.copyTo( oldHomogWorldToPix );
         oldModel = model;
 
-        bool useRoi = -1 != model.targetSearchRegion.x &&
-                -1 != model.targetSearchRegion.y &&
-                -1 != model.targetSearchRegion.width &&
+        bool useRoi = -1 != model.targetSearchRegion.x ||
+                -1 != model.targetSearchRegion.y ||
+                -1 != model.targetSearchRegion.width ||
                 -1 != model.targetSearchRegion.height;
 
         if ( useRoi )
@@ -195,14 +195,6 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &contr
                 {
                     retVal = TestCalibration( model.validCalib );
                 }
-//                if ( GC_OK != retVal )
-//                {
-//                    retVal = stopsignSearch.FindScale( img( model.targetSearchRegion ), model.pixelPoints, 4.0 );
-//                    if ( GC_OK == retVal )
-//                    {
-//                        retVal = TestCalibration( model.validCalib );
-//                    }
-//                }
             }
         }
         else
@@ -223,14 +215,6 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &contr
                 {
                     retVal = TestCalibration( model.validCalib );
                 }
-//                if ( GC_OK != retVal )
-//                {
-//                    retVal = stopsignSearch.FindScale( img, model.pixelPoints, 4.0, true );
-//                    if ( GC_OK == retVal )
-//                    {
-//                        retVal = TestCalibration( model.validCalib );
-//                    }
-//                }
             }
         }
         if ( GC_OK != retVal )
@@ -323,6 +307,8 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &contr
                         }
                         else
                         {
+                            // offset_x = model.oldPixelPoints[ 4 ].x - model.pixelPoints[ 4 ].x;
+                            // offset_y = model.oldPixelPoints[ 4 ].y - model.pixelPoints[ 4 ].y;
                             retVal = CalcCenterAngle( model.worldPoints, model.center, model.angle );
                             if ( GC_OK != retVal )
                             {
@@ -353,7 +339,16 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &contr
                 model.controlJson = controlJson;
             }
         }
-        if ( GC_OK != retVal )
+        if ( GC_OK == retVal )
+        {
+            if ( model.oldPixelPoints.empty() )
+            {
+                model.oldPixelPoints = model.pixelPoints;
+            }
+            moveRefLftPt = model.pixelPoints[ 5 ];
+            moveRefRgtPt = model.pixelPoints[ 4 ];
+        }
+        else
         {
             model.validCalib = false;
         }
@@ -387,8 +382,8 @@ GC_STATUS CalibStopSign::MoveRefPoint(  cv::Point2d &lftRefPt, cv::Point2d &rgtR
         }
         else
         {
-            moveRefLftPt = model.pixelPoints[ 5 ];
-            moveRefRgtPt = model.pixelPoints[ 4 ];
+            moveRefLftPt = model.oldPixelPoints[ 5 ];
+            moveRefRgtPt = model.oldPixelPoints[ 4 ];
         }
     }
     lftRefPt = moveRefLftPt;
@@ -684,6 +679,7 @@ GC_STATUS CalibStopSign::Load( const std::string jsonCalString )
 #endif
 
                 model.controlJson = ptreeTop.get< string >( "control_json", "{}" );
+                model.oldPixelPoints = model.pixelPoints;
                 retVal = CalcHomographies();
             }
 #ifdef LOG_CALIB_VALUES

@@ -527,12 +527,16 @@ GC_STATUS CalibExecutive::ReadWorldCoordsFromCSVBowTie( const string csvFilepath
 
     return retVal;
 }
-GC_STATUS CalibExecutive::CalibrateStopSign( const cv::Mat &img, const string &controlJson, string &err_msg )
+GC_STATUS CalibExecutive::CalibrateStopSign( const cv::Mat &img, const string &controlJson, string &err_msg, const bool noSave )
 {
     GC_STATUS retVal = GC_OK;
 
     try
     {
+        if ( !noSave )
+        {
+            stopSign.Model().oldPixelPoints.clear();
+        }
         retVal = stopSign.Calibrate( img, controlJson, err_msg );
         if ( GC_OK != retVal )
         {
@@ -545,7 +549,7 @@ GC_STATUS CalibExecutive::CalibrateStopSign( const cv::Mat &img, const string &c
             erode( matIn, matIn, kern, Point( -1, -1 ), 1 );
             retVal = stopSign.Calibrate( matIn, controlJson, err_msg );
         }
-        if ( GC_OK == retVal )
+        if ( GC_OK == retVal && !noSave )
         {
             retVal = stopSign.Save( paramsCurrent.calibResultJsonFilepath );
         }
@@ -651,7 +655,7 @@ GC_STATUS CalibExecutive::CalibrateBowTie( const cv::Mat &img, const std::string
     return retVal;
 }
 // if img != cv::Mat() then a recalibration is performed
-GC_STATUS CalibExecutive::Load( const string jsonFilepath, const Mat &img )
+GC_STATUS CalibExecutive::Load( const string jsonFilepath, const Mat &img, const bool noSave )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -721,7 +725,7 @@ GC_STATUS CalibExecutive::Load( const string jsonFilepath, const Mat &img )
                             else
                             {
                                 string err_msg;
-                                retVal = CalibrateStopSign( img, controlJson, err_msg );
+                                retVal = CalibrateStopSign( img, controlJson, err_msg, noSave );
 //                                if ( GC_OK != retVal )
 //                                {
 //                                    retVal = stopSign.Load( ss.str() );

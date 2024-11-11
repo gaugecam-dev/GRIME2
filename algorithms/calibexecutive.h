@@ -162,7 +162,7 @@ public:
     CalibExecutive();
 
     void clear();
-    GC_STATUS Load( const std::string jsonFilepath, const cv::Mat &img );
+    GC_STATUS Load( const std::string jsonFilepath, const cv::Mat &img, const bool noSave = false );
     GC_STATUS Calibrate( const cv::Mat &img, const std::string jsonParams,
                          double &rmseDist, double &rmseX, double &rmseY, string &err_msg );
     GC_STATUS Calibrate( const cv::Mat &img, const std::string jsonParams, cv::Mat &imgResult,
@@ -214,7 +214,7 @@ private:
     cv::Rect nullRect = cv::Rect( -1, -1, -1, -1 );
 
     GC_STATUS CalibrateBowTie( const cv::Mat &img, const string &controlJson, string &err_msg );
-    GC_STATUS CalibrateStopSign( const cv::Mat &img, const string &controlJson, string &err_msg );
+    GC_STATUS CalibrateStopSign( const cv::Mat &img, const string &controlJson, string &err_msg, const bool noSave = false );
 
     GC_STATUS FindMoveTargetsBowTie( const cv::Mat &img, FindPointSet &ptsFound );
     GC_STATUS FindMoveTargetsStopSign( FindPointSet &ptsFound );

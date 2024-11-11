@@ -71,6 +71,7 @@ private slots:
     void on_actionSetSearchPoly_toggled( bool );
     void on_actionSetRuler_toggled( bool );
     void on_lineEdit_imageFolder_textEdited( const QString &strPath );
+    void on_lineEdit_findLineTopFolder_textEdited(const QString);
     void on_listWidget_imageFolder_currentRowChanged(int row);
     void on_toolButton_imageFolder_browse_clicked();
     void on_toolButton_clearMsgs_clicked();

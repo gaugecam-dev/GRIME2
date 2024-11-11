@@ -3,8 +3,12 @@
 #include <iostream>
 #include <fstream>
 #include <cstring>
-#include <libexif/exif-data.h>
 #include <png.h>
+#include <filesystem>
+#include <libexif/exif-data.h>
+
+using namespace std;
+namespace fs = std::filesystem;
 
 namespace gc
 {
@@ -13,31 +17,98 @@ MetadataEx::MetadataEx()
 {
 }
 
-// Function to extract EXIF description from a JPEG file
-GC_STATUS MetadataEx::ExtractExifDescription( const std::string filepath, std::string &desc )
+GC_STATUS MetadataEx::ReadExifDescription( const std::string filepath, std::string &desc )
 {
     GC_STATUS retVal = GC_OK;
     try
     {
-        ExifData *exif_data = exif_data_new_from_file( filepath.c_str() );
-        if ( nullptr == exif_data )
+        std::string ext = fs::path( filepath ).extension();
+        std::transform( ext.begin(), ext.end(), ext.begin(), []( unsigned char c ){ return std::tolower( c ); } );
+        if ( ".jpg" == ext || ".jpeg" == ext )
         {
-            FILE_LOG( logERROR ) << "[MetadataEx::ExtractExifDescription] Could not load EXIF data from image file";
+            retVal = ReadJpgDescription( filepath, desc );
+        }
+        else if ( ".png" == ext )
+        {
+            retVal = ReadPngDescription( filepath, desc );
+        }
+        else
+        {
+            FILE_LOG( logERROR ) << "[MetadataEx::ReadExifDescription] Invalid image type. Must be PNG or JPG";
+            retVal = GC_ERR;
+        }
+    }
+    catch( std::exception &e )
+    {
+        FILE_LOG( logERROR ) << "[MetadataEx::ReadExifDescription] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+
+    return retVal;
+}
+GC_STATUS MetadataEx::ReadPngDescription( const std::string filepath, std::string &desc )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        FILE *fp = fopen( filepath.c_str(), "rb" );
+        if ( nullptr == fp )
+        {
+            FILE_LOG( logERROR ) << "[MetadataEx::ReadPngDescription] Could not open file " << filepath;
             retVal = GC_ERR;
         }
         else
         {
-            ExifEntry *entry = exif_data_get_entry(exif_data, EXIF_TAG_IMAGE_DESCRIPTION);
-            desc.clear();
-            if ( nullptr == entry )
+            png_structp png = png_create_read_struct( PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr );
+            if ( nullptr == png )
             {
-                FILE_LOG( logERROR ) << "[MetadataEx::ExtractExifDescription] Could not extract description from EXIF data";
+                fclose( fp );
+                FILE_LOG( logERROR ) << "[MetadataEx::ReadPngDescription] Could not create read structure";
                 retVal = GC_ERR;
             }
             else
             {
-                desc = std::string( reinterpret_cast< char * >( entry->data ), entry->size );
-                exif_data_unref( exif_data );
+                png_infop info = png_create_info_struct( png );
+                if (nullptr == info )
+                {
+                    png_destroy_read_struct( &png, nullptr, nullptr );
+                    fclose(fp);
+                    FILE_LOG( logERROR ) << "[MetadataEx::ReadPngDescription] Could create info structure";
+                    retVal = GC_ERR;
+                }
+                else
+                {
+                    int ret = setjmp( png_jmpbuf( png ) );
+                    if ( 0 != ret )
+                    {
+                        png_destroy_read_struct( &png, &info, nullptr );
+                        fclose(fp);
+                        FILE_LOG( logERROR ) << "[MetadataEx::ReadPngDescription] Could not set PNG error handling";
+                        retVal = GC_ERR;
+                    }
+                    else
+                    {
+                        png_init_io( png, fp );
+                        png_read_info( png, info );
+
+                        png_charp description = nullptr;
+                        png_textp text_ptr;
+                        int num_text;
+                        png_get_text( png, info, &text_ptr, &num_text );
+                        for ( int i = 0; i < num_text; ++i )
+                        {
+                            if ( std::string( text_ptr[ i ].key ) == "Description" )
+                            {
+                                description = text_ptr[ i ].text;
+                                break;
+                            }
+                        }
+
+                        desc = nullptr == description ? "" : std::string( description );
+                        png_destroy_read_struct( &png, &info, nullptr );
+                        fclose(fp);
+                    }
+                }
             }
         }
     }
@@ -49,147 +120,147 @@ GC_STATUS MetadataEx::ExtractExifDescription( const std::string filepath, std::s
 
     return retVal;
 }
-
-// Function to write metadata to a PNG file
-GC_STATUS MetadataEx::WritePngWithDescription( const std::string inputFilepath, const std::string outputFilepath, const std::string &description )
+GC_STATUS MetadataEx::ReadJpgDescription( const std::string filepath, std::string &desc )
 {
     GC_STATUS retVal = GC_OK;
     try
     {
-        FILE *fp = fopen( inputFilepath.c_str(), "rb" );
-        if ( nullptr == fp )
+    }
+    catch( std::exception &e )
+    {
+        FILE_LOG( logERROR ) << "[MetadataEx::ReadJpgDescription] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+
+    return retVal;
+}
+GC_STATUS MetadataEx::WriteExifDescription( const std::string filepath, const std::string desc )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        std::string ext = fs::path( filepath ).extension();
+        std::transform( ext.begin(), ext.end(), ext.begin(), []( unsigned char c ){ return std::tolower( c ); } );
+        if ( ".jpg" == ext || ".jpeg" == ext )
         {
-            FILE_LOG( logERROR ) << "[MetadataEx::ExtractExifDescription] Could not open PNG file " << inputFilepath;
-            retVal = GC_ERR;
+            retVal = WriteJpgDescription( filepath, desc );
+        }
+        else if ( ".png" == ext )
+        {
+            retVal = WritePngDescription( filepath, desc );
         }
         else
         {
-            png_structp png = png_create_read_struct( PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr );
-            if ( nullptr == png )
-            {
-                fclose( fp );
-                FILE_LOG( logERROR ) << "[MetadataEx::ExtractExifDescription] Could not create PNG read structure";
-                retVal = GC_ERR;
-            }
-            else
-            {
-                png_infop info = png_create_info_struct( png );
-                if ( nullptr == info )
-                {
-                    png_destroy_read_struct( &png, nullptr, nullptr );
-                    fclose( fp );
-                    FILE_LOG( logERROR ) << "[MetadataEx::ExtractExifDescription] Could not create PNG read info structure";
-                    retVal = GC_ERR;
-                }
-                else
-                {
-                    int ret = setjmp( png_jmpbuf( png ) );
-                    if ( 0 != ret )
-                    {
-                        png_destroy_read_struct( &png, &info, nullptr );
-                        fclose( fp );
-                        FILE_LOG( logERROR ) << "[MetadataEx::ExtractExifDescription] Could jump to the PNG buffer";
-                        retVal = GC_ERR;
-                    }
-                    else
-                    {
-                        png_init_io( png, fp );
-                        png_read_png( png, info, PNG_TRANSFORM_IDENTITY, nullptr );
-
-                        // Create text chunk for the description
-                        png_text text_chunk;
-                        text_chunk.key = ( char * )"Description";
-                        text_chunk.text = ( char * )description.c_str();
-                        text_chunk.compression = PNG_TEXT_COMPRESSION_NONE;
-                        text_chunk.lang = nullptr;
-                        text_chunk.lang_key = nullptr;
-
-                        png_set_text( png, info, &text_chunk, 1 );
-
-                        // Open the output PNG file
-                        FILE* out_fp = fopen( outputFilepath.c_str(), "wb" );
-                        if ( nullptr == out_fp )
-                        {
-                            png_destroy_read_struct( &png, &info, nullptr );
-                            fclose(fp);
-                            FILE_LOG( logERROR ) << "[MetadataEx::ExtractExifDescription] Could not open PNG file " << outputFilepath;
-                            retVal = GC_ERR;
-                        }
-                        else
-                        {
-                            png_structp png_write = png_create_write_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
-                            if ( nullptr == png_write )
-                            {
-                                fclose(out_fp);
-                                png_destroy_read_struct( &png, &info, nullptr );
-                                fclose(fp);
-                                FILE_LOG( logERROR ) << "[MetadataEx::ExtractExifDescription] Could not create PNG write structure";
-                                retVal = GC_ERR;
-                            }
-                            else
-                            {
-                                png_infop info_write = png_create_info_struct(png_write);
-                                if ( nullptr != info_write )
-                                {
-                                    png_destroy_write_struct( &png_write, nullptr );
-                                    fclose(out_fp);
-                                    png_destroy_read_struct( &png, &info, nullptr );
-                                    fclose(fp);
-                                    FILE_LOG( logERROR ) << "[MetadataEx::ExtractExifDescription] Could not creating PNG write info structure";
-                                    retVal = GC_ERR;
-                                }
-                                else
-                                {
-                                    ret = setjmp( png_jmpbuf( png_write ) );
-                                    if ( 0 != ret )
-                                    {
-                                        png_destroy_write_struct( &png_write, &info_write );
-                                        fclose(out_fp);
-                                        png_destroy_read_struct( &png, &info, nullptr );
-                                        fclose(fp);
-                                        std::cerr << "Error during PNG writing.\n";
-                                        FILE_LOG( logERROR ) << "[MetadataEx::ExtractExifDescription] Could not write PNG file";
-                                        retVal = GC_ERR;
-                                    }
-                                    else
-                                    {
-                                        png_init_io( png_write, out_fp );
-                                        png_write_png( png_write, info_write, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT );
-
-                                        fclose( out_fp );
-                                        png_destroy_write_struct( &png_write, &info_write );
-                                        png_destroy_read_struct( &png, &info, nullptr );
-                                        fclose( fp );
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            FILE_LOG( logERROR ) << "[MetadataEx::WriteExifDescription] Invalid image type. Must be PNG or JPG";
+            retVal = GC_ERR;
         }
     }
     catch( std::exception &e )
     {
-        FILE_LOG( logERROR ) << "[MetadataEx::WritePngWithDescription] " << e.what();
+        FILE_LOG( logERROR ) << "[MetadataEx::WriteExifDescription] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+
+    return retVal;
+}
+GC_STATUS MetadataEx::WritePngDescription( const std::string filepath, const std::string desc )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        ExifData *data = exif_data_new();
+        if (!data) {
+            std::cerr << "Failed to create ExifData object" << std::endl;
+            return;
+        }
+
+        // Load existing EXIF data from the file
+        std::ifstream file(filename, std::ios::binary);
+        if (file) {
+            file.seekg(0, std::ios::end);
+            std::streamsize size = file.tellg();
+            file.seekg(0, std::ios::beg);
+
+            std::vector<char> buffer(size);
+            if (file.read(buffer.data(), size)) {
+                exif_data_load_data(data, reinterpret_cast<const unsigned char*>(buffer.data()), size);
+            }
+        } else {
+            std::cerr << "Failed to open file: " << filename << std::endl;
+            exif_data_unref(data);
+            return;
+        }
+
+        // Add or update the description tag
+        ExifEntry *entry = exif_data_get_entry(data, EXIF_TAG_IMAGE_DESCRIPTION);
+        if (!entry) {
+            entry = exif_entry_new();
+            if (!entry) {
+                std::cerr << "Failed to create ExifEntry object" << std::endl;
+                exif_data_unref(data);
+                return;
+            }
+            exif_entry_initialize(entry, EXIF_TAG_IMAGE_DESCRIPTION);
+            exif_data_set_entry(data, entry);
+        }
+
+        exif_entry_set_value(entry, description);
+
+        // Save the updated EXIF data back to the file
+        std::ofstream outFile(filename, std::ios::binary | std::ios::app);
+        if (!outFile) {
+            std::cerr << "Failed to open file for writing: " << filename << std::endl;
+            exif_data_unref(data);
+            return;
+        }
+
+        std::vector<unsigned char> exifDataBuffer;
+        unsigned int exifSize = exif_data_save_data(data, &exifDataBuffer);
+        outFile.write(reinterpret_cast<const char*>(exifDataBuffer.data()), exifSize);
+
+        outFile.close();
+        exif_data_unref(data);
+
+        std::cout << "Description added successfully!" << std::endl;
+    }
+    catch( std::exception &e )
+    {
+        FILE_LOG( logERROR ) << "[MetadataEx::WritePngDescription] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+
+    return retVal;
+}
+GC_STATUS MetadataEx::WriteJpgDescription( const std::string filepath, const std::string desc )
+
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        ExifData *ed = exif_data_new();
+        if (!ed) {
+            std::cerr << "Error initializing libexif" << std::endl;
+            return 1;
+        }
+
+        // Set the image description
+        exif_data_set_option(ed, EXIF_TAG_IMAGE_DESCRIPTION, description);
+
+        // Save the modified EXIF data back to the image
+        if (!exif_data_save_file(ed, inputFilePath)) {
+            std::cerr << "Error saving EXIF data to " << inputFilePath << std::endl;
+            exif_data_unref(ed);
+            return 1;
+        }
+    }
+    catch( std::exception &e )
+    {
+        FILE_LOG( logERROR ) << "[MetadataEx::WritePngDescription] " << e.what();
         retVal = GC_EXCEPT;
     }
 
     return retVal;
 }
 
-// int main() {
-//     const char* jpeg_filename = "input.jpg";
-//     const char* png_filename = "output.png";
-//     const char* output_png = "output_with_description.png";
-
-//     // Extract EXIF description from JPEG
-//     std::string description = extract_exif_description(jpeg_filename);
-
-//     // Write the description to the PNG file
-//     write_png_with_description(png_filename, output_png, description);
-
-//     return 0;
-// }
 
 } // namespace gc

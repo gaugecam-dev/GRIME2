@@ -147,7 +147,7 @@ public:
      * @param result Holds the results of the line find calculation
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
-    GC_STATUS CalcLine( const FindLineParams params, FindLineResult &result );
+    GC_STATUS CalcLine( const FindLineParams params, FindLineResult &result, const bool noCalibSave = false );
 
     /**
      * @brief Find the water level in an image specified in the FindLineParams (results to member result object)
@@ -172,7 +172,7 @@ public:
      * @param resultJson Result of the water level find in json format
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
-    GC_STATUS CalcLine( const FindLineParams params, FindLineResult &result, string &resultJson );
+    GC_STATUS CalcLine(const FindLineParams params, FindLineResult &result, string &resultJson, const bool noCalibSav = false );
 
     /**
      * @brief Get image exif data used by GaugeCam as a human readable string

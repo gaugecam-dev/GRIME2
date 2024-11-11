@@ -260,6 +260,7 @@ void MainWindow::createConnections()
     m_visApp.sigMessage.connect( bind( &MainWindow::on_visAppMessage, this, boost::placeholders::_1 ) );
     m_visApp.sigProgress.connect( bind( &MainWindow::on_updateProgress, this, boost::placeholders::_1 ) );
     m_visApp.sigTableAddRow.connect( bind( &MainWindow::on_tableAddRow, this, boost::placeholders::_1 ) );
+    m_visApp.sigImageUpdate.connect( bind( &MainWindow::on_updateImage, this ) );
 
     // feature recipe connections
 
@@ -724,7 +725,10 @@ void MainWindow::paintEvent( QPaintEvent * )
 void MainWindow::on_pushButton_clearTable_clicked() { ClearTable(); }
 void MainWindow::on_tableAddRow( const string row_string ) { AddRow( row_string ); }
 void MainWindow::on_updateImage() { emit sig_updateImage(); }
-void MainWindow::do_updateImage() { UpdatePixmapTarget(); }
+void MainWindow::do_updateImage()
+{
+    UpdatePixmapTarget();
+}
 void MainWindow::on_updateProgress( const int value ) { emit sig_updateProgess( value ); }
 void MainWindow::do_updateProgress( const int value ) { ui->progressBar_imageLoad->setValue( std::min( 100, std::max( 0, value ) ) ); }
 void MainWindow::on_visAppMessage( string msg ) { emit sig_visAppMessage( QString::fromStdString( msg ) ); }
@@ -920,6 +924,33 @@ void MainWindow::on_lineEdit_imageFolder_textEdited( const QString &strPath )
         if ( 0 < ui->listWidget_imageFolder->count() )
             ui->listWidget_imageFolder->setCurrentRow( 0 );
         on_actionZoomToFit_triggered();
+    }
+    if ( ui->lineEdit_imageFolder->text() == ui->lineEdit_findLineTopFolder->text() )
+    {
+        ui->lineEdit_folderMatch_status->setText( "Folders match");
+        ui->lineEdit_folderMatch_status->setStyleSheet("QLineEdit {background-color: green; color: white;}");
+        ui->lineEdit_folderMatch_status->setToolTip("The explore folder matches the find line folder.");
+    }
+    else
+    {
+        ui->lineEdit_folderMatch_status->setText( "CAUTION: Folders do not match");
+        ui->lineEdit_folderMatch_status->setStyleSheet("QLineEdit {background-color: yellow; color: black;}");
+        ui->lineEdit_folderMatch_status->setToolTip("Before processing image folder(s), check the Line find folder location. The explore folder does not match the find line folder.");
+    }
+}
+void MainWindow::on_lineEdit_findLineTopFolder_textEdited(const QString)
+{
+    if ( ui->lineEdit_imageFolder->text() == ui->lineEdit_findLineTopFolder->text() )
+    {
+        ui->lineEdit_folderMatch_status->setText( "Folders match");
+        ui->lineEdit_folderMatch_status->setStyleSheet("QLineEdit {background-color: green; color: white;}");
+        ui->lineEdit_folderMatch_status->setToolTip("The explore folder matches the find line folder.");
+    }
+    else
+    {
+        ui->lineEdit_folderMatch_status->setText( "CAUTION: Folders do not match");
+        ui->lineEdit_folderMatch_status->setStyleSheet("QLineEdit {background-color: yellow; color: black;}");
+        ui->lineEdit_folderMatch_status->setToolTip("Before processing image folder(s), check the Line find folder location. The explore folder does not match the find line folder.");
     }
 }
 void MainWindow::on_listWidget_imageFolder_currentRowChanged( int row )
@@ -1416,7 +1447,8 @@ void MainWindow::on_pushButton_findLine_processFolder_clicked()
     ui->pushButton_findLine_processFolder->setEnabled( false );
     ui->pushButton_findLine_stopFolderProcess->setEnabled( true );
 
-    vector< string > headings = { "filename", "timestamp", "water level" };
+    // vector< string > headings = { "filename", "status", "water level" };
+    vector< string > headings = { "filename", "status" };
     InitTable( headings );
 
     int drawTypes = FINDLINE;
@@ -1438,7 +1470,7 @@ void MainWindow::on_pushButton_findLine_processFolder_clicked()
     ui->textEdit_msgs->append( GC_OK == retVal ? "Folder run started" : "Folder run failed to start" );
 
     on_actionZoomToFit_triggered();
-    m_pComboBoxImageToView->setCurrentText( "Overlay" );
+    m_pComboBoxImageToView->setCurrentText( "Color" );
     ui->checkBox_showFindLine->setChecked( true );
 }
 
@@ -1626,7 +1658,6 @@ void MainWindow::on_pushButton_test_clicked()
 {
     ui->statusBar->showMessage( "No test enabled" );
 }
-
 void MainWindow::on_pushButton_createCalibCommandLine_clicked()
 {
     if ( ui->radioButton_calibBowtie->isChecked() )

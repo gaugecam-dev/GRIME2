@@ -830,7 +830,7 @@ GC_STATUS StopsignSearch::CreateOctoTemplates( const int radBeg, const int radEn
     {
         ptTemplates.clear();
 
-        if ( 50 > radBeg || radEnd < radBeg )
+        if ( 40 > radBeg || radEnd < radBeg )
         {
             FILE_LOG( logERROR ) << "[StopsignSearch::CreateOctoTemplates] Invalid radius range: start=" << radBeg << " end=" << radEnd << " -- Must be > 50";
             retVal = GC_ERR;

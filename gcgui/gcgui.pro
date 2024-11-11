@@ -40,8 +40,6 @@ win32 {
     OPENCV_LIBS = C:/opencv/opencv_4.10.0/x64/vc19/lib
     BOOST_INCLUDES = C:/Boost/boost_1_86/include
     BOOST_LIBS = C:/Boost/boost_1_86/lib
-    EXIF_INCLUDES = C:/libexif/0.6.24/include
-    EXIF_LIBS = C:/libexif/0.6.24/x64/lib
 }
 
 # win32:RC_ICONS += ./icons/coffee_logo.png
@@ -55,7 +53,6 @@ SOURCES += \
 	../algorithms/findline.cpp \
 	../algorithms/gifanim/gifanim.cpp \
 	../algorithms/metadata.cpp \
-        ../algorithms/metadataex.cpp \
         ../algorithms/searchlines.cpp \
         ../algorithms/stopsignsearch.cpp \
         ../algorithms/visapp.cpp \
@@ -78,7 +75,6 @@ HEADERS += \
         ../algorithms/labelroi.h \
         ../algorithms/log.h \
         ../algorithms/metadata.h \
-        ../algorithms/metadataex.h \
         ../algorithms/searchlines.h \
         ../algorithms/stopsignsearch.h \
         ../algorithms/timestampconvert.h \
@@ -105,26 +101,20 @@ unix:!macx {
             -lboost_date_time \
             -lboost_system \
             -lboost_filesystem \
-            -lboost_chrono \
-            -lpng \
-            -lexif
+            -lboost_chrono
 }
 else {
     INCLUDEPATH += $$BOOST_INCLUDES \
                    $$OPENCV_INCLUDES \
-                   $$EXIF_INCLUDES \
                    ../libs/imgproc \
                    ../utility
     DEPENDPATH += $$BOOST_INCLUDES \
                   $$BOOST_LIBS \
                   $$OPENCV_INCLUDES \
-                  $$OPENCV_LIBS \
-                  $$EXIF_INCLUDES \
-                  $$EXIF_LIBS
+                  $$OPENCV_LIBS
 
     LIBS += -L$$BOOST_LIBS \
-            -L$$OPENCV_LIBS \
-            -L$$EXIF_LIBS
+            -L$$OPENCV_LIBS
 
     CONFIG(debug, debug|release) {
         LIBS += -lopencv_core4100d \
@@ -136,9 +126,7 @@ else {
                 -llibboost_filesystem-vc143-mt-gd-x64-1_86 \
                 -llibboost_date_time-vc143-mt-gd-x64-1_86 \
                 -llibboost_system-vc143-mt-gd-x64-1_86 \
-                -llibboost_chrono-vc143-mt-gd-x64-1_86 \
-                -lexif \
-                -llibpng16
+                -llibboost_chrono-vc143-mt-gd-x64-1_86
     } else {
         LIBS += -lopencv_core4100 \
                 -lopencv_imgproc4100 \
@@ -150,9 +138,7 @@ else {
                 -llibboost_date_time-vc143-mt-x64-1_86 \
                 -llibboost_system-vc143-mt-x64-1_86 \
                 -llibboost_chrono-vc143-mt-x64-1_86 \
-                -ladvapi32 \
-                -lexif \
-                -llibpng16
+                -ladvapi32
     }
 }
 

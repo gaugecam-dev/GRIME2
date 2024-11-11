@@ -608,7 +608,7 @@ GC_STATUS GuiVisApp::CreateAnimation( const std::string imageFolder, const std::
         }
         catch( std::exception &e )
         {
-            FILE_LOG( logERROR ) << "[VisApp::CalcLinesFolder] " << e.what();
+            FILE_LOG( logERROR ) << "[VisApp::CreateAnimation] " << e.what();
             retVal = GC_EXCEPT;
         }
     }
@@ -1015,7 +1015,7 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
 
         // sort( images.begin(), images.end() );
 
-        ofstream csvOut;
+        // ofstream csvOut;
 
         if ( !params.resultCSVPath.empty() )
         {
@@ -1024,16 +1024,25 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
             {
                 fs::create_directories( fs::path( params.resultCSVPath ).parent_path() );
             }
-            csvOut.open( params.resultCSVPath );
-            if ( !csvOut.is_open() )
+            if ( fs::exists( fs::path( params.resultCSVPath ) ) )
             {
-                FILE_LOG( logERROR ) << "[GuiVisApp::CalcLinesThreadFunc] Could not create CSV output file " << params.resultCSVPath;
-                retVal = GC_ERR;
+                bool bRet = fs::remove( fs::path( params.resultCSVPath ) );
+                if ( !bRet )
+                {
+                    FILE_LOG( logERROR ) << "[GuiVisApp::CalcLinesThreadFunc] Could not remove previous CSV output file " << params.resultCSVPath;
+                    retVal = GC_ERR;
+                }
             }
-            else
-            {
-                csvOut << "filename, timestamp, status, water level, line angle, level adjustment, illumination" << endl;
-            }
+            // csvOut.open( params.resultCSVPath );
+            // if ( !csvOut.is_open() )
+            // {
+            //     FILE_LOG( logERROR ) << "[GuiVisApp::CalcLinesThreadFunc] Could not create CSV output file " << params.resultCSVPath;
+            //     retVal = GC_ERR;
+            // }
+            // else
+            // {
+            //     csvOut << "filename, timestamp, status, water level, line angle, level adjustment, illumination" << endl;
+            // }
         }
         if ( !params.resultImagePath.empty() )
         {
@@ -1092,6 +1101,7 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                             }
                             else
                             {
+                                string overlay_path = "";
                                 cmdString = cmdStringPrefix + " --source ";
                                 cmdString += images[ i ];
                                 if ( !resultFolder.empty() )
@@ -1100,19 +1110,34 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                                     string filename = fs::path( images[ i ] ).stem().string() + "_overlay.png";
                                     fs::path full_path = fs::path( resultFolder ) / filename;
                                     cmdString += full_path.string();
-                                    cmdString = "/media/kchapman/Elements/Projects/GRIME2/build-grime2cli-Desktop-Debug/grime2cli " + cmdString;
-                                    int status = std::system( cmdString.c_str() );
-                                    if ( 0 > status )
-                                        std::cout << "Error: " << strerror( errno ) << '\n';
+                                    overlay_path = full_path.string();
+                                }
+                                cmdString = "/media/kchapman/Elements/Projects/GRIME2/grime2cli/build/grime2cli " + cmdString + " --no_calib_save";
+                                // cout << cmdString << endl;
+                                int status = std::system( cmdString.c_str() );
+                                if ( 0 > status )
+                                    std::cout << "Error: " << strerror( errno ) << '\n';
+                                else
+                                {
+                                    status = ( ( ( status ) & 0xff00 ) >> 8 );
+                                    if ( status )
+                                    {
+                                        std::cout << "Program returned normally, exit code " << status << '\n';
+                                    }
                                     else
                                     {
-                                        status = ( ( ( status ) & 0xff00 ) >> 8 );
-                                        if ( status )
-                                            std::cout << "Program returned normally, exit code " << status << '\n';
-                                        else
-                                            std::cout << "Program exited abnormaly\n";
+                                        std::cout << "Program exited abnormaly\n";
+                                    }
+                                    if ( !overlay_path.empty() )
+                                    {
+                                        retVal = LoadImageToApp( overlay_path );
+                                        if ( GC_OK == retVal )
+                                        {
+                                            sigImageUpdate();
+                                        }
                                     }
                                 }
+                                sigTableAddRow( fs::path( images[ i ] ).filename().string() + string( 0 == status ? ",SUCCESS" : ",FAILURE" ) );
                             }
                             progressVal = cvRound( 100.0 * static_cast< double >( i ) / static_cast< double >( images.size() ) ) + 1;
                             sigProgress( progressVal );
@@ -1127,8 +1152,8 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                 }
             }
         }
-        if ( csvOut.is_open() )
-            csvOut.close();
+        // if ( csvOut.is_open() )
+        //     csvOut.close();
     }
     catch( std::exception &e )
     {

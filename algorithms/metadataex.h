@@ -11,8 +11,13 @@ class MetadataEx
 public:
     MetadataEx();
 
-    GC_STATUS ExtractExifDescription( const std::string filepath, std::string &desc );
-    GC_STATUS WritePngWithDescription( const std::string inputFilepath, const std::string outputFilepath, const std::string &description );
+    GC_STATUS ReadExifDescription( const std::string filepath, std::string &desc );
+    GC_STATUS ReadPngDescription( const std::string filepath, std::string &desc );
+    GC_STATUS ReadJpgDescription( const std::string filepath, std::string &desc );
+
+    GC_STATUS WriteExifDescription( const std::string filepath, const std::string desc );
+    GC_STATUS WritePngDescription( const std::string filepath, const std::string desc );
+    GC_STATUS WriteJpgDescription( const std::string filepath, const std::string desc );
 };
 
 } // namespace gc
