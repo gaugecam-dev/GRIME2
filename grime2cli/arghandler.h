@@ -46,7 +46,8 @@ public:
         facet_length(-1.0),
         zero_offset(-1.0),
         move_roi_grow_percent(10.0),
-        noCalibSave(false)
+        noCalibSave(false),
+        cache_result(false)
     {}
     void clear()
     {
@@ -69,6 +70,7 @@ public:
         zero_offset = -1.0;
         move_roi_grow_percent = 110.0;
         noCalibSave = false;
+        cache_result = false;
     }
     bool verbose;
     GRIME2_CLI_OP opToPerform;
@@ -89,6 +91,7 @@ public:
     double zero_offset;
     double move_roi_grow_percent;
     bool noCalibSave;
+    bool cache_result;
 
 };
 int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
@@ -150,6 +153,10 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                 else if ( "no_calib_save" == string( argv[ i ] ).substr( 2 ) )
                 {
                     params.noCalibSave = true;
+                }
+                else if ( "cache_result" == string( argv[ i ] ).substr( 2 ) )
+                {
+                    params.cache_result = true;
                 }
                 else if ( "create_calib" == string( argv[ i ] ).substr( 2 ) )
                 {

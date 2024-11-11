@@ -1447,8 +1447,7 @@ void MainWindow::on_pushButton_findLine_processFolder_clicked()
     ui->pushButton_findLine_processFolder->setEnabled( false );
     ui->pushButton_findLine_stopFolderProcess->setEnabled( true );
 
-    // vector< string > headings = { "filename", "status", "water level" };
-    vector< string > headings = { "filename", "status" };
+    vector< string > headings = { "filename", "timestamp", "water level" };
     InitTable( headings );
 
     int drawTypes = FINDLINE;

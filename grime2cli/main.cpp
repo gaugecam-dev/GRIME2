@@ -14,6 +14,7 @@
    limitations under the License.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 #include <string>
+#include <fstream>
 #include <iostream>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/imgcodecs.hpp>
@@ -321,7 +322,7 @@ GC_STATUS RunFolder( const Grime2CLIParams cliParams )
 
     return retVal;
 }
-GC_STATUS FindWaterLevel( const Grime2CLIParams cliParams )
+GC_STATUS FindWaterLevel(const Grime2CLIParams cliParams )
 {
     FindLineParams params;
 
@@ -337,6 +338,14 @@ GC_STATUS FindWaterLevel( const Grime2CLIParams cliParams )
     string resultJson;
     FindLineResult result;
     GC_STATUS retVal = visApp.CalcLine( params, result, resultJson, cliParams.noCalibSave );
+    if ( cliParams.cache_result )
+    {
+        ofstream cache_file( TEMP_CACHE );
+        if ( cache_file.is_open() )
+        {
+            cache_file << resultJson << endl;
+        }
+    }
     cout << resultJson << endl;
     return retVal;
 }

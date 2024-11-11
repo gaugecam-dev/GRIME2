@@ -1091,6 +1091,7 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                         {
                             sigMessage( "Could not accumulate command line prefix string" );
                         }
+                        FindLineResult result;
                         for ( size_t i = 0; i < images.size(); ++i )
                         {
                             if ( !m_isRunning )
@@ -1112,8 +1113,10 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                                     cmdString += full_path.string();
                                     overlay_path = full_path.string();
                                 }
-                                cmdString = "/media/kchapman/Elements/Projects/GRIME2/grime2cli/build/grime2cli " + cmdString + " --no_calib_save";
+                                cmdString = "/media/kchapman/Elements/Projects/GRIME2/grime2cli/build/grime2cli " + cmdString + " --no_calib_save --cache_result";
                                 // cout << cmdString << endl;
+
+                                retVal = m_visApp.GetTempCacheResults( TEMP_CACHE, result );
                                 int status = std::system( cmdString.c_str() );
                                 if ( 0 > status )
                                     std::cout << "Error: " << strerror( errno ) << '\n';
@@ -1137,7 +1140,7 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                                         }
                                     }
                                 }
-                                sigTableAddRow( fs::path( images[ i ] ).filename().string() + string( 0 == status ? ",SUCCESS" : ",FAILURE" ) );
+                                sigTableAddRow( fs::path( images[ i ] ).filename().string() + "," + to_string( result.timestamp ) + "," + to_string( result.waterLevelAdjusted.y ) );
                             }
                             progressVal = cvRound( 100.0 * static_cast< double >( i ) / static_cast< double >( images.size() ) ) + 1;
                             sigProgress( progressVal );

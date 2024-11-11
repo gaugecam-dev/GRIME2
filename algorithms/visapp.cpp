@@ -53,9 +53,9 @@ VisApp::VisApp() :
     try
     {
 #ifdef _WIN32
-        if ( !fs::exists( "c:/gaugecam" ) )
+        if ( !fs::exists( "c:/gaugecam/" ) )
         {
-            fs::create_directories( "c:/gaugecam" );
+            fs::create_directories( "c:/gaugecam/" );
         }
 #else
         if ( !fs::exists( "/var/tmp/gaugecam/" ) )
@@ -68,6 +68,50 @@ VisApp::VisApp() :
     {
         FILE_LOG( logERROR ) << "[VisApp::VisApp] Creating debug folder" << diagnostic_information( e );
     }
+}
+GC_STATUS VisApp::GetTempCacheResults( const std::string jsonFilepath, FindLineResult &result )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        result.clear();
+        if ( !fs::exists( jsonFilepath ) )
+        {
+            FILE_LOG( logERROR ) << "[VisApp::GetTempCacheResults] " << jsonFilepath << " does not exist";
+            retVal = GC_ERR;
+        }
+        else
+        {
+            std::string jsonString;
+            std::ifstream t( jsonFilepath );
+            std::stringstream buffer;
+            buffer << t.rdbuf();
+            jsonString = buffer.str();
+            // fs::load_string_file( jsonFilepath, jsonString );
+
+            stringstream ss;
+            ss << jsonString;
+            // cout << endl << jsonString << endl;
+
+            property_tree::ptree pt;
+            property_tree::read_json( ss, pt );
+
+            string status = pt.get< string >( "STATUS", "FAILURE" );
+            if ( "SUCCESS" == status )
+            {
+                result.findSuccess = true;
+                result.timestamp = pt.get< string >( "timestamp", "1955-09-24T12:00:00" );
+                result.waterLevelAdjusted.x = pt.get< double >( "world_line_center_x", -9999999.999 );
+                result.waterLevelAdjusted.y = pt.get< double >( "world_line_center_y", -9999999.999 );
+            }
+        }
+    }
+    catch( boost::exception &e )
+    {
+        FILE_LOG( logERROR ) << "[VisApp::GetTempCacheResults] " << diagnostic_information( e );
+        retVal = GC_EXCEPT;
+    }
+    return retVal;
 }
 GC_STATUS VisApp::LoadCalib( const std::string calibJson, const cv::Mat &img )
 {

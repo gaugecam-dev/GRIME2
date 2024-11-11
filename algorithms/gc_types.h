@@ -35,8 +35,10 @@ namespace gc
 
 #ifdef _WIN32
 static const std::string CACHE_FOLDER = "c:/gaugecam/cache/";
+static const std::string TEMP_CACHE = "c:/gaugecam/cache/temp_cache.json";
 #else
 static const std::string CACHE_FOLDER = "/var/tmp/gaugecam/cache/";
+static const std::string TEMP_CACHE = "/var/tmp/gaugecam/cache/temp_cache.json";
 #endif
 
 

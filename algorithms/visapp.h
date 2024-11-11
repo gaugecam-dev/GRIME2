@@ -95,8 +95,11 @@ public:
      * @param img Image for stopsign recalibration--if empty, calib loaded from disk
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
-    GC_STATUS LoadCalib( const std::string calibJson, const cv::Mat &img );
 
+    // TODO: Add doxygen comments
+    GC_STATUS GetTempCacheResults( const std::string jsonFilepath, FindLineResult &result );
+
+    GC_STATUS LoadCalib( const std::string calibJson, const cv::Mat &img );
     /**
      * @brief Convert world coordinates to pixel coordinates using the currently set calibration
      * @param worldPt World coordinate xy position
