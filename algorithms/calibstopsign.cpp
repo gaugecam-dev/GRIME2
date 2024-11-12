@@ -497,7 +497,7 @@ GC_STATUS CalibStopSign::CalcCenterAngle( const std::vector< cv::Point2d > &pts,
             center.y /= static_cast< double >( pts.size() );
 
             vector< Point2d > ptsSortY = pts;
-            sort( ptsSortY.begin(), ptsSortY.end(), []( Point2d const &a, Point const &b ) { return ( a.y < b.y ); } );
+            sort( ptsSortY.begin(), ptsSortY.end(), []( Point2d const &a, Point2d const &b ) { return ( a.y < b.y ); } );
             Point2d ptLftTop = ptsSortY[ ptsSortY[ 0 ].x < ptsSortY[ 1 ].x ? 0 : 1 ];
             Point2d ptRgtTop = ptsSortY[ ptsSortY[ 0 ].x < ptsSortY[ 1 ].x ? 1 : 0 ];
 

@@ -48,6 +48,7 @@ HEADERS += \
     ../algorithms/stopsignsearch.h \
     ../algorithms/visapp.h \
     ../gcgui/wincmd.h \
+    arghandler.h \
     arghandler.h
 
 unix:!macx {
