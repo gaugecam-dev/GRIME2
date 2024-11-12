@@ -128,7 +128,7 @@ private:
     GC_STATUS InitBuffers( const cv::Size sizeImg );
     GC_STATUS AdjustImageSize( const cv::Mat &matSrc, cv::Mat &matDst );
     GC_STATUS RemoveAllFilesInFolder( const std::string folderpath );
-    GC_STATUS CalcLinesThreadFunc( const std::vector< std::string > &images, const FindLineParams params, const IMG_DISPLAY_OVERLAYS drawTypes );
+    GC_STATUS CalcLinesThreadFunc( const std::vector< std::string > &images, const FindLineParams params );
     GC_STATUS CreateGIFThreadFunc( const std::string gifFilepath, const std::vector< std::string > &images, const int delay_ms, const double scale );
     GC_STATUS AccumRunImageCLIString( const FindLineParams params, std::string &cliString, string &resultFolder );
 };

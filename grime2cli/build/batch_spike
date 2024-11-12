@@ -1,0 +1,29 @@
+# ./grime2cli --run_folder --timestamp_from_exif --timestamp_start_pos 0 --timestamp_format "yyyy-mm-ddTHH-MM" \
+#     --source "/media/kchapman/Elements/data/article_data/third_article_data/dataset_spike/" \
+#     --calib_json "/media/kchapman/Elements/data/article_data/third_article_data/KOLA_calib_bowtie_start_days.json" \
+#     --csv_file "/media/kchapman/Elements/data/article_data/third_article_data/results_spike/spike_bowtie_cal1_day.csv" \
+#     --result_folder "/media/kchapman/Elements/data/article_data/third_article_data/results_spike/overlays_bowtie_cal1_day/"
+
+# ./grime2cli --run_folder --timestamp_from_exif --timestamp_start_pos 0 --timestamp_format "yyyy-mm-ddTHH-MM" \
+#     --source "/media/kchapman/Elements/data/article_data/third_article_data/dataset_spike/" \
+#     --calib_json "/media/kchapman/Elements/data/article_data/third_article_data/KOLA_calib_bowtie_start_night.json" \
+#     --csv_file "/media/kchapman/Elements/data/article_data/third_article_data/results_spike/spike_bowtie_cal1_night.csv" \
+#     --result_folder "/media/kchapman/Elements/data/article_data/third_article_data/results_spike/overlays_bowtie_cal1_night/"
+
+# ./grime2cli --run_folder --timestamp_from_exif --timestamp_start_pos 0 --timestamp_format "yyyy-mm-ddTHH-MM" \
+#     --source "/media/kchapman/Elements/data/article_data/third_article_data/dataset_spike/" \
+#     --calib_json "/media/kchapman/Elements/data/article_data/third_article_data/KOLA_calib_bowtie_middle_days.json" \
+#     --csv_file "/media/kchapman/Elements/data/article_data/third_article_data/results_spike/spike_bowtie_cal2_day.csv" \
+#     --result_folder "/media/kchapman/Elements/data/article_data/third_article_data/results_spike/overlays_bowtie_cal2_day/"
+
+# ./grime2cli --run_folder --timestamp_from_exif --timestamp_start_pos 0 --timestamp_format "yyyy-mm-ddTHH-MM" \
+#     --source "/media/kchapman/Elements/data/article_data/third_article_data/dataset_spike/" \
+#     --calib_json "/media/kchapman/Elements/data/article_data/third_article_data/KOLA_calib_bowtie_middle_night.json" \
+#     --csv_file "/media/kchapman/Elements/data/article_data/third_article_data/results_spike/spike_bowtie_cal2_night.csv" \
+#     --result_folder "/media/kchapman/Elements/data/article_data/third_article_data/results_spike/overlays_bowtie_cal2_night/"
+
+./grime2cli --run_folder --timestamp_from_exif --timestamp_start_pos 0 --timestamp_format "yyyy-mm-ddTHH-MM" \
+    --source "/media/kchapman/Elements/data/article_data/third_article_data/dataset_spike/" \
+    --calib_json "/media/kchapman/Elements/data/article_data/third_article_data/spike_octagon.json" \
+    --csv_file "/media/kchapman/Elements/data/article_data/third_article_data/results_spike/spike_octagon.csv" \
+    --result_folder "/media/kchapman/Elements/data/article_data/third_article_data/results_spike/overlays_octagon/"

@@ -764,7 +764,7 @@ GC_STATUS GuiVisApp::CalcLinesInFolder( const std::string folder, const FindLine
                 sort( images.begin(), images.end() );
 
                 m_isRunning = true;
-                m_folderFuture = std::async( std::launch::async, &GuiVisApp::CalcLinesThreadFunc, this, images, params, drawTypes );
+                m_folderFuture = std::async( std::launch::async, &GuiVisApp::CalcLinesThreadFunc, this, images, params );
             }
         }
         catch( std::exception &e )
@@ -1000,7 +1000,7 @@ inline GC_STATUS GuiVisApp::AccumRunImageCLIString( const FindLineParams params,
 
     return retVal;
 }
-GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &images,  const FindLineParams params, const IMG_DISPLAY_OVERLAYS drawTypes )
+GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &images,  const FindLineParams params )
 {
     GC_STATUS retVal = GC_OK;
     m_threadType = FIND_LINES_THREAD;
@@ -1033,16 +1033,6 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                     retVal = GC_ERR;
                 }
             }
-            // csvOut.open( params.resultCSVPath );
-            // if ( !csvOut.is_open() )
-            // {
-            //     FILE_LOG( logERROR ) << "[GuiVisApp::CalcLinesThreadFunc] Could not create CSV output file " << params.resultCSVPath;
-            //     retVal = GC_ERR;
-            // }
-            // else
-            // {
-            //     csvOut << "filename, timestamp, status, water level, line angle, level adjustment, illumination" << endl;
-            // }
         }
         if ( !params.resultImagePath.empty() )
         {
@@ -1091,7 +1081,10 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                         {
                             sigMessage( "Could not accumulate command line prefix string" );
                         }
+
+                        string resultJson;
                         FindLineResult result;
+                        FindLineParams paramsAdj = params;
                         for ( size_t i = 0; i < images.size(); ++i )
                         {
                             if ( !m_isRunning )
@@ -1103,8 +1096,6 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                             else
                             {
                                 string overlay_path = "";
-                                cmdString = cmdStringPrefix + " --source ";
-                                cmdString += images[ i ];
                                 if ( !resultFolder.empty() )
                                 {
                                     cmdString += " --result_image ";
@@ -1113,31 +1104,15 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                                     cmdString += full_path.string();
                                     overlay_path = full_path.string();
                                 }
-                                cmdString = "/media/kchapman/Elements/Projects/GRIME2/grime2cli/build/grime2cli " + cmdString + " --no_calib_save --cache_result";
-                                // cout << cmdString << endl;
-
-                                retVal = m_visApp.GetTempCacheResults( TEMP_CACHE, result );
-                                int status = std::system( cmdString.c_str() );
-                                if ( 0 > status )
-                                    std::cout << "Error: " << strerror( errno ) << '\n';
-                                else
+                                paramsAdj.imagePath = images[ i ];
+                                paramsAdj.resultImagePath = overlay_path;
+                                retVal = m_visApp.CalcLine( paramsAdj, result, resultJson, true );
+                                if ( !overlay_path.empty() )
                                 {
-                                    status = ( ( ( status ) & 0xff00 ) >> 8 );
-                                    if ( status )
+                                    retVal = LoadImageToApp( overlay_path );
+                                    if ( GC_OK == retVal )
                                     {
-                                        std::cout << "Program returned normally, exit code " << status << '\n';
-                                    }
-                                    else
-                                    {
-                                        std::cout << "Program exited abnormaly\n";
-                                    }
-                                    if ( !overlay_path.empty() )
-                                    {
-                                        retVal = LoadImageToApp( overlay_path );
-                                        if ( GC_OK == retVal )
-                                        {
-                                            sigImageUpdate();
-                                        }
+                                        sigImageUpdate();
                                     }
                                 }
                                 sigTableAddRow( fs::path( images[ i ] ).filename().string() + "," + to_string( result.timestamp ) + "," + to_string( result.waterLevelAdjusted.y ) );
@@ -1155,8 +1130,6 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                 }
             }
         }
-        // if ( csvOut.is_open() )
-        //     csvOut.close();
     }
     catch( std::exception &e )
     {
