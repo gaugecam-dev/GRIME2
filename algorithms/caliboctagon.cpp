@@ -1,5 +1,5 @@
 #include "log.h"
-#include "calibstopsign.h"
+#include "caliboctagon.h"
 #include <opencv2/imgproc.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/calib3d.hpp>
@@ -40,7 +40,7 @@ namespace gc
 static double elongation( Moments m );
 static double distance( Point2d a, Point2d b );
 
-CalibStopSign::CalibStopSign()
+CalibOctagon::CalibOctagon()
 {
     try
     {
@@ -63,23 +63,23 @@ CalibStopSign::CalibStopSign()
             bool bRet = fs::create_directories( DEBUG_FOLDER );
             if ( !bRet )
             {
-                FILE_LOG( logWARNING ) << "[CalibStopSign::CalibStopSign] Could not create debug folder " << DEBUG_FOLDER;
+                FILE_LOG( logWARNING ) << "[CalibOctagon::CalibOctagon] Could not create debug folder " << DEBUG_FOLDER;
             }
         }
 #endif
     }
     catch( boost::exception &e )
     {
-        FILE_LOG( logERROR ) << "[VisApp::VisApp] Creating debug folder" << diagnostic_information( e );
+        FILE_LOG( logERROR ) << "[CalibOctagon::CalibOctagon] Creating debug folder" << diagnostic_information( e );
     }
 }
-void CalibStopSign::clear()
+void CalibOctagon::clear()
 {
     // matHomogPixToWorld = Mat();
     // matHomogWorldToPix = Mat();
     model.clear();
 }
-GC_STATUS CalibStopSign::GetCalibParams( std::string &calibParams )
+GC_STATUS CalibOctagon::GetCalibParams( std::string &calibParams )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -98,12 +98,12 @@ GC_STATUS CalibStopSign::GetCalibParams( std::string &calibParams )
     }
     catch( const std::exception &e )
     {
-        FILE_LOG( logERROR ) << "[CalibStopSign::GetCalibParams] " << e.what();
+        FILE_LOG( logERROR ) << "[CalibOctagon::GetCalibParams] " << e.what();
         retVal = GC_ERR;
     }
     return retVal;
 }
-GC_STATUS CalibStopSign::DrawAssocPts( const cv::Mat &img, cv::Mat &overlay, string &err_msg )
+GC_STATUS CalibOctagon::DrawAssocPts( const cv::Mat &img, cv::Mat &overlay, string &err_msg )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -111,8 +111,8 @@ GC_STATUS CalibStopSign::DrawAssocPts( const cv::Mat &img, cv::Mat &overlay, str
         err_msg.clear();
         if ( img.empty() )
         {
-            err_msg = "[CalibStopSign::DrawAssocPts] Needs non-empty input images";
-            FILE_LOG( logERROR ) << "[CalibStopSign::DrawAssocPts] Needs non-empty input images";
+            err_msg = "[CalibOctagon::DrawAssocPts] Needs non-empty input images";
+            FILE_LOG( logERROR ) << "[CalibOctagon::DrawAssocPts] Needs non-empty input images";
             retVal = GC_ERR;
         }
         else
@@ -142,18 +142,18 @@ GC_STATUS CalibStopSign::DrawAssocPts( const cv::Mat &img, cv::Mat &overlay, str
     }
     catch( const Exception &e )
     {
-        err_msg = "[CalibStopSign::DrawAssocPts] EXCEPTION";
-        FILE_LOG( logERROR ) << "[CalibStopSign::DrawAssocPts] " << e.what();
+        err_msg = "[CalibOctagon::DrawAssocPts] EXCEPTION";
+        FILE_LOG( logERROR ) << "[CalibOctagon::DrawAssocPts] " << e.what();
         retVal = GC_EXCEPT;
     }
     return retVal;
 }
 // symbolPoints are clockwise ordered with 0 being the topmost left point
-GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &controlJson, string &err_msg )
+GC_STATUS CalibOctagon::Calibrate( const cv::Mat &img, const std::string &controlJson, string &err_msg )
 {
     GC_STATUS retVal = GC_OK;
 
-    CalibModelSymbol oldModel;
+    CalibModelOctagon oldModel;
     cv::Mat oldHomogPixToWorld, oldHomogWorldToPix;
     try
     {
@@ -179,10 +179,10 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &contr
             }
 //            imwrite("/var/tmp/gaugecam/orig.png", img);
 //            imwrite("/var/tmp/gaugecam/orig_roi.png", img( model.targetSearchRegion ));
-            retVal = stopsignSearch.Find( img( model.targetSearchRegion ), model.pixelPoints, true );
+            retVal = octagonSearch.Find( img( model.targetSearchRegion ), model.pixelPoints, true );
             if ( GC_OK != retVal )
             {
-                retVal = stopsignSearch.Find( img( model.targetSearchRegion ), model.pixelPoints, false );
+                retVal = octagonSearch.Find( img( model.targetSearchRegion ), model.pixelPoints, false );
             }
             if ( GC_OK == retVal )
             {
@@ -190,7 +190,7 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &contr
             }
             if ( GC_OK != retVal )
             {
-                retVal = stopsignSearch.FindScale( img( model.targetSearchRegion ), model.pixelPoints, 2.0 );
+                retVal = octagonSearch.FindScale( img( model.targetSearchRegion ), model.pixelPoints, 2.0 );
                 if ( GC_OK == retVal )
                 {
                     retVal = TestCalibration( model.validCalib );
@@ -199,10 +199,10 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &contr
         }
         else
         {
-            retVal = stopsignSearch.Find( img, model.pixelPoints, true );
+            retVal = octagonSearch.Find( img, model.pixelPoints, true );
             if ( GC_OK != retVal )
             {
-                retVal = stopsignSearch.Find( img, model.pixelPoints, false );
+                retVal = octagonSearch.Find( img, model.pixelPoints, false );
             }
             if ( GC_OK == retVal )
             {
@@ -210,7 +210,7 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &contr
             }
             if ( GC_OK != retVal )
             {
-                retVal = stopsignSearch.FindScale( img, model.pixelPoints, 2.0, true );
+                retVal = octagonSearch.FindScale( img, model.pixelPoints, 2.0, true );
                 if ( GC_OK == retVal )
                 {
                     retVal = TestCalibration( model.validCalib );
@@ -219,14 +219,14 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &contr
         }
         if ( GC_OK != retVal )
         {
-            err_msg = "CALIB FAIL [stop sign] Could not find stop sign in image";
+            err_msg = "CALIB FAIL [octagon] Could not find octagon in image";
         }
         else
         {
             retVal = TestCalibration( model.validCalib );
             if ( GC_OK != retVal )
             {
-                err_msg = "CALIB FAIL [stop sign] Calib validation test";
+                err_msg = "CALIB FAIL [octagon] Calib validation test";
             }
             else
             {
@@ -263,7 +263,7 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &contr
                 retVal = CalcOctoWorldPoints( model.facetLength, model.worldPoints );
                 if ( GC_OK != retVal )
                 {
-                    err_msg = "CALIB FAIL [stop sign] Could not calculate octogan points";
+                    err_msg = "CALIB FAIL [octagon] Could not calculate octogan points";
                 }
                 else
                 {
@@ -276,7 +276,7 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &contr
                     retVal = CreateCalibration( model.pixelPoints, pointsTemp );
                     if ( GC_OK != retVal )
                     {
-                        err_msg = "CALIB FAIL [stop sign] Could not create calibaration";
+                        err_msg = "CALIB FAIL [octagon] Could not create calibaration";
                     }
                     else
                     {
@@ -301,8 +301,8 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &contr
                         retVal = searchLines.CalcSearchLines( model.waterlineSearchCorners, model.searchLineSet );
                         if ( GC_OK != retVal )
                         {
-                            err_msg = "CALIB FAIL [stop sign] Invalid search lines (is 4-pt bounding poly correct?)";
-                            FILE_LOG( logERROR ) << "[CalibStopSign::Calibrate] Invalid search lines (is 4-pt bounding poly correct?)";
+                            err_msg = "CALIB FAIL [octagon] Invalid search lines (is 4-pt bounding poly correct?)";
+                            FILE_LOG( logERROR ) << "[CalibOctagon::Calibrate] Invalid search lines (is 4-pt bounding poly correct?)";
                             retVal = GC_OK;
                         }
                         else
@@ -312,7 +312,7 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &contr
                             retVal = CalcCenterAngle( model.worldPoints, model.center, model.angle );
                             if ( GC_OK != retVal )
                             {
-                                err_msg = "CALIB FAIL [stop sign] Could not stop sign angle";
+                                err_msg = "CALIB FAIL [octagon] Could not octagon angle";
                             }
                             else
                             {
@@ -324,14 +324,14 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &contr
             }
             if ( model.pixelPoints.empty() || model.worldPoints.empty() || model.searchLineSet.empty() )
             {
-                err_msg = "CALIB FAIL [stop sign] No valid calibration for drawing";
-                FILE_LOG( logERROR ) << "[CalibStopSign::Calibrate] No valid calibration for drawing";
+                err_msg = "CALIB FAIL [octagon] No valid calibration for drawing";
+                FILE_LOG( logERROR ) << "[CalibOctagon::Calibrate] No valid calibration for drawing";
                 retVal = GC_ERR;
             }
             else if ( matHomogPixToWorld.empty() || matHomogWorldToPix.empty() )
             {
-                err_msg = "CALIB FAIL [stop sign] System not calibrated";
-                FILE_LOG( logERROR ) << "[CalibStopSign::Calibrate] System not calibrated";
+                err_msg = "CALIB FAIL [octagon] System not calibrated";
+                FILE_LOG( logERROR ) << "[CalibOctagon::Calibrate] System not calibrated";
                 retVal = GC_ERR;
             }
             else
@@ -356,7 +356,7 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &contr
     catch( cv::Exception &e )
     {
         err_msg = "CALIB FAIL [stop sign] Exception";
-        FILE_LOG( logERROR ) << "[CalibStopSign::Calibrate] " << e.what();
+        FILE_LOG( logERROR ) << "[CalibOctagon::Calibrate] " << e.what();
         retVal = GC_EXCEPT;
     }
 
@@ -369,7 +369,7 @@ GC_STATUS CalibStopSign::Calibrate( const cv::Mat &img, const std::string &contr
 
     return retVal;
 }
-GC_STATUS CalibStopSign::MoveRefPoint(  cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt, const bool force )
+GC_STATUS CalibOctagon::MoveRefPoint(  cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt, const bool force )
 {
     GC_STATUS retVal = GC_OK;
     if ( force || ( 0.0 >= moveRefLftPt.x ||  0.0 >= moveRefLftPt.y ||
@@ -390,27 +390,27 @@ GC_STATUS CalibStopSign::MoveRefPoint(  cv::Point2d &lftRefPt, cv::Point2d &rgtR
     rgtRefPt = moveRefRgtPt;
     return retVal;
 }
-GC_STATUS CalibStopSign::AdjustStopSignForRotation( const Size imgSize, const FindPointSet &calcLinePts, double &offsetAngle )
+GC_STATUS CalibOctagon::AdjustOctagonForRotation( const Size imgSize, const FindPointSet &calcLinePts, double &offsetAngle )
 {
     GC_STATUS retVal = GC_OK;
     try
     {
-        double stopSignAngle = atan2( ( model.pixelPoints[ 4 ].y - model.pixelPoints[ 5 ].y ),
+        double octagonAngle = atan2( ( model.pixelPoints[ 4 ].y - model.pixelPoints[ 5 ].y ),
                                       ( model.pixelPoints[ 4 ].x - model.pixelPoints[ 5 ].x ) ) * ( 180.0 / CV_PI );
         double waterLineAngle = atan2( ( calcLinePts.lftPixel.y - calcLinePts.rgtPixel.y ),
                                        ( calcLinePts.lftPixel.x - calcLinePts.rgtPixel.x ) ) * ( 180.0 / CV_PI );
-        if ( 90.0 < stopSignAngle )
-            stopSignAngle += -180.0;
-        else if ( -90.0 > stopSignAngle )
-            stopSignAngle += 180.0;
+        if ( 90.0 < octagonAngle )
+            octagonAngle += -180.0;
+        else if ( -90.0 > octagonAngle )
+            octagonAngle += 180.0;
         if ( 90.0 < waterLineAngle )
             waterLineAngle += -180.0;
         else if ( -90.0 > waterLineAngle )
             waterLineAngle += 180.0;
 
-        // cout << "Stop sign angle=" << stopSignAngle << " Waterline angle=" << waterLineAngle << endl;
+        // cout << "Stop sign angle=" << octagonAngle << " Waterline angle=" << waterLineAngle << endl;
 
-        offsetAngle = stopSignAngle - waterLineAngle;
+        offsetAngle = octagonAngle - waterLineAngle;
 
         Mat mask = Mat::zeros( imgSize, CV_8UC1 );
 
@@ -426,26 +426,26 @@ GC_STATUS CalibStopSign::AdjustStopSignForRotation( const Size imgSize, const Fi
         // circle( mask, model.pixelPoints[ 5 ], 13, Scalar( 128 ), 3 );
         // line( mask, calcLinePts.lftPixel, calcLinePts.rgtPixel, Scalar( 255 ), 5 );
         // putText( mask, "ORIGINAL", Point( model.pixelPoints[ 7 ].x, model.pixelPoints[ 0 ].y - 70 ), FONT_HERSHEY_PLAIN, 3.0, Scalar( 255 ), 3 );
-        // imwrite( "/var/tmp/gaugecam/stopsign_angle_original.png", mask );
+        // imwrite( "/var/tmp/gaugecam/octagon_angle_original.png", mask );
         // rectangle( mask, Rect( model.pixelPoints[ 7 ].x - 10, 0, 500, model.pixelPoints[ 0 ].y - 10 ), Scalar( 0 ), FILLED );
 
         // line( mask, calcLinePts.lftPixel, calcLinePts.rgtPixel, Scalar( 0 ), 7 );
 
-//        imwrite( "/var/tmp/gaugecam/stopsign_angle_pre_adjusted.png", mask );
+//        imwrite( "/var/tmp/gaugecam/octagon_angle_pre_adjusted.png", mask );
         Mat rotMatrix = cv::getRotationMatrix2D( model.pixelPoints[ 5 ], offsetAngle, 1.0 );
         warpAffine( mask, mask, rotMatrix, mask.size() );
 
 //        line( mask, calcLinePts.lftPixel, calcLinePts.rgtPixel, Scalar( 255 ), 5 );
 //        putText( mask, "ADJUSTED", Point( model.pixelPoints[ 7 ].x, model.pixelPoints[ 0 ].y - 70 ), FONT_HERSHEY_PLAIN, 3.0, Scalar( 255 ), 3 );
 
-//        imwrite( "/var/tmp/gaugecam/stopsign_angle_adjusted.png", mask );
+//        imwrite( "/var/tmp/gaugecam/octagon_angle_adjusted.png", mask );
 
         vector< vector< Point > > contours;
         findContours( mask, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE );
 
         if ( contours.empty() )
         {
-            FILE_LOG( logERROR ) << "[CalibStopSign::AdjustStopSignForRotation] Could not find rotate adjusted stop sign";
+            FILE_LOG( logERROR ) << "[CalibOctagon::AdjustOctagonForRotation] Could not find rotate adjusted stop sign";
             retVal = GC_ERR;
         }
         else
@@ -469,12 +469,12 @@ GC_STATUS CalibStopSign::AdjustStopSignForRotation( const Size imgSize, const Fi
     }
     catch( const std::exception &e )
     {
-        FILE_LOG( logERROR ) << "[CalibStopSign::AdjustStopSignForRotation] " << diagnostic_information( e );
+        FILE_LOG( logERROR ) << "[CalibOctagon::AdjustOctagonForRotation] " << diagnostic_information( e );
         retVal = GC_EXCEPT;
     }
     return retVal;
 }
-GC_STATUS CalibStopSign::CalcCenterAngle( const std::vector< cv::Point2d > &pts, cv::Point2d &center, double &angle )
+GC_STATUS CalibOctagon::CalcCenterAngle( const std::vector< cv::Point2d > &pts, cv::Point2d &center, double &angle )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -482,7 +482,7 @@ GC_STATUS CalibStopSign::CalcCenterAngle( const std::vector< cv::Point2d > &pts,
     {
         if ( pts.empty() )
         {
-            FILE_LOG( logERROR ) << "[CalibStopSign::Calibrate] Empty point sets";
+            FILE_LOG( logERROR ) << "[CalibOctagon::Calibrate] Empty point sets";
             retVal = GC_ERR;
         }
         else
@@ -506,12 +506,12 @@ GC_STATUS CalibStopSign::CalcCenterAngle( const std::vector< cv::Point2d > &pts,
     }
     catch( std::exception &e )
     {
-        FILE_LOG( logERROR ) << "[CalibStopSign::CalcCenterAngle] " << e.what();
+        FILE_LOG( logERROR ) << "[CalibOctagon::CalcCenterAngle] " << e.what();
         retVal = GC_EXCEPT;
     }
     return retVal;
 }
-GC_STATUS CalibStopSign::CalcHomographies()
+GC_STATUS CalibOctagon::CalcHomographies()
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -526,12 +526,12 @@ GC_STATUS CalibStopSign::CalcHomographies()
     }
     catch( std::exception &e )
     {
-        FILE_LOG( logERROR ) << "[CalibStopSign::CalcHomographies] " << e.what();
+        FILE_LOG( logERROR ) << "[CalibOctagon::CalcHomographies] " << e.what();
         retVal = GC_EXCEPT;
     }
     return retVal;
 }
-GC_STATUS CalibStopSign::CreateCalibration( const std::vector< cv::Point2d > &pixelPts, const std::vector< cv::Point2d > &worldPts )
+GC_STATUS CalibOctagon::CreateCalibration( const std::vector< cv::Point2d > &pixelPts, const std::vector< cv::Point2d > &worldPts )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -544,7 +544,7 @@ GC_STATUS CalibStopSign::CreateCalibration( const std::vector< cv::Point2d > &pi
             matHomogPixToWorld = findHomography( pixelPts, worldPts );
             if ( matHomogPixToWorld.empty() )
             {
-                FILE_LOG( logERROR ) << "[CalibStopSign::Calibrate] Could not find pixel to world coordinate homography";
+                FILE_LOG( logERROR ) << "[CalibOctagon::Calibrate] Could not find pixel to world coordinate homography";
                 retVal = GC_ERR;
             }
             else
@@ -552,7 +552,7 @@ GC_STATUS CalibStopSign::CreateCalibration( const std::vector< cv::Point2d > &pi
                 matHomogWorldToPix = findHomography( worldPts, pixelPts );
                 if ( matHomogPixToWorld.empty() )
                 {
-                    FILE_LOG( logERROR ) << "[CalibStopSign::Calibrate] Could not find world to pixel coordinate homography";
+                    FILE_LOG( logERROR ) << "[CalibOctagon::Calibrate] Could not find world to pixel coordinate homography";
                     retVal = GC_ERR;
                 }
                 else
@@ -564,14 +564,14 @@ GC_STATUS CalibStopSign::CreateCalibration( const std::vector< cv::Point2d > &pi
     }
     catch( Exception &e )
     {
-        FILE_LOG( logERROR ) << "[CalibStopSign::Calibrate] " << e.what();
+        FILE_LOG( logERROR ) << "[CalibOctagon::Calibrate] " << e.what();
         retVal = GC_EXCEPT;
     }
 
     return retVal;
 }
 // if img != cv::Mat() then a recalibration is performed
-GC_STATUS CalibStopSign::Load( const std::string jsonCalString )
+GC_STATUS CalibOctagon::Load( const std::string jsonCalString )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -579,7 +579,7 @@ GC_STATUS CalibStopSign::Load( const std::string jsonCalString )
     {
         if ( jsonCalString.empty() )
         {
-            FILE_LOG( logERROR ) << "[CalibStopSign::Load] Bow tie calibration string is empty";
+            FILE_LOG( logERROR ) << "[CalibOctagon::Load] Bow tie calibration string is empty";
             retVal = GC_ERR;
         }
         else
@@ -664,7 +664,7 @@ GC_STATUS CalibStopSign::Load( const std::string jsonCalString )
 #endif
             if ( 5 > model.pixelPoints.size() )
             {
-                FILE_LOG( logERROR ) << "[CalibStopSign::Load] Invalid association point count";
+                FILE_LOG( logERROR ) << "[CalibOctagon::Load] Invalid association point count";
                 retVal = GC_ERR;
             }
             else
@@ -697,25 +697,25 @@ GC_STATUS CalibStopSign::Load( const std::string jsonCalString )
     }
     catch( boost::exception &e )
     {
-        FILE_LOG( logERROR ) << "[CalibStopSign::Load] " << diagnostic_information( e );
+        FILE_LOG( logERROR ) << "[CalibOctagon::Load] " << diagnostic_information( e );
         retVal = GC_EXCEPT;
     }
 
     return retVal;
 }
-GC_STATUS CalibStopSign::Save( const std::string jsonCalFilepath )
+GC_STATUS CalibOctagon::Save( const std::string jsonCalFilepath )
 {
     GC_STATUS retVal = GC_OK;
 
     if ( model.pixelPoints.empty() || model.worldPoints.empty() ||
          model.pixelPoints.size() != model.worldPoints.size() || model.searchLineSet.empty() )
     {
-        FILE_LOG( logERROR ) << "[CalibStopSign::Save] Empty cal point vector(s). Saves not possible without a calibrated object";
+        FILE_LOG( logERROR ) << "[CalibOctagon::Save] Empty cal point vector(s). Saves not possible without a calibrated object";
         retVal = GC_ERR;
     }
     else if ( jsonCalFilepath.empty() )
     {
-        FILE_LOG( logERROR ) << "[CalibStopSign::Save] Calibration filepath is empty";
+        FILE_LOG( logERROR ) << "[CalibOctagon::Save] Calibration filepath is empty";
         retVal = GC_ERR;
     }
     else
@@ -726,7 +726,7 @@ GC_STATUS CalibStopSign::Save( const std::string jsonCalFilepath )
             if ( fileStream.is_open() )
             {
                 fileStream << "{" << endl;
-                fileStream << "  \"calibType\":\"StopSign\"" << "," << endl;
+                fileStream << "  \"calibType\":\"Octagon\"" << "," << endl;
                 fileStream << "  \"imageWidth\":" << model.imgSize.width << "," << endl;
                 fileStream << "  \"imageHeight\":" << model.imgSize.height << "," << endl;
                 fileStream << "  \"facetLength\":" << model.facetLength << "," << endl;
@@ -798,21 +798,21 @@ GC_STATUS CalibStopSign::Save( const std::string jsonCalFilepath )
             }
             else
             {
-                FILE_LOG( logERROR ) << "[CalibStopSign::Save]"
+                FILE_LOG( logERROR ) << "[CalibOctagon::Save]"
                                         "Could not open calibration save file " << jsonCalFilepath;
                 retVal = GC_ERR;
             }
         }
         catch( std::exception &e )
         {
-            FILE_LOG( logERROR ) << "[CalibStopSign::Save] " << e.what();
+            FILE_LOG( logERROR ) << "[CalibOctagon::Save] " << e.what();
             retVal = GC_EXCEPT;
         }
     }
 
     return retVal;
 }
-GC_STATUS CalibStopSign::CalcOctoWorldPoints( const double sideLength, std::vector< cv::Point2d > &pts )
+GC_STATUS CalibOctagon::CalcOctoWorldPoints( const double sideLength, std::vector< cv::Point2d > &pts )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -850,13 +850,13 @@ GC_STATUS CalibStopSign::CalcOctoWorldPoints( const double sideLength, std::vect
     }
     catch( std::exception &e )
     {
-        FILE_LOG( logERROR ) << "[CalibStopSign::CalcWorldPoints] " << e.what();
+        FILE_LOG( logERROR ) << "[CalibOctagon::CalcWorldPoints] " << e.what();
         retVal = GC_EXCEPT;
     }
 
     return retVal;
 }
-GC_STATUS CalibStopSign::FindCorners( const cv::Mat &mask, const std::vector< cv::Point > &contour, OctagonLines &octoLines )
+GC_STATUS CalibOctagon::FindCorners( const cv::Mat &mask, const std::vector< cv::Point > &contour, OctagonLines &octoLines )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -869,12 +869,12 @@ GC_STATUS CalibStopSign::FindCorners( const cv::Mat &mask, const std::vector< cv
 
         if ( contour.size() < MIN_SYMBOL_CONTOUR_SIZE )
         {
-            FILE_LOG( logERROR ) << "[CalibStopSign::CalibStopSignCorners] Contour must have at least " << MIN_SYMBOL_CONTOUR_SIZE << " contour points";
+            FILE_LOG( logERROR ) << "[CalibOctagon::CalibOctagonCorners] Contour must have at least " << MIN_SYMBOL_CONTOUR_SIZE << " contour points";
             retVal = GC_ERR;
         }
         else if ( mask.empty() || CV_8UC1 != mask.type() )
         {
-            FILE_LOG( logERROR ) << "[CalibStopSign::CalibStopSignCorners] Invalid mask image";
+            FILE_LOG( logERROR ) << "[CalibOctagon::CalibOctagonCorners] Invalid mask image";
             retVal = GC_ERR;
         }
         else
@@ -945,19 +945,19 @@ GC_STATUS CalibStopSign::FindCorners( const cv::Mat &mask, const std::vector< cv
                             line( color, topPt1, topPt2, Scalar( 0, 0, 255 ), 1 );
                             line( color, botPt1, botPt2, Scalar( 0, 0, 255 ), 1 );
 #endif
-                            retVal = LineIntersection( StopSignLine( topPt1, topPt2 ), StopSignLine( lftPt1, lftPt2 ), octoLines.top.pt1 );
+                            retVal = LineIntersection( OctagonLine( topPt1, topPt2 ), OctagonLine( lftPt1, lftPt2 ), octoLines.top.pt1 );
                             if ( GC_OK == retVal )
                             {
                                 octoLines.left.pt2 = octoLines.top.pt1;
-                                retVal = LineIntersection( StopSignLine( topPt1, topPt2 ), StopSignLine( rgtPt1, rgtPt2 ), octoLines.top.pt2 );
+                                retVal = LineIntersection( OctagonLine( topPt1, topPt2 ), OctagonLine( rgtPt1, rgtPt2 ), octoLines.top.pt2 );
                                 if ( GC_OK == retVal )
                                 {
                                     octoLines.right.pt1 = octoLines.top.pt2;
-                                    retVal = LineIntersection( StopSignLine( botPt1, botPt2 ), StopSignLine( lftPt1, lftPt2 ), octoLines.bot.pt2 );
+                                    retVal = LineIntersection( OctagonLine( botPt1, botPt2 ), OctagonLine( lftPt1, lftPt2 ), octoLines.bot.pt2 );
                                     if ( GC_OK == retVal )
                                     {
                                         octoLines.left.pt1 = octoLines.bot.pt2;
-                                        retVal = LineIntersection( StopSignLine( botPt1, botPt2 ), StopSignLine( rgtPt1, rgtPt2 ), octoLines.right.pt2 );
+                                        retVal = LineIntersection( OctagonLine( botPt1, botPt2 ), OctagonLine( rgtPt1, rgtPt2 ), octoLines.right.pt2 );
                                         if ( GC_OK == retVal )
                                         {
                                             octoLines.bot.pt1 = octoLines.right.pt2;
@@ -977,13 +977,13 @@ GC_STATUS CalibStopSign::FindCorners( const cv::Mat &mask, const std::vector< cv
     catch( cv::Exception &e )
     {
         cout << e.what() << endl;
-        FILE_LOG( logERROR ) << "[CalibStopSign::CalibStopSignCorners] " << e.what();
+        FILE_LOG( logERROR ) << "[CalibOctagon::CalibOctagonCorners] " << e.what();
         retVal = GC_EXCEPT;
     }
 
     return retVal;
 }
-GC_STATUS CalibStopSign::CalcCorners( const OctagonLines octoLines, std::vector< cv::Point2d > &symbolCorners )
+GC_STATUS CalibOctagon::CalcCorners( const OctagonLines octoLines, std::vector< cv::Point2d > &symbolCorners )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -1034,7 +1034,7 @@ GC_STATUS CalibStopSign::CalcCorners( const OctagonLines octoLines, std::vector<
     }
     catch( cv::Exception &e )
     {
-        FILE_LOG( logERROR ) << "[CalibStopSign::CalcCorners] " << e.what();
+        FILE_LOG( logERROR ) << "[CalibOctagon::CalcCorners] " << e.what();
         retVal = GC_EXCEPT;
     }
 
@@ -1042,7 +1042,7 @@ GC_STATUS CalibStopSign::CalcCorners( const OctagonLines octoLines, std::vector<
 }
 // Finds the intersection of two lines, or returns false.
 // The lines are defined by (o1, p1) and (o2, p2).
-GC_STATUS CalibStopSign::LineIntersection( const StopSignLine line1, const StopSignLine line2, Point2d &r )
+GC_STATUS CalibOctagon::LineIntersection( const OctagonLine line1, const OctagonLine line2, Point2d &r )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -1054,7 +1054,7 @@ GC_STATUS CalibStopSign::LineIntersection( const StopSignLine line1, const StopS
         double cross = d1.x * d2.y - d1.y * d2.x;
         if (abs(cross) < numeric_limits< double >::epsilon() )
         {
-            FILE_LOG( logERROR ) << "[CalibStopSign::LineIntersection] Lines are parallel";
+            FILE_LOG( logERROR ) << "[CalibOctagon::LineIntersection] Lines are parallel";
             return GC_ERR;
         }
 
@@ -1063,13 +1063,13 @@ GC_STATUS CalibStopSign::LineIntersection( const StopSignLine line1, const StopS
     }
     catch( cv::Exception &e )
     {
-        FILE_LOG( logERROR ) << "[CalibStopSign::LineIntersection] " << e.what();
+        FILE_LOG( logERROR ) << "[CalibOctagon::LineIntersection] " << e.what();
         retVal = GC_EXCEPT;
     }
 
     return retVal;
 }
-GC_STATUS CalibStopSign::FindDiagonals( const cv::Mat &mask, const std::vector< cv::Point > &contour, OctagonLines &octoLines )
+GC_STATUS CalibOctagon::FindDiagonals( const cv::Mat &mask, const std::vector< cv::Point > &contour, OctagonLines &octoLines )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -1077,12 +1077,12 @@ GC_STATUS CalibStopSign::FindDiagonals( const cv::Mat &mask, const std::vector< 
     {
         if ( contour.size() < MIN_SYMBOL_CONTOUR_SIZE )
         {
-            FILE_LOG( logERROR ) << "[CalibStopSign::CalibStopSignCorners] Contour must have at least " << MIN_SYMBOL_CONTOUR_SIZE << " contour points";
+            FILE_LOG( logERROR ) << "[CalibOctagon::CalibOctagonCorners] Contour must have at least " << MIN_SYMBOL_CONTOUR_SIZE << " contour points";
             retVal = GC_ERR;
         }
         else if ( mask.empty() || CV_8UC1 != mask.type() )
         {
-            FILE_LOG( logERROR ) << "[CalibStopSign::CalibStopSignCorners] Invalid mask image";
+            FILE_LOG( logERROR ) << "[CalibOctagon::CalibOctagonCorners] Invalid mask image";
             retVal = GC_ERR;
         }
         else
@@ -1170,13 +1170,13 @@ GC_STATUS CalibStopSign::FindDiagonals( const cv::Mat &mask, const std::vector< 
     }
     catch( cv::Exception &e )
     {
-        FILE_LOG( logERROR ) << "[CalibStopSign::FindDiagonals] " << e.what();
+        FILE_LOG( logERROR ) << "[CalibOctagon::FindDiagonals] " << e.what();
         retVal = GC_EXCEPT;
     }
 
     return retVal;
 }
-GC_STATUS CalibStopSign::GetLineEndPoints( cv::Mat &mask, const cv::Rect rect, cv::Point2d &pt1, cv::Point2d &pt2 )
+GC_STATUS CalibOctagon::GetLineEndPoints( cv::Mat &mask, const cv::Rect rect, cv::Point2d &pt1, cv::Point2d &pt2 )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -1254,14 +1254,14 @@ GC_STATUS CalibStopSign::GetLineEndPoints( cv::Mat &mask, const cv::Rect rect, c
     }
     catch( cv::Exception &e )
     {
-        FILE_LOG( logERROR ) << "[CalibStopSign::GetLineEndPoints] " << e.what();
+        FILE_LOG( logERROR ) << "[CalibOctagon::GetLineEndPoints] " << e.what();
         retVal = GC_EXCEPT;
     }
 
     return retVal;
 
 }
-GC_STATUS CalibStopSign::GetNonZeroPoints( cv::Mat &img, std::vector< cv::Point > &pts )
+GC_STATUS CalibOctagon::GetNonZeroPoints( cv::Mat &img, std::vector< cv::Point > &pts )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -1269,7 +1269,7 @@ GC_STATUS CalibStopSign::GetNonZeroPoints( cv::Mat &img, std::vector< cv::Point 
     {
         if ( img.empty() )
         {
-            FILE_LOG( logERROR ) << "[CalibStopSign::GetNonZeroPoints] Can not get points from an empty image";
+            FILE_LOG( logERROR ) << "[CalibOctagon::GetNonZeroPoints] Can not get points from an empty image";
             retVal = GC_ERR;
         }
         else
@@ -1289,13 +1289,13 @@ GC_STATUS CalibStopSign::GetNonZeroPoints( cv::Mat &img, std::vector< cv::Point 
     }
     catch( cv::Exception &e )
     {
-        FILE_LOG( logERROR ) << "[CalibStopSign::GetNonZeroPoints] " << e.what();
+        FILE_LOG( logERROR ) << "[CalibOctagon::GetNonZeroPoints] " << e.what();
         retVal = GC_EXCEPT;
     }
 
     return retVal;
 }
-GC_STATUS CalibStopSign::PixelToWorld( const Point2d ptPixel, Point2d &ptWorld )
+GC_STATUS CalibOctagon::PixelToWorld( const Point2d ptPixel, Point2d &ptWorld )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -1303,7 +1303,7 @@ GC_STATUS CalibStopSign::PixelToWorld( const Point2d ptPixel, Point2d &ptWorld )
     {
         if ( matHomogPixToWorld.empty() )
         {
-            FILE_LOG( logERROR ) << "[CalibStopSign::PixelToWorld] No calibration for pixel to world conversion";
+            FILE_LOG( logERROR ) << "[CalibOctagon::PixelToWorld] No calibration for pixel to world conversion";
             retVal = GC_ERR;
         }
         else
@@ -1316,13 +1316,13 @@ GC_STATUS CalibStopSign::PixelToWorld( const Point2d ptPixel, Point2d &ptWorld )
     }
     catch( Exception &e )
     {
-        FILE_LOG( logERROR ) << "[CalibStopSign::PixelToWorld] " << e.what();
+        FILE_LOG( logERROR ) << "[CalibOctagon::PixelToWorld] " << e.what();
         retVal = GC_EXCEPT;
     }
 
     return retVal;
 }
-GC_STATUS CalibStopSign::WorldToPixel( const Point2d ptWorld, Point2d &ptPixel )
+GC_STATUS CalibOctagon::WorldToPixel( const Point2d ptWorld, Point2d &ptPixel )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -1330,7 +1330,7 @@ GC_STATUS CalibStopSign::WorldToPixel( const Point2d ptWorld, Point2d &ptPixel )
     {
         if ( matHomogWorldToPix.empty() )
         {
-            FILE_LOG( logERROR ) << "[CalibStopSign::WorldToPixel]"
+            FILE_LOG( logERROR ) << "[CalibOctagon::WorldToPixel]"
                                     "No calibration for world to pixel conversion";
             retVal = GC_ERR;
         }
@@ -1344,72 +1344,13 @@ GC_STATUS CalibStopSign::WorldToPixel( const Point2d ptWorld, Point2d &ptPixel )
     }
     catch( Exception &e )
     {
-        FILE_LOG( logERROR ) << "[CalibStopSign::WorldToPixel] " << e.what();
+        FILE_LOG( logERROR ) << "[CalibOctagon::WorldToPixel] " << e.what();
         retVal = GC_EXCEPT;
     }
 
     return retVal;
 }
-GC_STATUS BGR_2_HSV( const cv::Scalar color, cv::Scalar &hsv )
-{
-    GC_STATUS retVal = GC_OK;
-    if ( color.channels < 3 )
-    {
-        FILE_LOG( logERROR ) << "[CalibStopSign::SetStopsignColor] Invalid color (not enough channels)";
-        retVal = GC_ERR;
-    }
-    else
-    {
-        double b = color.val[ 0 ] / 255.0;
-        double g = color.val[ 1 ] / 255.0;
-        double r = color.val[ 2 ] / 255.0;
-
-        double v = b;
-        if ( g > v || r > v )
-        {
-            v = r > g ? r : g;
-        }
-
-        double minVal = b;
-        if ( g < minVal || r < minVal )
-        {
-            minVal = r < g ? r : g;
-        }
-
-        double s = v;
-        if ( 0.0 != v )
-        {
-            s = ( v - minVal ) / v;
-        }
-
-        double h = 0.0;
-        if ( v == r )
-        {
-            h = 60.0 * ( g - b ) / ( v - minVal );
-        }
-        else if ( v == g )
-        {
-            h = 120.0 + 60.0 * ( b - r ) / ( v - minVal );
-        }
-        else if ( v == b )
-        {
-            h = 240.0 + 60.0 * ( r - g ) / ( v - minVal );
-        }
-
-        if ( 0.0 > h )
-        {
-            h += 360.0;
-        }
-
-        h /= 2.0;
-        s *= 255.0;
-        v *= 255.0;
-
-        hsv = Scalar( h, s, v );
-    }
-    return retVal;
-}
-GC_STATUS CalibStopSign::DrawOverlay( const cv::Mat &img, cv::Mat &result, const bool drawCalibScale, const bool drawCalibGrid,
+GC_STATUS CalibOctagon::DrawOverlay( const cv::Mat &img, cv::Mat &result, const bool drawCalibScale, const bool drawCalibGrid,
                                       const bool drawMoveROIs, const bool drawSearchROI, const bool drawTargetSearchROI )
 {
     GC_STATUS retVal = GC_OK;
@@ -1417,12 +1358,12 @@ GC_STATUS CalibStopSign::DrawOverlay( const cv::Mat &img, cv::Mat &result, const
     {
         if ( matHomogPixToWorld.empty() || matHomogWorldToPix.empty() )
         {
-            FILE_LOG( logERROR ) << "[CalibStopSign::DrawCalibration] System not calibrated";
+            FILE_LOG( logERROR ) << "[CalibOctagon::DrawCalibration] System not calibrated";
             retVal = GC_ERR;
         }
         else if ( img.empty() )
         {
-            FILE_LOG( logERROR ) << "[CalibStopSign::DrawCalibration] Empty image";
+            FILE_LOG( logERROR ) << "[CalibOctagon::DrawCalibration] Empty image";
             retVal = GC_ERR;
         }
         else
@@ -1437,7 +1378,7 @@ GC_STATUS CalibStopSign::DrawOverlay( const cv::Mat &img, cv::Mat &result, const
             }
             else
             {
-                FILE_LOG( logERROR ) << "[CalibStopSign::DrawCalibration] Invalid image type";
+                FILE_LOG( logERROR ) << "[CalibOctagon::DrawCalibration] Invalid image type";
                 retVal = GC_ERR;
             }
 
@@ -1532,7 +1473,7 @@ GC_STATUS CalibStopSign::DrawOverlay( const cv::Mat &img, cv::Mat &result, const
                         }
                         else
                         {
-                            std::vector< StopSignLine > horzLines, vertLines;
+                            std::vector< OctagonLine > horzLines, vertLines;
                             retVal = CalcGridDrawPoints( horzLines, vertLines );
                             if ( GC_OK == retVal )
                             {
@@ -1621,13 +1562,13 @@ GC_STATUS CalibStopSign::DrawOverlay( const cv::Mat &img, cv::Mat &result, const
     }
     catch( Exception &e )
     {
-        FILE_LOG( logERROR ) << "[CalibStopSign::DrawCalibration] " << e.what();
+        FILE_LOG( logERROR ) << "[CalibOctagon::DrawCalibration] " << e.what();
         retVal = GC_EXCEPT;
     }
 
     return retVal;
 }
-GC_STATUS CalibStopSign::GetXEdgeMinDiffX(const double xWorld, cv::Point2d &ptPix, const bool isTopSideY )
+GC_STATUS CalibOctagon::GetXEdgeMinDiffX(const double xWorld, cv::Point2d &ptPix, const bool isTopSideY )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -1666,13 +1607,13 @@ GC_STATUS CalibStopSign::GetXEdgeMinDiffX(const double xWorld, cv::Point2d &ptPi
     }
     catch( std::exception &e )
     {
-        FILE_LOG( logERROR ) << "[CalibStopSign::GetMinWorldDiffY] " << e.what();
+        FILE_LOG( logERROR ) << "[CalibOctagon::GetMinWorldDiffY] " << e.what();
         retVal = GC_EXCEPT;
     }
 
     return retVal;
 }
-GC_STATUS CalibStopSign::GetXEdgeMinDiffY(const double yWorld, cv::Point2d &ptPix, const bool isRightSideX )
+GC_STATUS CalibOctagon::GetXEdgeMinDiffY(const double yWorld, cv::Point2d &ptPix, const bool isRightSideX )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -1711,20 +1652,20 @@ GC_STATUS CalibStopSign::GetXEdgeMinDiffY(const double yWorld, cv::Point2d &ptPi
     }
     catch( std::exception &e )
     {
-        FILE_LOG( logERROR ) << "[CalibStopSign::GetMinWorldDiffY] " << e.what();
+        FILE_LOG( logERROR ) << "[CalibOctagon::GetMinWorldDiffY] " << e.what();
         retVal = GC_EXCEPT;
     }
 
     return retVal;
 }
-GC_STATUS CalibStopSign::CalcGridDrawPoints( std::vector< StopSignLine > &horzLines, std::vector< StopSignLine > &vertLines )
+GC_STATUS CalibOctagon::CalcGridDrawPoints( std::vector< OctagonLine > &horzLines, std::vector< OctagonLine > &vertLines )
 {
     GC_STATUS retVal = GC_OK;
     try
     {
         if ( 8 != model.pixelPoints.size() || 8 != model.worldPoints.size() )
         {
-            FILE_LOG( logERROR ) << "[CalibStopSign::CalcGridDrawPoints] System not calibrated";
+            FILE_LOG( logERROR ) << "[CalibOctagon::CalcGridDrawPoints] System not calibrated";
             retVal = GC_ERR;
         }
         else
@@ -1751,7 +1692,7 @@ GC_STATUS CalibStopSign::CalcGridDrawPoints( std::vector< StopSignLine > &horzLi
                 retVal = GetXEdgeMinDiffY( 0.0, ptPix2, true );
                 if ( GC_OK == retVal )
                 {
-                    horzLines.push_back( StopSignLine( ptPix1, ptPix2 ) );
+                    horzLines.push_back( OctagonLine( ptPix1, ptPix2 ) );
                 }
             }
 
@@ -1772,7 +1713,7 @@ GC_STATUS CalibStopSign::CalcGridDrawPoints( std::vector< StopSignLine > &horzLi
                             retVal = GetXEdgeMinDiffY( ptWorld.y, ptPix2, true );
                             if ( GC_OK == retVal )
                             {
-                                horzLines.push_back( StopSignLine( ptPix1, ptPix2 ) );
+                                horzLines.push_back( OctagonLine( ptPix1, ptPix2 ) );
                             }
                         }
                     }
@@ -1798,7 +1739,7 @@ GC_STATUS CalibStopSign::CalcGridDrawPoints( std::vector< StopSignLine > &horzLi
                             retVal = GetXEdgeMinDiffY( ptWorld.y, ptPix2, true );
                             if ( GC_OK == retVal )
                             {
-                                horzLines.push_back( StopSignLine( ptPix1, ptPix2 ) );
+                                horzLines.push_back( OctagonLine( ptPix1, ptPix2 ) );
                             }
                         }
                     }
@@ -1824,7 +1765,7 @@ GC_STATUS CalibStopSign::CalcGridDrawPoints( std::vector< StopSignLine > &horzLi
                             retVal = GetXEdgeMinDiffX( ptWorld.x, ptPix2, true );
                             if ( GC_OK == retVal )
                             {
-                                vertLines.push_back( StopSignLine( ptPix1, ptPix2 ) );
+                                vertLines.push_back( OctagonLine( ptPix1, ptPix2 ) );
                             }
                         }
                     }
@@ -1839,19 +1780,19 @@ GC_STATUS CalibStopSign::CalcGridDrawPoints( std::vector< StopSignLine > &horzLi
 
         if ( horzLines.empty() )
         {
-            FILE_LOG( logERROR ) << "[CalibStopSign::CalcGridDrawPoints] Unable to calculate any grid lines";
+            FILE_LOG( logERROR ) << "[CalibOctagon::CalcGridDrawPoints] Unable to calculate any grid lines";
             retVal = GC_ERR;
         }
     }
     catch( std::exception &e )
     {
-        FILE_LOG( logERROR ) << "[CalibStopSign::CalcGridDrawPoints] " << e.what();
+        FILE_LOG( logERROR ) << "[CalibOctagon::CalcGridDrawPoints] " << e.what();
         retVal = GC_EXCEPT;
     }
 
     return retVal;
 }
-GC_STATUS CalibStopSign::CalcSearchROI( const double botLftPtToLft, const double botLftPtToTop,
+GC_STATUS CalibOctagon::CalcSearchROI( const double botLftPtToLft, const double botLftPtToTop,
                                         const double botLftPtToRgt, const double botLftPtToBot, cv::Point2d &lftTop,
                                         cv::Point2d &rgtTop, cv::Point2d &lftBot, cv::Point2d &rgtBot )
 {
@@ -1860,13 +1801,13 @@ GC_STATUS CalibStopSign::CalcSearchROI( const double botLftPtToLft, const double
     {
         if ( model.worldPoints.empty() )
         {
-            FILE_LOG( logERROR ) << "[CalibStopSign::CalcSearchROI] System not calibrated";
+            FILE_LOG( logERROR ) << "[CalibOctagon::CalcSearchROI] System not calibrated";
             retVal = GC_ERR;
         }
         else if ( ( model.worldPoints[ 1 ].y == model.worldPoints[ 4 ].y ) ||
                   ( model.worldPoints[ 0 ].y == model.worldPoints[ 5 ].y ) )
         {
-            FILE_LOG( logERROR ) << "[CalibStopSign::CalcSearchROI] Invalid calibration";
+            FILE_LOG( logERROR ) << "[CalibOctagon::CalcSearchROI] Invalid calibration";
             retVal = GC_ERR;
         }
         else
@@ -1887,13 +1828,13 @@ GC_STATUS CalibStopSign::CalcSearchROI( const double botLftPtToLft, const double
     }
     catch( std::exception &e )
     {
-        FILE_LOG( logERROR ) << "[CalibStopSign::CalcSearchROI] " << e.what();
+        FILE_LOG( logERROR ) << "[CalibOctagon::CalcSearchROI] " << e.what();
         retVal = GC_EXCEPT;
     }
 
     return retVal;
 }
-GC_STATUS CalibStopSign::TestCalibration( bool &isValid )
+GC_STATUS CalibOctagon::TestCalibration( bool &isValid )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -1936,14 +1877,14 @@ GC_STATUS CalibStopSign::TestCalibration( bool &isValid )
             }
             else
             {
-                FILE_LOG( logERROR ) << "[CalibStopSign::TestCalibration] Calibration point find test bad";
+                FILE_LOG( logERROR ) << "[CalibOctagon::TestCalibration] Calibration point find test bad";
                 retVal = GC_ERR;
             }
         }
     }
     catch( std::exception &e )
     {
-        FILE_LOG( logERROR ) << "[CalibStopSign::TestCalibration] " << e.what();
+        FILE_LOG( logERROR ) << "[CalibOctagon::TestCalibration] " << e.what();
         retVal = GC_EXCEPT;
     }
 

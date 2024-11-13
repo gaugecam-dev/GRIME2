@@ -46,15 +46,13 @@ win32 {
 
 SOURCES += \
         ../algorithms/animate.cpp \
-	../algorithms/calibbowtie.cpp \
 	../algorithms/calibexecutive.cpp \
-	../algorithms/calibstopsign.cpp \
-        ../algorithms/findcalibgrid.cpp \
-	../algorithms/findline.cpp \
+    ../algorithms/caliboctagon.cpp \
+        ../algorithms/findline.cpp \
 	../algorithms/gifanim/gifanim.cpp \
 	../algorithms/metadata.cpp \
+    ../algorithms/octagonsearch.cpp \
         ../algorithms/searchlines.cpp \
-        ../algorithms/stopsignsearch.cpp \
         ../algorithms/visapp.cpp \
         guivisapp.cpp \
         main.cpp \
@@ -64,19 +62,17 @@ SOURCES += \
 HEADERS += \
         ../algorithms/animate.h \
         ../algorithms/bresenham.h \
-	../algorithms/calibbowtie.h \
 	../algorithms/calibexecutive.h \
-	../algorithms/calibstopsign.h \
+    ../algorithms/caliboctagon.h \
         ../algorithms/csvreader.h \
-        ../algorithms/findcalibgrid.h \
-	../algorithms/findline.h \
+        ../algorithms/findline.h \
 	../algorithms/gc_types.h \
 	../algorithms/gifanim/gifanim.h \
         ../algorithms/labelroi.h \
         ../algorithms/log.h \
         ../algorithms/metadata.h \
+    ../algorithms/octagonsearch.h \
         ../algorithms/searchlines.h \
-        ../algorithms/stopsignsearch.h \
         ../algorithms/timestampconvert.h \
         ../algorithms/visapp.h \
         ../algorithms/wincmd.h \
@@ -178,8 +174,6 @@ DISTFILES += \
     config/settings.cfg \
     config/settingsWin.cfg \
     docs/Background_installation_guideline.pdf \
-    docs/Bowtie_Fiducial_Pattern.dwg \
-    docs/Bowtie_Fiducial_Pattern.pdf \
     docs/boost_license.txt \
     docs/lgpl_license.txt \
     docs/perl_artistic_license.txt \

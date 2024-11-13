@@ -22,8 +22,8 @@
  * This project is released under the Apache License, Version 2.0.
  * \bug No known bugs.
  */
-#ifndef STOPSIGNSEARCH_H
-#define STOPSIGNSEARCH_H
+#ifndef OCTAGONSEARCH_H
+#define OCTAGONSEARCH_H
 
 #include "gc_types.h"
 #include "opencv2/imgproc.hpp"
@@ -31,10 +31,10 @@
 namespace gc
 {
 
-class StopSignTemplate
+class OctagonTemplate
 {
 public:
-    StopSignTemplate() :
+    OctagonTemplate() :
         angle( -9999999 ),
         offset( cv::Point2d( -1.0, -1.0 ) )
     {}
@@ -45,14 +45,14 @@ public:
     cv::Mat templ;
 };
 
-class StopSignTemplateSet
+class OctagonTemplateSet
 {
 public:
-    StopSignTemplateSet() : pointAngle( -1 ) {}
-    StopSignTemplateSet( const int ptAngle ) : pointAngle( ptAngle ) {}
+    OctagonTemplateSet() : pointAngle( -1 ) {}
+    OctagonTemplateSet( const int ptAngle ) : pointAngle( ptAngle ) {}
 
     int pointAngle;
-    std::vector< StopSignTemplate > ptTemplates;
+    std::vector< OctagonTemplate > ptTemplates;
 };
 
 class OctoTemplate
@@ -86,10 +86,10 @@ public:
     std::vector< OctoTemplate > templates;
 };
 
-class StopsignSearch
+class OctagonSearch
 {
 public:
-    StopsignSearch();
+    OctagonSearch();
 
     GC_STATUS Init( const int templateDim, const int rotateCnt );
     GC_STATUS Find( const cv::Mat &img, std::vector< cv::Point2d > &pts, const bool do_coarse_prefind = false );
@@ -97,14 +97,14 @@ public:
     GC_STATUS FindMoveTargets( const cv::Mat &img, const cv::Rect targetRoi, cv::Point2d &ptLeft, cv::Point2d &ptRight );
 
 private:
-    std::vector< StopSignTemplateSet > templates;
+    std::vector< OctagonTemplateSet > templates;
     OctoTemplateSet octoTemplates;
 
     GC_STATUS RotateImage( const cv::Mat &src, cv::Mat &dst, const double angle );
     GC_STATUS DrawCorner( const int templateDim, cv::Mat &templ, cv::Mat &mask, cv::Point2d &center );
     GC_STATUS DrawOctagon( const int templateDim, const int radius, const int thickness, cv::Mat &templ, cv::Mat &mask, cv::Point2d &center );
     GC_STATUS RotatePointTemplates( const size_t idx, const double angle );
-    GC_STATUS CreatePointTemplates( const int templateDim, const int rotateCnt, std::vector< StopSignTemplate > &ptTemplates );
+    GC_STATUS CreatePointTemplates( const int templateDim, const int rotateCnt, std::vector< OctagonTemplate > &ptTemplates );
     GC_STATUS CreateOctoTemplates( const int radBeg, const int radEnd, const int radInc,
                                    const int beg_thickness, std::vector< OctoTemplate > &ptTemplates );
     GC_STATUS CreateTemplateOverlay( const std::string debugFolder );
@@ -123,4 +123,4 @@ private:
 
 } // namespace gc
 
-#endif // STOPSIGNSEARCH_H
+#endif // OCTAGONSEARCH_H

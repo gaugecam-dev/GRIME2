@@ -51,7 +51,7 @@ class VisApp
 {
 public:
     /**
-     * @brief Constructor, initializes the bowtie templates for target searches and creates scratch folders
+     * @brief Constructor, initializes the templates for target searches and creates scratch folders
      */
     VisApp();
 
@@ -108,16 +108,6 @@ public:
      */
     GC_STATUS WorldToPixel( const cv::Point2d worldPt, cv::Point2d &pixelPt );
 
-    // TODO: Add doxygen comments here
-    GC_STATUS FindBowtieResiduals( const std::string imgFilepath, double &rmseX, double &rmseY, double &rmseEucDist,
-                                   std::vector< cv::Point2d > &pixPts, std::vector< cv::Point2d > &worldPts,
-                                   std::vector< cv::Point2d > &pixPtsReverse );
-    /**
-     * @brief Convert pixel coordinates to world coordinates using the currently set calibration
-     * @param pixelPt Pixel coordinate xy position
-     * @param worldPt Point to hold the converted world coordinate position
-     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
-     */
     GC_STATUS PixelToWorld( const cv::Point2d pixelPt, cv::Point2d &worldPt );
 
     /**
@@ -132,8 +122,6 @@ public:
     GC_STATUS GetTargetSearchROI( cv::Rect &rect );
     GC_STATUS GetCalibParams( std::string &calibParams );
     GC_STATUS SetMinMaxFindLineAngles( const double minAngle, const double maxAngle );
-    GC_STATUS GetStopsignColor( cv::Scalar &color, double &minRange, double &maxRange );
-    GC_STATUS SetStopsignColor( const cv::Scalar color, const double minRange, const double maxRange, cv::Scalar &hsv );
     GC_STATUS DrawCalibOverlay( const cv::Mat matIn, cv::Mat &imgMatOut );
     GC_STATUS DrawCalibOverlay( const cv::Mat matIn, cv::Mat &imgMatOut, const bool drawCalibScale, const bool drawCalibGrid,
                                 const bool drawMoveROIs, const bool drawSearchROI, const bool drawTargetROI );

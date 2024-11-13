@@ -211,13 +211,9 @@ GC_STATUS CreateCalibrate( const Grime2CLIParams cliParams )
                                   cliParams.calib_roi, cliParams.move_roi_grow_percent,
                                   cliParams.facet_length, cliParams.zero_offset,
                                   cliParams.waterline_region );
-            if ( string::npos == cliParams.calib_type.find( "BowTie" ) )
+            if ( string::npos != cliParams.calib_type.find( "StopSign" ) )
             {
-                retVal = calibExec.FormStopsignCalibJsonString( items, jsonStr );
-            }
-            else
-            {
-                retVal = calibExec.FormBowtieCalibJsonString( items, jsonStr );
+                retVal = calibExec.FormOctagonCalibJsonString( items, jsonStr );
             }
             if ( GC_OK == retVal )
             {

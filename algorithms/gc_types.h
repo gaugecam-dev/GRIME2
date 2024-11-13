@@ -83,11 +83,9 @@ static const int FIT_LINE_RANSAC_TRIES_EARLY_OUT = 50;                          
 static const int FIT_LINE_RANSAC_POINT_COUNT = 5;                               ///< Fit line RANSAC early out tries
 static const int MIN_DEFAULT_INT = -std::numeric_limits< int >::max();          ///< Minimum value for an integer
 static const double MIN_DEFAULT_DBL = -std::numeric_limits< double >::max();    ///< Minimum value for a double
-static const int GC_BOWTIE_TEMPLATE_DIM = 56;                                   ///< Default bowtie template size
-static const int GC_STOPSIGN_TEMPLATE_DIM = 51;                                 ///< Default bowtie template size
+static const int GC_OCTAGON_TEMPLATE_DIM = 51;                                 ///< Default octagon template size
 static const int GC_IMAGE_SIZE_WIDTH = 800;                                     ///< Default image width
 static const int GC_IMAGE_SIZE_HEIGHT = 600;                                    ///< Default image height
-static const double MIN_BOWTIE_FIND_SCORE = 0.55;                               ///< Minimum bow tie sccore
 
 /**
  * @brief Data class to define a line to search an image for a water edge
@@ -114,94 +112,14 @@ public:
     cv::Point bot; ///< Bottom point of the line
 };
 
-/**
- * @brief Data class to hold all items needed to define a calibration
- */
-class CalibModelBowtie
+
+class CalibModelOctagon
 {
 public:
     /**
      * @brief Constructor to set the model to an uninitialized state
      */
-    CalibModelBowtie() :
-        imgSize( cv::Size( -1, -1 ) ),
-        gridSize( cv::Size( -1, -1 ) ),
-        moveSearchRegionLft( cv::Rect( -1, -1, -1, -1 ) ),
-        moveSearchRegionRgt( cv::Rect( -1, -1, -1, -1 ) ),
-        moveSearchROIMultiplier( 0.0 ),
-        wholeTargetRegion( cv::Rect( -1, -1, -1, -1 ) )
-    {}
-
-    /**
-     * @brief Constructor to set the model to a valid state
-     * @param gridSz Dimensions of the calibration grid
-     * @param pixelPts Vector of pixel points ordered to match the world point vector
-     * @param worldPts Vector of world points ordered to match the pixel point vector
-     * @param lineEndPts Vector of search lines to be searched for the water line
-     * @param mvSrchROILft Left move search region (to search for top-left bowtie)
-     * @param mvSrchROIRgt Right move search region (to search for top-right bowtie)
-     */
-    CalibModelBowtie( cv::Size imageSize,
-                cv::Size gridSz,
-                std::vector< cv::Point2d > pixelPts,
-                std::vector< cv::Point2d > worldPts,
-                std::vector< cv::Point > waterLevelSearchCorners,
-                std::vector< LineEnds > lineEndPts,
-                cv::Rect mvSrchROILft,
-                cv::Rect mvSrchROIRgt,
-                double moveSearchROIMultiply ) :
-        imgSize( imageSize ),
-        gridSize( gridSz ),
-        pixelPoints( pixelPts ),
-        worldPoints( worldPts ),
-        waterlineSearchCorners( waterLevelSearchCorners ),
-        searchLineSet( lineEndPts ),
-        moveSearchRegionLft( mvSrchROILft ),
-        moveSearchRegionRgt( mvSrchROIRgt ),
-        moveSearchROIMultiplier( moveSearchROIMultiply ),
-        wholeTargetRegion( cv::Rect( -1, -1, -1, -1 ) )
-    {}
-
-    /**
-    * @brief Resets the object to uninitialized values
-    */
-    void clear()
-    {
-        controlJson.clear();
-        imgSize = cv::Size( -1, -1 );
-        gridSize = cv::Size( -1, -1 );
-        pixelPoints.clear();
-        worldPoints.clear();
-        waterlineSearchCorners.clear();
-        waterlineSearchCornersAdj.clear();
-        searchLineSet.clear();
-        moveSearchRegionLft = cv::Rect( -1, -1, -1, -1 );
-        moveSearchRegionRgt = cv::Rect( -1, -1, -1, -1 );
-        moveSearchROIMultiplier = 0.0;
-        wholeTargetRegion = cv::Rect( -1, -1, -1, -1 );
-    }
-
-    std::string controlJson;                         ///< Json control string
-    cv::Size imgSize;                                ///< Dimensions of the calibration image
-    cv::Size gridSize;                               ///< Dimensions of the calibration grid
-    std::vector< cv::Point2d > pixelPoints;          ///< Vector of pixel points ordered to match the world point vector
-    std::vector< cv::Point2d > worldPoints;          ///< Vector of world points ordered to match the pixel point vector
-    std::vector< cv::Point > waterlineSearchCorners; ///< Vector of search ROI corners (start at top-left, clockwise
-    std::vector< cv::Point > waterlineSearchCornersAdj;
-    std::vector< LineEnds > searchLineSet;           ///< Vector of search lines to be searched for the water line
-    cv::Rect moveSearchRegionLft;                    ///< Left move search region (to search for top-left bowtie)
-    cv::Rect moveSearchRegionRgt;                    ///< Right move search region (to search for top-right bowtie)
-    double moveSearchROIMultiplier;                  ///< Move search region multiplier (based on nominal)
-    cv::Rect wholeTargetRegion;                      ///< Region within which to perform line and move search
-};
-
-class CalibModelSymbol
-{
-public:
-    /**
-     * @brief Constructor to set the model to an uninitialized state
-     */
-    CalibModelSymbol() :
+    CalibModelOctagon() :
         validCalib( false ),
         imgSize( cv::Size( -1, -1 ) ),
         targetSearchRegion( cv::Rect( -1, -1, -1, -1 ) ),
@@ -218,10 +136,10 @@ public:
      * @param pixelPts Vector of pixel points ordered to match the world point vector
      * @param worldPts Vector of world points ordered to match the pixel point vector
      * @param lineEndPts Vector of search lines to be searched for the water line
-     * @param mvSrchROILft Left move search region (to search for top-left bowtie)
-     * @param mvSrchROIRgt Right move search region (to search for top-right bowtie)
+     * @param mvSrchROILft Left move search region (to search for top-left octagon)
+     * @param mvSrchROIRgt Right move search region (to search for top-right octagon)
      */
-    CalibModelSymbol( const bool isCalibValid,
+    CalibModelOctagon( const bool isCalibValid,
                       const cv::Size imageSize,
                       const std::vector< cv::Point2d > oldPixPts,
                       const std::vector< cv::Point2d > pixelPts,
@@ -328,8 +246,8 @@ public:
         timeStampType( tmStampType ),
         timeStampStartPos( tmStampStartPos ),
         timeStampFormat( tmStampFormat ),
-        isStopSignCalib( true ),
-        stopSignZeroOffset( 0.0 )
+        isOctagonCalib( true ),
+        octagonZeroOffset( 0.0 )
     {}
 
     void clear()
@@ -343,8 +261,8 @@ public:
         timeStampStartPos = -1;
         timeStampFormat.clear();
         calibFilepath.clear();
-        isStopSignCalib = true;
-        stopSignZeroOffset = 0.0;
+        isOctagonCalib = true;
+        octagonZeroOffset = 0.0;
         calibControlString.clear();
     }
 
@@ -359,9 +277,9 @@ public:
     GC_TIMESTAMP_TYPE timeStampType;    ///< Specifies where to get timestamp (filename, exif, or dateTimeOriginal)
     int timeStampStartPos;              ///< start position of timestamp string in filename (not whole path)
     std::string timeStampFormat;        ///< Format of the timestamp string, e.g. YYYY-MM-DDThh:mm::ss
-    bool isStopSignCalib;               ///< True = stopsign, false = bowtie
-    double stopSignZeroOffset;          ///< Offset from bottom left stop sign point to stage=0.0
-    std::string calibControlString;     ///< Calibration string needed for continuous stopsign calibration
+    bool isOctagonCalib;               ///< True = octagon, false = other
+    double octagonZeroOffset;          ///< Offset from bottom left stop sign point to stage=0.0
+    std::string calibControlString;     ///< Calibration string needed for continuous octagon calibration
 };
 
 /**
@@ -590,47 +508,6 @@ public:
     double calibReprojectOffset_y;          ///< Reprojection offset y
     double calibReprojectOffset_dist;       ///< Reprojection offset Euclidean distance
     std::vector< std::string > msgs;        ///< Vector of strings with messages about the line find
-};
-
-/**
- * @brief Data class to hold calibration settings, find line parameters, and find line results to be
- * written to the image files as metadata on the completion of a line find operation
- */
-class FindData
-{
-public:
-    /**
-     * @brief Constructor sets the object to an uninitialized state
-     */
-    FindData() {}
-
-    /**
-     * @brief Constructor to set the object to a valid state
-     * @param settings  Calibration settings
-     * @param params    Find line parameters
-     * @param result    Find line results
-     */
-    FindData( const CalibModelBowtie settings,
-              const FindLineParams params,
-              const FindLineResult result ) :
-        calibSettings( settings ),
-        findlineParams( params ),
-        findlineResult( result )
-    {}
-
-    /**
-     * @brief Resets the object to an invalid state
-     */
-    void clear()
-    {
-        calibSettings.clear();
-        findlineParams.clear();
-        findlineResult.clear();
-    }
-
-    CalibModelBowtie calibSettings; ///< Calibration settings
-    FindLineParams findlineParams;  ///< Find line parameters
-    FindLineResult findlineResult;  ///< Find line results
 };
 
 } // namespace gc

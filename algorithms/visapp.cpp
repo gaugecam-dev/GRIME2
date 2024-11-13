@@ -363,7 +363,7 @@ GC_STATUS VisApp::CalcFindLine( const Mat &img, FindLineResult &result )
             {
                 if ( "StopSign" == m_calibExec.GetCalibType() )
                 {
-                    retVal = m_calibExec.AdjustStopSignForRotation( img.size(), result.calcLinePts, result.symbolToWaterLineAngle );
+                    retVal = m_calibExec.AdjustOctagonForRotation( img.size(), result.calcLinePts, result.symbolToWaterLineAngle );
                 }
                 if ( GC_OK == retVal )
                 {
@@ -623,10 +623,10 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result,
                 }
                 if ( GC_OK == retVal )
                 {
-                    if ( params.isStopSignCalib || ( params.calibFilepath != m_calibFilepath && !params.isStopSignCalib ) )
+                    if ( params.isOctagonCalib || ( params.calibFilepath != m_calibFilepath && !params.isOctagonCalib ) )
                     {
                         Mat noImg = Mat();
-                        retVal = m_calibExec.Load( params.calibFilepath, params.isStopSignCalib ? img : noImg, params.isStopSignCalib && noCalibSave ? true : false );
+                        retVal = m_calibExec.Load( params.calibFilepath, params.isOctagonCalib ? img : noImg, params.isOctagonCalib && noCalibSave ? true : false );
                         if ( GC_OK != retVal )
                         {
                             result.calibSuccess = false;
@@ -690,6 +690,7 @@ GC_STATUS VisApp::WorldToPixel(const cv::Point2d worldPt, cv::Point2d &pixelPt )
     GC_STATUS retVal = m_calibExec.WorldToPixel( worldPt, pixelPt );
     return retVal;
 }
+
 GC_STATUS VisApp::PixelToWorld( FindPointSet &ptSet )
 {
     GC_STATUS retVal = m_calibExec.PixelToWorld( ptSet.ctrPixel, ptSet.ctrWorld );

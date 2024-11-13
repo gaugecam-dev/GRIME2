@@ -54,24 +54,19 @@ CalibExecutive::CalibExecutive()
 }
 void CalibExecutive::clear()
 {
-    bowTie.clear();
-    stopSign.clear();
+    octagon.clear();
 }
 GC_STATUS CalibExecutive::GetTargetSearchROI( cv::Rect &rect )
 {
-    rect = "BowTie" == GetCalibType() ? bowTie.TargetRoi() : stopSign.TargetRoi();
+    rect = octagon.TargetRoi();
     return GC_OK;
 }
 GC_STATUS CalibExecutive::GetCalibParams( std::string &calibParams )
 {
     GC_STATUS retVal = GC_OK;
-    if ( "BowTie" == GetCalibType() )
+    if ( "Octagon" == GetCalibType() )
     {
-        retVal = bowTie.GetCalibParams( calibParams );
-    }
-    if ( "StopSign" == GetCalibType() )
-    {
-        retVal = stopSign.GetCalibParams( calibParams );
+        retVal = octagon.GetCalibParams( calibParams );
     }
     else
     {
@@ -86,13 +81,9 @@ GC_STATUS CalibExecutive::Recalibrate( const Mat &img, const std::string calibTy
     GC_STATUS retVal = GC_OK;
 
     string controlJson;
-    if ( "StopSign" == calibType )
+    if ( "Octagon" == calibType )
     {
-        controlJson = stopSign.ControlJson();
-    }
-    else if ( "BowTie" == calibType )
-    {
-        controlJson = bowTie.ControlJson();
+        controlJson = octagon.ControlJson();
     }
     else
     {
@@ -163,37 +154,32 @@ GC_STATUS CalibExecutive::SetCalibFromJson( const std::string &jsonParams )
         paramsCurrent.lineSearch_rgtBot.x = top_level.get< int >( "searchPoly_rgtBot_x", -1 );
         paramsCurrent.lineSearch_rgtBot.y = top_level.get< int >( "searchPoly_rgtBot_y", -1 );
 
-        if ( "StopSign" == paramsCurrent.calibType )
+        if ( "Octagon" == paramsCurrent.calibType )
         {
-            stopSign.Model().controlJson = jsonParams;
-            stopSign.Model().facetLength = paramsCurrent.facetLength;
-            // stopSign.Model().zeroOffset = paramsCurrent.zeroOffset;
-            stopSign.Model().zeroOffset = top_level.get< double >( "zeroOffset", 0.0 );
-            stopSign.Model().targetSearchRegion = paramsCurrent.targetSearchROI;
-            stopSign.Model().waterlineSearchCorners.clear();
+            octagon.Model().controlJson = jsonParams;
+            octagon.Model().facetLength = paramsCurrent.facetLength;
+            octagon.Model().zeroOffset = top_level.get< double >( "zeroOffset", 0.0 );
+            octagon.Model().targetSearchRegion = paramsCurrent.targetSearchROI;
+            octagon.Model().waterlineSearchCorners.clear();
 
-            stopSign.Model().waterlineSearchCorners.push_back( paramsCurrent.lineSearch_lftTop );
-            stopSign.Model().waterlineSearchCorners.push_back( paramsCurrent.lineSearch_rgtTop );
-            stopSign.Model().waterlineSearchCorners.push_back( paramsCurrent.lineSearch_lftBot );
-            stopSign.Model().waterlineSearchCorners.push_back( paramsCurrent.lineSearch_rgtBot );
-            sort( stopSign.Model().waterlineSearchCorners.begin(), stopSign.Model().waterlineSearchCorners.end(),
+            octagon.Model().waterlineSearchCorners.push_back( paramsCurrent.lineSearch_lftTop );
+            octagon.Model().waterlineSearchCorners.push_back( paramsCurrent.lineSearch_rgtTop );
+            octagon.Model().waterlineSearchCorners.push_back( paramsCurrent.lineSearch_lftBot );
+            octagon.Model().waterlineSearchCorners.push_back( paramsCurrent.lineSearch_rgtBot );
+            sort( octagon.Model().waterlineSearchCorners.begin(), octagon.Model().waterlineSearchCorners.end(),
                   []( Point const &a, Point const &b ) { return ( a.y < b.y ); } );
-            if ( stopSign.Model().waterlineSearchCorners[ 0 ].x > stopSign.Model().waterlineSearchCorners[ 1 ].x )
+            if ( octagon.Model().waterlineSearchCorners[ 0 ].x > octagon.Model().waterlineSearchCorners[ 1 ].x )
             {
-                Point ptTemp = stopSign.Model().waterlineSearchCorners[ 0 ];
-                stopSign.Model().waterlineSearchCorners[ 0 ] = stopSign.Model().waterlineSearchCorners[ 1 ];
-                stopSign.Model().waterlineSearchCorners[ 1 ] = ptTemp;
+                Point ptTemp = octagon.Model().waterlineSearchCorners[ 0 ];
+                octagon.Model().waterlineSearchCorners[ 0 ] = octagon.Model().waterlineSearchCorners[ 1 ];
+                octagon.Model().waterlineSearchCorners[ 1 ] = ptTemp;
             }
-            if ( stopSign.Model().waterlineSearchCorners[ 2 ].x > stopSign.Model().waterlineSearchCorners[ 3 ].x )
+            if ( octagon.Model().waterlineSearchCorners[ 2 ].x > octagon.Model().waterlineSearchCorners[ 3 ].x )
             {
-                Point ptTemp = stopSign.Model().waterlineSearchCorners[ 2 ];
-                stopSign.Model().waterlineSearchCorners[ 2 ] = stopSign.Model().waterlineSearchCorners[ 3 ];
-                stopSign.Model().waterlineSearchCorners[ 3 ] = ptTemp;
+                Point ptTemp = octagon.Model().waterlineSearchCorners[ 2 ];
+                octagon.Model().waterlineSearchCorners[ 2 ] = octagon.Model().waterlineSearchCorners[ 3 ];
+                octagon.Model().waterlineSearchCorners[ 3 ] = ptTemp;
             }
-        }
-        else if ( "BowTie" == paramsCurrent.calibType )
-        {
-            bowTie.Model().controlJson = jsonParams;
         }
         else
         {
@@ -243,29 +229,16 @@ GC_STATUS CalibExecutive::Calibrate( const cv::Mat &img, const std::string jsonP
         string jsonParamsWhich = jsonParams;
         if ( jsonParamsWhich.empty() )
         {
-            if ( "StopSign" == paramsCurrent.calibType )
+            if ( "Octagon" == paramsCurrent.calibType )
             {
-                if ( !stopSign.Model().controlJson.empty() )
+                if ( !octagon.Model().controlJson.empty() )
                 {
-                    jsonParamsWhich = stopSign.Model().controlJson;
+                    jsonParamsWhich = octagon.Model().controlJson;
                 }
                 else
                 {
                     err_msg = "CALIB FAIL: No available octagon calibration control string";
                     FILE_LOG( logERROR ) << "[CalibExecutive::Calibrate] No available octagon calibration control string";
-                    retVal = GC_ERR;
-                }
-            }
-            else if ( "BowTie" == paramsCurrent.calibType )
-            {
-                if ( !bowTie.Model().controlJson.empty() )
-                {
-                    jsonParamsWhich = bowTie.Model().controlJson;
-                }
-                else
-                {
-                    err_msg = "CALIB FAIL: No available bow tie calibration control string";
-                    FILE_LOG( logERROR ) << "[CalibExecutive::Calibrate] No available bow tie calibration control string";
                     retVal = GC_ERR;
                 }
             }
@@ -304,20 +277,12 @@ GC_STATUS CalibExecutive::Calibrate( const cv::Mat &img, const std::string jsonP
                 {
                     imgFixed = img;
                 }
-                if ( "BowTie" == paramsCurrent.calibType )
+                if ( "Octagon" == paramsCurrent.calibType )
                 {
-                    retVal = CalibrateBowTie( imgFixed, jsonParamsWhich, err_msg );
+                    retVal = CalibrateOctagon( imgFixed, jsonParamsWhich, err_msg );
                     if ( GC_OK == retVal )
                     {
-                        retVal = bowTie.GetSearchRegionBoundingRect( searchBB );
-                    }
-                }
-                else if ( "StopSign" == paramsCurrent.calibType )
-                {
-                    retVal = CalibrateStopSign( imgFixed, jsonParamsWhich, err_msg );
-                    if ( GC_OK == retVal )
-                    {
-                        retVal = stopSign.GetSearchRegionBoundingRect( searchBB );
+                        retVal = octagon.GetSearchRegionBoundingRect( searchBB );
                         if ( GC_OK != retVal )
                         {
                             err_msg = "CALIB FAIL: Octagon calibration search bounding box could not be set";
@@ -344,7 +309,7 @@ GC_STATUS CalibExecutive::Calibrate( const cv::Mat &img, const std::string jsonP
                     if ( GC_OK != retVal )
                     {
                         rmseDist = rmseX = rmseY = -9999999.0;
-                        FILE_LOG( logWARNING ) << "[CalibBowtie::Calibrate] Could not calculate RMSE";
+                        FILE_LOG( logWARNING ) << "[CalibExecutive::Calibrate] Could not calculate RMSE";
                         retVal = GC_OK;
                     }
                 }
@@ -359,23 +324,18 @@ GC_STATUS CalibExecutive::Calibrate( const cv::Mat &img, const std::string jsonP
     }
     return retVal;
 }
-GC_STATUS CalibExecutive::AdjustStopSignForRotation( const Size imgSize, const FindPointSet &calcLinePts, double &offsetAngle )
+GC_STATUS CalibExecutive::AdjustOctagonForRotation( const Size imgSize, const FindPointSet &calcLinePts, double &offsetAngle )
 {
-    GC_STATUS retVal = stopSign.AdjustStopSignForRotation( imgSize, calcLinePts, offsetAngle );
+    GC_STATUS retVal = octagon.AdjustOctagonForRotation( imgSize, calcLinePts, offsetAngle );
     return retVal;
 }
 GC_STATUS CalibExecutive::DrawAssocPts( const cv::Mat &img, cv::Mat &overlay, std::string &err_msg )
 {
     {
         GC_STATUS retVal = GC_OK;
-        if ( "BowTie" == paramsCurrent.calibType )
+        if ( "Octagon" == paramsCurrent.calibType )
         {
-            // CalibModelBowtie model = bowTie.GetModel();
-            retVal = bowTie.DrawAssocPts( img, overlay, err_msg );
-        }
-        else if ( "StopSign" == paramsCurrent.calibType )
-        {
-            retVal = stopSign.DrawAssocPts( img, overlay, err_msg );
+            retVal = octagon.DrawAssocPts( img, overlay, err_msg );
         }
         else
         {
@@ -405,14 +365,9 @@ GC_STATUS CalibExecutive::DrawOverlay( const cv::Mat matIn, cv::Mat &imgMatOut, 
                                        const bool drawMoveROIs, const bool drawSearchROI, const bool drawTargetROI, const Point2d moveOffset )
 {
     GC_STATUS retVal = GC_OK;
-    if ( "BowTie" == paramsCurrent.calibType )
+    if ( "Octagon" == paramsCurrent.calibType )
     {
-        // CalibModelBowtie model = bowTie.GetModel();
-        retVal = bowTie.DrawOverlay( matIn, imgMatOut, drawCalibScale, drawCalibGrid, drawMoveROIs, drawSearchROI, drawTargetROI, moveOffset );
-    }
-    else if ( "StopSign" == paramsCurrent.calibType )
-    {
-        retVal = stopSign.DrawOverlay( matIn, imgMatOut, drawCalibScale, drawCalibGrid, drawMoveROIs, drawSearchROI, drawTargetROI );
+        retVal = octagon.DrawOverlay( matIn, imgMatOut, drawCalibScale, drawCalibGrid, drawMoveROIs, drawSearchROI, drawTargetROI );
     }
     else
     {
@@ -425,13 +380,9 @@ GC_STATUS CalibExecutive::DrawOverlay( const cv::Mat matIn, cv::Mat &imgMatOut, 
 GC_STATUS CalibExecutive::PixelToWorld( const cv::Point2d pixelPt, cv::Point2d &worldPt )
 {
     GC_STATUS retVal = GC_OK;
-    if ( "BowTie" == paramsCurrent.calibType )
+    if ( "Octagon" == paramsCurrent.calibType )
     {
-        retVal = bowTie.PixelToWorld( pixelPt, worldPt );
-    }
-    else if ( "StopSign" == paramsCurrent.calibType )
-    {
-        retVal = stopSign.PixelToWorld( pixelPt, worldPt );
+        retVal = octagon.PixelToWorld( pixelPt, worldPt );
     }
     else
     {
@@ -443,13 +394,9 @@ GC_STATUS CalibExecutive::PixelToWorld( const cv::Point2d pixelPt, cv::Point2d &
 GC_STATUS CalibExecutive::WorldToPixel( const cv::Point2d worldPt, cv::Point2d &pixelPt )
 {
     GC_STATUS retVal = GC_OK;
-    if ( "BowTie" == paramsCurrent.calibType )
+    if ( "Octagon" == paramsCurrent.calibType )
     {
-        retVal = bowTie.WorldToPixel( worldPt, pixelPt );
-    }
-    else if ( "StopSign" == paramsCurrent.calibType )
-    {
-        retVal = stopSign.WorldToPixel( worldPt, pixelPt );
+        retVal = octagon.WorldToPixel( worldPt, pixelPt );
     }
     else
     {
@@ -458,14 +405,14 @@ GC_STATUS CalibExecutive::WorldToPixel( const cv::Point2d worldPt, cv::Point2d &
     }
     return retVal;
 }
-GC_STATUS CalibStopSign::GetSearchRegionBoundingRect( cv::Rect &rect )
+GC_STATUS CalibOctagon::GetSearchRegionBoundingRect( cv::Rect &rect )
 {
     GC_STATUS retVal = GC_OK;
     try
     {
         if ( model.searchLineSet.empty() )
         {
-            FILE_LOG( logERROR ) << "[CalibStopSign::GetSearchRegionBoundingRect] System not calibrated";
+            FILE_LOG( logERROR ) << "[CalibOctagon::GetSearchRegionBoundingRect] System not calibrated";
             retVal = GC_ERR;
         }
         else
@@ -479,55 +426,12 @@ GC_STATUS CalibStopSign::GetSearchRegionBoundingRect( cv::Rect &rect )
     }
     catch( Exception &e )
     {
-        FILE_LOG( logERROR ) << "[CalibStopSign::GetSearchRegionBoundingRect] " << e.what();
+        FILE_LOG( logERROR ) << "[CalibOctagon::GetSearchRegionBoundingRect] " << e.what();
         return GC_EXCEPT;
     }
     return retVal;
 }
-GC_STATUS CalibExecutive::ReadWorldCoordsFromCSVBowTie( const string csvFilepath, vector< vector< Point2d > > &worldCoords )
-{
-    GC_STATUS retVal = GC_OK;
-
-    try
-    {
-        ifstream file( csvFilepath );
-        if ( !file.is_open() )
-        {
-            FILE_LOG( logERROR ) << "Could not open CSV filepath=" << csvFilepath;
-            retVal = GC_ERR;
-        }
-        else
-        {
-            worldCoords.clear();
-
-            string line;
-            vector< string > vec;
-            vector< Point2d > rowPts;
-
-            getline( file, line );
-            while ( getline( file, line ) )
-            {
-                rowPts.clear();
-                algorithm::split( vec, line, is_any_of( "," ) );
-                for ( size_t i = 0; i < vec.size(); i += 2 )
-                {
-                    rowPts.push_back( Point2d( atof( vec[ i ].c_str() ), atof( vec[ i + 1 ].c_str() ) ) );
-                }
-                worldCoords.push_back( rowPts );
-            }
-            file.close();
-        }
-    }
-    catch( boost::exception &e )
-    {
-        FILE_LOG( logERROR ) << "[CalibExecutive::ReadWorldCoordsFromCSVBowTie] " << diagnostic_information( e );
-        FILE_LOG( logERROR ) << "Could not read CSV filepath=" << csvFilepath;
-        retVal = GC_EXCEPT;
-    }
-
-    return retVal;
-}
-GC_STATUS CalibExecutive::CalibrateStopSign( const cv::Mat &img, const string &controlJson, string &err_msg, const bool noSave )
+GC_STATUS CalibExecutive::CalibrateOctagon( const cv::Mat &img, const string &controlJson, string &err_msg, const bool noSave )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -535,9 +439,9 @@ GC_STATUS CalibExecutive::CalibrateStopSign( const cv::Mat &img, const string &c
     {
         if ( !noSave )
         {
-            stopSign.Model().oldPixelPoints.clear();
+            octagon.Model().oldPixelPoints.clear();
         }
-        retVal = stopSign.Calibrate( img, controlJson, err_msg );
+        retVal = octagon.Calibrate( img, controlJson, err_msg );
         if ( GC_OK != retVal )
         {
             Mat matIn;
@@ -547,108 +451,17 @@ GC_STATUS CalibExecutive::CalibrateStopSign( const cv::Mat &img, const string &c
 
             Mat kern = getStructuringElement( MORPH_ELLIPSE, Size( 5, 5 ) );
             erode( matIn, matIn, kern, Point( -1, -1 ), 1 );
-            retVal = stopSign.Calibrate( matIn, controlJson, err_msg );
+            retVal = octagon.Calibrate( matIn, controlJson, err_msg );
         }
         if ( GC_OK == retVal && !noSave )
         {
-            retVal = stopSign.Save( paramsCurrent.calibResultJsonFilepath );
+            retVal = octagon.Save( paramsCurrent.calibResultJsonFilepath );
         }
     }
     catch( Exception &e )
     {
         err_msg = "CALIB FAIL: Exception";
-        FILE_LOG( logERROR ) << "[VisApp::CalibrateStopSign] " << e.what();
-        retVal = GC_EXCEPT;
-    }
-
-    return retVal;
-}
-GC_STATUS CalibExecutive::CalibrateBowTie( const cv::Mat &img, const std::string &controlJson, string &err_msg )
-{
-    GC_STATUS retVal = GC_OK;
-
-    try
-    {
-        retVal = findCalibGrid.InitBowtieTemplate( GC_BOWTIE_TEMPLATE_DIM, img.size() );
-        if ( GC_OK != retVal )
-        {
-            err_msg = "CALIB FAIL: Could not initialize bowtie templates for calibration";
-            FILE_LOG( logERROR ) << "[VisApp::VisApp] Could not initialize bowtie templates for calibration";
-        }
-        else
-        {
-            vector< vector< Point2d > > worldCoords;
-            retVal = ReadWorldCoordsFromCSVBowTie( paramsCurrent.worldPtCSVFilepath, worldCoords );
-            if ( GC_OK == retVal )
-            {
-#ifdef DEBUG_BOWTIE_FIND
-                retVal = m_findCalibGrid.FindTargets( img, MIN_BOWTIE_FIND_SCORE, DEBUG_FOLDER + "bowtie_find.png" );
-#else
-                Rect rect = ( -1 == paramsCurrent.targetSearchROI.x ||
-                              -1 == paramsCurrent.targetSearchROI.y ||
-                              -1 == paramsCurrent.targetSearchROI.width ||
-                              -1 == paramsCurrent.targetSearchROI.height ) ? Rect( 0, 0, img.cols, img.rows ) : paramsCurrent.targetSearchROI;
-                retVal = findCalibGrid.FindTargets( img, rect, MIN_BOWTIE_FIND_SCORE );
-#endif
-                if ( GC_OK == retVal )
-                {
-                    vector< vector< Point2d > > pixelCoords;
-                    retVal = findCalibGrid.GetFoundPoints( pixelCoords );
-                    if ( GC_OK != retVal )
-                    {
-                        err_msg = "CALIB FAIL: Could get bowtie grid points";
-                    }
-                    else
-                    {
-                        if ( pixelCoords.size() != worldCoords.size() )
-                        {
-                            err_msg = "CALIB FAIL: Found pixel array row count does not equal world array count";
-                            FILE_LOG( logERROR ) << "[VisApp::CalibrateBowTie] Found pixel array row count does not equal world array count";
-                            retVal = GC_ERR;
-                        }
-                        else
-                        {
-                            vector< Point2d > pixPtArray;
-                            vector< Point2d > worldPtArray;
-                            for ( size_t i = 0; i < pixelCoords.size(); ++i )
-                            {
-                                if ( pixelCoords[ i ].size() != worldCoords[ i ].size() )
-                                {
-                                    err_msg = "CALIB FAIL: Found pixel array column count does not equal world array count";
-                                    FILE_LOG( logERROR ) << "[VisApp::CalibrateBowTie] Found pixel array column count does not equal world array count";
-                                    retVal = GC_ERR;
-                                    break;
-                                }
-                                for ( size_t j = 0; j < pixelCoords[ i ].size(); ++j )
-                                {
-                                    pixPtArray.push_back( pixelCoords[ i ][ j ] );
-                                    worldPtArray.push_back( worldCoords[ i ][ j ] );
-                                }
-                            }
-                            vector< Point > searchLineCorners = { paramsCurrent.lineSearch_lftTop, paramsCurrent.lineSearch_rgtTop,
-                                                                  paramsCurrent.lineSearch_lftBot, paramsCurrent.lineSearch_rgtBot };
-
-                            retVal = bowTie.Calibrate( pixPtArray, worldPtArray,
-                                                       static_cast< double >( paramsCurrent.moveSearchROIGrowPercent ) / 100.0,
-                                                       controlJson, Size( 2, 4 ), img.size(), searchLineCorners, err_msg );
-                            if ( GC_OK == retVal )
-                            {
-                                retVal = bowTie.Save( paramsCurrent.calibResultJsonFilepath );
-                                if ( GC_OK != retVal )
-                                {
-                                    err_msg = "CALIB WARN: Could not save bowtie calib config to " + paramsCurrent.calibResultJsonFilepath;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-    catch( Exception &e )
-    {
-        err_msg = "CALIB FAIL: Exception";
-        FILE_LOG( logERROR ) << "[VisApp::CalibrateBowTie] " << e.what();
+        FILE_LOG( logERROR ) << "[VisApp::CalibrateOctagon] " << e.what();
         retVal = GC_EXCEPT;
     }
 
@@ -683,28 +496,11 @@ GC_STATUS CalibExecutive::Load( const string jsonFilepath, const Mat &img, const
             property_tree::read_json( ss, pt );
 
             string calibTypeString = pt.get< string >( "calibType", "NotSet" );
-            if ( calibTypeString == "BowTie" )
+            if ( calibTypeString == "Octagon" )
             {
-                stopSign.clear();
-                paramsCurrent.calibType = "BowTie";
-                retVal = findCalibGrid.InitBowtieTemplate( GC_BOWTIE_TEMPLATE_DIM, Size( GC_IMAGE_SIZE_WIDTH, GC_IMAGE_SIZE_HEIGHT ) );
-                if ( GC_OK == retVal )
-                {
-                    retVal = bowTie.Load( ss.str() );
-                    if ( GC_OK == retVal )
-                    {
-                        Mat scratch( bowTie.GetModel().imgSize, CV_8UC1 );
-                        retVal = findCalibGrid.SetMoveTargetROI( scratch, bowTie.MoveSearchROI( true ), bowTie.MoveSearchROI( false ) );
-                    }
-                }
-            }
-            else if ( calibTypeString == "StopSign" )
-            {
-                bowTie.clear();
-                findCalibGrid.clear();
-                paramsCurrent.calibType = "StopSign";
+                paramsCurrent.calibType = "Octagon";
                 paramsCurrent.calibResultJsonFilepath = jsonFilepath;
-                retVal = stopSign.Load( ss.str() );
+                retVal = octagon.Load( ss.str() );
                 if ( GC_OK == retVal )
                 {
                     string controlJson = pt.get< string >( "control_json", "" );
@@ -720,25 +516,12 @@ GC_STATUS CalibExecutive::Load( const string jsonFilepath, const Mat &img, const
                         {
                             if (  img.empty() )
                             {
-                                retVal = stopSign.CalcHomographies();
+                                retVal = octagon.CalcHomographies();
                             }
                             else
                             {
                                 string err_msg;
-                                retVal = CalibrateStopSign( img, controlJson, err_msg, noSave );
-//                                if ( GC_OK != retVal )
-//                                {
-//                                    retVal = stopSign.Load( ss.str() );
-//                                    if ( GC_OK == retVal )
-//                                    {
-//                                        cv::Point2d ptLft, ptRgt;
-//                                        retVal = stopSign.SearchObj().FindMoveTargets( img, stopSign.TargetRoi(), ptLft, ptRgt );
-//                                        if ( GC_OK == retVal )
-//                                        {
-//                                            retVal = stopSign.AdjustCalib( ptLft, ptRgt, stopSign.TargetRoi() );
-//                                        }
-//                                    }
-//                                }
+                                retVal = CalibrateOctagon( img, controlJson, err_msg, noSave );
                             }
                         }
                     }
@@ -760,13 +543,9 @@ GC_STATUS CalibExecutive::Load( const string jsonFilepath, const Mat &img, const
 }
 cv::Rect &CalibExecutive::TargetRoi()
 {
-    if ( "BowTie" == paramsCurrent.calibType )
+    if ( "Octagon" == paramsCurrent.calibType )
     {
-        return bowTie.TargetRoi();
-    }
-    else if ( "StopSign" == paramsCurrent.calibType )
-    {
-        return stopSign.TargetRoi();
+        return octagon.TargetRoi();
     }
     FILE_LOG( logERROR ) << "[CalibExecutive::TargetRoi] No calibration type currently set";
     return nullRect;
@@ -776,33 +555,18 @@ GC_STATUS CalibExecutive::SetAdjustedSearchROI( std::vector< LineEnds > &searchL
     GC_STATUS retVal = GC_OK;
     if ( searchLinesAdj.empty() )
     {
-        if ( "BowTie" == paramsCurrent.calibType )
-        {
-            bowTie.GetModel().waterlineSearchCornersAdj.clear();
-        }
-        else
-        {
-            stopSign.Model().waterlineSearchCornersAdj.clear();
-        }
+        octagon.Model().waterlineSearchCornersAdj.clear();
     }
     else
     {
         int last = searchLinesAdj.size() - 1;
-        if ( "BowTie" == paramsCurrent.calibType )
+        if ( "Octagon" == paramsCurrent.calibType )
         {
-            bowTie.GetModel().waterlineSearchCornersAdj.clear();
-            bowTie.GetModel().waterlineSearchCornersAdj.push_back( searchLinesAdj[ 0 ].top );
-            bowTie.GetModel().waterlineSearchCornersAdj.push_back( searchLinesAdj[ last ].top );
-            bowTie.GetModel().waterlineSearchCornersAdj.push_back( searchLinesAdj[ last ].bot );
-            bowTie.GetModel().waterlineSearchCornersAdj.push_back( searchLinesAdj[ 0 ].bot );
-        }
-        else if ( "StopSign" == paramsCurrent.calibType )
-        {
-            stopSign.Model().waterlineSearchCornersAdj.clear();
-            stopSign.Model().waterlineSearchCornersAdj.push_back( searchLinesAdj[ 0 ].top );
-            stopSign.Model().waterlineSearchCornersAdj.push_back( searchLinesAdj[ last ].top );
-            stopSign.Model().waterlineSearchCornersAdj.push_back( searchLinesAdj[ last ].bot );
-            stopSign.Model().waterlineSearchCornersAdj.push_back( searchLinesAdj[ 0 ].bot );
+            octagon.Model().waterlineSearchCornersAdj.clear();
+            octagon.Model().waterlineSearchCornersAdj.push_back( searchLinesAdj[ 0 ].top );
+            octagon.Model().waterlineSearchCornersAdj.push_back( searchLinesAdj[ last ].top );
+            octagon.Model().waterlineSearchCornersAdj.push_back( searchLinesAdj[ last ].bot );
+            octagon.Model().waterlineSearchCornersAdj.push_back( searchLinesAdj[ 0 ].bot );
         }
         else
         {
@@ -814,49 +578,20 @@ GC_STATUS CalibExecutive::SetAdjustedSearchROI( std::vector< LineEnds > &searchL
 }
 std::vector< LineEnds > &CalibExecutive::SearchLines()
 {
-    if ( "BowTie" == paramsCurrent.calibType )
+    if ( "Octagon" == paramsCurrent.calibType )
     {
-        return bowTie.SearchLineSet();
-    }
-    else if ( "StopSign" == paramsCurrent.calibType )
-    {
-        return stopSign.SearchLineSet();
+        return octagon.SearchLineSet();
     }
     FILE_LOG( logERROR ) << "[CalibExecutive::SearchLines] No calibration type currently set";
     return nullSearchLines;
-}
-GC_STATUS CalibExecutive::GetMoveSearchROIs( Rect &rectLeft , Rect &rectRight )
-{
-    GC_STATUS retVal = GC_OK;
-
-    if ( "BowTie" == paramsCurrent.calibType )
-    {
-        rectLeft = bowTie.MoveSearchROI( true );
-        rectRight = bowTie.MoveSearchROI( true );
-    }
-    else
-    {
-        FILE_LOG( logERROR ) << "[FindLine::FindMoveTargets] No valid calibration type currently set";
-        retVal = GC_ERR;
-    }
-
-    return retVal;
-}
-GC_STATUS CalibExecutive::SetMoveSearchROIs( const cv::Mat img, const cv::Rect rectLeft, const cv::Rect rectRight )
-{
-    return findCalibGrid.SetMoveTargetROI( img, rectLeft, rectRight );
 }
 GC_STATUS CalibExecutive::FindMoveTargets( const Mat &img, FindPointSet &ptsFound )
 {
     GC_STATUS retVal = GC_OK;
 
-    if ( "BowTie" == paramsCurrent.calibType )
+    if ( "Octagon" == paramsCurrent.calibType )
     {
-        retVal = FindMoveTargetsBowTie( img, ptsFound );
-    }
-    else if ( "StopSign" == paramsCurrent.calibType )
-    {
-        retVal = FindMoveTargetsStopSign( ptsFound );
+        retVal = FindMoveTargetsOctagon( ptsFound );
     }
     else
     {
@@ -866,10 +601,10 @@ GC_STATUS CalibExecutive::FindMoveTargets( const Mat &img, FindPointSet &ptsFoun
 
     return retVal;
 }
-GC_STATUS CalibExecutive::FindMoveTargetsStopSign( FindPointSet &ptsFound )
+GC_STATUS CalibExecutive::FindMoveTargetsOctagon( FindPointSet &ptsFound )
 {
     GC_STATUS retVal = GC_OK;
-    CalibModelSymbol model = stopSign.Model();
+    CalibModelOctagon model = octagon.Model();
     if ( 8 == model.pixelPoints.size() )
     {
         ptsFound.lftPixel = model.pixelPoints[ 5 ];
@@ -879,18 +614,8 @@ GC_STATUS CalibExecutive::FindMoveTargetsStopSign( FindPointSet &ptsFound )
     }
     else
     {
-        FILE_LOG( logERROR ) << "[FindLine::FindMoveTargetsStopSign] Valid calibration required";
+        FILE_LOG( logERROR ) << "[FindLine::FindMoveTargetsOctagon] Valid calibration required";
         retVal = GC_ERR;
-    }
-    return retVal;
-}
-GC_STATUS CalibExecutive::FindMoveTargetsBowTie( const Mat &img, FindPointSet &ptsFound )
-{
-    GC_STATUS retVal = findCalibGrid.FindMoveTargets( img, bowTie.TargetRoi(), ptsFound.lftPixel, ptsFound.rgtPixel );
-    if ( GC_OK == retVal )
-    {
-        ptsFound.ctrPixel.x = ( ptsFound.lftPixel.x + ptsFound.rgtPixel.x ) / 2.0;
-        ptsFound.ctrPixel.y = ( ptsFound.lftPixel.y + ptsFound.rgtPixel.y ) / 2.0;
     }
     return retVal;
 }
@@ -898,13 +623,9 @@ GC_STATUS CalibExecutive::MoveRefPoint( cv::Point2d &lftRefPt, cv::Point2d &rgtR
 {
     GC_STATUS retVal = GC_OK;
 
-    if ( "StopSign" == paramsCurrent.calibType )
+    if ( "Octagon" == paramsCurrent.calibType )
     {
-        retVal = stopSign.MoveRefPoint( lftRefPt, rgtRefPt );
-    }
-    else if ( "BowTie" == paramsCurrent.calibType )
-    {
-        retVal = bowTie.MoveRefPoint( lftRefPt, rgtRefPt );
+        retVal = octagon.MoveRefPoint( lftRefPt, rgtRefPt );
     }
     else
     {
@@ -925,7 +646,7 @@ GC_STATUS CalibExecutive::CalculateRMSE( const cv::Mat &img, double &rmseEuclide
     {
         if ( img.empty() )
         {
-            FILE_LOG( logERROR ) << "[CalibBowtie::CalculateRMSE] The image must not be empty to calculate RMSE";
+            FILE_LOG( logERROR ) << "[CalibExecutive::CalculateRMSE] The image must not be empty to calculate RMSE";
             retVal = GC_ERR;
         }
         else
@@ -979,7 +700,7 @@ GC_STATUS CalibExecutive::CalculateRMSE( const cv::Mat &img, double &rmseEuclide
     }
     catch( Exception &e )
     {
-        FILE_LOG( logERROR ) << "[CalibBowtie::CalculateRMSE] " << e.what();
+        FILE_LOG( logERROR ) << "[CalibExecutive::CalculateRMSE] " << e.what();
         retVal = GC_EXCEPT;
     }
 
@@ -997,7 +718,7 @@ GC_STATUS CalibExecutive::CalculateRMSE( const std::vector< cv::Point2d > &found
     {
         if ( 2 > foundPts.size() )
         {
-            FILE_LOG( logERROR ) << "[CalibBowtie::CalculateRMSE] There must be more than one point to calculate RMSE";
+            FILE_LOG( logERROR ) << "[CalibExecutive::CalculateRMSE] There must be more than one point to calculate RMSE";
             retVal = GC_ERR;
         }
         else
@@ -1044,66 +765,18 @@ GC_STATUS CalibExecutive::CalculateRMSE( const std::vector< cv::Point2d > &found
     }
     catch( Exception &e )
     {
-        FILE_LOG( logERROR ) << "[CalibBowtie::CalculateRMSE] " << e.what();
+        FILE_LOG( logERROR ) << "[CalibExecutive::CalculateRMSE] " << e.what();
     }
 
     return retVal;
 }
-GC_STATUS CalibExecutive::FormBowtieCalibJsonString(  const CalibJsonItems &items, std::string &json )
+GC_STATUS CalibExecutive::FormOctagonCalibJsonString( const CalibJsonItems &items, std::string &json )
 {
     GC_STATUS retVal = GC_OK;
 
     try
     {
-        json.clear();
-
-        json = "{\"calibType\": \"BowTie\", ";
-        json += "\"calibWorldPt_csv\": \"" + items.worldTargetPosition_csvFile + "\", ";
-        json += "\"facetLength\": -1.0, ";
-        json += "\"zeroOffset\": 0.0, ";
-        json += "\"moveSearchROIGrowPercent\": " + std::to_string( items.moveROIGrowPercent ) + ", ";
-        json += "\"drawCalib\": 0, ";
-        json += "\"drawMoveSearchROIs\": 0, ";
-        json += "\"drawWaterLineSearchROI\": 0, ";
-        if ( items.useROI )
-        {
-            json += "\"targetRoi_x\": " + std::to_string( items.roi.x ) + ", ";
-            json += "\"targetRoi_y\": " + std::to_string( items.roi.y ) + ", ";
-            json += "\"targetRoi_width\": " + std::to_string( items.roi.width ) + ", ";
-            json += "\"targetRoi_height\": " + std::to_string( items.roi.height ) + ", ";
-        }
-        else
-        {
-            json += "\"targetRoi_x\": -1, ";
-            json += "\"targetRoi_y\": -1, ";
-            json += "\"targetRoi_width\": -1, ";
-            json += "\"targetRoi_height\": -1, ";
-        }
-        json += "\"searchPoly_lftTop_x\": " + std::to_string( items.lineSearchPoly.lftTop.x ) + ", ";
-        json += "\"searchPoly_lftTop_y\": " + std::to_string( items.lineSearchPoly.lftTop.y ) + ", ";
-        json += "\"searchPoly_rgtTop_x\": " + std::to_string( items.lineSearchPoly.rgtTop.x ) + ", ";
-        json += "\"searchPoly_rgtTop_y\": " + std::to_string( items.lineSearchPoly.rgtTop.y ) + ", ";
-        json += "\"searchPoly_lftBot_x\": " + std::to_string( items.lineSearchPoly.lftBot.x ) + ", ";
-        json += "\"searchPoly_lftBot_y\": " + std::to_string( items.lineSearchPoly.lftBot.y ) + ", ";
-        json += "\"searchPoly_rgtBot_x\": " + std::to_string( items.lineSearchPoly.rgtBot.x ) + ", ";
-        json += "\"searchPoly_rgtBot_y\": " + std::to_string( items.lineSearchPoly.rgtBot.y ) + ", ";
-        json += "\"calibResult_json\": \"" + items.calibVisionResult_json + "\"}";
-    }
-    catch( Exception &e )
-    {
-        FILE_LOG( logERROR ) << "[CalibExecutive::FormBowtieCalibJsonString] " << e.what();
-    }
-
-    return retVal;
-}
-GC_STATUS CalibExecutive::FormStopsignCalibJsonString( const CalibJsonItems &items, std::string &json )
-{
-    GC_STATUS retVal = GC_OK;
-
-    try
-    {
-        json = "{\"calibType\": \"StopSign\", ";
-        json += "\"calibWorldPt_csv\": \"" + items.worldTargetPosition_csvFile + "\", ";
+        json = "{\"calibType\": \"Octagon\", ";
         json += "\"facetLength\": " + std::to_string( items.facetLength ) + ", ";
         json += "\"zeroOffset\": " + std::to_string( items.zeroOffset ) + ", ";
         json += "\"moveSearchROIGrowPercent\": " + std::to_string( items.moveROIGrowPercent ) + ", ";
@@ -1137,13 +810,13 @@ GC_STATUS CalibExecutive::FormStopsignCalibJsonString( const CalibJsonItems &ite
     }
     catch( Exception &e )
     {
-        FILE_LOG( logERROR ) << "[CalibExecutive::FormStopsignCalibJsonString] " << e.what();
+        FILE_LOG( logERROR ) << "[CalibExecutive::FormOctagonCalibJsonString] " << e.what();
         retVal = GC_EXCEPT;
     }
 
     return retVal;
 }
-GC_STATUS CalibExecutive::GetCalibStopsignJsonItems( const std::string &jsonStr, CalibJsonItems &items )
+GC_STATUS CalibExecutive::GetCalibOctagonJsonItems( const std::string &jsonStr, CalibJsonItems &items )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -1159,7 +832,6 @@ GC_STATUS CalibExecutive::GetCalibStopsignJsonItems( const std::string &jsonStr,
         pt::json_parser::read_json( ss, top_level );
 
         items.facetLength = top_level.get< double >( "facetLength", -1.0 );
-        items.worldTargetPosition_csvFile = top_level.get< int >( "moveSearchROIGrowPercent", 0 );
         items.calibVisionResult_json = top_level.get< string >( "calibResult_json", "" );
         items.zeroOffset = top_level.get< double >( "botLftPtToLft", -0.5 );
         items.useROI = top_level.get< int >( "useROI", 0 ) ? false : true;
@@ -1185,7 +857,7 @@ GC_STATUS CalibExecutive::GetCalibStopsignJsonItems( const std::string &jsonStr,
     }
     catch( Exception &e )
     {
-        FILE_LOG( logERROR ) << "[CalibExecutive::FormStopsignCalibJsonString] " << e.what();
+        FILE_LOG( logERROR ) << "[CalibExecutive::GetCalibOctagonJsonItems] " << e.what();
         retVal = GC_EXCEPT;
     }
 

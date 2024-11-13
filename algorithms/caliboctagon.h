@@ -1,48 +1,23 @@
-#ifndef CALIBSTOPSIGN_H
-#define CALIBSTOPSIGN_H
+#ifndef CALIBOCTAGON_H
+#define CALIBOCTAGON_H
 
 #include "gc_types.h"
 #include <opencv2/core.hpp>
-#include "stopsignsearch.h"
+#include "octagonsearch.h"
 
 // TODO -- add doxygen comments KWC
 namespace gc
 {
 
-class StopSignCandidate
+class OctagonLine
 {
 public:
-    StopSignCandidate() :
-        area( -1.0 ),
-        elongation( -1.0 )
-    {}
-
-    StopSignCandidate( std::vector< cv::Point > &vecPts, double contourArea, double contourElongation ) :
-        contour( vecPts ),
-        area( contourArea ),
-        elongation( contourElongation )
-    {}
-
-    void clear()
-    {
-        contour.clear();
-        area = -1.0;
-        elongation = -1.0;
-    }
-
-    std::vector< cv::Point > contour;
-    double area;
-    double elongation;
-};
-class StopSignLine
-{
-public:
-    StopSignLine() :
+    OctagonLine() :
         pt1( cv::Point2d( -1.0, -1.0 ) ),
         pt2( cv::Point2d( -1.0, -1.0 ) )
     {}
 
-    StopSignLine( const cv::Point2d point1, const cv::Point2d point2 ) :
+    OctagonLine( const cv::Point2d point1, const cv::Point2d point2 ) :
         pt1( point1 ),
         pt2( point2 )
     {}
@@ -74,25 +49,25 @@ public:
         topLeft.clear();
     }
 
-    StopSignLine top;
-    StopSignLine topRight;
-    StopSignLine right;
-    StopSignLine botRight;
-    StopSignLine bot;
-    StopSignLine botLeft;
-    StopSignLine left;
-    StopSignLine topLeft;
+    OctagonLine top;
+    OctagonLine topRight;
+    OctagonLine right;
+    OctagonLine botRight;
+    OctagonLine bot;
+    OctagonLine botLeft;
+    OctagonLine left;
+    OctagonLine topLeft;
 };
 
-class CalibStopSign
+class CalibOctagon
 {
 public:
-    CalibStopSign();
+    CalibOctagon();
     GC_STATUS Load (const std::string jsonCalString );
     GC_STATUS Save( const std::string jsonCalFilepath );
     GC_STATUS CalcHomographies();
     GC_STATUS Calibrate( const cv::Mat &img, const std::string &controlJson, std::string &err_msg );
-    GC_STATUS AdjustStopSignForRotation( const cv::Size imgSize, const FindPointSet &calcLinePts, double &offsetAngle );
+    GC_STATUS AdjustOctagonForRotation( const cv::Size imgSize, const FindPointSet &calcLinePts, double &offsetAngle );
 
     GC_STATUS PixelToWorld( const cv::Point2d ptPixel, cv::Point2d &ptWorld );
     GC_STATUS WorldToPixel( const cv::Point2d ptWorld, cv::Point2d &ptPixel );
@@ -110,8 +85,8 @@ public:
      */
     std::vector< LineEnds > &SearchLineSet() { return model.searchLineSet; }
     std::string ControlJson() { return model.controlJson; }
-    CalibModelSymbol &Model() { return model; }
-    StopsignSearch &SearchObj() { return stopsignSearch; }
+    CalibModelOctagon &Model() { return model; }
+    OctagonSearch &SearchObj() { return octagonSearch; }
     GC_STATUS GetSearchRegionBoundingRect( cv::Rect &rect );
 
     cv::Rect &TargetRoi() { return model.targetSearchRegion; }
@@ -119,8 +94,8 @@ public:
 private:
     cv::Mat matHomogPixToWorld;
     cv::Mat matHomogWorldToPix;
-    CalibModelSymbol model;
-    StopsignSearch stopsignSearch;
+    CalibModelOctagon model;
+    OctagonSearch octagonSearch;
     cv::Point2d moveRefLftPt;
     cv::Point2d moveRefRgtPt;
 
@@ -128,7 +103,7 @@ private:
     GC_STATUS RotateImage( const cv::Mat &src, cv::Mat &dst, const double angle );
     GC_STATUS GetNonZeroPoints( cv::Mat &img, std::vector< cv::Point > &pts );
     GC_STATUS GetLineEndPoints( cv::Mat &mask, const cv::Rect rect, cv::Point2d &pt1, cv::Point2d &pt2 );
-    GC_STATUS LineIntersection( const StopSignLine line1, const StopSignLine line2, cv::Point2d &r );
+    GC_STATUS LineIntersection( const OctagonLine line1, const OctagonLine line2, cv::Point2d &r );
     GC_STATUS FindCorners( const cv::Mat &mask, const std::vector< cv::Point > &contour, OctagonLines &octoLines );
     GC_STATUS FindDiagonals( const cv::Mat &mask, const std::vector< cv::Point > &contour, OctagonLines &octoLines );
     GC_STATUS CalcCorners( const OctagonLines octoLines, std::vector< cv::Point2d > &symbolCorners );
@@ -136,7 +111,7 @@ private:
     GC_STATUS CalcSearchLines( const cv::Mat &img, std::vector< cv::Point > &searchLineCorners, std::vector< LineEnds > &searchLines );
     GC_STATUS CreateCalibration( const std::vector< cv::Point2d > &pixelPts, const std::vector< cv::Point2d > &worldPts );
     GC_STATUS CalcCenterAngle( const std::vector< cv::Point2d > &pts, cv::Point2d &center, double &angle );
-    GC_STATUS CalcGridDrawPoints (std::vector< StopSignLine > &horzLines, std::vector< StopSignLine > &vertLines );
+    GC_STATUS CalcGridDrawPoints (std::vector< OctagonLine > &horzLines, std::vector< OctagonLine > &vertLines );
     GC_STATUS GetXEdgeMinDiffX( const double xWorld, cv::Point2d &ptPix, const bool isTopSideY );
     GC_STATUS GetXEdgeMinDiffY( const double yWorld, cv::Point2d &ptPix, const bool isRightSideX );
     GC_STATUS CalcSearchROI( const double botLftPtToLft, const double botLftPtToTop,
@@ -147,4 +122,4 @@ private:
 
 } // namespace gc
 
-#endif // CALIBSTOPSIGN_H
+#endif // CALIBOCTAGON_H

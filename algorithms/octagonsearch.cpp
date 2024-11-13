@@ -14,7 +14,7 @@
    limitations under the License.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 #include "log.h"
-#include "stopsignsearch.h"
+#include "octagonsearch.h"
 #include <random>
 #include <iostream>
 #include <algorithm>
@@ -40,7 +40,7 @@ using namespace std;
 namespace gc
 {
 
-StopsignSearch::StopsignSearch()
+OctagonSearch::OctagonSearch()
 {
 #ifdef DEBUG_STOPSIGN_TEMPL
     if ( !fs::exists( DEBUG_FOLDER ) )
@@ -53,7 +53,7 @@ StopsignSearch::StopsignSearch()
     }
 #endif
 }
-GC_STATUS StopsignSearch::FindScale( const cv::Mat &img, std::vector< cv::Point2d > &pts, const double scale, const bool do_coarse_prefind )
+GC_STATUS OctagonSearch::FindScale( const cv::Mat &img, std::vector< cv::Point2d > &pts, const double scale, const bool do_coarse_prefind )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -138,7 +138,7 @@ GC_STATUS StopsignSearch::FindScale( const cv::Mat &img, std::vector< cv::Point2
 //    }
 //    return retVal;
 //}
-GC_STATUS StopsignSearch::CoarseOctoMask( const Mat &img, Mat &mask )
+GC_STATUS OctagonSearch::CoarseOctoMask( const Mat &img, Mat &mask )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -218,7 +218,7 @@ GC_STATUS StopsignSearch::CoarseOctoMask( const Mat &img, Mat &mask )
     }
     return retVal;
 }
-GC_STATUS StopsignSearch::AdjustResponseSpace( Mat &response, const size_t j )
+GC_STATUS OctagonSearch::AdjustResponseSpace( Mat &response, const size_t j )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -314,7 +314,7 @@ GC_STATUS StopsignSearch::AdjustResponseSpace( Mat &response, const size_t j )
     }
     return retVal;
 }
-GC_STATUS StopsignSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &pts, const bool do_coarse_prefind )
+GC_STATUS OctagonSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &pts, const bool do_coarse_prefind )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -328,7 +328,7 @@ GC_STATUS StopsignSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &
         {
             if ( templates.empty() )
             {
-                retVal = Init( GC_STOPSIGN_TEMPLATE_DIM, 5 );
+                retVal = Init( GC_OCTAGON_TEMPLATE_DIM, 5 );
             }
             if ( templates.empty() || GC_OK != retVal )
             {
@@ -452,7 +452,7 @@ GC_STATUS StopsignSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &
     }
     return retVal;
 }
-GC_STATUS StopsignSearch::FindMoveTargets( const Mat &img, const Rect targetRoi, Point2d &ptLeft, Point2d &ptRight )
+GC_STATUS OctagonSearch::FindMoveTargets( const Mat &img, const Rect targetRoi, Point2d &ptLeft, Point2d &ptRight )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -466,7 +466,7 @@ GC_STATUS StopsignSearch::FindMoveTargets( const Mat &img, const Rect targetRoi,
         {
             if ( templates.empty() )
             {
-                retVal = Init( GC_STOPSIGN_TEMPLATE_DIM, 7 );
+                retVal = Init( GC_OCTAGON_TEMPLATE_DIM, 7 );
             }
             if ( GC_OK != retVal || templates.empty() )
             {
@@ -559,7 +559,7 @@ GC_STATUS StopsignSearch::FindMoveTargets( const Mat &img, const Rect targetRoi,
 
     return retVal;
 }
-GC_STATUS StopsignSearch::ShortenLine( const LineEnds &a, const double newLengthPercent, LineEnds &newLine )
+GC_STATUS OctagonSearch::ShortenLine( const LineEnds &a, const double newLengthPercent, LineEnds &newLine )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -582,7 +582,7 @@ GC_STATUS StopsignSearch::ShortenLine( const LineEnds &a, const double newLength
     }
     return retVal;
 }
-GC_STATUS StopsignSearch::AdjustLineLength( const LineEnds &a, const double newLength, LineEnds &newLine )
+GC_STATUS OctagonSearch::AdjustLineLength( const LineEnds &a, const double newLength, LineEnds &newLine )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -605,7 +605,7 @@ GC_STATUS StopsignSearch::AdjustLineLength( const LineEnds &a, const double newL
     }
     return retVal;
 }
-GC_STATUS StopsignSearch::RefineFind( const Mat &img, vector< Point2d > &pts )
+GC_STATUS OctagonSearch::RefineFind( const Mat &img, vector< Point2d > &pts )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -735,17 +735,17 @@ GC_STATUS StopsignSearch::RefineFind( const Mat &img, vector< Point2d > &pts )
     }
     return retVal;
 }
-GC_STATUS StopsignSearch::Init( const int templateDim, const int rotateCnt )
+GC_STATUS OctagonSearch::Init( const int templateDim, const int rotateCnt )
 {
     GC_STATUS retVal = GC_OK;
 
     try
     {
         templates.clear();
-        templates.push_back( StopSignTemplateSet( 0 ) );
+        templates.push_back( OctagonTemplateSet( 0 ) );
         for ( size_t i = 1; i < 8; ++i )
         {
-            templates.push_back( StopSignTemplateSet( 360 - static_cast< int >( i ) * 45 ) );
+            templates.push_back( OctagonTemplateSet( 360 - static_cast< int >( i ) * 45 ) );
         }
 
         retVal = CreatePointTemplates( templateDim, rotateCnt, templates[ 0 ].ptTemplates );
@@ -774,7 +774,7 @@ GC_STATUS StopsignSearch::Init( const int templateDim, const int rotateCnt )
     }
     return retVal;
 }
-GC_STATUS StopsignSearch::RotatePointTemplates( const size_t idx, const double angle )
+GC_STATUS OctagonSearch::RotatePointTemplates( const size_t idx, const double angle )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -795,7 +795,7 @@ GC_STATUS StopsignSearch::RotatePointTemplates( const size_t idx, const double a
             for ( size_t i = 0; i < templates[ 0 ].ptTemplates.size(); ++i )
             {
                 templates[ idx ].pointAngle = cvRound( angle );
-                templates[ idx ].ptTemplates.push_back( StopSignTemplate() );
+                templates[ idx ].ptTemplates.push_back( OctagonTemplate() );
                 templates[ idx ].ptTemplates[ i ].angle = templates[ 0 ].ptTemplates[ i ].angle;
                 templates[ idx ].ptTemplates[ i ].offset = templates[ 0 ].ptTemplates[ i ].offset;
                 retVal = RotateImage( templates[ 0 ].ptTemplates[ i ].mask, rotMask, angle );
@@ -822,7 +822,7 @@ GC_STATUS StopsignSearch::RotatePointTemplates( const size_t idx, const double a
     }
     return retVal;
 }
-GC_STATUS StopsignSearch::CreateOctoTemplates( const int radBeg, const int radEnd, const int radInc,
+GC_STATUS OctagonSearch::CreateOctoTemplates( const int radBeg, const int radEnd, const int radInc,
                                                const int beg_thickness, std::vector< OctoTemplate > &ptTemplates )
 {
     GC_STATUS retVal = GC_OK;
@@ -871,7 +871,7 @@ GC_STATUS StopsignSearch::CreateOctoTemplates( const int radBeg, const int radEn
     }
     return retVal;
 }
-GC_STATUS StopsignSearch::CreatePointTemplates( const int templateDim, const int rotateCnt, std::vector< StopSignTemplate > &ptTemplates )
+GC_STATUS OctagonSearch::CreatePointTemplates( const int templateDim, const int rotateCnt, std::vector< OctagonTemplate > &ptTemplates )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -892,7 +892,7 @@ GC_STATUS StopsignSearch::CreatePointTemplates( const int templateDim, const int
             size_t templCnt = rotateCnt * 2 + 1;
             for ( size_t i = 0; i < templCnt; ++i )
             {
-                ptTemplates.push_back( StopSignTemplate() );
+                ptTemplates.push_back( OctagonTemplate() );
             }
             int templDim = templateDim + ( 0 == templateDim % 2 ? 1 : 0 );
 
@@ -966,7 +966,7 @@ GC_STATUS StopsignSearch::CreatePointTemplates( const int templateDim, const int
     }
     return retVal;
 }
-GC_STATUS StopsignSearch::DrawOctagon( const int templateDim, const int radius, const int thickness, cv::Mat &templ, cv::Mat &mask, Point2d &center )
+GC_STATUS OctagonSearch::DrawOctagon( const int templateDim, const int radius, const int thickness, cv::Mat &templ, cv::Mat &mask, Point2d &center )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -993,7 +993,7 @@ GC_STATUS StopsignSearch::DrawOctagon( const int templateDim, const int radius, 
     }
     return retVal;
 }
-GC_STATUS StopsignSearch::DrawCorner( const int templateDim, cv::Mat &templ, cv::Mat &mask, Point2d &center )
+GC_STATUS OctagonSearch::DrawCorner( const int templateDim, cv::Mat &templ, cv::Mat &mask, Point2d &center )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -1063,7 +1063,7 @@ GC_STATUS StopsignSearch::DrawCorner( const int templateDim, cv::Mat &templ, cv:
     }
     return retVal;
 }
-GC_STATUS StopsignSearch::RotateImage( const Mat &src, Mat &dst, const double angle )
+GC_STATUS OctagonSearch::RotateImage( const Mat &src, Mat &dst, const double angle )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -1081,7 +1081,7 @@ GC_STATUS StopsignSearch::RotateImage( const Mat &src, Mat &dst, const double an
     return retVal;
 }
 // cornerIdx: 0 = top, left point, followint points move clockwise 1-7
-GC_STATUS StopsignSearch::CreateTemplateOverlay( const std::string debugFolder )
+GC_STATUS OctagonSearch::CreateTemplateOverlay( const std::string debugFolder )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -1144,7 +1144,7 @@ GC_STATUS StopsignSearch::CreateTemplateOverlay( const std::string debugFolder )
     }
     return retVal;
 }
-GC_STATUS StopsignSearch::FitLine( const std::vector< Point > &pts, LineEnds &lineEnds, const cv::Mat &img )
+GC_STATUS OctagonSearch::FitLine( const std::vector< Point > &pts, LineEnds &lineEnds, const cv::Mat &img )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -1200,7 +1200,7 @@ GC_STATUS StopsignSearch::FitLine( const std::vector< Point > &pts, LineEnds &li
     }
     return retVal;
 }
-GC_STATUS StopsignSearch::GetSlopeIntercept( const Point2d one, const Point2d two, double &slope, double &intercept, bool &isVertical )
+GC_STATUS OctagonSearch::GetSlopeIntercept( const Point2d one, const Point2d two, double &slope, double &intercept, bool &isVertical )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -1225,7 +1225,7 @@ GC_STATUS StopsignSearch::GetSlopeIntercept( const Point2d one, const Point2d tw
     }
     return retVal;
 }
-GC_STATUS StopsignSearch::GetRandomNumbers( const int low_bound, const int high_bound, const int cnt_to_generate,
+GC_STATUS OctagonSearch::GetRandomNumbers( const int low_bound, const int high_bound, const int cnt_to_generate,
                                             vector< int > &numbers, const bool isFirst )
 {
     GC_STATUS retVal = GC_OK;
@@ -1291,7 +1291,7 @@ GC_STATUS StopsignSearch::GetRandomNumbers( const int low_bound, const int high_
     }
     return retVal;
 }
-GC_STATUS StopsignSearch::LineIntersection( const LineEnds line1, const LineEnds line2, cv::Point2d &r )
+GC_STATUS OctagonSearch::LineIntersection( const LineEnds line1, const LineEnds line2, cv::Point2d &r )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -1318,7 +1318,7 @@ GC_STATUS StopsignSearch::LineIntersection( const LineEnds line1, const LineEnds
     return retVal;
 }
 
-GC_STATUS StopsignSearch::CalcPointsFromLines( const std::vector< LineEnds > lines, std::vector< cv::Point2d > &pts )
+GC_STATUS OctagonSearch::CalcPointsFromLines( const std::vector< LineEnds > lines, std::vector< cv::Point2d > &pts )
 {
     GC_STATUS retVal = GC_OK;
     try

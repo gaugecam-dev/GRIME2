@@ -172,7 +172,6 @@ MainWindow::MainWindow(QWidget *parent) :
         m_rectRubberBand.setRight( qRound( static_cast< double >( m_rectROI.right() ) * m_scaleFactor ) );
         m_rectRubberBand.setBottom( qRound( static_cast< double >( m_rectROI.bottom() ) * m_scaleFactor ) );
         m_pRubberBand->setGeometry( m_rectRubberBand );
-        ui->radioButton_calibBowtie->setChecked( m_visApp.IsBowtieCalib() );
     }
     else
     {
@@ -251,7 +250,6 @@ void MainWindow::createConnections()
     connect( ui->checkBox_createFindLine_annotatedResults, &QCheckBox::stateChanged, this, &MainWindow::UpdateGUIEnables );
     connect( ui->checkBox_calibSearchROI, &QRadioButton::toggled, this, &MainWindow::UpdateCalibSearchRegion );
     connect( ui->actionToggleControls, &QAction::toggled, this, &MainWindow::UpdateGUIEnables );
-    connect( ui->radioButton_calibBowtie, &QRadioButton::toggled, this, &MainWindow::UpdateCalibType );
 
     connect( this, SIGNAL( sig_visAppMessage(QString) ), this, SLOT( do_visAppMessage(QString) ) );
     connect( this, SIGNAL( sig_updateProgess(int) ),     this, SLOT( do_updateProgress(int) ) );
@@ -379,12 +377,10 @@ int MainWindow::ReadSettings( const QString filepath )
 
         // vision stuff
         pSettings->beginGroup( "Vision" );
-        ui->lineEdit_calibVisionTarget_csv->setText( pSettings->value( "calibCSVFileIn", QString( __CONFIGURATION_FOLDER ) + "calibration_target_world_coordinates.csv" ).toString() );
         ui->lineEdit_calibVisionResult_json->setText( pSettings->value( "calibJsonFileOut", QString( __CONFIGURATION_FOLDER ) + "calib.json" ).toString() );
-        pSettings->value( "calibTypeIsBowtie", true ).toBool() ? ui->radioButton_calibBowtie->setChecked( true ) : ui->radioButton_calibStopSign->setChecked( true );
         ui->checkBox_calibSearchROI->setChecked( !pSettings->value( "useWholeImage", true ).toBool() );
-        ui->doubleSpinBox_stopSignFacetLength->setValue( pSettings->value( "stopSignFacetLength", 0.599 ).toDouble() ); // 7.1875 inches
-        ui->doubleSpinBox_stopSignZeroOffset->setValue( pSettings->value( "stopSignZeroOffset", 2.0 ).toDouble() );
+        ui->doubleSpinBox_octagonFacetLength->setValue( pSettings->value( "octagonFacetLength", 0.599 ).toDouble() ); // 7.1875 inches
+        ui->doubleSpinBox_octagonZeroOffset->setValue( pSettings->value( "octagonZeroOffset", 2.0 ).toDouble() );
         ui->spinBox_moveSearchROIGrowPercent->setValue( pSettings->value( "moveSearchROIGrowPercent", 0 ).toInt() );
 
         ui->lineEdit_findLineTopFolder->setText( pSettings->value( "findLineFolder", QString( __CONFIGURATION_FOLDER ) ).toString() );
@@ -471,12 +467,10 @@ int MainWindow::WriteSettings( const QString filepath )
 
         // vision stuff
         pSettings->beginGroup( "Vision" );
-        pSettings->setValue( "calibCSVFileIn", ui->lineEdit_calibVisionTarget_csv->text() );
         pSettings->setValue( "calibJsonFileOut", ui->lineEdit_calibVisionResult_json->text() );
-        pSettings->setValue( "calibTypeIsBowtie", ui->radioButton_calibBowtie->isChecked() );
         pSettings->setValue( "useWholeImage", !ui->checkBox_calibSearchROI->isChecked() );
-        pSettings->setValue( "stopSignFacetLength", ui->doubleSpinBox_stopSignFacetLength->value() );
-        pSettings->setValue( "stopSignZeroOffset", ui->doubleSpinBox_stopSignZeroOffset->value() );
+        pSettings->setValue( "stopSignFacetLength", ui->doubleSpinBox_octagonFacetLength->value() );
+        pSettings->setValue( "stopSignZeroOffset", ui->doubleSpinBox_octagonZeroOffset->value() );
         pSettings->setValue( "moveSearchROIGrowPercent", ui->spinBox_moveSearchROIGrowPercent->value() );
 
         pSettings->setValue( "findLineFolder", ui->lineEdit_findLineTopFolder->text() );
@@ -550,23 +544,10 @@ void MainWindow::UpdateCalibSearchRegion()
 }
 void MainWindow::UpdateCalibType()
 {
-    if ( ui->radioButton_calibBowtie->isChecked() )
-    {
-        ui->groupBox_calibStopsignColor->setEnabled( false );
-        ui->lineEdit_calibVisionTarget_csv->setEnabled( true );
-        ui->toolButton_calibVisionTarget_csv_browse->setEnabled( true );
-        ui->label_moveSearchROI->setEnabled( true );
-        ui->spinBox_moveSearchROIGrowPercent->setEnabled( true );
-    }
-    else
-    {
-        ui->groupBox_calibStopsignColor->setEnabled( true );
-        ui->doubleSpinBox_stopSignFacetLength->setEnabled( true );
-        ui->lineEdit_calibVisionTarget_csv->setEnabled( false );
-        ui->toolButton_calibVisionTarget_csv_browse->setEnabled( false );
-        ui->label_moveSearchROI->setEnabled( false );
-        ui->spinBox_moveSearchROIGrowPercent->setEnabled( false );
-    }
+    ui->groupBox_calibStopsignColor->setEnabled( true );
+    ui->doubleSpinBox_octagonFacetLength->setEnabled( true );
+    ui->label_moveSearchROI->setEnabled( false );
+    ui->spinBox_moveSearchROIGrowPercent->setEnabled( false );
 }
 void MainWindow::UpdateGUIEnables()
 {
@@ -1190,7 +1171,6 @@ void MainWindow::on_pushButton_visionCalibrateLoad_clicked()
     if ( GC_OK == retVal )
     {
         UpdateTargetRect();
-        ui->radioButton_calibBowtie->setChecked( m_visApp.IsBowtieCalib() );
         UpdateGUIEnables();
         UpdateCalibType();
         UpdateCalibSearchRegion();
@@ -1216,64 +1196,29 @@ void MainWindow::on_pushButton_visionCalibrate_clicked()
     UpdateCalibSearchRegion();
 
     string jsonControlStr;
-    CalibJsonItems calibItems( ui->lineEdit_calibVisionTarget_csv->text().toStdString(),
-                               ui->lineEdit_calibVisionResult_json->text().toStdString(),
+    CalibJsonItems calibItems( ui->lineEdit_calibVisionResult_json->text().toStdString(),
                                ui->checkBox_calibSearchROI->isChecked(),
                                cv::Rect( m_rectROI.x(), m_rectROI.y(), m_rectROI.width(), m_rectROI.height() ),
-                               ui->spinBox_moveSearchROIGrowPercent->value() + 100, ui->doubleSpinBox_stopSignFacetLength->value(),
-                               ui->doubleSpinBox_stopSignZeroOffset->value(),
+                               ui->spinBox_moveSearchROIGrowPercent->value() + 100, ui->doubleSpinBox_octagonFacetLength->value(),
+                               ui->doubleSpinBox_octagonZeroOffset->value(),
                                LineSearchRoi( cv::Point( m_lineSearchPoly.lftTop.x(), m_lineSearchPoly.lftTop.y() ),
                                               cv::Point( m_lineSearchPoly.rgtTop.x(), m_lineSearchPoly.rgtTop.y() ),
                                               cv::Point( m_lineSearchPoly.lftBot.x(), m_lineSearchPoly.lftBot.y() ),
                                               cv::Point( m_lineSearchPoly.rgtBot.x(), m_lineSearchPoly.rgtBot.y() ) ) );
     GC_STATUS retVal = GC_OK;
-    int ret = -1;
-    if ( ui->radioButton_calibBowtie->isChecked() )
+    retVal = m_visApp.Calibrate( strFilepath.toStdString(), jsonControlStr );
+    if ( GC_OK != retVal )
     {
-        ret = CalibExecutive::FormBowtieCalibJsonString( calibItems, jsonControlStr );
-    }
-    else if ( ui->radioButton_calibStopSign->isChecked() )
-    {
-        ret = CalibExecutive::FormStopsignCalibJsonString( calibItems, jsonControlStr );
+        ui->statusBar->showMessage( "Calibration failed" );
     }
     else
     {
-        ui->textEdit_msgs->setText( "Invalid calibration type selected" );
-        retVal = GC_ERR;
+        ui->checkBox_showCalib->setChecked( true );
     }
+    m_pComboBoxImageToView->setCurrentText( "Overlay" );
+    UpdatePixmapTarget();
 
-    if ( 0 == ret && GC_OK == retVal )
-    {
-        retVal = m_visApp.Calibrate( strFilepath.toStdString(), jsonControlStr );
-        if ( GC_OK != retVal )
-        {
-            ui->statusBar->showMessage( "Calibration failed" );
-        }
-        else
-        {
-            ui->checkBox_showCalib->setChecked( true );
-        }
-        m_pComboBoxImageToView->setCurrentText( "Overlay" );
-        UpdatePixmapTarget();
-    }
-
-    ui->statusBar->showMessage( QString( "Calibration: " ) + ( GC_OK == retVal && 0 == ret ? "SUCCESS" : "FAILURE" ) );
-}
-void MainWindow::on_toolButton_calibVisionTarget_csv_browse_clicked()
-{
-    QString strFullPath = QFileDialog::getOpenFileName( this, "Select calibration world coordinate CSV file", ui->lineEdit_calibVisionTarget_csv->text() );
-    if ( strFullPath.isNull() )
-    {
-        ui->statusBar->showMessage( "No calibration world coordinate CSV file selected" );
-    }
-    else if (! strFullPath.contains( ".csv" ) )
-    {
-        ui->statusBar->showMessage( "File must have \".csv\" extension" );
-    }
-    else
-    {
-        ui->lineEdit_calibVisionTarget_csv->setText( strFullPath );
-    }
+    ui->statusBar->showMessage( QString( "Calibration: " ) + ( GC_OK == retVal ? "SUCCESS" : "FAILURE" ) );
 }
 void MainWindow::on_toolButton_calibVisionResult_json_browse_clicked()
 {
@@ -1386,22 +1331,20 @@ void MainWindow::on_pushButton_findLineCurrentImage_clicked()
         params.timeStampFormat = ui->lineEdit_timestampFormat->text().toStdString();
         params.timeStampType = ui->radioButton_dateTimeInFilename->isChecked() ? FROM_FILENAME : FROM_EXIF;
         params.timeStampStartPos = ui->spinBox_timeStringPosZero->value();
-        params.isStopSignCalib = ui->radioButton_calibStopSign->isChecked();
-        params.stopSignZeroOffset = ui->doubleSpinBox_stopSignZeroOffset->value();
+        params.octagonZeroOffset = ui->doubleSpinBox_octagonZeroOffset->value();
         params.calibControlString.clear();
-        if ( params.isStopSignCalib )
+        if ( params.isOctagonCalib )
         {
-            CalibJsonItems calibItems( ui->lineEdit_calibVisionTarget_csv->text().toStdString(),
-                                       ui->lineEdit_calibVisionResult_json->text().toStdString(),
+            CalibJsonItems calibItems( ui->lineEdit_calibVisionResult_json->text().toStdString(),
                                        ui->checkBox_calibSearchROI->isChecked(),
                                        cv::Rect( m_rectROI.x(), m_rectROI.y(), m_rectROI.width(), m_rectROI.height() ),
-                                       ui->spinBox_moveSearchROIGrowPercent->value() + 100, ui->doubleSpinBox_stopSignFacetLength->value(),
-                                       ui->doubleSpinBox_stopSignZeroOffset->value(),
+                                       ui->spinBox_moveSearchROIGrowPercent->value() + 100, ui->doubleSpinBox_octagonFacetLength->value(),
+                                       ui->doubleSpinBox_octagonZeroOffset->value(),
                                        LineSearchRoi( cv::Point( m_lineSearchPoly.lftTop.x(), m_lineSearchPoly.lftTop.y() ),
                                                       cv::Point( m_lineSearchPoly.rgtTop.x(), m_lineSearchPoly.rgtTop.y() ),
                                                       cv::Point( m_lineSearchPoly.lftBot.x(), m_lineSearchPoly.lftBot.y() ),
                                                       cv::Point( m_lineSearchPoly.rgtBot.x(), m_lineSearchPoly.rgtBot.y() ) ) );
-            int ret = CalibExecutive::FormStopsignCalibJsonString( calibItems, params.calibControlString );
+            int ret = CalibExecutive::FormOctagonCalibJsonString( calibItems, params.calibControlString );
             if ( 0 != ret )
             {
                 ui->statusBar->showMessage( "Find line: FAILURE -- could not create stopsign calib control string" );
@@ -1442,7 +1385,6 @@ void MainWindow::on_pushButton_findLine_processFolder_clicked()
     params.timeStampStartPos = ui->spinBox_timeStringPosZero->value();
     params.resultImagePath = ui->checkBox_createFindLine_annotatedResults->isChecked() ? ui->lineEdit_findLine_annotatedResultFolder->text().toStdString() : "";
     params.resultCSVPath = ui->checkBox_createFindLine_csvResultsFile->isChecked() ? ui->lineEdit_findLine_resultCSVFile->text().toStdString() : "";
-    params.isStopSignCalib = ui->radioButton_calibStopSign->isChecked();
 
     ui->pushButton_findLine_processFolder->setEnabled( false );
     ui->pushButton_findLine_stopFolderProcess->setEnabled( true );
@@ -1659,45 +1601,23 @@ void MainWindow::on_pushButton_test_clicked()
 }
 void MainWindow::on_pushButton_createCalibCommandLine_clicked()
 {
-    if ( ui->radioButton_calibBowtie->isChecked() )
-    {
-        // --create_calib bowtie --source "/media/kchapman/Elements/data/sunwater/2024_01_08_cal_images/002.jpg" --calib_json "/media/kchapman/Elements/data/sunwater/2024_01_08_cal_images/calib_002.json" --csv_file "/media/kchapman/Elements/data/sunwater/2024_01_08_cal_images/calibration_target_world_coordinates.csv" --result_image "/var/tmp/gaugecam/calib_result.png" --waterline_roi 810 270 1000 270 800 800 990 830 --calib_roi 600 200 614 678
-        string msg = "--create_calib bowtie ";
-        string folder = ui->lineEdit_imageFolder->text().toStdString();
-        if ( '/' != folder[ folder.size() - 1 ] )
-            folder += '/';
-        msg += "--source \"" + folder + ui->listWidget_imageFolder->currentItem()->text().toStdString() + "\" ";
-        msg += "--calib_json \"" + ui->lineEdit_calibVisionResult_json->text().toStdString() + "\" ";
-        msg += "--csv_file \"" + ui->lineEdit_calibVisionTarget_csv->text().toStdString() + "\" ";
-        msg += "--result_image \"\" ";
-        msg += "--waterline_roi " + to_string(m_lineSearchPoly.lftTop.x()) + " " + to_string(m_lineSearchPoly.lftTop.y()) + " ";
-        msg += to_string(m_lineSearchPoly.rgtTop.x()) + " " + to_string(m_lineSearchPoly.rgtTop.y()) + " ";
-        msg += to_string(m_lineSearchPoly.lftBot.x()) + " " + to_string(m_lineSearchPoly.lftBot.y()) + " ";
-        msg += to_string(m_lineSearchPoly.rgtBot.x()) + " " + to_string(m_lineSearchPoly.rgtBot.y()) + " ";
-        msg += "--calib_roi " + to_string( m_rectROI.x() ) + " " + to_string( m_rectROI.y() ) +" ";
-        msg += to_string( m_rectROI.width() ) + " " + to_string( m_rectROI.height() );
-        ui->textEdit_msgs->setText( QString( msg.c_str() ) );
-    }
-    else
-    {
-        //--create_calib stopsign --source "/media/kchapman/Elements/data/sunwater/image004.jpg" --calib_json "/media/kchapman/Elements/data/sunwater/2024_01_08_cal_images/calib_004.json" --result_image "/var/tmp/gaugecam/calib_result.png" --zero_offset 3.2 --facet_length 0.599 --waterline_roi 1059 529 1266 546 1266 858 1066 843 --calib_roi 502 271 399 446
-        string msg = "--create_calib stopsign ";
-        string folder = ui->lineEdit_imageFolder->text().toStdString();
-        if ( '/' != folder[ folder.size() - 1 ] )
-            folder += '/';
-        msg += "--source \"" + folder + ui->listWidget_imageFolder->currentItem()->text().toStdString() + "\" ";
-        msg += "--calib_json \"" + ui->lineEdit_calibVisionResult_json->text().toStdString() + "\" ";
-        msg += "--result_image \"\" ";
-        msg += "--zero_offset " + to_string(ui->doubleSpinBox_stopSignZeroOffset->value()) + " ";
-        msg += "--facet_length " + to_string(ui->doubleSpinBox_stopSignFacetLength->value()) + " ";
-        msg += "--waterline_roi " + to_string(m_lineSearchPoly.lftTop.x()) + " " + to_string(m_lineSearchPoly.lftTop.y()) + " ";
-        msg += to_string(m_lineSearchPoly.rgtTop.x()) + " " + to_string(m_lineSearchPoly.rgtTop.y()) + " ";
-        msg += to_string(m_lineSearchPoly.lftBot.x()) + " " + to_string(m_lineSearchPoly.lftBot.y()) + " ";
-        msg += to_string(m_lineSearchPoly.rgtBot.x()) + " " + to_string(m_lineSearchPoly.rgtBot.y()) + " ";
-        msg += "--calib_roi " + to_string( m_rectROI.x() ) + " " + to_string( m_rectROI.y() ) +" ";
-        msg += to_string( m_rectROI.width() ) + " " + to_string( m_rectROI.height() );
-        ui->textEdit_msgs->setText( QString( msg.c_str() ) );
-    }
+    //--create_calib octagon --source "/media/kchapman/Elements/data/sunwater/image004.jpg" --calib_json "/media/kchapman/Elements/data/sunwater/2024_01_08_cal_images/calib_004.json" --result_image "/var/tmp/gaugecam/calib_result.png" --zero_offset 3.2 --facet_length 0.599 --waterline_roi 1059 529 1266 546 1266 858 1066 843 --calib_roi 502 271 399 446
+    string msg = "--create_calib octagon ";
+    string folder = ui->lineEdit_imageFolder->text().toStdString();
+    if ( '/' != folder[ folder.size() - 1 ] )
+        folder += '/';
+    msg += "--source \"" + folder + ui->listWidget_imageFolder->currentItem()->text().toStdString() + "\" ";
+    msg += "--calib_json \"" + ui->lineEdit_calibVisionResult_json->text().toStdString() + "\" ";
+    msg += "--result_image \"\" ";
+    msg += "--zero_offset " + to_string(ui->doubleSpinBox_octagonZeroOffset->value()) + " ";
+    msg += "--facet_length " + to_string(ui->doubleSpinBox_octagonFacetLength->value()) + " ";
+    msg += "--waterline_roi " + to_string(m_lineSearchPoly.lftTop.x()) + " " + to_string(m_lineSearchPoly.lftTop.y()) + " ";
+    msg += to_string(m_lineSearchPoly.rgtTop.x()) + " " + to_string(m_lineSearchPoly.rgtTop.y()) + " ";
+    msg += to_string(m_lineSearchPoly.lftBot.x()) + " " + to_string(m_lineSearchPoly.lftBot.y()) + " ";
+    msg += to_string(m_lineSearchPoly.rgtBot.x()) + " " + to_string(m_lineSearchPoly.rgtBot.y()) + " ";
+    msg += "--calib_roi " + to_string( m_rectROI.x() ) + " " + to_string( m_rectROI.y() ) +" ";
+    msg += to_string( m_rectROI.width() ) + " " + to_string( m_rectROI.height() );
+    ui->textEdit_msgs->setText( QString( msg.c_str() ) );
 }
 void MainWindow::on_pushButton_createFindCommandLine_clicked()
 {

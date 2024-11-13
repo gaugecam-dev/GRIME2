@@ -1,9 +1,8 @@
 #ifndef CALIBEXECUTIVE_H
 #define CALIBEXECUTIVE_H
 
-#include "calibbowtie.h"
-#include "findcalibgrid.h"
-#include "calibstopsign.h"
+#include <string>
+#include "caliboctagon.h"
 
 namespace gc
 {
@@ -12,6 +11,7 @@ class CalibExecParams
 {
 public:
     CalibExecParams() :
+        calibType( "Octagon" ),
         facetLength( -1.0 ),
         zeroOffset( 2.0 ),
         botLftPtToLft( -0.5 ),
@@ -33,7 +33,7 @@ public:
 
     void clear()
     {
-        calibType.clear();
+        calibType = "Octagon";
         worldPtCSVFilepath.clear();
         facetLength = -1.0;
         zeroOffset = 2.0;
@@ -55,8 +55,8 @@ public:
         lineSearch_rgtBot = cv::Point( -1, -1 );
     }
 
-    string calibType;
-    string worldPtCSVFilepath;
+    std::string calibType;
+    std::string worldPtCSVFilepath;
     double facetLength;
     double zeroOffset;
     double botLftPtToLft;                            ///< Distance from bottom left stop sign corner to search ROI left
@@ -64,7 +64,7 @@ public:
     double botLftPtToRgt;                            ///< Distance from bottom left stop sign corner to search ROI right
     double botLftPtToBot;                            ///< Distance from bottom left stop sign corner to search ROI bottom
     int moveSearchROIGrowPercent;
-    string calibResultJsonFilepath;
+    std::string calibResultJsonFilepath;
     bool drawCalibScale;
     bool drawCalibGrid;
     bool drawMoveSearchROIs;
@@ -116,15 +116,13 @@ public:
         facetLength( 0.7 ),
         zeroOffset( 2.0 )
     {}
-    CalibJsonItems( const std::string worldPosCsvFile,
-                    const std::string calibResultJson,
+    CalibJsonItems( const std::string calibResultJson,
                     const bool enableROI,
                     const cv::Rect rect,
                     const double moveGrowROIPercent,
                     const double worldFacetLength,
                     const double worldZeroOffset,
                     const LineSearchRoi searchPoly ) :
-        worldTargetPosition_csvFile( worldPosCsvFile ),
         calibVisionResult_json( calibResultJson ),
         useROI( enableROI ),
         roi( rect ),
@@ -136,7 +134,6 @@ public:
 
     void clear()
     {
-        worldTargetPosition_csvFile.clear();
         calibVisionResult_json.clear();
         useROI = false;
         roi = cv::Rect( -1, -1, -1, -1 );
@@ -146,7 +143,6 @@ public:
         lineSearchPoly.clear();
     }
 
-    std::string worldTargetPosition_csvFile;
     std::string calibVisionResult_json;
     bool useROI;
     cv::Rect roi;
@@ -164,17 +160,14 @@ public:
     void clear();
     GC_STATUS Load( const std::string jsonFilepath, const cv::Mat &img, const bool noSave = false );
     GC_STATUS Calibrate( const cv::Mat &img, const std::string jsonParams,
-                         double &rmseDist, double &rmseX, double &rmseY, string &err_msg );
+                         double &rmseDist, double &rmseX, double &rmseY, std::string &err_msg );
     GC_STATUS Calibrate( const cv::Mat &img, const std::string jsonParams, cv::Mat &imgResult,
-                         double &rmseDist, double &rmseX, double &rmseY, string &err_msg,
+                         double &rmseDist, double &rmseX, double &rmseY, std::string &err_msg,
                          const bool drawAll = false );
     GC_STATUS Recalibrate( const cv::Mat &img, const std::string calibType,
-                           double &rmseDist, double &rmseX, double &rmseY, string &err_msg );
+                           double &rmseDist, double &rmseX, double &rmseY, std::string &err_msg );
     GC_STATUS PixelToWorld( const cv::Point2d pixelPt, cv::Point2d &worldPt );
     GC_STATUS WorldToPixel( const cv::Point2d worldPt, cv::Point2d &pixelPt );
-    GC_STATUS GetMoveSearchROIs( cv::Rect &rectLeft, cv::Rect &rectRight );
-    GC_STATUS SetMoveSearchROIs( const cv::Mat img, const cv::Rect rectLeft, const cv::Rect rectRight );
-    GC_STATUS DetectMove( std::vector< cv::Point2d > &origPos, std::vector< cv::Point2d > &newPos );
     GC_STATUS DrawOverlay( const cv::Mat matIn, cv::Mat &imgMatOut , const bool drawAll = false );
     GC_STATUS DrawOverlay( const cv::Mat matIn, cv::Mat &imgMatOut, const bool drawCalibScale, const bool drawCalibGrid,
                            const bool drawMoveROIs, const bool drawSearchROI, const bool drawTargetROI,
@@ -182,20 +175,18 @@ public:
     GC_STATUS DrawAssocPts( const cv::Mat &img, cv::Mat &overlay, std::string &err_msg );
     GC_STATUS FindMoveTargets( const cv::Mat &img, FindPointSet &ptsFound );
     GC_STATUS MoveRefPoint( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt );
-    GC_STATUS AdjustStopSignForRotation( const cv::Size imgSize, const FindPointSet &calcLinePts, double &offsetAngle );
+    GC_STATUS AdjustOctagonForRotation( const cv::Size imgSize, const FindPointSet &calcLinePts, double &offsetAngle );
 
-    CalibModelBowtie &CalibBowtieModel() { return bowTie.Model(); }
-    CalibModelSymbol &CalibSymbolModel() { return stopSign.Model(); }
+    CalibModelOctagon &CalibSymbolModel() { return octagon.Model(); }
     std::vector< LineEnds > &SearchLines();
     cv::Rect &TargetRoi();
-    std::string &GetCalibType() { return paramsCurrent.calibType; } // BowTie or StopSign
+    std::string &GetCalibType() { return paramsCurrent.calibType; }
     GC_STATUS GetCalibParams( std::string &calibParams );
     GC_STATUS GetTargetSearchROI( cv::Rect &rect );
     GC_STATUS SetAdjustedSearchROI( std::vector< LineEnds > &searchLinesAdj );
 
-    static GC_STATUS FormBowtieCalibJsonString( const CalibJsonItems &items, std::string &json );
-    static GC_STATUS FormStopsignCalibJsonString( const CalibJsonItems &items, std::string &json );
-    GC_STATUS GetCalibStopsignJsonItems( const std::string &jsonStr, CalibJsonItems &items );
+    static GC_STATUS FormOctagonCalibJsonString( const CalibJsonItems &items, std::string &json );
+    GC_STATUS GetCalibOctagonJsonItems( const std::string &jsonStr, CalibJsonItems &items );
     void EnableAllOverlays()
     {
         paramsCurrent.drawCalibScale = true;
@@ -206,22 +197,16 @@ public:
     }
 
 private:
-    CalibBowtie bowTie;
-    CalibStopSign stopSign;
-    FindCalibGrid findCalibGrid;
+    CalibOctagon octagon;
     CalibExecParams paramsCurrent;
     std::vector< LineEnds > nullSearchLines;    ///< Empty vector of search lines to be searched for the water line
     cv::Rect nullRect = cv::Rect( -1, -1, -1, -1 );
 
-    GC_STATUS CalibrateBowTie( const cv::Mat &img, const string &controlJson, string &err_msg );
-    GC_STATUS CalibrateStopSign( const cv::Mat &img, const string &controlJson, string &err_msg, const bool noSave = false );
+    GC_STATUS CalibrateOctagon( const cv::Mat &img, const std::string &controlJson, std::string &err_msg, const bool noSave = false );
 
-    GC_STATUS FindMoveTargetsBowTie( const cv::Mat &img, FindPointSet &ptsFound );
-    GC_STATUS FindMoveTargetsStopSign( FindPointSet &ptsFound );
-    GC_STATUS MoveRefPointBowTie( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt );
-    GC_STATUS MoveRefPointStopSign( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt );
+    GC_STATUS FindMoveTargetsOctagon( FindPointSet &ptsFound );
+    GC_STATUS MoveRefPointOctagon( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt );
 
-    GC_STATUS ReadWorldCoordsFromCSVBowTie( const string csvFilepath, vector< vector< cv::Point2d > > &worldCoords );
     GC_STATUS CalculateRMSE( const std::vector< cv::Point2d > &foundPts, std::vector< cv::Point2d > &reprojectedPts,
                              double &rmseEuclideanDist, double &rmseX, double &rmseY );
     GC_STATUS CalculateRMSE( const cv::Mat &img, double &rmseEuclideanDist, double &rmseX, double &rmseY );
