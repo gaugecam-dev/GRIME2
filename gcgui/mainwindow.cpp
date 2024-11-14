@@ -856,7 +856,16 @@ void MainWindow::mouseDoubleClickEvent( QMouseEvent *pEvent )
     int nX = qRound( ( static_cast< double >( pt.x() ) / m_scaleFactor ) + 0.5 );
     int nY = qRound( ( static_cast< double >( pt.y() ) / m_scaleFactor ) + 0.5 );
     if ( 0 <= nX && m_imgWidth > nX && 0 <= nY && m_imgHeight > nY )
-        ui->actionSetROI->setChecked( !ui->actionSetROI->isChecked() );
+    {
+        if ( ui->actionSetROI->isChecked() )
+            ui->actionSetROI->setChecked( false );
+        else if ( ui->actionSetRuler->isChecked() )
+            ui->actionSetRuler->setChecked( false );
+        else if ( ui->actionSetSearchPoly->isChecked() )
+            ui->actionSetSearchPoly->setChecked( false );
+        else
+            ui->actionSetROI->setChecked( true );
+    }
 }
 size_t MainWindow::GetImagesPathsFromFolder( const QString strPath )
 {
@@ -906,7 +915,11 @@ void MainWindow::on_lineEdit_imageFolder_textEdited( const QString &strPath )
             ui->listWidget_imageFolder->setCurrentRow( 0 );
         on_actionZoomToFit_triggered();
     }
+#if WIN32
+    if ( ui->lineEdit_imageFolder->text().toLower() == ui->lineEdit_findLineTopFolder->text().toLower() )
+#else
     if ( ui->lineEdit_imageFolder->text() == ui->lineEdit_findLineTopFolder->text() )
+#endif
     {
         ui->lineEdit_folderMatch_status->setText( "Folders match");
         ui->lineEdit_folderMatch_status->setStyleSheet("QLineEdit {background-color: green; color: white;}");
@@ -921,7 +934,11 @@ void MainWindow::on_lineEdit_imageFolder_textEdited( const QString &strPath )
 }
 void MainWindow::on_lineEdit_findLineTopFolder_textEdited(const QString)
 {
+#if WIN32
+    if ( ui->lineEdit_imageFolder->text().toLower() == ui->lineEdit_findLineTopFolder->text().toLower() )
+#else
     if ( ui->lineEdit_imageFolder->text() == ui->lineEdit_findLineTopFolder->text() )
+#endif
     {
         ui->lineEdit_folderMatch_status->setText( "Folders match");
         ui->lineEdit_folderMatch_status->setStyleSheet("QLineEdit {background-color: green; color: white;}");
@@ -1195,7 +1212,6 @@ void MainWindow::on_pushButton_visionCalibrate_clicked()
 
     UpdateCalibSearchRegion();
 
-    string jsonControlStr;
     CalibJsonItems calibItems( ui->lineEdit_calibVisionResult_json->text().toStdString(),
                                ui->checkBox_calibSearchROI->isChecked(),
                                cv::Rect( m_rectROI.x(), m_rectROI.y(), m_rectROI.width(), m_rectROI.height() ),
@@ -1205,6 +1221,13 @@ void MainWindow::on_pushButton_visionCalibrate_clicked()
                                               cv::Point( m_lineSearchPoly.rgtTop.x(), m_lineSearchPoly.rgtTop.y() ),
                                               cv::Point( m_lineSearchPoly.lftBot.x(), m_lineSearchPoly.lftBot.y() ),
                                               cv::Point( m_lineSearchPoly.rgtBot.x(), m_lineSearchPoly.rgtBot.y() ) ) );
+
+    string jsonControlStr;
+    int ret = CalibExecutive::FormOctagonCalibJsonString( calibItems, jsonControlStr );
+    if ( 0 != ret )
+    {
+        ui->statusBar->showMessage( "Find line: FAILURE -- could not create stopsign calib control string" );
+    }
     GC_STATUS retVal = GC_OK;
     retVal = m_visApp.Calibrate( strFilepath.toStdString(), jsonControlStr );
     if ( GC_OK != retVal )
@@ -1282,6 +1305,11 @@ void MainWindow::on_toolButton_findLineTopFolder_browse_clicked()
     {
         ui->lineEdit_findLineTopFolder->setText( strFullPath );
     }
+}
+void MainWindow::on_pushButton_setFindLineFolderFromExploreFolder_clicked()
+{
+    ui->lineEdit_findLineTopFolder->setText( ui->lineEdit_imageFolder->text() );
+    on_lineEdit_findLineTopFolder_textEdited( ui->lineEdit_findLineTopFolder->text() );
 }
 void MainWindow::on_toolButton_findLine_resultCSVFile_browse_clicked()
 {

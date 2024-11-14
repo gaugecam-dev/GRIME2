@@ -100,6 +100,7 @@ private slots:
     void on_pushButton_test_clicked();
     void on_pushButton_createCalibCommandLine_clicked();
     void on_pushButton_createFindCommandLine_clicked();
+    void on_pushButton_setFindLineFolderFromExploreFolder_clicked();
 
 private:
     Ui::MainWindow *ui;

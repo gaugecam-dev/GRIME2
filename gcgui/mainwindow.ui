@@ -606,7 +606,7 @@
                <enum>QTabWidget::South</enum>
               </property>
               <property name="currentIndex">
-               <number>1</number>
+               <number>2</number>
               </property>
               <widget class="QWidget" name="tab_mainRunFolder">
                <property name="toolTipDuration">
@@ -1253,7 +1253,18 @@
                     </layout>
                    </item>
                    <item>
-                    <widget class="QLineEdit" name="lineEdit_folderMatch_status"/>
+                    <layout class="QHBoxLayout" name="horizontalLayout_17">
+                     <item>
+                      <widget class="QLineEdit" name="lineEdit_folderMatch_status"/>
+                     </item>
+                     <item>
+                      <widget class="QPushButton" name="pushButton_setFindLineFolderFromExploreFolder">
+                       <property name="text">
+                        <string>Get explore folder</string>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
                    </item>
                    <item>
                     <layout class="QHBoxLayout" name="horizontalLayout_13">
