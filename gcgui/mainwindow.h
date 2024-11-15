@@ -27,6 +27,8 @@
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QProgressDialog>
 #include <QtWidgets/QListWidget>
+#include <QWheelEvent>
+#include <QKeyEvent>
 #include "roiadjust.h"
 
 #ifdef QT_NO_CONTEXTMENU
@@ -102,6 +104,17 @@ private slots:
     void on_pushButton_createFindCommandLine_clicked();
     void on_pushButton_setFindLineFolderFromExploreFolder_clicked();
 
+protected:
+    // paint, mouse, and application event methods
+    void mouseReleaseEvent( QMouseEvent * ) override;
+    void mouseDoubleClickEvent( QMouseEvent * ) override;
+    void paintEvent( QPaintEvent * ) override;
+    void mousePressEvent( QMouseEvent *pEvent ) override;
+    void mouseMoveEvent( QMouseEvent *pEvent ) override;
+    void wheelEvent(QWheelEvent *event) override;
+    void keyPressEvent( QKeyEvent * ) override;
+    void keyReleaseEvent( QKeyEvent * ) override;
+
 private:
     Ui::MainWindow *ui;
 
@@ -138,12 +151,6 @@ private:
     GuiVisApp m_visApp;
     std::vector< std::string > m_imageFilePaths;
 
-    // paint, mouse, and application event methods
-    void mouseReleaseEvent( QMouseEvent * ) override;
-    void mouseDoubleClickEvent( QMouseEvent * ) override;
-    void paintEvent( QPaintEvent * ) override;
-    void mousePressEvent( QMouseEvent *pEvent ) override;
-    void mouseMoveEvent( QMouseEvent *pEvent ) override;
     int ScaleImage();
     void ZoomTo( const int width, const int height );
 

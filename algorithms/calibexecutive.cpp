@@ -29,7 +29,6 @@ ostream &operator<<( ostream &out, CalibExecParams &params )
 {
 
     out << "{ \"calibType\": \"" << params.calibType << "\", ";
-    out << "\"calibWorldPt_csv\": \"" << params.worldPtCSVFilepath << "\", ";
     out << "\"facetLength\": " << params.facetLength << ", ";
     out << "\"zeroOffset\":" << params.zeroOffset << "," << endl;
     out << "\"botLftPtToLft\":" << params.botLftPtToLft << "," << endl;
@@ -125,7 +124,6 @@ GC_STATUS CalibExecutive::SetCalibFromJson( const std::string &jsonParams )
         pt::json_parser::read_json( ss, top_level );
 
         paramsCurrent.calibType = top_level.get< string >( "calibType", "" );
-        paramsCurrent.worldPtCSVFilepath = top_level.get< string >( "calibWorldPt_csv", "" );
         paramsCurrent.facetLength = top_level.get< double >( "facetLength", -1.0 );
 
         paramsCurrent.botLftPtToLft = top_level.get< double >( "botLftPtToLft", -0.5 );

@@ -206,7 +206,7 @@ GC_STATUS CreateCalibrate( const Grime2CLIParams cliParams )
             cv::Mat imgResult;
             string jsonStr, err_msg;
             CalibExecutive calibExec;
-            CalibJsonItems items( cliParams.csvPath, cliParams.calib_jsonPath,
+            CalibJsonItems items( cliParams.calib_jsonPath,
                                   ( 0 > cliParams.calib_roi.x ? false : true ),
                                   cliParams.calib_roi, cliParams.move_roi_grow_percent,
                                   cliParams.facet_length, cliParams.zero_offset,

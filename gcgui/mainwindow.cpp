@@ -743,6 +743,47 @@ void MainWindow::do_visAppMessage( QString msg )
         ui->textEdit_msgs->setText( msg );
     }
 }
+void MainWindow::keyPressEvent( QKeyEvent *event )
+{
+    // Check if the Ctrl key is pressed
+    if ( event->modifiers() & Qt::ControlModifier )
+    {
+        ui->scrollArea_ImgDisplay->verticalScrollBar()->setEnabled( false );
+    }
+}
+void MainWindow::keyReleaseEvent( QKeyEvent *event )
+{
+    // Check if the Ctrl key is pressed
+    if ( !ui->scrollArea_ImgDisplay->verticalScrollBar()->isEnabled() )
+    {
+        ui->scrollArea_ImgDisplay->verticalScrollBar()->setEnabled( true );
+    }
+}
+void MainWindow::wheelEvent( QWheelEvent *event )
+{
+    // Check if the Ctrl key is pressed
+    if ( event->modifiers() & Qt::ControlModifier )
+    {
+        // Custom handling: Display the delta of the wheel event in the label
+        int delta = event->angleDelta().y();
+        if ( 0 < delta )
+        {
+            int value = ( ui->horizontalSlider_zoom->value() ) + 1;
+            ui->horizontalSlider_zoom->setValue( 400 < value ? 400 : value );
+        }
+        else if ( 0 > delta )
+        {
+            int value = ( ui->horizontalSlider_zoom->value() ) - 1;
+            ui->horizontalSlider_zoom->setValue( 1 > value ? 1 : value );
+        }
+        event->accept();  // Custom handling is done, stop further processing if desired
+    }
+    else
+    {
+        // No Ctrl pressed: Let normal processing occur by calling the base class implementation
+        QWidget::wheelEvent(event);
+    }
+}
 void MainWindow::mousePressEvent( QMouseEvent *pEvent )
 {
     QPoint pt = m_pLabelImgDisplay->mapFrom( ui->centralWidget, pEvent->pos() );
@@ -1355,6 +1396,7 @@ void MainWindow::on_pushButton_findLineCurrentImage_clicked()
         if ( '/' != folder[ folder.size() - 1 ] )
             folder += '/';
         params.imagePath = folder + ui->listWidget_imageFolder->currentItem()->text().toStdString();
+        params.resultCSVPath = ui->checkBox_createFindLine_csvResultsFile->isChecked() ? ui->lineEdit_findLine_resultCSVFile->text().toStdString() : "";
         params.calibFilepath = ui->lineEdit_calibVisionResult_json->text().toStdString();
         params.timeStampFormat = ui->lineEdit_timestampFormat->text().toStdString();
         params.timeStampType = ui->radioButton_dateTimeInFilename->isChecked() ? FROM_FILENAME : FROM_EXIF;

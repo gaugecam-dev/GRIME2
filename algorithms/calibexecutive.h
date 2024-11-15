@@ -34,7 +34,6 @@ public:
     void clear()
     {
         calibType = "Octagon";
-        worldPtCSVFilepath.clear();
         facetLength = -1.0;
         zeroOffset = 2.0;
         botLftPtToLft = -0.5;
@@ -56,7 +55,6 @@ public:
     }
 
     std::string calibType;
-    std::string worldPtCSVFilepath;
     double facetLength;
     double zeroOffset;
     double botLftPtToLft;                            ///< Distance from bottom left stop sign corner to search ROI left
@@ -116,7 +114,7 @@ public:
         facetLength( 0.7 ),
         zeroOffset( 2.0 )
     {}
-    CalibJsonItems( const std::string calibResultJson,
+    CalibJsonItems(     const std::string calibResultJson,
                     const bool enableROI,
                     const cv::Rect rect,
                     const double moveGrowROIPercent,
