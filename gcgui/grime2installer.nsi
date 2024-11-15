@@ -101,8 +101,6 @@ Section "GaugeCam Files" grime2
   SetOutPath "$INSTDIR\docs"
   File "${INSTALLFILEPATH_DOCS}\perl_artistic_license.txt"
   File "${INSTALLFILEPATH_DOCS}\Background_installation_guideline.pdf"
-  File "${INSTALLFILEPATH_DOCS}\Bowtie_Fiducial_Pattern.pdf"
-  File "${INSTALLFILEPATH_DOCS}\Bowtie_Fiducial_Pattern.dwg"
   File "${INSTALLFILEPATH_DOCS}\boost_license.txt"
   File "${INSTALLFILEPATH_DOCS}\lgpl_license.txt"
   File "${INSTALLFILEPATH_DOCS}\release_notes.html"
@@ -111,8 +109,6 @@ Section "GaugeCam Files" grime2
 
   SetOutPath "${WIN_CONFIG_PATH}"
   File "${INSTALLFILEPATH_CONFIG}\calib_result.png"
-  File "${INSTALLFILEPATH_CONFIG}\calibration_target_world_coordinates.csv"
-  File "${INSTALLFILEPATH_CONFIG}\calib.json"
   File "${INSTALLFILEPATH_CONFIG}\calib_stopsign.json"
   File "${INSTALLFILEPATH_CONFIG}\settingsWin.cfg"
 
