@@ -71,8 +71,8 @@ public:
 
     GC_STATUS PixelToWorld( const cv::Point2d ptPixel, cv::Point2d &ptWorld );
     GC_STATUS WorldToPixel( const cv::Point2d ptWorld, cv::Point2d &ptPixel );
-    GC_STATUS DrawOverlay( const cv::Mat &img, cv::Mat &result, const bool drawCalibScale, const bool drawCalibGrid,
-                           const bool drawMoveROIs, const bool drawSearchROI , const bool drawTargetSearchROI );
+    GC_STATUS DrawOverlay( const cv::Mat &img, cv::Mat &result, const bool drawCalibScale,
+                           const bool drawCalibGrid, const bool drawSearchROI , const bool drawTargetSearchROI );
     GC_STATUS DrawAssocPts( const cv::Mat &img, cv::Mat &overlay, std::string &err_msg );
     GC_STATUS GetCalibParams( std::string &calibParams );
     GC_STATUS MoveRefPoint( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt, const bool force = false );

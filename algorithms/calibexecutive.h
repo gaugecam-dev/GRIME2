@@ -18,10 +18,8 @@ public:
         botLftPtToTop( 1.0 ),
         botLftPtToRgt( 1.5 ),
         botLftPtToBot( -3.0 ),
-        moveSearchROIGrowPercent( 0 ),
         drawCalibScale( false ),
         drawCalibGrid( false ),
-        drawMoveSearchROIs( false ),
         drawWaterLineSearchROI( false ),
         drawTargetSearchROI( false ),
         targetSearchROI( cv::Rect( -1, -1, -1, -1 ) ),
@@ -40,11 +38,9 @@ public:
         botLftPtToTop = 1.0;
         botLftPtToRgt = 1.5;
         botLftPtToBot = -3.0;
-        moveSearchROIGrowPercent = 0;
         calibResultJsonFilepath.clear();
         drawCalibScale = false;
         drawCalibGrid = false;
-        drawMoveSearchROIs = false;
         drawWaterLineSearchROI = false;
         drawTargetSearchROI = false;
         targetSearchROI = cv::Rect( -1, -1, -1, -1 );
@@ -61,11 +57,9 @@ public:
     double botLftPtToTop;                            ///< Distance from bottom left stop sign corner to search ROI top
     double botLftPtToRgt;                            ///< Distance from bottom left stop sign corner to search ROI right
     double botLftPtToBot;                            ///< Distance from bottom left stop sign corner to search ROI bottom
-    int moveSearchROIGrowPercent;
     std::string calibResultJsonFilepath;
     bool drawCalibScale;
     bool drawCalibGrid;
-    bool drawMoveSearchROIs;
     bool drawWaterLineSearchROI;
     bool drawTargetSearchROI;
     cv::Rect targetSearchROI;
@@ -117,14 +111,12 @@ public:
     CalibJsonItems(     const std::string calibResultJson,
                     const bool enableROI,
                     const cv::Rect rect,
-                    const double moveGrowROIPercent,
                     const double worldFacetLength,
                     const double worldZeroOffset,
                     const LineSearchRoi searchPoly ) :
         calibVisionResult_json( calibResultJson ),
         useROI( enableROI ),
         roi( rect ),
-        moveROIGrowPercent( moveGrowROIPercent ),
         facetLength( worldFacetLength ),
         zeroOffset( worldZeroOffset ),
         lineSearchPoly( searchPoly )
@@ -135,7 +127,6 @@ public:
         calibVisionResult_json.clear();
         useROI = false;
         roi = cv::Rect( -1, -1, -1, -1 );
-        moveROIGrowPercent = 10.0;
         facetLength = -1.0;
         zeroOffset = 0.0;
         lineSearchPoly.clear();
@@ -144,7 +135,6 @@ public:
     std::string calibVisionResult_json;
     bool useROI;
     cv::Rect roi;
-    double moveROIGrowPercent;
     double facetLength;
     double zeroOffset;
     LineSearchRoi lineSearchPoly;
@@ -167,11 +157,10 @@ public:
     GC_STATUS PixelToWorld( const cv::Point2d pixelPt, cv::Point2d &worldPt );
     GC_STATUS WorldToPixel( const cv::Point2d worldPt, cv::Point2d &pixelPt );
     GC_STATUS DrawOverlay( const cv::Mat matIn, cv::Mat &imgMatOut , const bool drawAll = false );
-    GC_STATUS DrawOverlay( const cv::Mat matIn, cv::Mat &imgMatOut, const bool drawCalibScale, const bool drawCalibGrid,
-                           const bool drawMoveROIs, const bool drawSearchROI, const bool drawTargetROI,
-                           const cv::Point2d moveOffset = cv::Point2d( 0.0, 0.0 ) );
+    GC_STATUS DrawOverlay( const cv::Mat matIn, cv::Mat &imgMatOut, const bool drawCalibScale,
+                           const bool drawCalibGrid, const bool drawSearchROI, const bool drawTargetROI );
     GC_STATUS DrawAssocPts( const cv::Mat &img, cv::Mat &overlay, std::string &err_msg );
-    GC_STATUS FindMoveTargets( const cv::Mat &img, FindPointSet &ptsFound );
+    GC_STATUS FindMoveTargets( FindPointSet &ptsFound );
     GC_STATUS MoveRefPoint( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt );
     GC_STATUS AdjustOctagonForRotation( const cv::Size imgSize, const FindPointSet &calcLinePts, double &offsetAngle );
 
@@ -189,7 +178,6 @@ public:
     {
         paramsCurrent.drawCalibScale = true;
         paramsCurrent.drawCalibGrid = true;
-        paramsCurrent.drawMoveSearchROIs = true;
         paramsCurrent.drawWaterLineSearchROI = true;
         paramsCurrent.drawTargetSearchROI = true;
     }

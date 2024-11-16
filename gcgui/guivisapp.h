@@ -88,7 +88,7 @@ public:
     GC_STATUS GetMetadata( const std::string imgFilepath, std::string &data );
     GC_STATUS CreateAnimation( const std::string imageFolder, const std::string animationFilepath, const int delay_ms , const double scale );
     GC_STATUS CalcLine( const FindLineParams params, FindLineResult &result );
-    GC_STATUS CalcLinesInFolder( const std::string folder, const FindLineParams params, const bool isFolderOfImages , const IMG_DISPLAY_OVERLAYS drawTypes );
+    GC_STATUS CalcLinesInFolder( const std::string folder, const FindLineParams params, const bool isFolderOfImages );
     GC_STATUS CalcLinesThreadFinish();
     GC_STATUS CreateGIFThreadFinish();
     bool isRunningFindLine();

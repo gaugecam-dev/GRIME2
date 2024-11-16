@@ -159,7 +159,7 @@ GC_STATUS Calibrate( const Grime2CLIParams cliParams )
         if ( GC_OK == retVal && !cliParams.result_imagePath.empty() && !img.empty() )
         {
             cv::Mat calibOverlay;
-            retVal = vis.DrawCalibOverlay( img, calibOverlay, false, true, true, true, true );
+            retVal = vis.DrawCalibOverlay( img, calibOverlay, false, true, true, true );
             if ( GC_OK == retVal )
             {
                 bool bRet = imwrite( cliParams.result_imagePath, calibOverlay );
@@ -206,10 +206,8 @@ GC_STATUS CreateCalibrate( const Grime2CLIParams cliParams )
             cv::Mat imgResult;
             string jsonStr, err_msg;
             CalibExecutive calibExec;
-            CalibJsonItems items( cliParams.calib_jsonPath,
-                                  ( 0 > cliParams.calib_roi.x ? false : true ),
-                                  cliParams.calib_roi, cliParams.move_roi_grow_percent,
-                                  cliParams.facet_length, cliParams.zero_offset,
+            CalibJsonItems items( cliParams.calib_jsonPath, ( 0 > cliParams.calib_roi.x ? false : true ),
+                                  cliParams.calib_roi, cliParams.facet_length, cliParams.zero_offset,
                                   cliParams.waterline_region );
             if ( string::npos != cliParams.calib_type.find( "StopSign" ) )
             {

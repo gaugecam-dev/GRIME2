@@ -45,7 +45,6 @@ public:
                                            cv::Point(-1,-1))),
         facet_length(-1.0),
         zero_offset(-1.0),
-        move_roi_grow_percent(10.0),
         noCalibSave(false),
         cache_result(false)
     {}
@@ -68,7 +67,6 @@ public:
         waterline_region.clear();
         facet_length = -1.0;
         zero_offset = -1.0;
-        move_roi_grow_percent = 110.0;
         noCalibSave = false;
         cache_result = false;
     }
@@ -89,7 +87,6 @@ public:
     gc::LineSearchRoi waterline_region;
     double facet_length;
     double zero_offset;
-    double move_roi_grow_percent;
     bool noCalibSave;
     bool cache_result;
 
@@ -440,18 +437,6 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                         retVal = -1;
                     }
                 }
-                else if ( "move_roi_grow" == string( argv[ i ] ).substr( 2 ) )
-                {
-                    if ( i + 1 < argc )
-                    {
-                        params.move_roi_grow_percent = stod( string( argv[ ++i ] ) );
-                    }
-                    else
-                    {
-                        FILE_LOG( logERROR ) << "[ArgHandler] No value supplied on --move_roi_grow request";
-                        retVal = -1;
-                    }
-                }
                 else if ( "calib_roi" == string( argv[ i ] ).substr( 2 ) )
                 {
                     if ( i + 4 < argc )
@@ -560,7 +545,6 @@ void PrintHelp()
         "                 [--calib_roi <left> <top> <width> <height> OPTIONAL if not used, whole image is searched]" << endl <<
         "                 [--facet_length <length of facet in world units>]" << endl <<
         "                 [--zero_offset <distance from octo to zero water level in world units>]" << endl <<
-        "                 [--move_roi_grow <growth percentage> OPTIONAL]" << endl <<
         "                 [--result_image <Result overlay image> OPTIONAL]" << endl <<
         "        For stopsign calibration json file creation only." << endl <<
         "        Performs a calibration if a source image is supplied," << endl <<

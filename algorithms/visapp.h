@@ -123,8 +123,8 @@ public:
     GC_STATUS GetCalibParams( std::string &calibParams );
     GC_STATUS SetMinMaxFindLineAngles( const double minAngle, const double maxAngle );
     GC_STATUS DrawCalibOverlay( const cv::Mat matIn, cv::Mat &imgMatOut );
-    GC_STATUS DrawCalibOverlay( const cv::Mat matIn, cv::Mat &imgMatOut, const bool drawCalibScale, const bool drawCalibGrid,
-                                const bool drawMoveROIs, const bool drawSearchROI, const bool drawTargetROI );
+    GC_STATUS DrawCalibOverlay( const cv::Mat matIn, cv::Mat &imgMatOut, const bool drawCalibScale,
+                                const bool drawCalibGrid, const bool drawSearchROI, const bool drawTargetROI );
     GC_STATUS DrawAssocPts( const cv::Mat &img, cv::Mat &overlay, std::string &err_msg );
 
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

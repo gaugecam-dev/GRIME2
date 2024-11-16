@@ -288,7 +288,7 @@ GC_STATUS VisApp::CalcFindLine( const Mat &img, FindLineResult &result )
         }
         if ( GC_OK == retVal )
         {
-            retVal = m_calibExec.FindMoveTargets( img, result.foundMovePts );
+            retVal = m_calibExec.FindMoveTargets( result.foundMovePts );
             if ( GC_OK != retVal )
             {
                 result.msgs.push_back( "Could not calculate move offsets" );
@@ -460,7 +460,7 @@ GC_STATUS VisApp::CalcLine( const Mat &img, const string timestamp, const bool i
                 if ( GC_OK != retVal )
                 {
                     FindPointSet findPtSet;
-                    retVal = m_calibExec.FindMoveTargets( img, findPtSet );
+                    retVal = m_calibExec.FindMoveTargets( findPtSet );
                 }
             }
             if ( GC_OK == retVal )
@@ -726,11 +726,10 @@ GC_STATUS VisApp::DrawCalibOverlay( const cv::Mat matIn, cv::Mat &imgMatOut )
     return retVal;
 }
 GC_STATUS VisApp::DrawCalibOverlay( const cv::Mat matIn, cv::Mat &imgMatOut, const bool drawCalibScale,
-                                    const bool drawCalibGrid, const bool drawMoveROIs,
-                                    const bool drawSearchROI, const bool drawTargetROI )
+                                    const bool drawCalibGrid, const bool drawSearchROI, const bool drawTargetROI )
 {
     GC_STATUS retVal = m_calibExec.DrawOverlay( matIn, imgMatOut, drawCalibScale, drawCalibGrid,
-                                                drawMoveROIs, drawSearchROI, drawTargetROI, m_findLineResult.offsetMovePts.ctrPixel );
+                                                drawSearchROI, drawTargetROI );
     return retVal;
 }
 GC_STATUS VisApp::DrawLineFindOverlay( const cv::Mat &img, cv::Mat &imgOut, const IMG_DISPLAY_OVERLAYS overlayTypes )

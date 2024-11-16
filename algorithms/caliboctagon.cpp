@@ -37,7 +37,7 @@ namespace fs = std::filesystem;
 namespace gc
 {
 
-static double elongation( Moments m );
+// static double elongation( Moments m );
 static double distance( Point2d a, Point2d b );
 
 CalibOctagon::CalibOctagon()
@@ -1350,8 +1350,8 @@ GC_STATUS CalibOctagon::WorldToPixel( const Point2d ptWorld, Point2d &ptPixel )
 
     return retVal;
 }
-GC_STATUS CalibOctagon::DrawOverlay( const cv::Mat &img, cv::Mat &result, const bool drawCalibScale, const bool drawCalibGrid,
-                                      const bool drawMoveROIs, const bool drawSearchROI, const bool drawTargetSearchROI )
+GC_STATUS CalibOctagon::DrawOverlay( const cv::Mat &img, cv::Mat &result, const bool drawCalibScale,
+                                     const bool drawCalibGrid, const bool drawSearchROI, const bool drawTargetSearchROI )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -1510,12 +1510,6 @@ GC_STATUS CalibOctagon::DrawOverlay( const cv::Mat &img, cv::Mat &result, const 
                             }
                         }
                     }
-                }
-                if ( drawMoveROIs )
-                {
-                    rectangle( result, -1 == model.targetSearchRegion.x ?
-                                   Rect( 7, 7, model.imgSize.width - 8, model.imgSize.height - 8 ) :
-                                   model.targetSearchRegion, Scalar( 255, 0, 0 ), textStroke );
                 }
                 if ( drawTargetSearchROI )
                 {
@@ -1896,7 +1890,7 @@ static double distance( Point2d a, Point2d b )
 {
     return sqrt( ( b.y - a.y ) * ( b.y - a.y ) + ( b.x - a.x ) * ( b.x - a.x ) );
 }
-
+#if 0
 static double elongation( Moments m )
 {
     double x = m.mu20 + m.mu02;
@@ -1907,5 +1901,6 @@ static double elongation( Moments m )
     else
         return 1.0;
 }
+#endif
 
 } // namespace gc

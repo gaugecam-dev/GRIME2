@@ -177,7 +177,6 @@ GC_STATUS GuiVisApp::GetImageOverlay( const IMG_BUFFERS nImgColor, const IMG_DIS
                 retVal = m_visApp.DrawCalibOverlay( matTemp, m_matDisplay,
                                                     overlays & CALIB_SCALE,
                                                     overlays & CALIB_GRID,
-                                                    overlays & MOVE_ROIS,
                                                     overlays & SEARCH_ROI,
                                                     overlays & TARGET_ROI );
             }
@@ -706,7 +705,7 @@ GC_STATUS GuiVisApp::CalcLine( const FindLineParams params, FindLineResult &resu
     }
     return retVal;
 }
-GC_STATUS GuiVisApp::CalcLinesInFolder( const std::string folder, const FindLineParams params, const bool isFolderOfImages, const IMG_DISPLAY_OVERLAYS drawTypes )
+GC_STATUS GuiVisApp::CalcLinesInFolder( const std::string folder, const FindLineParams params, const bool isFolderOfImages )
 {
     GC_STATUS retVal = GC_OK;
     if ( m_isRunning )
@@ -1010,12 +1009,7 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
         cv::Mat img;
         string msg;
         int progressVal = 0;
-        char buffer[ 256 ];
         bool stopped = false;
-
-        // sort( images.begin(), images.end() );
-
-        // ofstream csvOut;
 
         if ( !params.resultCSVPath.empty() )
         {

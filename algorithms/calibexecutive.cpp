@@ -38,7 +38,6 @@ ostream &operator<<( ostream &out, CalibExecParams &params )
     out << "\"calibResult_json\": \"" << params.calibResultJsonFilepath << "\", ";
     out << "\"drawCalibScale\": " << ( params.drawCalibScale ? 1 : 0 ) << ", ";
     out << "\"drawCalibGrid\": " << ( params.drawCalibGrid ? 1 : 0 ) << ", ";
-    out << "\"drawMoveSearchROIs\": " << ( params.drawMoveSearchROIs ? 1 : 0 ) << ", ";
     out << "\"drawWaterLineSearchROI\": " << ( params.drawWaterLineSearchROI ? 1 : 0 ) << ", ";
     out << "\"drawTargetSearchROI\": " << ( params.drawTargetSearchROI ? 1 : 0 ) << ", ";
     out << "\"targetRoi_x\": " << ( params.targetSearchROI.x ) << ", ";
@@ -131,11 +130,9 @@ GC_STATUS CalibExecutive::SetCalibFromJson( const std::string &jsonParams )
         paramsCurrent.botLftPtToRgt = top_level.get< double >( "botLftPtToRgt", 1.5 );
         paramsCurrent.botLftPtToBot = top_level.get< double >( "botLftPtToBot", -3.0 );
 
-        paramsCurrent.moveSearchROIGrowPercent = cvRound( top_level.get< double >( "moveSearchROIGrowPercent", 0 ) );
         paramsCurrent.calibResultJsonFilepath = top_level.get< string >( "calibResult_json", "" );
         paramsCurrent.drawCalibScale = 1 == top_level.get< int >( "drawCalibScale", 0 );
         paramsCurrent.drawCalibGrid = 1 == top_level.get< int >( "drawCalibGrid", 0 );
-        paramsCurrent.drawMoveSearchROIs = 1 == top_level.get< int >( "drawMoveSearchROIs", 0 );
         paramsCurrent.drawWaterLineSearchROI = 1 == top_level.get< int >( "drawWaterLineSearchROI", 0 );
         paramsCurrent.drawTargetSearchROI = 1 == cvRound( top_level.get< double >( "drawTargetSearchROI", 0 ) );
         paramsCurrent.targetSearchROI.x = top_level.get< int >( "targetRoi_x", -1 );
@@ -349,23 +346,22 @@ GC_STATUS CalibExecutive::DrawOverlay( const cv::Mat matIn, cv::Mat &imgMatOut, 
     GC_STATUS retVal = GC_OK;
     if ( drawAll )
     {
-        retVal = DrawOverlay( matIn, imgMatOut, false, true, true, true, true );
+        retVal = DrawOverlay( matIn, imgMatOut, false, true, true, true );
     }
     else
     {
         retVal = DrawOverlay( matIn, imgMatOut, paramsCurrent.drawCalibScale, paramsCurrent.drawCalibGrid,
-                                        paramsCurrent.drawMoveSearchROIs, paramsCurrent.drawWaterLineSearchROI,
-                                        paramsCurrent.drawTargetSearchROI );
+                                        paramsCurrent.drawWaterLineSearchROI, paramsCurrent.drawTargetSearchROI );
     }
     return retVal;
 }
-GC_STATUS CalibExecutive::DrawOverlay( const cv::Mat matIn, cv::Mat &imgMatOut, const bool drawCalibScale, const bool drawCalibGrid,
-                                       const bool drawMoveROIs, const bool drawSearchROI, const bool drawTargetROI, const Point2d moveOffset )
+GC_STATUS CalibExecutive::DrawOverlay( const cv::Mat matIn, cv::Mat &imgMatOut, const bool drawCalibScale,
+                                       const bool drawCalibGrid, const bool drawSearchROI, const bool drawTargetROI )
 {
     GC_STATUS retVal = GC_OK;
     if ( "Octagon" == paramsCurrent.calibType )
     {
-        retVal = octagon.DrawOverlay( matIn, imgMatOut, drawCalibScale, drawCalibGrid, drawMoveROIs, drawSearchROI, drawTargetROI );
+        retVal = octagon.DrawOverlay( matIn, imgMatOut, drawCalibScale, drawCalibGrid, drawSearchROI, drawTargetROI );
     }
     else
     {
@@ -583,7 +579,7 @@ std::vector< LineEnds > &CalibExecutive::SearchLines()
     FILE_LOG( logERROR ) << "[CalibExecutive::SearchLines] No calibration type currently set";
     return nullSearchLines;
 }
-GC_STATUS CalibExecutive::FindMoveTargets( const Mat &img, FindPointSet &ptsFound )
+GC_STATUS CalibExecutive::FindMoveTargets( FindPointSet &ptsFound )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -777,9 +773,7 @@ GC_STATUS CalibExecutive::FormOctagonCalibJsonString( const CalibJsonItems &item
         json = "{\"calibType\": \"Octagon\", ";
         json += "\"facetLength\": " + std::to_string( items.facetLength ) + ", ";
         json += "\"zeroOffset\": " + std::to_string( items.zeroOffset ) + ", ";
-        json += "\"moveSearchROIGrowPercent\": " + std::to_string( items.moveROIGrowPercent ) + ", ";
         json += "\"drawCalib\": 0, ";
-        json += "\"drawMoveSearchROIs\": 0, ";
         json += "\"drawWaterLineSearchROI\": 0, ";
         if ( items.useROI )
         {

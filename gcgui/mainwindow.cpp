@@ -751,7 +751,7 @@ void MainWindow::keyPressEvent( QKeyEvent *event )
         ui->scrollArea_ImgDisplay->verticalScrollBar()->setEnabled( false );
     }
 }
-void MainWindow::keyReleaseEvent( QKeyEvent *event )
+void MainWindow::keyReleaseEvent( QKeyEvent * )
 {
     // Check if the Ctrl key is pressed
     if ( !ui->scrollArea_ImgDisplay->verticalScrollBar()->isEnabled() )
@@ -768,12 +768,12 @@ void MainWindow::wheelEvent( QWheelEvent *event )
         int delta = event->angleDelta().y();
         if ( 0 < delta )
         {
-            int value = ( ui->horizontalSlider_zoom->value() ) + 1;
+            int value = ( ui->horizontalSlider_zoom->value() ) + 5;
             ui->horizontalSlider_zoom->setValue( 400 < value ? 400 : value );
         }
         else if ( 0 > delta )
         {
-            int value = ( ui->horizontalSlider_zoom->value() ) - 1;
+            int value = ( ui->horizontalSlider_zoom->value() ) - 5;
             ui->horizontalSlider_zoom->setValue( 1 > value ? 1 : value );
         }
         event->accept();  // Custom handling is done, stop further processing if desired
@@ -1256,8 +1256,7 @@ void MainWindow::on_pushButton_visionCalibrate_clicked()
     CalibJsonItems calibItems( ui->lineEdit_calibVisionResult_json->text().toStdString(),
                                ui->checkBox_calibSearchROI->isChecked(),
                                cv::Rect( m_rectROI.x(), m_rectROI.y(), m_rectROI.width(), m_rectROI.height() ),
-                               ui->spinBox_moveSearchROIGrowPercent->value() + 100, ui->doubleSpinBox_octagonFacetLength->value(),
-                               ui->doubleSpinBox_octagonZeroOffset->value(),
+                               ui->doubleSpinBox_octagonFacetLength->value(), ui->doubleSpinBox_octagonZeroOffset->value(),
                                LineSearchRoi( cv::Point( m_lineSearchPoly.lftTop.x(), m_lineSearchPoly.lftTop.y() ),
                                               cv::Point( m_lineSearchPoly.rgtTop.x(), m_lineSearchPoly.rgtTop.y() ),
                                               cv::Point( m_lineSearchPoly.lftBot.x(), m_lineSearchPoly.lftBot.y() ),
@@ -1405,11 +1404,9 @@ void MainWindow::on_pushButton_findLineCurrentImage_clicked()
         params.calibControlString.clear();
         if ( params.isOctagonCalib )
         {
-            CalibJsonItems calibItems( ui->lineEdit_calibVisionResult_json->text().toStdString(),
-                                       ui->checkBox_calibSearchROI->isChecked(),
+            CalibJsonItems calibItems( ui->lineEdit_calibVisionResult_json->text().toStdString(), ui->checkBox_calibSearchROI->isChecked(),
                                        cv::Rect( m_rectROI.x(), m_rectROI.y(), m_rectROI.width(), m_rectROI.height() ),
-                                       ui->spinBox_moveSearchROIGrowPercent->value() + 100, ui->doubleSpinBox_octagonFacetLength->value(),
-                                       ui->doubleSpinBox_octagonZeroOffset->value(),
+                                       ui->doubleSpinBox_octagonFacetLength->value(), ui->doubleSpinBox_octagonZeroOffset->value(),
                                        LineSearchRoi( cv::Point( m_lineSearchPoly.lftTop.x(), m_lineSearchPoly.lftTop.y() ),
                                                       cv::Point( m_lineSearchPoly.rgtTop.x(), m_lineSearchPoly.rgtTop.y() ),
                                                       cv::Point( m_lineSearchPoly.lftBot.x(), m_lineSearchPoly.lftBot.y() ),
@@ -1475,7 +1472,7 @@ void MainWindow::on_pushButton_findLine_processFolder_clicked()
         drawTypes += ui->radioButton_calibDisplayGrid->isChecked() ? CALIB_GRID : CALIB_SCALE;
     }
 
-    GC_STATUS retVal = m_visApp.CalcLinesInFolder( folder, params, ui->radioButton_folderOfImages->isChecked(), static_cast< IMG_DISPLAY_OVERLAYS >( drawTypes ) );
+    GC_STATUS retVal = m_visApp.CalcLinesInFolder( folder, params, ui->radioButton_folderOfImages->isChecked() );
 
     ui->textEdit_msgs->clear();
     ui->textEdit_msgs->append( GC_OK == retVal ? "Folder run started" : "Folder run failed to start" );
