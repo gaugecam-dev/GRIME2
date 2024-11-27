@@ -425,16 +425,22 @@ GC_STATUS CalibOctagon::GetSearchRegionBoundingRect( cv::Rect &rect )
     }
     return retVal;
 }
-GC_STATUS CalibExecutive::CalibrateOctagon( const cv::Mat &img, const string &controlJson, string &err_msg, const bool noSave )
+GC_STATUS CalibExecutive::CalibSaveOctagon()
+{
+    GC_STATUS retVal = paramsCurrent.calibResultJsonFilepath.empty() ? GC_ERR : GC_OK;
+    if ( GC_OK == retVal )
+    {
+        octagon.Model().oldPixelPoints.clear();
+        retVal = octagon.Save( paramsCurrent.calibResultJsonFilepath );
+    }
+    return retVal;
+}
+GC_STATUS CalibExecutive::CalibrateOctagon( const cv::Mat &img, const string &controlJson, string &err_msg )
 {
     GC_STATUS retVal = GC_OK;
 
     try
     {
-        if ( !noSave )
-        {
-            octagon.Model().oldPixelPoints.clear();
-        }
         retVal = octagon.Calibrate( img, controlJson, err_msg );
         if ( GC_OK != retVal )
         {
@@ -447,10 +453,6 @@ GC_STATUS CalibExecutive::CalibrateOctagon( const cv::Mat &img, const string &co
             erode( matIn, matIn, kern, Point( -1, -1 ), 1 );
             retVal = octagon.Calibrate( matIn, controlJson, err_msg );
         }
-        if ( GC_OK == retVal && !noSave )
-        {
-            retVal = octagon.Save( paramsCurrent.calibResultJsonFilepath );
-        }
     }
     catch( Exception &e )
     {
@@ -462,7 +464,7 @@ GC_STATUS CalibExecutive::CalibrateOctagon( const cv::Mat &img, const string &co
     return retVal;
 }
 // if img != cv::Mat() then a recalibration is performed
-GC_STATUS CalibExecutive::Load( const string jsonFilepath, const Mat &img, const bool noSave )
+GC_STATUS CalibExecutive::Load( const string jsonFilepath, const Mat &img )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -515,7 +517,7 @@ GC_STATUS CalibExecutive::Load( const string jsonFilepath, const Mat &img, const
                             else
                             {
                                 string err_msg;
-                                retVal = CalibrateOctagon( img, controlJson, err_msg, noSave );
+                                retVal = CalibrateOctagon( img, controlJson, err_msg );
                             }
                         }
                     }

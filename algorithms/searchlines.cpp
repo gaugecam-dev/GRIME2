@@ -22,7 +22,7 @@ GC_STATUS SearchLines::CalcSearchLines( vector< Point > &searchLineCorners, std:
     {
         if ( 4 != searchLineCorners.size() )
         {
-            FILE_LOG( logERROR ) << "[CalibStopSign::CalcSearchLines] Invalid search line corner point count. Must be 4";
+            FILE_LOG( logERROR ) << "[SearchLines::CalcSearchLines] Invalid search line corner point count. Must be 4";
             retVal = GC_ERR;
         }
         else
@@ -63,7 +63,7 @@ GC_STATUS SearchLines::CalcSearchLines( vector< Point > &searchLineCorners, std:
                         botY = slopeBot * botX + interceptBot;
                         if ( MIN_SEARCH_LINE_LENGTH > DISTANCE( Point2d( topX, topY ), Point2d( botX, botY ) ) )
                         {
-                            FILE_LOG( logERROR ) << "[CalibStopSign::CalcSearchLines] Search region not tall enough";
+                            FILE_LOG( logERROR ) << "[SearchLines::CalcSearchLines] Search region not tall enough";
                             retVal = GC_ERR;
                             break;
                         }
@@ -98,7 +98,7 @@ GC_STATUS SearchLines::GetLineEquation( const cv::Point2d pt1, const cv::Point2d
         double deltaY = pt2.y - pt1.y;
         if ( numeric_limits< double >::epsilon() > deltaX )
         {
-            FILE_LOG( logERROR ) << "[CalibStopSign::GetLineEquation] Invalid points: pt1 and pt2 cannot have the same value of X";
+            FILE_LOG( logERROR ) << "[SearchLines::GetLineEquation] Invalid points: pt1 and pt2 cannot have the same value of X";
             retVal = GC_ERR;
         }
         else

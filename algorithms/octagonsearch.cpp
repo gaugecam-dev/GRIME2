@@ -22,8 +22,8 @@
 #include "opencv2/imgcodecs.hpp"
 #include "bresenham.h"
 
-#ifdef DEBUG_STOPSIGN_TEMPL
-#undef DEBUG_STOPSIGN_TEMPL
+#ifdef DEBUG_OCTAGON_TEMPL
+#undef DEBUG_OCTAGON_TEMPL
 #include <boost/filesystem.hpp>
 using namespace boost;
 namespace fs = filesystem;
@@ -42,13 +42,13 @@ namespace gc
 
 OctagonSearch::OctagonSearch()
 {
-#ifdef DEBUG_STOPSIGN_TEMPL
+#ifdef DEBUG_OCTAGON_TEMPL
     if ( !fs::exists( DEBUG_FOLDER ) )
     {
         bool ret = fs::create_directories( DEBUG_FOLDER );
         if ( !ret )
         {
-            FILE_LOG( logERROR ) << "[StopsignSearch::StopsignSearch] Could not create debug result folder " << DEBUG_FOLDER;
+            FILE_LOG( logERROR ) << "[OctagonSearch::OctagonSearch] Could not create debug result folder " << DEBUG_FOLDER;
         }
     }
 #endif
@@ -72,24 +72,24 @@ GC_STATUS OctagonSearch::FindScale( const cv::Mat &img, std::vector< cv::Point2d
     }
     catch( const cv::Exception &e )
     {
-        FILE_LOG( logERROR ) << "[StopsignSearch::FindScale] " << e.what();
+        FILE_LOG( logERROR ) << "[OctagonSearch::FindScale] " << e.what();
         retVal = GC_EXCEPT;
     }
     return retVal;
 }
-//GC_STATUS StopsignSearch::AdjustSearchImage( const Mat &img, Mat &adjusted )
+//GC_STATUS OctagonSearch::AdjustSearchImage( const Mat &img, Mat &adjusted )
 //{
 //    GC_STATUS retVal = GC_OK;
 //    try
 //    {
 //        if ( img.empty() )
 //        {
-//            FILE_LOG( logERROR ) << "[StopsignSearch::AdjustRawImage] Empty raw image";
+//            FILE_LOG( logERROR ) << "[OctagonSearch::AdjustRawImage] Empty raw image";
 //            retVal = GC_ERR;
 //        }
 //        else
 //        {
-//#ifdef DEBUG_STOPSIGN_TEMPL
+//#ifdef DEBUG_OCTAGON_TEMPL
 //            imwrite( "/var/tmp/gaugecam/raw_image.png", img );
 //#endif
 //            Mat mask;
@@ -97,7 +97,7 @@ GC_STATUS OctagonSearch::FindScale( const cv::Mat &img, std::vector< cv::Point2d
 //            threshold( img, mask, std::max( 0.0, thr * 1.1 ), 255, THRESH_BINARY );
 //            Mat kern = getStructuringElement( MORPH_ELLIPSE, Size( 5, 5 ) );
 //            erode( mask, mask, kern );
-//#ifdef DEBUG_STOPSIGN_TEMPL
+//#ifdef DEBUG_OCTAGON_TEMPL
 //            imwrite( "/var/tmp/gaugecam/raw_threshed.png", mask );
 //#endif
 //            int idx = -1;
@@ -125,7 +125,7 @@ GC_STATUS OctagonSearch::FindScale( const cv::Mat &img, std::vector< cv::Point2d
 //                drawContours( mask, vector< vector< Point > >( 1, contours[ idx ] ), -1, Scalar( 0 ), FILLED );
 //                adjusted = mask | img;
 //            }
-//#ifdef DEBUG_STOPSIGN_TEMPL
+//#ifdef DEBUG_OCTAGON_TEMPL
 //            imwrite( "/var/tmp/gaugecam/raw_mask.png", mask );
 //            imwrite( "/var/tmp/gaugecam/raw_adjusted.png", adjusted );
 //#endif
@@ -145,7 +145,7 @@ GC_STATUS OctagonSearch::CoarseOctoMask( const Mat &img, Mat &mask )
     {
         if ( img.empty() )
         {
-            FILE_LOG( logERROR ) << "[StopsignSearch::AdjustRawImage] Empty raw image";
+            FILE_LOG( logERROR ) << "[OctagonSearch::AdjustRawImage] Empty raw image";
             retVal = GC_ERR;
         }
         else
@@ -162,12 +162,12 @@ GC_STATUS OctagonSearch::CoarseOctoMask( const Mat &img, Mat &mask )
             for ( size_t i = 0; i < octoTemplates.templates.size(); ++i )
             {
                 response = Mat();
-#ifdef DEBUG_STOPSIGN_TEMPL
+#ifdef DEBUG_OCTAGON_TEMPL
                 imwrite("/var/tmp/gaugecam/response_templ.png", octoTemplates.templates[ i ].templ );
                 imwrite("/var/tmp/gaugecam/response_mask.png", octoTemplates.templates[ i ].mask );
 #endif
                 matchTemplate( img, octoTemplates.templates[ i ].templ, response, TM_CCORR_NORMED, octoTemplates.templates[ i ].mask );
-#ifdef DEBUG_STOPSIGN_TEMPL
+#ifdef DEBUG_OCTAGON_TEMPL
                 normalize( response, response_8u, 0, 1, NORM_MINMAX );
                 response_8u.convertTo( response_8u, CV_8UC1, 255 );
                 imwrite("/var/tmp/gaugecam/response.png", response_8u);
@@ -186,7 +186,7 @@ GC_STATUS OctagonSearch::CoarseOctoMask( const Mat &img, Mat &mask )
             {
                 mask = Mat::zeros( img.size(), CV_8UC1 );
                 circle( mask, maxMaxPt, octoTemplates.templates[ maxRadIdx ].radius, Scalar(255), octoTemplates.templates[ maxRadIdx ].thickness );
-#ifdef DEBUG_STOPSIGN_TEMPL
+#ifdef DEBUG_OCTAGON_TEMPL
                 Mat color;
                 cvtColor( img, color, COLOR_GRAY2BGR );
                 line( color, Point( cvRound( maxMaxPt.x - 10 ), cvRound( maxMaxPt.y ) ),
@@ -198,7 +198,7 @@ GC_STATUS OctagonSearch::CoarseOctoMask( const Mat &img, Mat &mask )
                 imwrite( "/var/tmp/gaugecam/coarseFind1.png", color );
 #endif
             }
-#ifdef DEBUG_STOPSIGN_TEMPL
+#ifdef DEBUG_OCTAGON_TEMPL
             Mat color;
             cvtColor( img, color, COLOR_GRAY2BGR );
             line( color, Point( cvRound( maxMaxPt.x - 10 ), cvRound( maxMaxPt.y ) ),
@@ -225,12 +225,12 @@ GC_STATUS OctagonSearch::AdjustResponseSpace( Mat &response, const size_t j )
     {
         if ( response.empty() )
         {
-            FILE_LOG( logERROR ) << "[StopsignSearch::AdjustResponseSpace] Empty response space image";
+            FILE_LOG( logERROR ) << "[OctagonSearch::AdjustResponseSpace] Empty response space image";
             retVal = GC_ERR;
         }
         else
         {
-#ifdef DEBUG_STOPSIGN_TEMPL
+#ifdef DEBUG_OCTAGON_TEMPL
             Mat scratch;
             normalize( response, scratch, 0, 1, NORM_MINMAX );
             scratch.convertTo( scratch, CV_8UC1, 255 );
@@ -290,7 +290,7 @@ GC_STATUS OctagonSearch::AdjustResponseSpace( Mat &response, const size_t j )
             drawContours( mask, vector< vector< Point > >( 1, contour ), -1, Scalar( 255 ), FILLED );
             drawContours( mask, vector< vector< Point > >( 1, contour ), -1, Scalar( 0 ), 7 );
             response.setTo( 0, mask == 255 );
-#ifdef DEBUG_STOPSIGN_TEMPL
+#ifdef DEBUG_OCTAGON_TEMPL
             normalize( response, scratch, 0, 1, NORM_MINMAX );
             scratch.convertTo( scratch, CV_8UC1, 255 );
             imwrite("/var/tmp/gaugecam/response_adj.png", scratch);
@@ -309,7 +309,7 @@ GC_STATUS OctagonSearch::AdjustResponseSpace( Mat &response, const size_t j )
     }
     catch( const cv::Exception &e )
     {
-        FILE_LOG( logERROR ) << "[StopsignSearch::AdjustResponseSpace] " << e.what();
+        FILE_LOG( logERROR ) << "[OctagonSearch::AdjustResponseSpace] " << e.what();
         retVal = GC_EXCEPT;
     }
     return retVal;
@@ -321,7 +321,7 @@ GC_STATUS OctagonSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &p
     {
         if ( img.empty() )
         {
-            FILE_LOG( logERROR ) << "[StopsignSearch::Find] Empty input image";
+            FILE_LOG( logERROR ) << "[OctagonSearch::Find] Empty input image";
             retVal = GC_ERR;
         }
         else
@@ -332,7 +332,7 @@ GC_STATUS OctagonSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &p
             }
             if ( templates.empty() || GC_OK != retVal )
             {
-                FILE_LOG( logERROR ) << "[StopsignSearch::FindMoveTargets] Cannot find move stop sign in an uninitialized object";
+                FILE_LOG( logERROR ) << "[OctagonSearch::FindMoveTargets] Cannot find move stop sign in an uninitialized object";
                 retVal = GC_ERR;
             }
             else
@@ -356,13 +356,13 @@ GC_STATUS OctagonSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &p
                         {
                             retVal = CoarseOctoMask( matIn, mask );
                         }
-#ifdef DEBUG_STOPSIGN_TEMPL
+#ifdef DEBUG_OCTAGON_TEMPL
                         imwrite( "/var/tmp/gaugecam/response_mask.png", mask );
 #endif
                     }
                 }
 
-#ifdef DEBUG_STOPSIGN_TEMPL
+#ifdef DEBUG_OCTAGON_TEMPL
                 Mat color;
                 if ( img.type() == CV_8UC1 )
                     cvtColor( matIn, color, COLOR_GRAY2BGR );
@@ -380,13 +380,13 @@ GC_STATUS OctagonSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &p
                     for ( size_t i = 0; i < templates[ j ].ptTemplates.size(); ++i )
                     {
                         matchTemplate( matIn, templates[ j ].ptTemplates[ i ].templ, response, TM_CCORR_NORMED, templates[ j ].ptTemplates[ i ].mask );
-#ifdef DEBUG_STOPSIGN_TEMPL
+#ifdef DEBUG_OCTAGON_TEMPL
                         imwrite("/var/tmp/gaugecam/response_001.png", response);
 #endif
                         int l = ( mask.cols - response.cols ) >> 1;
                         int r = ( mask.rows - response.rows ) >> 1;
                         response.setTo( 0.0, mask( Rect( l, r, response.cols, response.rows ) ) == 0 );
-#ifdef DEBUG_STOPSIGN_TEMPL
+#ifdef DEBUG_OCTAGON_TEMPL
                         imwrite("/var/tmp/gaugecam/response_mask.tiff", response);
 #endif
                         retVal = AdjustResponseSpace( response, j );
@@ -400,7 +400,7 @@ GC_STATUS OctagonSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &p
                             maxMaxVal = maxVal;
                             maxMaxPt = Point2d( maxPt ) + templates[ j ].ptTemplates[ i ].offset;
                         }
-#ifdef DEBUG_STOPSIGN_TEMPL
+#ifdef DEBUG_OCTAGON_TEMPL
                         normalize( response, response, 0, 1, NORM_MINMAX );
                         response.convertTo( response, CV_8UC1, 255 );
                         imwrite("/var/tmp/gaugecam/response.png", response);
@@ -409,7 +409,7 @@ GC_STATUS OctagonSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &p
                     if ( 0.0 < maxMaxVal )
                     {
                         pts.push_back( maxMaxPt );
-#ifdef DEBUG_STOPSIGN_TEMPL
+#ifdef DEBUG_OCTAGON_TEMPL
                         line( color, Point( cvRound( maxMaxPt.x - 10 ), cvRound( maxMaxPt.y ) ),
                               Point( cvRound( maxMaxPt.x + 10 ), cvRound( maxMaxPt.y ) ), Scalar( 0, 255, 255 ), 1 );
                         line( color, Point( cvRound( maxMaxPt.x ), cvRound( maxMaxPt.y - 10 ) ),
@@ -426,8 +426,8 @@ GC_STATUS OctagonSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &p
                     retVal = GC_OK;
                 }
 
-#ifdef DEBUG_STOPSIGN_TEMPL
-                imwrite( string(DEBUG_FOLDER) + "stopsign_find_template.png", color );
+#ifdef DEBUG_OCTAGON_TEMPL
+                imwrite( string(DEBUG_FOLDER) + "octagon_find_template.png", color );
                 for ( size_t i = 0; i < pts.size(); ++i )
                 {
                     line( color, Point( cvRound( pts[ i ].x - 10 ), cvRound( pts[ i ].y ) ),
@@ -435,19 +435,19 @@ GC_STATUS OctagonSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &p
                     line( color, Point( cvRound( pts[ i ].x ), cvRound( pts[ i ].y - 10 ) ),
                           Point( cvRound( pts[ i ].x ), cvRound( pts[ i ].y + 10 ) ), Scalar( 0, 255, 0 ), 1 );
                 }
-                imwrite( string(DEBUG_FOLDER) + "stopsign_find_line.png", color );
+                imwrite( string(DEBUG_FOLDER) + "octagon_find_line.png", color );
 #endif
             }
             if ( 8 != pts.size() )
             {
-                FILE_LOG( logERROR ) << "[StopsignSearch::Find] Found only " << pts.size() << " points";
+                FILE_LOG( logERROR ) << "[OctagonSearch::Find] Found only " << pts.size() << " points";
                 retVal = GC_ERR;
             }
         }
     }
     catch( const cv::Exception &e )
     {
-        FILE_LOG( logERROR ) << "[StopsignSearch::Find] " << e.what();
+        FILE_LOG( logERROR ) << "[OctagonSearch::Find] " << e.what();
         retVal = GC_EXCEPT;
     }
     return retVal;
@@ -459,7 +459,7 @@ GC_STATUS OctagonSearch::FindMoveTargets( const Mat &img, const Rect targetRoi, 
     {
         if ( img.empty() )
         {
-            FILE_LOG( logERROR ) << "[StopsignSearch::FindMoveTargets] Cannot find move targets in an empty image";
+            FILE_LOG( logERROR ) << "[OctagonSearch::FindMoveTargets] Cannot find move targets in an empty image";
             retVal = GC_ERR;
         }
         else
@@ -470,7 +470,7 @@ GC_STATUS OctagonSearch::FindMoveTargets( const Mat &img, const Rect targetRoi, 
             }
             if ( GC_OK != retVal || templates.empty() )
             {
-                FILE_LOG( logERROR ) << "[StopsignSearch::FindMoveTargets] Cannot find move targets in an uninitialized object";
+                FILE_LOG( logERROR ) << "[OctagonSearch::FindMoveTargets] Cannot find move targets in an uninitialized object";
                 retVal = GC_ERR;
             }
             else
@@ -481,17 +481,17 @@ GC_STATUS OctagonSearch::FindMoveTargets( const Mat &img, const Rect targetRoi, 
 
                 cv::Ptr< CLAHE > clahe = createCLAHE( 1.0 );
                 clahe->apply( matIn, matIn );
-#ifdef DEBUG_STOPSIGN_TEMPL
-                imwrite( string(DEBUG_FOLDER) + "template_stopsign_clahe.png", matIn );
+#ifdef DEBUG_OCTAGON_TEMPL
+                imwrite( string(DEBUG_FOLDER) + "template_OCTAGON_clahe.png", matIn );
 #endif
 
                 // GaussianBlur( matIn, matIn, Size( 5, 5 ), 1.0 );
                 medianBlur( matIn, matIn, 7 );
-#ifdef DEBUG_STOPSIGN_TEMPL
-                imwrite( string(DEBUG_FOLDER) + "template_stopsign_median.png", matIn );
+#ifdef DEBUG_OCTAGON_TEMPL
+                imwrite( string(DEBUG_FOLDER) + "template_OCTAGON_median.png", matIn );
 #endif
 
-#ifdef DEBUG_STOPSIGN_TEMPL
+#ifdef DEBUG_OCTAGON_TEMPL
                 Mat color;
                 if ( img.type() == CV_8UC1 )
                     cvtColor( matIn, color, COLOR_BGR2GRAY );
@@ -511,7 +511,7 @@ GC_STATUS OctagonSearch::FindMoveTargets( const Mat &img, const Rect targetRoi, 
                 for ( size_t j = 0; j < templIdx.size(); ++j )
                 {
                     maxMaxVal = -9999999;
-                    // imwrite( string(DEBUG_FOLDER) + "stopsign_move_target" + to_string(j) + ".png", templates[ j ].ptTemplates[ 5 ].templ );
+                    // imwrite( string(DEBUG_FOLDER) + "octagon_move_target" + to_string(j) + ".png", templates[ j ].ptTemplates[ 5 ].templ );
                     for ( size_t i = 0; i < templates[ j ].ptTemplates.size(); ++i )
                     {
                         matchTemplate( matIn, templates[ j ].ptTemplates[ i ].templ, response, TM_CCORR_NORMED, templates[ j ].ptTemplates[ i ].mask );
@@ -533,17 +533,17 @@ GC_STATUS OctagonSearch::FindMoveTargets( const Mat &img, const Rect targetRoi, 
                     }
                     if ( 0.0 < maxMaxVal )
                     {
-#ifdef DEBUG_STOPSIGN_TEMPL
+#ifdef DEBUG_OCTAGON_TEMPL
                         line( color( targetRoi ), Point( cvRound( maxMaxPt.x - 10 ), cvRound( maxMaxPt.y ) ),
                               Point( cvRound( maxMaxPt.x + 10 ), cvRound( maxMaxPt.y ) ), Scalar( 0, 255, 0 ), 1 );
                         line( color( targetRoi ), Point( cvRound( maxMaxPt.x ), cvRound( maxMaxPt.y - 10 ) ),
                               Point( cvRound( maxMaxPt.x ), cvRound( maxMaxPt.y + 10 ) ), Scalar( 0, 255, 0 ), 1 );
-                        imwrite( string(DEBUG_FOLDER) + "stopsign_move_target_found.png", color );
+                        imwrite( string(DEBUG_FOLDER) + "octagon_move_target_found.png", color );
 #endif
                     }
                     else
                     {
-                        FILE_LOG( logERROR ) << "[StopsignSearch::FindMoveTargets] Could not find move target";
+                        FILE_LOG( logERROR ) << "[OctagonSearch::FindMoveTargets] Could not find move target";
                         retVal = GC_ERR;
                         break;
                     }
@@ -553,7 +553,7 @@ GC_STATUS OctagonSearch::FindMoveTargets( const Mat &img, const Rect targetRoi, 
     }
     catch( Exception &e )
     {
-        FILE_LOG( logERROR ) << "[StopsignSearch::FindMoveTargets] " << e.what();
+        FILE_LOG( logERROR ) << "[OctagonSearch::FindMoveTargets] " << e.what();
         retVal = GC_EXCEPT;
     }
 
@@ -577,7 +577,7 @@ GC_STATUS OctagonSearch::ShortenLine( const LineEnds &a, const double newLengthP
     }
     catch( const cv::Exception &e )
     {
-        FILE_LOG( logERROR ) << "[StopsignSearch::ShortenLine] " << e.what();
+        FILE_LOG( logERROR ) << "[OctagonSearch::ShortenLine] " << e.what();
         retVal = GC_EXCEPT;
     }
     return retVal;
@@ -600,7 +600,7 @@ GC_STATUS OctagonSearch::AdjustLineLength( const LineEnds &a, const double newLe
     }
     catch( const cv::Exception &e )
     {
-        FILE_LOG( logERROR ) << "[StopsignSearch::AdjustLineLength] " << e.what();
+        FILE_LOG( logERROR ) << "[OctagonSearch::AdjustLineLength] " << e.what();
         retVal = GC_EXCEPT;
     }
     return retVal;
@@ -612,12 +612,12 @@ GC_STATUS OctagonSearch::RefineFind( const Mat &img, vector< Point2d > &pts )
     {
         if ( img.empty() )
         {
-            FILE_LOG( logERROR ) << "[StopsignSearch::RefineFind] Reference image empty";
+            FILE_LOG( logERROR ) << "[OctagonSearch::RefineFind] Reference image empty";
             retVal = GC_ERR;
         }
         else if ( 8 != pts.size() && 2 != pts.size() )
         {
-            FILE_LOG( logERROR ) << "[StopsignSearch::RefineFind] Need 8 points, but got only " << pts.size();
+            FILE_LOG( logERROR ) << "[OctagonSearch::RefineFind] Need 8 points, but got only " << pts.size();
             retVal = GC_ERR;
         }
         else
@@ -641,7 +641,7 @@ GC_STATUS OctagonSearch::RefineFind( const Mat &img, vector< Point2d > &pts )
             vector< Point > lineEdges;
             Mat mask = Mat::zeros( img.size(), CV_8UC1 );
 
-#ifdef DEBUG_STOPSIGN_TEMPL
+#ifdef DEBUG_OCTAGON_TEMPL
             Mat color;
             if ( img.type() == CV_8UC3 )
             {
@@ -675,7 +675,7 @@ GC_STATUS OctagonSearch::RefineFind( const Mat &img, vector< Point2d > &pts )
                 {
                     for ( size_t i = 0; i < lineSet.size(); ++i )
                     {
-#ifdef DEBUG_STOPSIGN_TEMPL
+#ifdef DEBUG_OCTAGON_TEMPL
                         line( color, lineSet[ i ].bot, lineSet[ i ].top, Scalar( 0, 0, 255 ), 1 );
 #endif
                         mask = 0;
@@ -685,7 +685,7 @@ GC_STATUS OctagonSearch::RefineFind( const Mat &img, vector< Point2d > &pts )
 
                         findNonZero( mask, lineEdges );
 
-#ifdef DEBUG_STOPSIGN_TEMPL
+#ifdef DEBUG_OCTAGON_TEMPL
                         for ( size_t j = 0; j < lineEdges.size(); ++j )
                         {
                             color.at<Vec3b>( lineEdges[ j ] )[ 0 ] = 0;
@@ -709,7 +709,7 @@ GC_STATUS OctagonSearch::RefineFind( const Mat &img, vector< Point2d > &pts )
                     {
                         retVal = CalcPointsFromLines( lineEndSet, pts );
 
-#ifdef DEBUG_STOPSIGN_TEMPL
+#ifdef DEBUG_OCTAGON_TEMPL
                         if ( GC_OK == retVal )
                         {
                             for ( size_t i = 0; i < lineEndSet.size(); ++i )
@@ -730,7 +730,7 @@ GC_STATUS OctagonSearch::RefineFind( const Mat &img, vector< Point2d > &pts )
     }
     catch( const cv::Exception &e )
     {
-        FILE_LOG( logERROR ) << "[StopsignSearch::RefineFind] " << e.what();
+        FILE_LOG( logERROR ) << "[OctagonSearch::RefineFind] " << e.what();
         retVal = GC_EXCEPT;
     }
     return retVal;
@@ -760,7 +760,7 @@ GC_STATUS OctagonSearch::Init( const int templateDim, const int rotateCnt )
                 }
             }
         }
-//#ifdef DEBUG_STOPSIGN_TEMPL
+//#ifdef DEBUG_OCTAGON_TEMPL
 //        if ( GC_OK == retVal )
 //        {
 //            retVal = CreateTemplateOverlay( DEBUG_FOLDER );
@@ -769,7 +769,7 @@ GC_STATUS OctagonSearch::Init( const int templateDim, const int rotateCnt )
     }
     catch( const cv::Exception &e )
     {
-        FILE_LOG( logERROR ) << "[StopsignSearch::Init] " << e.what();
+        FILE_LOG( logERROR ) << "[OctagonSearch::Init] " << e.what();
         retVal = GC_EXCEPT;
     }
     return retVal;
@@ -781,12 +781,12 @@ GC_STATUS OctagonSearch::RotatePointTemplates( const size_t idx, const double an
     {
         if ( templates.size() <= idx )
         {
-            FILE_LOG( logERROR ) << "[StopsignSearch::RotatePointTemplates] Target template does not exist";
+            FILE_LOG( logERROR ) << "[OctagonSearch::RotatePointTemplates] Target template does not exist";
             retVal = GC_ERR;
         }
         else if ( templates[ 0 ].ptTemplates.empty() )
         {
-            FILE_LOG( logERROR ) << "[StopsignSearch::RotatePointTemplates] Reference template zero not initialized";
+            FILE_LOG( logERROR ) << "[OctagonSearch::RotatePointTemplates] Reference template zero not initialized";
             retVal = GC_ERR;
         }
         else
@@ -817,7 +817,7 @@ GC_STATUS OctagonSearch::RotatePointTemplates( const size_t idx, const double an
     }
     catch( const cv::Exception &e )
     {
-        FILE_LOG( logERROR ) << "[StopsignSearch::RotatePointTemplates] " << e.what();
+        FILE_LOG( logERROR ) << "[OctagonSearch::RotatePointTemplates] " << e.what();
         retVal = GC_EXCEPT;
     }
     return retVal;
@@ -832,7 +832,7 @@ GC_STATUS OctagonSearch::CreateOctoTemplates( const int radBeg, const int radEnd
 
         if ( 40 > radBeg || radEnd < radBeg )
         {
-            FILE_LOG( logERROR ) << "[StopsignSearch::CreateOctoTemplates] Invalid radius range: start=" << radBeg << " end=" << radEnd << " -- Must be > 50";
+            FILE_LOG( logERROR ) << "[OctagonSearch::CreateOctoTemplates] Invalid radius range: start=" << radBeg << " end=" << radEnd << " -- Must be > 50";
             retVal = GC_ERR;
         }
         else
@@ -866,7 +866,7 @@ GC_STATUS OctagonSearch::CreateOctoTemplates( const int radBeg, const int radEnd
     }
     catch( const cv::Exception &e )
     {
-        FILE_LOG( logERROR ) << "[StopsignSearch::CreateOctoTemplates] " << e.what();
+        FILE_LOG( logERROR ) << "[OctagonSearch::CreateOctoTemplates] " << e.what();
         retVal = GC_EXCEPT;
     }
     return retVal;
@@ -878,12 +878,12 @@ GC_STATUS OctagonSearch::CreatePointTemplates( const int templateDim, const int 
     {
         if ( 1 > rotateCnt )
         {
-            FILE_LOG( logERROR ) << "[StopsignSearch::CreatePointTemplates] Must have more than one rotation template each direction";
+            FILE_LOG( logERROR ) << "[OctagonSearch::CreatePointTemplates] Must have more than one rotation template each direction";
             retVal = GC_ERR;
         }
         else if ( 15 > templateDim )
         {
-            FILE_LOG( logERROR ) << "[StopsignSearch::CreatePointTemplates] Template dimension must be at least 15";
+            FILE_LOG( logERROR ) << "[OctagonSearch::CreatePointTemplates] Template dimension must be at least 15";
             retVal = GC_ERR;
         }
         else
@@ -953,7 +953,7 @@ GC_STATUS OctagonSearch::CreatePointTemplates( const int templateDim, const int 
                 }
                 else
                 {
-                    FILE_LOG( logERROR ) << "[StopsignSearch::CreatePointTemplates] Could not rotate templates";
+                    FILE_LOG( logERROR ) << "[OctagonSearch::CreatePointTemplates] Could not rotate templates";
                     retVal = GC_ERR;
                 }
             }
@@ -961,7 +961,7 @@ GC_STATUS OctagonSearch::CreatePointTemplates( const int templateDim, const int 
     }
     catch( const cv::Exception &e )
     {
-        FILE_LOG( logERROR ) << "[StopsignSearch::CreatePointTemplates] " << e.what();
+        FILE_LOG( logERROR ) << "[OctagonSearch::CreatePointTemplates] " << e.what();
         retVal = GC_EXCEPT;
     }
     return retVal;
@@ -973,7 +973,7 @@ GC_STATUS OctagonSearch::DrawOctagon( const int templateDim, const int radius, c
     {
         if ( 30 > templateDim )
         {
-            FILE_LOG( logERROR ) << "[StopsignSearch::DrawOctagon] Octo template dimension too small=" << templateDim;
+            FILE_LOG( logERROR ) << "[OctagonSearch::DrawOctagon] Octo template dimension too small=" << templateDim;
             retVal = GC_ERR;
         }
         else
@@ -988,7 +988,7 @@ GC_STATUS OctagonSearch::DrawOctagon( const int templateDim, const int radius, c
     }
     catch( const cv::Exception &e )
     {
-        FILE_LOG( logERROR ) << "[StopsignSearch::DrawOctagon] " << e.what();
+        FILE_LOG( logERROR ) << "[OctagonSearch::DrawOctagon] " << e.what();
         retVal = GC_EXCEPT;
     }
     return retVal;
@@ -1000,7 +1000,7 @@ GC_STATUS OctagonSearch::DrawCorner( const int templateDim, cv::Mat &templ, cv::
     {
         if ( 30 > templateDim || 0 == templateDim % 2 )
         {
-            FILE_LOG( logERROR ) << "[StopsignSearch::DrawCorner] Template dimension too small or not odd: dim=" << templateDim;
+            FILE_LOG( logERROR ) << "[OctagonSearch::DrawCorner] Template dimension too small or not odd: dim=" << templateDim;
             retVal = GC_ERR;
         }
         else
@@ -1058,7 +1058,7 @@ GC_STATUS OctagonSearch::DrawCorner( const int templateDim, cv::Mat &templ, cv::
     }
     catch( const cv::Exception &e )
     {
-        FILE_LOG( logERROR ) << "[StopsignSearch::DrawCorner] " << e.what();
+        FILE_LOG( logERROR ) << "[OctagonSearch::DrawCorner] " << e.what();
         retVal = GC_EXCEPT;
     }
     return retVal;
@@ -1075,7 +1075,7 @@ GC_STATUS OctagonSearch::RotateImage( const Mat &src, Mat &dst, const double ang
     }
     catch( Exception &e )
     {
-        FILE_LOG( logERROR ) << "[StopsignSearch::RotateImage] " << e.what();
+        FILE_LOG( logERROR ) << "[OctagonSearch::RotateImage] " << e.what();
         retVal = GC_EXCEPT;
     }
     return retVal;
@@ -1088,17 +1088,17 @@ GC_STATUS OctagonSearch::CreateTemplateOverlay( const std::string debugFolder )
     {
         if ( templates.empty() )
         {
-            FILE_LOG( logERROR ) << "[StopsignSearch::CreateTemplateOverlay] Template vector empty";
+            FILE_LOG( logERROR ) << "[OctagonSearch::CreateTemplateOverlay] Template vector empty";
             retVal = GC_ERR;
         }
         else if ( templates[ 0 ].ptTemplates[ 0 ].mask.empty() || templates[ 0 ].ptTemplates[ 0 ].templ.empty() )
         {
-            FILE_LOG( logERROR ) << "[StopsignSearch::CreateTemplateOverlay] mask and/or template empty";
+            FILE_LOG( logERROR ) << "[OctagonSearch::CreateTemplateOverlay] mask and/or template empty";
             retVal = GC_ERR;
         }
         else
         {
-#ifdef DEBUG_STOPSIGN_TEMPL
+#ifdef DEBUG_OCTAGON_TEMPL
             imwrite( DEBUG_FOLDER + string( "center_template.png" ), templates[ 0 ].ptTemplates[ templates[ 0 ].ptTemplates.size() >> 1 ].templ );
             imwrite( DEBUG_FOLDER + string( "center_mask.png" ), templates[ 0 ].ptTemplates[ templates[ 0 ].ptTemplates.size() >> 1 ].mask );
 #endif
@@ -1139,7 +1139,7 @@ GC_STATUS OctagonSearch::CreateTemplateOverlay( const std::string debugFolder )
     }
     catch( Exception &e )
     {
-        FILE_LOG( logERROR ) << "[StopsignSearch::CreateTemplateOverlay] " << e.what();
+        FILE_LOG( logERROR ) << "[OctagonSearch::CreateTemplateOverlay] " << e.what();
         retVal = GC_EXCEPT;
     }
     return retVal;
@@ -1151,7 +1151,7 @@ GC_STATUS OctagonSearch::FitLine( const std::vector< Point > &pts, LineEnds &lin
     {
         if ( 5 > pts.size() )
         {
-            FILE_LOG( logERROR ) << "[StopsignSearch::FitLine] At least five points are needed to fit a line";
+            FILE_LOG( logERROR ) << "[OctagonSearch::FitLine] At least five points are needed to fit a line";
             retVal = GC_ERR;
         }
         else
@@ -1195,7 +1195,7 @@ GC_STATUS OctagonSearch::FitLine( const std::vector< Point > &pts, LineEnds &lin
     }
     catch( cv::Exception &e )
     {
-        FILE_LOG( logERROR ) << "[StopsignSearch::FitLine] " << e.what();
+        FILE_LOG( logERROR ) << "[OctagonSearch::FitLine] " << e.what();
         retVal = GC_EXCEPT;
     }
     return retVal;
@@ -1220,7 +1220,7 @@ GC_STATUS OctagonSearch::GetSlopeIntercept( const Point2d one, const Point2d two
     }
     catch( std::exception &e )
     {
-        FILE_LOG( logERROR ) << "[StopsignSearch::GetSlopeIntercept] " << e.what();
+        FILE_LOG( logERROR ) << "[OctagonSearch::GetSlopeIntercept] " << e.what();
         retVal = GC_EXCEPT;
     }
     return retVal;
@@ -1233,7 +1233,7 @@ GC_STATUS OctagonSearch::GetRandomNumbers( const int low_bound, const int high_b
     {
         if ( high_bound - low_bound + 1 < static_cast< int >( numbers.size() ) / 2 )
         {
-            FILE_LOG( logERROR ) << "[StopsignSearch::GetRandomNumbers] Not enough points to find good numbers";
+            FILE_LOG( logERROR ) << "[OctagonSearch::GetRandomNumbers] Not enough points to find good numbers";
             retVal = GC_ERR;
         }
         else
@@ -1279,14 +1279,14 @@ GC_STATUS OctagonSearch::GetRandomNumbers( const int low_bound, const int high_b
             }
             if ( static_cast< int >( numbers.size() ) < cnt_to_generate )
             {
-                FILE_LOG( logERROR ) << "[StopsignSearch::GetRandomNumbers] Not enough unique numbers found";
+                FILE_LOG( logERROR ) << "[OctagonSearch::GetRandomNumbers] Not enough unique numbers found";
                 retVal = GC_ERR;
             }
         }
     }
     catch( std::exception &e )
     {
-        FILE_LOG( logERROR ) << "[StopsignSearch::GetRandomNumbers] " << e.what();
+        FILE_LOG( logERROR ) << "[OctagonSearch::GetRandomNumbers] " << e.what();
         retVal = GC_EXCEPT;
     }
     return retVal;
@@ -1303,7 +1303,7 @@ GC_STATUS OctagonSearch::LineIntersection( const LineEnds line1, const LineEnds 
         double cross = d1.x * d2.y - d1.y * d2.x;
         if (abs(cross) < numeric_limits< double >::epsilon() )
         {
-            FILE_LOG( logERROR ) << "[CalibStopSign::LineIntersection] Lines are parallel";
+            FILE_LOG( logERROR ) << "[OctagonSearch::LineIntersection] Lines are parallel";
             return GC_ERR;
         }
 
@@ -1312,7 +1312,7 @@ GC_STATUS OctagonSearch::LineIntersection( const LineEnds line1, const LineEnds 
     }
     catch( std::exception &e )
     {
-        FILE_LOG( logERROR ) << "[StopsignSearch::LineIntersection] " << e.what();
+        FILE_LOG( logERROR ) << "[OctagonSearch::LineIntersection] " << e.what();
         retVal = GC_EXCEPT;
     }
     return retVal;
@@ -1325,7 +1325,7 @@ GC_STATUS OctagonSearch::CalcPointsFromLines( const std::vector< LineEnds > line
     {
         if ( 8 != lines.size() )
         {
-            FILE_LOG( logERROR ) << "[StopsignSearch::CalcPointsFromLines] Need 8 lines, but got only " << lines.size();
+            FILE_LOG( logERROR ) << "[OctagonSearch::CalcPointsFromLines] Need 8 lines, but got only " << lines.size();
             retVal = GC_ERR;
         }
         else
@@ -1356,7 +1356,7 @@ GC_STATUS OctagonSearch::CalcPointsFromLines( const std::vector< LineEnds > line
     }
     catch( std::exception &e )
     {
-        FILE_LOG( logERROR ) << "[StopsignSearch::CalcPointsFromLines] " << e.what();
+        FILE_LOG( logERROR ) << "[OctagonSearch::CalcPointsFromLines] " << e.what();
         retVal = GC_EXCEPT;
     }
     return retVal;

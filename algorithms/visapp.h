@@ -92,14 +92,15 @@ public:
     /**
      * @brief Set the current calibration from a calibration model json file
      * @param calibJson The filepath of the calibration model json file
-     * @param img Image for stopsign recalibration--if empty, calib loaded from disk
+     * @param img Image for octagon recalibration--if empty, calib loaded from disk
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
 
     // TODO: Add doxygen comments
     GC_STATUS GetTempCacheResults( const std::string jsonFilepath, FindLineResult &result );
+    GC_STATUS CalibLoad( const std::string calibJson, const cv::Mat &img );
+    GC_STATUS CalibSave();
 
-    GC_STATUS LoadCalib( const std::string calibJson, const cv::Mat &img );
     /**
      * @brief Convert world coordinates to pixel coordinates using the currently set calibration
      * @param worldPt World coordinate xy position
@@ -138,7 +139,7 @@ public:
      * @param result Holds the results of the line find calculation
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
-    GC_STATUS CalcLine( const FindLineParams params, FindLineResult &result, const bool noCalibSave = false );
+    GC_STATUS CalcLine (const FindLineParams params, FindLineResult &result );
 
     /**
      * @brief Find the water level in an image specified in the FindLineParams (results to member result object)
@@ -155,7 +156,7 @@ public:
      * @param timestamp Image capture time
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
-    GC_STATUS CalcLine( const cv::Mat &img, const string timestamp, const bool isStopSign );
+    GC_STATUS CalcLine( const cv::Mat &img, const string timestamp, const bool isOctagon );
 
     /**
      * @brief Find the water level in the specified image
@@ -163,7 +164,7 @@ public:
      * @param resultJson Result of the water level find in json format
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
-    GC_STATUS CalcLine(const FindLineParams params, FindLineResult &result, string &resultJson, const bool noCalibSav = false );
+    GC_STATUS CalcLine( const FindLineParams params, FindLineResult &result, string &resultJson );
 
     /**
      * @brief Get image exif data used by GaugeCam as a human readable string

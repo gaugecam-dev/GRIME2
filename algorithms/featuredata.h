@@ -99,7 +99,8 @@ public:
         exposureTime( -1.0 ),
         fNumber( -1.0 ),
         isoSpeedRating( -1 ),
-        shutterSpeed( -1.0 )
+        shutterSpeed( -1.0 ),
+        illumination( "N/A" )
     {}
 
     void clear()
@@ -110,6 +111,7 @@ public:
         fNumber = -1.0;
         isoSpeedRating = -1;
         shutterSpeed = -1.0;
+        illumination = "N/A";
     }
     cv::Size imageDims;
     std::string captureTime;
@@ -117,6 +119,7 @@ public:
     double fNumber;
     int isoSpeedRating;
     double shutterSpeed;
+    std::string illumination;
 };
 
 class ImageAreaFeatures

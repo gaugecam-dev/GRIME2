@@ -609,7 +609,7 @@
                <enum>QTabWidget::South</enum>
               </property>
               <property name="currentIndex">
-               <number>1</number>
+               <number>2</number>
               </property>
               <widget class="QWidget" name="tab_mainRunFolder">
                <property name="toolTipDuration">
@@ -906,7 +906,7 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="QGroupBox" name="groupBox_calibStopsignColor">
+                 <widget class="QGroupBox" name="groupBox_calibOctagon">
                   <property name="font">
                    <font>
                     <pointsize>9</pointsize>
@@ -1494,7 +1494,7 @@
                      <item>
                       <widget class="QLineEdit" name="lineEdit_timestampFormat">
                        <property name="sizePolicy">
-                        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                        <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
                          <horstretch>0</horstretch>
                          <verstretch>0</verstretch>
                         </sizepolicy>

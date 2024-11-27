@@ -161,7 +161,7 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                     {
                         params.opToPerform = CREATE_CALIB;
                         string calType = string( argv[ ++i ] );
-                        params.calib_type = string::npos == calType.find( "bowtie" ) ? "StopSign" : "BowTie";
+                        params.calib_type = "Octagon";
                     }
                     else
                     {
@@ -536,7 +536,7 @@ void PrintHelp()
         "        performs a new calibration if a source image is supplied," << endl <<
         "        then stores the calibration to the specified json file. An optional" << endl <<
         "        result image with the calibration result can be created." << endl;
-    cout << "FORMAT: grime2cli --create_calibrate <type (must be bowtie or stopsign> " << endl <<
+    cout << "FORMAT: grime2cli --create_calibrate <type (must be bowtie or octagon> " << endl <<
         "                  --source <Target image>" << endl <<
         "                  --csv_file <CSV file with bow tie target xy positions>" << endl <<
         "                  --calib_json <json filepath for file to be created>" << endl <<
@@ -546,7 +546,7 @@ void PrintHelp()
         "                 [--facet_length <length of facet in world units>]" << endl <<
         "                 [--zero_offset <distance from octo to zero water level in world units>]" << endl <<
         "                 [--result_image <Result overlay image> OPTIONAL]" << endl <<
-        "        For stopsign calibration json file creation only." << endl <<
+        "        For octagon calibration json file creation only." << endl <<
         "        Performs a calibration if a source image is supplied," << endl <<
         "        then stores the calibration to the specified json file. An optional" << endl <<
         "        result image with the calibration result can be created." << endl;

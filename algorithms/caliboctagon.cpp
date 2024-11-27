@@ -149,7 +149,7 @@ GC_STATUS CalibOctagon::DrawAssocPts( const cv::Mat &img, cv::Mat &overlay, stri
     return retVal;
 }
 // symbolPoints are clockwise ordered with 0 being the topmost left point
-GC_STATUS CalibOctagon::Calibrate( const cv::Mat &img, const std::string &controlJson, string &err_msg )
+GC_STATUS CalibOctagon::Calibrate( const cv::Mat &img, const std::string &controlJson, string &err_msg, const bool noSave )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -345,8 +345,11 @@ GC_STATUS CalibOctagon::Calibrate( const cv::Mat &img, const std::string &contro
             {
                 model.oldPixelPoints = model.pixelPoints;
             }
-            moveRefLftPt = model.pixelPoints[ 5 ];
-            moveRefRgtPt = model.pixelPoints[ 4 ];
+            if ( ! noSave )
+            {
+                moveRefLftPt = model.pixelPoints[ 5 ];
+                moveRefRgtPt = model.pixelPoints[ 4 ];
+            }
         }
         else
         {

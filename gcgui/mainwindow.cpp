@@ -469,8 +469,8 @@ int MainWindow::WriteSettings( const QString filepath )
         pSettings->beginGroup( "Vision" );
         pSettings->setValue( "calibJsonFileOut", ui->lineEdit_calibVisionResult_json->text() );
         pSettings->setValue( "useWholeImage", !ui->checkBox_calibSearchROI->isChecked() );
-        pSettings->setValue( "stopSignFacetLength", ui->doubleSpinBox_octagonFacetLength->value() );
-        pSettings->setValue( "stopSignZeroOffset", ui->doubleSpinBox_octagonZeroOffset->value() );
+        pSettings->setValue( "octagonFacetLength", ui->doubleSpinBox_octagonFacetLength->value() );
+        pSettings->setValue( "octagonZeroOffset", ui->doubleSpinBox_octagonZeroOffset->value() );
         pSettings->setValue( "moveSearchROIGrowPercent", ui->spinBox_moveSearchROIGrowPercent->value() );
 
         pSettings->setValue( "findLineFolder", ui->lineEdit_findLineTopFolder->text() );
@@ -544,7 +544,7 @@ void MainWindow::UpdateCalibSearchRegion()
 }
 void MainWindow::UpdateCalibType()
 {
-    ui->groupBox_calibStopsignColor->setEnabled( true );
+    ui->groupBox_calibOctagon->setEnabled( true );
     ui->doubleSpinBox_octagonFacetLength->setEnabled( true );
     ui->label_moveSearchROI->setEnabled( false );
     ui->spinBox_moveSearchROIGrowPercent->setEnabled( false );
@@ -1266,22 +1266,30 @@ void MainWindow::on_pushButton_visionCalibrate_clicked()
     int ret = CalibExecutive::FormOctagonCalibJsonString( calibItems, jsonControlStr );
     if ( 0 != ret )
     {
-        ui->statusBar->showMessage( "Find line: FAILURE -- could not create stopsign calib control string" );
+        ui->statusBar->showMessage( "Find line: FAILURE -- could not create octagon calib control string" );
     }
     GC_STATUS retVal = GC_OK;
     retVal = m_visApp.Calibrate( strFilepath.toStdString(), jsonControlStr );
     if ( GC_OK != retVal )
     {
-        ui->statusBar->showMessage( "Calibration failed" );
+        ui->statusBar->showMessage( "Calibration: FAILURE" );
     }
     else
     {
+        retVal = m_visApp.SaveCalib();
+        if ( GC_OK != retVal )
+        {
+            ui->statusBar->showMessage( "Calibration success, save FAILURE" );
+        }
         ui->checkBox_showCalib->setChecked( true );
     }
     m_pComboBoxImageToView->setCurrentText( "Overlay" );
     UpdatePixmapTarget();
 
-    ui->statusBar->showMessage( QString( "Calibration: " ) + ( GC_OK == retVal ? "SUCCESS" : "FAILURE" ) );
+    if ( GC_OK == retVal )
+    {
+        ui->statusBar->showMessage( "Calibration: SUCCESS" );
+    }
 }
 void MainWindow::on_toolButton_calibVisionResult_json_browse_clicked()
 {
@@ -1414,7 +1422,7 @@ void MainWindow::on_pushButton_findLineCurrentImage_clicked()
             int ret = CalibExecutive::FormOctagonCalibJsonString( calibItems, params.calibControlString );
             if ( 0 != ret )
             {
-                ui->statusBar->showMessage( "Find line: FAILURE -- could not create stopsign calib control string" );
+                ui->statusBar->showMessage( "Find line: FAILURE -- could not create octagon calib control string" );
             }
         }
 
@@ -1446,6 +1454,7 @@ void MainWindow::on_pushButton_findLine_processFolder_clicked()
     string folder = ui->lineEdit_findLineTopFolder->text().toStdString();
     if ( '/' != folder[ folder.size() - 1 ] )
         folder += '/';
+    params.isOctagonCalib = true;
     params.calibFilepath = ui->lineEdit_calibVisionResult_json->text().toStdString();
     params.timeStampFormat = ui->lineEdit_timestampFormat->text().toStdString();
     params.timeStampType = ui->radioButton_dateTimeInFilename->isChecked() ? FROM_FILENAME : FROM_EXIF;

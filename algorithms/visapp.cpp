@@ -113,9 +113,14 @@ GC_STATUS VisApp::GetTempCacheResults( const std::string jsonFilepath, FindLineR
     }
     return retVal;
 }
-GC_STATUS VisApp::LoadCalib( const std::string calibJson, const cv::Mat &img )
+GC_STATUS VisApp::CalibLoad( const std::string calibJson, const cv::Mat &img )
 {
     GC_STATUS retVal = m_calibExec.Load( calibJson, img );
+    return retVal;
+}
+GC_STATUS VisApp::CalibSave( )
+{
+    GC_STATUS retVal = m_calibExec.CalibSaveOctagon();
     return retVal;
 }
 GC_STATUS VisApp::Calibrate( const string imgFilepath, const string jsonControl, const string resultImgPath,
@@ -205,7 +210,11 @@ GC_STATUS VisApp::GetIllumination( const std::string filepath, std::string &illu
     GC_STATUS retVal = m_metaData.GetExifData( filepath, "Illumination", illum_state );
     if ( GC_OK != retVal )
     {
-        illum_state = "N/A";
+        retVal = m_metaData.GetExifData( filepath, "Flash", illum_state );
+        if ( GC_OK != retVal )
+        {
+            illum_state = "N/A";
+        }
     }
     return retVal;
 }
@@ -262,171 +271,178 @@ GC_STATUS VisApp::AdjustSearchAreaForMovement( const std::vector< LineEnds > &se
 }
 GC_STATUS VisApp::CalcFindLine( const Mat &img, FindLineResult &result )
 {
-    GC_STATUS retVal = GC_OK;
-    try
+    GC_STATUS retVal = m_calibExec.isCalibrated() ? GC_OK : GC_ERR;
+    if ( GC_OK != retVal )
     {
-        char buffer[ 256 ];
-        snprintf( buffer, 256, "Timestamp: %s", result.timestamp.c_str() );
-        result.msgs.push_back( buffer );
+        result.msgs.push_back( "Find line failure: System not calibrated" );
+    }
+    else
+    {
+        try
+        {
+            char buffer[ 256 ];
+            snprintf( buffer, 256, "Timestamp: %s", result.timestamp.c_str() );
+            result.msgs.push_back( buffer );
 
-        vector< LineEnds > searchLinesAdj;
-        retVal = m_calibExec.MoveRefPoint( result.refMovePts.lftPixel, result.refMovePts.rgtPixel );
-        if ( GC_OK == retVal )
-        {
-            result.refMovePts.ctrPixel = Point2d( ( result.refMovePts.lftPixel.x + result.refMovePts.rgtPixel.x ) / 2.0,
-                                                  ( result.refMovePts.lftPixel.y + result.refMovePts.rgtPixel.y ) / 2.0 );
-            retVal = PixelToWorld( result.refMovePts );
-            if ( GC_OK != retVal )
+            vector< LineEnds > searchLinesAdj;
+            retVal = m_calibExec.MoveRefPoint( result.refMovePts.lftPixel, result.refMovePts.rgtPixel );
+            if ( GC_OK == retVal )
             {
-                result.msgs.push_back( "Could not calculate world coordinates for move reference points" );
-            }
-        }
-        else
-        {
-            result.refMovePts.setZero();
-            retVal = GC_OK;
-        }
-        if ( GC_OK == retVal )
-        {
-            retVal = m_calibExec.FindMoveTargets( result.foundMovePts );
-            if ( GC_OK != retVal )
-            {
-                result.msgs.push_back( "Could not calculate move offsets" );
+                result.refMovePts.ctrPixel = Point2d( ( result.refMovePts.lftPixel.x + result.refMovePts.rgtPixel.x ) / 2.0,
+                                                      ( result.refMovePts.lftPixel.y + result.refMovePts.rgtPixel.y ) / 2.0 );
+                retVal = PixelToWorld( result.refMovePts );
+                if ( GC_OK != retVal )
+                {
+                    result.msgs.push_back( "Could not calculate world coordinates for move reference points" );
+                }
             }
             else
             {
-                retVal = PixelToWorld( result.foundMovePts );
+                result.refMovePts.setZero();
+                retVal = GC_OK;
+            }
+            if ( GC_OK == retVal )
+            {
+                retVal = m_calibExec.FindMoveTargets( result.foundMovePts );
                 if ( GC_OK != retVal )
                 {
-                    result.msgs.push_back( "Could not calculate world coordinates for found move points" );
+                    result.msgs.push_back( "Could not calculate move offsets" );
                 }
                 else
                 {
-                    if ( 0.0 < result.refMovePts.lftPixel.x ||  0.0 < result.refMovePts.rgtPixel.y ||
-                         0.0 < result.refMovePts.lftPixel.x ||  0.0 < result.refMovePts.rgtPixel.y )
-                    {
-                        result.offsetMovePts.lftPixel.x = result.foundMovePts.lftPixel.x - result.refMovePts.lftPixel.x;
-                        result.offsetMovePts.lftPixel.y = result.foundMovePts.lftPixel.y - result.refMovePts.lftPixel.y;
-                        result.offsetMovePts.ctrPixel.x = result.foundMovePts.ctrPixel.x - result.refMovePts.ctrPixel.x;
-                        result.offsetMovePts.ctrPixel.y = result.foundMovePts.ctrPixel.y - result.refMovePts.ctrPixel.y;
-                        result.offsetMovePts.rgtPixel.x = result.foundMovePts.rgtPixel.x - result.refMovePts.rgtPixel.x;
-                        result.offsetMovePts.rgtPixel.y = result.foundMovePts.rgtPixel.y - result.refMovePts.rgtPixel.y;
-
-                        result.offsetMovePts.lftWorld.x = result.foundMovePts.lftWorld.x - result.refMovePts.lftWorld.x;
-                        result.offsetMovePts.lftWorld.y = result.foundMovePts.lftWorld.y - result.refMovePts.lftWorld.y;
-                        result.offsetMovePts.ctrWorld.x = result.foundMovePts.ctrWorld.x - result.refMovePts.ctrWorld.x;
-                        result.offsetMovePts.ctrWorld.y = result.foundMovePts.ctrWorld.y - result.refMovePts.ctrWorld.y;
-                        result.offsetMovePts.rgtWorld.x = result.foundMovePts.rgtWorld.x - result.refMovePts.rgtWorld.x;
-                        result.offsetMovePts.rgtWorld.y = result.foundMovePts.rgtWorld.y - result.refMovePts.rgtWorld.y;
-
-                        result.calibOffsets.calibAngle = atan2( result.refMovePts.rgtWorld.y - result.refMovePts.lftWorld.y,
-                                                                result.refMovePts.rgtWorld.x - result.refMovePts.lftWorld.x ) * ( 180.0 / CV_PI );
-                        result.calibOffsets.calibCenterPt = ( result.refMovePts.lftWorld + result.refMovePts.rgtWorld ) / 2.0;
-                        result.calibOffsets.offsetAngle = atan2( result.foundMovePts.rgtWorld.y - result.foundMovePts.lftWorld.y,
-                                                                 result.foundMovePts.rgtWorld.x - result.foundMovePts.lftWorld.x ) * ( 180.0 / CV_PI );
-                        result.calibOffsets.offsetCenterPt = ( result.foundMovePts.lftWorld + result.foundMovePts.rgtWorld ) / 2.0;
-                    }
-                    else
-                    {
-                        result.offsetMovePts.setZero();
-                        result.calibOffsets.clear();
-                    }
-
-                    retVal = AdjustSearchAreaForMovement( m_calibExec.SearchLines(), searchLinesAdj, result.offsetMovePts.ctrPixel );
-                    if ( GC_OK == retVal )
-                    {
-                        retVal = m_calibExec.SetAdjustedSearchROI( searchLinesAdj );
-                        retVal = GC_OK;
-                    }
-                }
-            }
-        }
-        else
-        {
-            result.findSuccess = false;
-            result.msgs.push_back( "Invalid target type for line find" );
-            FILE_LOG( logERROR ) << "[VisApp::CalcLine] Invalid target typefor line find";
-            retVal = GC_ERR;
-        }
-
-        if ( GC_OK == retVal )
-        {
-            retVal = m_findLine.Find( img, searchLinesAdj, result );
-            if ( GC_OK != retVal )
-            {
-                m_findLineResult = result;
-                result.msgs.push_back( "Could not perform find with provided image and calibration" );
-                FILE_LOG( logERROR ) << "[VisApp::CalcLine] Could not perform find with provided image and calibration";
-                retVal = GC_ERR;
-            }
-            else
-            {
-                if ( "StopSign" == m_calibExec.GetCalibType() )
-                {
-                    retVal = m_calibExec.AdjustOctagonForRotation( img.size(), result.calcLinePts, result.symbolToWaterLineAngle );
-                }
-                if ( GC_OK == retVal )
-                {
-                    result.msgs.push_back( "FindStatus: " + string( GC_OK == retVal ? "SUCCESS" : "FAIL" ) );
-
-                    retVal = PixelToWorld( result.calcLinePts );
+                    retVal = PixelToWorld( result.foundMovePts );
                     if ( GC_OK != retVal )
                     {
-                        result.msgs.push_back( "Could not calculate world coordinates for found line points" );
+                        result.msgs.push_back( "Could not calculate world coordinates for found move points" );
                     }
                     else
                     {
-                        // snprintf( buffer, 256, "%s/waterline angle diff: %.3f", m_calibExec.GetCalibType().c_str(), result.symbolToWaterLineAngle );
-                        snprintf( buffer, 256, "CalibType: %s", m_calibExec.GetCalibType().c_str() );
-                        result.msgs.push_back( buffer );
-
-                        result.calcLinePts.angleWorld = atan2( result.calcLinePts.rgtWorld.y - result.calcLinePts.lftWorld.y,
-                                                               result.calcLinePts.rgtWorld.x - result.calcLinePts.lftWorld.x ) * ( 180.0 / CV_PI );
-                        snprintf( buffer, 256, "Angle: %.3f", result.calcLinePts.angleWorld );
-                        result.msgs.push_back( buffer );
-
-                        snprintf( buffer, 256, "Level: %.3f", result.calcLinePts.ctrWorld.y );
-                        result.msgs.push_back( buffer );
-
-                        sprintf( buffer, "Adjust: %.3f", result.offsetMovePts.ctrWorld.y );
-                        result.msgs.push_back( buffer );
-
-                        result.waterLevelAdjusted.x = result.calcLinePts.ctrWorld.x + result.offsetMovePts.ctrWorld.x;
-                        result.waterLevelAdjusted.y = result.calcLinePts.ctrWorld.y + result.offsetMovePts.ctrWorld.y;
-
-                        Point2d reprojectPt;
-                        retVal = WorldToPixel( result.calcLinePts.ctrWorld, reprojectPt );
-                        if ( GC_OK == retVal )
+                        if ( 0.0 < result.refMovePts.lftPixel.x ||  0.0 < result.refMovePts.rgtPixel.y ||
+                             0.0 < result.refMovePts.lftPixel.x ||  0.0 < result.refMovePts.rgtPixel.y )
                         {
-                            result.calibReprojectOffset_x = result.calcLinePts.ctrPixel.x - reprojectPt.x;
-                            result.calibReprojectOffset_y = result.calcLinePts.ctrPixel.y - reprojectPt.y;
-                            double dist = sqrt( pow( result.calcLinePts.ctrPixel.x - reprojectPt.x, 2 ) +
-                                                pow( result.calcLinePts.ctrPixel.y - reprojectPt.y, 2 ) );
-                            result.calibReprojectOffset_dist = dist;
+                            result.offsetMovePts.lftPixel.x = result.foundMovePts.lftPixel.x - result.refMovePts.lftPixel.x;
+                            result.offsetMovePts.lftPixel.y = result.foundMovePts.lftPixel.y - result.refMovePts.lftPixel.y;
+                            result.offsetMovePts.ctrPixel.x = result.foundMovePts.ctrPixel.x - result.refMovePts.ctrPixel.x;
+                            result.offsetMovePts.ctrPixel.y = result.foundMovePts.ctrPixel.y - result.refMovePts.ctrPixel.y;
+                            result.offsetMovePts.rgtPixel.x = result.foundMovePts.rgtPixel.x - result.refMovePts.rgtPixel.x;
+                            result.offsetMovePts.rgtPixel.y = result.foundMovePts.rgtPixel.y - result.refMovePts.rgtPixel.y;
+
+                            result.offsetMovePts.lftWorld.x = result.foundMovePts.lftWorld.x - result.refMovePts.lftWorld.x;
+                            result.offsetMovePts.lftWorld.y = result.foundMovePts.lftWorld.y - result.refMovePts.lftWorld.y;
+                            result.offsetMovePts.ctrWorld.x = result.foundMovePts.ctrWorld.x - result.refMovePts.ctrWorld.x;
+                            result.offsetMovePts.ctrWorld.y = result.foundMovePts.ctrWorld.y - result.refMovePts.ctrWorld.y;
+                            result.offsetMovePts.rgtWorld.x = result.foundMovePts.rgtWorld.x - result.refMovePts.rgtWorld.x;
+                            result.offsetMovePts.rgtWorld.y = result.foundMovePts.rgtWorld.y - result.refMovePts.rgtWorld.y;
+
+                            result.calibOffsets.calibAngle = atan2( result.refMovePts.rgtWorld.y - result.refMovePts.lftWorld.y,
+                                                                    result.refMovePts.rgtWorld.x - result.refMovePts.lftWorld.x ) * ( 180.0 / CV_PI );
+                            result.calibOffsets.calibCenterPt = ( result.refMovePts.lftWorld + result.refMovePts.rgtWorld ) / 2.0;
+                            result.calibOffsets.offsetAngle = atan2( result.foundMovePts.rgtWorld.y - result.foundMovePts.lftWorld.y,
+                                                                     result.foundMovePts.rgtWorld.x - result.foundMovePts.lftWorld.x ) * ( 180.0 / CV_PI );
+                            result.calibOffsets.offsetCenterPt = ( result.foundMovePts.lftWorld + result.foundMovePts.rgtWorld ) / 2.0;
                         }
                         else
                         {
-                            result.calibReprojectOffset_x = -9999999.0;
-                            result.calibReprojectOffset_y = -9999999.0;
-                            result.calibReprojectOffset_dist = -9999999.0;;
+                            result.offsetMovePts.setZero();
+                            result.calibOffsets.clear();
                         }
-//                        snprintf( buffer, 256, "Reproject error:" );
-//                        result.msgs.push_back( buffer );
-//                        snprintf( buffer, 256, "   x=%0.3e", result.calibReprojectOffset_x );
-//                        result.msgs.push_back( buffer );
-//                        snprintf( buffer, 256, "   y=%0.3e", result.calibReprojectOffset_y );
-//                        result.msgs.push_back( buffer );
-//                        snprintf( buffer, 256, "   Euclid. dist=%0.3e", result.calibReprojectOffset_dist );
-//                        result.msgs.push_back( buffer );
+
+                        retVal = AdjustSearchAreaForMovement( m_calibExec.SearchLines(), searchLinesAdj, result.offsetMovePts.ctrPixel );
+                        if ( GC_OK == retVal )
+                        {
+                            retVal = m_calibExec.SetAdjustedSearchROI( searchLinesAdj );
+                            retVal = GC_OK;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                result.findSuccess = false;
+                result.msgs.push_back( "Invalid target type for line find" );
+                FILE_LOG( logERROR ) << "[VisApp::CalcLine] Invalid target typefor line find";
+                retVal = GC_ERR;
+            }
+
+            if ( GC_OK == retVal )
+            {
+                retVal = m_findLine.Find( img, searchLinesAdj, result );
+                if ( GC_OK != retVal )
+                {
+                    m_findLineResult = result;
+                    result.msgs.push_back( "Could not perform find with provided image and calibration" );
+                    FILE_LOG( logERROR ) << "[VisApp::CalcLine] Could not perform find with provided image and calibration";
+                    retVal = GC_ERR;
+                }
+                else
+                {
+                    if ( "Octagon" == m_calibExec.GetCalibType() )
+                    {
+                        retVal = m_calibExec.AdjustOctagonForRotation( img.size(), result.calcLinePts, result.symbolToWaterLineAngle );
+                    }
+                    if ( GC_OK == retVal )
+                    {
+                        result.msgs.push_back( "FindStatus: " + string( GC_OK == retVal ? "SUCCESS" : "FAIL" ) );
+
+                        retVal = PixelToWorld( result.calcLinePts );
+                        if ( GC_OK != retVal )
+                        {
+                            result.msgs.push_back( "Could not calculate world coordinates for found line points" );
+                        }
+                        else
+                        {
+                            // snprintf( buffer, 256, "%s/waterline angle diff: %.3f", m_calibExec.GetCalibType().c_str(), result.symbolToWaterLineAngle );
+                            snprintf( buffer, 256, "CalibType: %s", m_calibExec.GetCalibType().c_str() );
+                            result.msgs.push_back( buffer );
+
+                            result.calcLinePts.angleWorld = atan2( result.calcLinePts.rgtWorld.y - result.calcLinePts.lftWorld.y,
+                                                                   result.calcLinePts.rgtWorld.x - result.calcLinePts.lftWorld.x ) * ( 180.0 / CV_PI );
+                            snprintf( buffer, 256, "Angle: %.3f", result.calcLinePts.angleWorld );
+                            result.msgs.push_back( buffer );
+
+                            snprintf( buffer, 256, "Level: %.3f", result.calcLinePts.ctrWorld.y );
+                            result.msgs.push_back( buffer );
+
+                            sprintf( buffer, "Adjust: %.3f", result.offsetMovePts.ctrWorld.y );
+                            result.msgs.push_back( buffer );
+
+                            result.waterLevelAdjusted.x = result.calcLinePts.ctrWorld.x + result.offsetMovePts.ctrWorld.x;
+                            result.waterLevelAdjusted.y = result.calcLinePts.ctrWorld.y + result.offsetMovePts.ctrWorld.y;
+
+                            Point2d reprojectPt;
+                            retVal = WorldToPixel( result.calcLinePts.ctrWorld, reprojectPt );
+                            if ( GC_OK == retVal )
+                            {
+                                result.calibReprojectOffset_x = result.calcLinePts.ctrPixel.x - reprojectPt.x;
+                                result.calibReprojectOffset_y = result.calcLinePts.ctrPixel.y - reprojectPt.y;
+                                double dist = sqrt( pow( result.calcLinePts.ctrPixel.x - reprojectPt.x, 2 ) +
+                                                    pow( result.calcLinePts.ctrPixel.y - reprojectPt.y, 2 ) );
+                                result.calibReprojectOffset_dist = dist;
+                            }
+                            else
+                            {
+                                result.calibReprojectOffset_x = -9999999.0;
+                                result.calibReprojectOffset_y = -9999999.0;
+                                result.calibReprojectOffset_dist = -9999999.0;;
+                            }
+    //                        snprintf( buffer, 256, "Reproject error:" );
+    //                        result.msgs.push_back( buffer );
+    //                        snprintf( buffer, 256, "   x=%0.3e", result.calibReprojectOffset_x );
+    //                        result.msgs.push_back( buffer );
+    //                        snprintf( buffer, 256, "   y=%0.3e", result.calibReprojectOffset_y );
+    //                        result.msgs.push_back( buffer );
+    //                        snprintf( buffer, 256, "   Euclid. dist=%0.3e", result.calibReprojectOffset_dist );
+    //                        result.msgs.push_back( buffer );
+                        }
                     }
                 }
             }
         }
-    }
-    catch( Exception &e )
-    {
-        FILE_LOG( logERROR ) << "[VisApp::FindLine] " << e.what();
-        retVal = GC_EXCEPT;
+        catch( Exception &e )
+        {
+            FILE_LOG( logERROR ) << "[VisApp::FindLine] " << e.what();
+            retVal = GC_EXCEPT;
+        }
     }
 
     return retVal;
@@ -436,7 +452,7 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params )
     GC_STATUS retVal = CalcLine( params, m_findLineResult );
     return retVal;
 }
-GC_STATUS VisApp::CalcLine( const Mat &img, const string timestamp, const bool isStopSign )
+GC_STATUS VisApp::CalcLine( const Mat &img, const string timestamp, const bool isOctagon )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -452,7 +468,7 @@ GC_STATUS VisApp::CalcLine( const Mat &img, const string timestamp, const bool i
         {
             result.timestamp = timestamp;
 
-            if ( isStopSign )
+            if ( isOctagon )
             {
                 string err_msg;
                 double rmseDist, rmseX, rmseY;
@@ -488,9 +504,9 @@ GC_STATUS VisApp::CalcLine( const Mat &img, const string timestamp, const bool i
 
     return retVal;
 }
-GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result, string &resultJson, const bool noCalibSav )
+GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result, string &resultJson )
 {
-    GC_STATUS retVal = CalcLine( params, result, noCalibSav );
+    GC_STATUS retVal = CalcLine( params, result );
     try
     {
         stringstream ss;
@@ -568,7 +584,7 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result,
 
     return retVal;
 }
-GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result, const bool noCalibSave )
+GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -626,7 +642,7 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result,
                     if ( params.isOctagonCalib || ( params.calibFilepath != m_calibFilepath && !params.isOctagonCalib ) )
                     {
                         Mat noImg = Mat();
-                        retVal = m_calibExec.Load( params.calibFilepath, params.isOctagonCalib ? img : noImg, params.isOctagonCalib && noCalibSave ? true : false );
+                        retVal = m_calibExec.Load( params.calibFilepath, params.isOctagonCalib ? img : noImg );
                         if ( GC_OK != retVal )
                         {
                             result.calibSuccess = false;
@@ -806,7 +822,7 @@ GC_STATUS VisApp::WriteFindlineResultToCSV( const std::string resultCSV, const s
                 csvFile << "waterLevelAdjusted,";
                 csvFile << "xRMSE, yRMSE, EuclidDistRMSE,";
 
-                csvFile << "waterLine-stopSign-angle-diff,";
+                csvFile << "waterLine-octagon-angle-diff,";
                 csvFile << "calcLinePts-angle,";
                 csvFile << "calcLinePts-lftPixel-x,"; csvFile << "calcLinePts-lftPixel-y,";
                 csvFile << "calcLinePts-ctrPixel-x,"; csvFile << "calcLinePts-ctrPixel-y,";

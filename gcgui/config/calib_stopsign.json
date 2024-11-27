@@ -3,7 +3,7 @@
   "imageWidth":2304,
   "imageHeight":1296,
   "facetLength":0.599,
-  "zeroOffset":2,
+  "zeroOffset":3.5,
   "PixelToWorld": 
   {
     "points": [
@@ -187,5 +187,5 @@
       { "topX": 1239, "topY": 800, "botX": 1224, "botY": 1135 },
       { "topX": 1239, "topY": 800, "botX": 1224, "botY": 1135 }
   ],
-  "control_json": "{\"calibType\": \"Octagon\", \"facetLength\": 0.599000, \"zeroOffset\": 2.000000, \"moveSearchROIGrowPercent\": 100.000000, \"drawCalib\": 0, \"drawMoveSearchROIs\": 0, \"drawWaterLineSearchROI\": 0, \"targetRoi_x\": 978, \"targetRoi_y\": 446, \"targetRoi_width\": 360, \"targetRoi_height\": 355, \"searchPoly_lftTop_x\": 1083, \"searchPoly_lftTop_y\": 790, \"searchPoly_rgtTop_x\": 1239, \"searchPoly_rgtTop_y\": 800, \"searchPoly_lftBot_x\": 1224, \"searchPoly_lftBot_y\": 1135, \"searchPoly_rgtBot_x\": 1066, \"searchPoly_rgtBot_y\": 1127, \"calibResult_json\": \"/media/kchapman/Elements/Projects/GRIME2/gcgui/config/calib_stopsign.json\"}"
+  "control_json": "{\"calibType\": \"Octagon\", \"facetLength\": 0.599000, \"zeroOffset\": 3.500000, \"drawCalib\": 0, \"drawWaterLineSearchROI\": 0, \"targetRoi_x\": 978, \"targetRoi_y\": 446, \"targetRoi_width\": 360, \"targetRoi_height\": 355, \"searchPoly_lftTop_x\": 1083, \"searchPoly_lftTop_y\": 790, \"searchPoly_rgtTop_x\": 1239, \"searchPoly_rgtTop_y\": 800, \"searchPoly_lftBot_x\": 1224, \"searchPoly_lftBot_y\": 1135, \"searchPoly_rgtBot_x\": 1066, \"searchPoly_rgtBot_y\": 1127, \"calibResult_json\": \"/media/kchapman/Elements/Projects/GRIME2/gcgui/config/calib_stopsign.json\"}"
 }

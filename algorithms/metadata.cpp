@@ -297,6 +297,19 @@ GC_STATUS MetaData::GetImageData( const string filepath, ExifFeatures &exifFeat 
                 {
                     exifFeat.isoSpeedRating = stoi( data );
                 }
+                retVal = GetExifData( filepath, "ISO", data );
+                if ( GC_OK == retVal )
+                {
+                    retVal = GetExifData( filepath, "Illumination", exifFeat.illumination );
+                    if ( GC_OK != retVal )
+                    {
+                        retVal = GetExifData( filepath, "Flash", exifFeat.illumination );
+                        if ( GC_OK != retVal )
+                        {
+                            exifFeat.illumination = "N/A";
+                        }
+                    }
+                }
                 else
                 {
                     allThere = false;

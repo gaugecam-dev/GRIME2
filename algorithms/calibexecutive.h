@@ -146,7 +146,9 @@ public:
     CalibExecutive();
 
     void clear();
-    GC_STATUS Load( const std::string jsonFilepath, const cv::Mat &img, const bool noSave = false );
+    bool isCalibrated() { return octagon.isCalibrated(); }
+    GC_STATUS Load( const std::string jsonFilepath, const cv::Mat &img );
+    GC_STATUS CalibSaveOctagon();
     GC_STATUS Calibrate( const cv::Mat &img, const std::string jsonParams,
                          double &rmseDist, double &rmseX, double &rmseY, std::string &err_msg );
     GC_STATUS Calibrate( const cv::Mat &img, const std::string jsonParams, cv::Mat &imgResult,
@@ -188,7 +190,7 @@ private:
     std::vector< LineEnds > nullSearchLines;    ///< Empty vector of search lines to be searched for the water line
     cv::Rect nullRect = cv::Rect( -1, -1, -1, -1 );
 
-    GC_STATUS CalibrateOctagon( const cv::Mat &img, const std::string &controlJson, std::string &err_msg, const bool noSave = false );
+    GC_STATUS CalibrateOctagon( const cv::Mat &img, const std::string &controlJson, std::string &err_msg );
 
     GC_STATUS FindMoveTargetsOctagon( FindPointSet &ptsFound );
     GC_STATUS MoveRefPointOctagon( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt );

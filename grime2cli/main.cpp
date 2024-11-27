@@ -38,7 +38,7 @@ namespace fs = std::filesystem;
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~ BOW-TIE ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // --calibrate --source "./config/2012_demo/06/NRmarshDN-12-06-30-10-30.jpg" --calib_json "./config/calib.json" --csv_file "./config/calibration_target_world_coordinates.csv" --result_image "/var/tmp/gaugecam/calib_result.png"
 // --create_calib bowtie --source "/media/kchapman/Elements/data/sunwater/2024_01_08_cal_images/002.jpg" --calib_json "/media/kchapman/Elements/data/sunwater/2024_01_08_cal_images/calib_002.json" --csv_file "/media/kchapman/Elements/data/sunwater/2024_01_08_cal_images/calibration_target_world_coordinates.csv" --result_image "/var/tmp/gaugecam/calib_result.png" --waterline_roi 810 270 1000 270 800 800 990 830 --calib_roi 600 200 614 678
-// --create_calib stopsign --source "/media/coffee_sig/KOLA_images/OneDrive_2_3-9-2024/config/bowtie_night.JPG" --calib_json "/media/coffee_sig/KOLA_images/OneDrive_2_3-9-2024/config/calib_002.json" --csv_file "/media/coffee_sig/KOLA_images/OneDrive_2_3-9-2024/config/calibration_target_world_coordinates.csv" --result_image "/var/tmp/gaugecam/calib_result.png" --waterline_roi 810 270 1000 270 800 800 990 830 --calib_roi 876 112 500 500
+// --create_calib octagon --source "/media/coffee_sig/KOLA_images/OneDrive_2_3-9-2024/config/bowtie_night.JPG" --calib_json "/media/coffee_sig/KOLA_images/OneDrive_2_3-9-2024/config/calib_002.json" --csv_file "/media/coffee_sig/KOLA_images/OneDrive_2_3-9-2024/config/calibration_target_world_coordinates.csv" --result_image "/var/tmp/gaugecam/calib_result.png" --waterline_roi 810 270 1000 270 800 800 990 830 --calib_roi 876 112 500 500
 // --find_line --timestamp_from_filename --timestamp_start_pos 10 --timestamp_format "yy-mm-dd-HH-MM" --source "./config/2012_demo/06/NRmarshDN-12-06-30-10-30.jpg" --calib_json "./config/calib.json" --result_image "/var/tmp/gaugecam/find_line_result.png"
 // --run_folder --timestamp_from_filename --timestamp_start_pos 10 --timestamp_format "yy-mm-dd-HH-MM" --source "./config/2012_demo/06/" --calib_json "./config/calib.json" --csv_file "/var/tmp/gaugecam/folder.csv" --result_folder "/var/tmp/gaugecam/"
 
@@ -155,7 +155,7 @@ GC_STATUS Calibrate( const Grime2CLIParams cliParams )
             }
         }
         // cout << fs::canonical( cliParams.calib_jsonPath ).string() << endl;
-        retVal = vis.LoadCalib( cliParams.calib_jsonPath, img );
+        retVal = vis.CalibLoad( cliParams.calib_jsonPath, img );
         if ( GC_OK == retVal && !cliParams.result_imagePath.empty() && !img.empty() )
         {
             cv::Mat calibOverlay;
@@ -209,7 +209,7 @@ GC_STATUS CreateCalibrate( const Grime2CLIParams cliParams )
             CalibJsonItems items( cliParams.calib_jsonPath, ( 0 > cliParams.calib_roi.x ? false : true ),
                                   cliParams.calib_roi, cliParams.facet_length, cliParams.zero_offset,
                                   cliParams.waterline_region );
-            if ( string::npos != cliParams.calib_type.find( "StopSign" ) )
+            if ( string::npos != cliParams.calib_type.find( "Octagon" ) )
             {
                 retVal = calibExec.FormOctagonCalibJsonString( items, jsonStr );
             }
@@ -224,15 +224,21 @@ GC_STATUS CreateCalibrate( const Grime2CLIParams cliParams )
                 {
                     calibExec.EnableAllOverlays();
                     retVal = calibExec.Calibrate( img, jsonStr, imgResult, rmseDist, rmseX, rmseY, err_msg, true );
-                    if ( GC_OK == retVal && !imgResult.empty() )
+                    bool bRet = cv::imwrite( cliParams.result_imagePath, imgResult );
+                    if ( !bRet )
                     {
-                        bool bRet = cv::imwrite( cliParams.result_imagePath, imgResult );
-                        if ( !bRet )
-                        {
-                            cout << "FAIL: Could not write calibration result image " << cliParams.result_imagePath;
-                            FILE_LOG( logERROR ) << "FAIL: Could not write calibration result image " << cliParams.src_imagePath;
-                            retVal = GC_ERR;
-                        }
+                        cout << "FAILURE: Could not write calibration result image " << cliParams.result_imagePath << endl;
+                        FILE_LOG( logERROR ) << "FAIL: Could not write calibration result image " << cliParams.src_imagePath;
+                        retVal = GC_ERR;
+                    }
+                }
+                if ( GC_OK == retVal )
+                {
+                    retVal = calibExec.CalibSaveOctagon();
+                    if ( GC_OK != retVal )
+                    {
+                        cout << "FAILURE: Calibration succeeded, but could not save result " << cliParams.calib_jsonPath << endl;
+                        FILE_LOG( logERROR ) << "FAILURE: Calibration succeeded, but could not save result " << cliParams.calib_jsonPath;
                     }
                 }
             }
@@ -331,7 +337,7 @@ GC_STATUS FindWaterLevel(const Grime2CLIParams cliParams )
     VisApp visApp;
     string resultJson;
     FindLineResult result;
-    GC_STATUS retVal = visApp.CalcLine( params, result, resultJson, cliParams.noCalibSave );
+    GC_STATUS retVal = visApp.CalcLine( params, result, resultJson );
     if ( cliParams.cache_result )
     {
         ofstream cache_file( TEMP_CACHE );
@@ -356,8 +362,7 @@ GC_STATUS CreateGIF( const Grime2CLIParams cliParams )
             ext = p.path().extension().string();
             std::transform( ext.begin(), ext.end(), ext.begin(),
                                []( unsigned char c ){ return std::tolower( c ); } );
-            if ( ext == ".png" || ext == ".jpg" ||
-                 ext == ".PNG" || ext == ".JPG" )
+            if ( ext == ".png" || ext == ".jpg" || ext == ".PNG" || ext == ".JPG" )
             {
                 images.push_back( p.path().string() );
             }

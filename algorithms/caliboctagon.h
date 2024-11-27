@@ -63,10 +63,11 @@ class CalibOctagon
 {
 public:
     CalibOctagon();
+    bool isCalibrated() { return model.validCalib; }
     GC_STATUS Load (const std::string jsonCalString );
     GC_STATUS Save( const std::string jsonCalFilepath );
     GC_STATUS CalcHomographies();
-    GC_STATUS Calibrate( const cv::Mat &img, const std::string &controlJson, std::string &err_msg );
+    GC_STATUS Calibrate( const cv::Mat &img, const std::string &controlJson, std::string &err_msg, const bool noSave = false );
     GC_STATUS AdjustOctagonForRotation( const cv::Size imgSize, const FindPointSet &calcLinePts, double &offsetAngle );
 
     GC_STATUS PixelToWorld( const cv::Point2d ptPixel, cv::Point2d &ptWorld );

@@ -14,7 +14,7 @@
    limitations under the License.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-/** \file stopsignsearch.h
+/** \file octagonsearch.h
  * @brief Template search to find the corners of a stop sign in an image
  *
  * \author Kenneth W. Chapman
