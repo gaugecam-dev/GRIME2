@@ -23,7 +23,7 @@
    </size>
   </property>
   <property name="windowTitle">
-   <string>GaugeCam GRIME2 v0.5.0.0 -- Octagon only</string>
+   <string>GaugeCam GRIME2 v0.5.0.1 -- Calibrate improved</string>
   </property>
   <property name="windowIcon">
    <iconset>
@@ -71,10 +71,10 @@
          <item>
           <spacer name="horizontalSpacer_12">
            <property name="orientation">
-            <enum>Qt::Horizontal</enum>
+            <enum>Qt::Orientation::Horizontal</enum>
            </property>
            <property name="sizeType">
-            <enum>QSizePolicy::Preferred</enum>
+            <enum>QSizePolicy::Policy::Preferred</enum>
            </property>
            <property name="sizeHint" stdset="0">
             <size>
@@ -139,10 +139,10 @@
          <item>
           <spacer name="horizontalSpacer_13">
            <property name="orientation">
-            <enum>Qt::Horizontal</enum>
+            <enum>Qt::Orientation::Horizontal</enum>
            </property>
            <property name="sizeType">
-            <enum>QSizePolicy::Preferred</enum>
+            <enum>QSizePolicy::Policy::Preferred</enum>
            </property>
            <property name="sizeHint" stdset="0">
             <size>
@@ -181,10 +181,10 @@
          <item>
           <spacer name="horizontalSpacer_7">
            <property name="orientation">
-            <enum>Qt::Horizontal</enum>
+            <enum>Qt::Orientation::Horizontal</enum>
            </property>
            <property name="sizeType">
-            <enum>QSizePolicy::Preferred</enum>
+            <enum>QSizePolicy::Policy::Preferred</enum>
            </property>
            <property name="sizeHint" stdset="0">
             <size>
@@ -280,7 +280,7 @@
          </sizepolicy>
         </property>
         <property name="orientation">
-         <enum>Qt::Horizontal</enum>
+         <enum>Qt::Orientation::Horizontal</enum>
         </property>
         <widget class="QWidget" name="widget_2" native="true">
          <property name="sizePolicy">
@@ -325,8 +325,8 @@
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>943</width>
-                 <height>545</height>
+                 <width>977</width>
+                 <height>562</height>
                 </rect>
                </property>
               </widget>
@@ -411,10 +411,10 @@
                   <item>
                    <spacer name="horizontalSpacer_2">
                     <property name="orientation">
-                     <enum>Qt::Horizontal</enum>
+                     <enum>Qt::Orientation::Horizontal</enum>
                     </property>
                     <property name="sizeType">
-                     <enum>QSizePolicy::Preferred</enum>
+                     <enum>QSizePolicy::Policy::Preferred</enum>
                     </property>
                     <property name="sizeHint" stdset="0">
                      <size>
@@ -455,17 +455,17 @@
                      </size>
                     </property>
                     <property name="toolButtonStyle">
-                     <enum>Qt::ToolButtonIconOnly</enum>
+                     <enum>Qt::ToolButtonStyle::ToolButtonIconOnly</enum>
                     </property>
                    </widget>
                   </item>
                   <item>
                    <spacer name="horizontalSpacer_8">
                     <property name="orientation">
-                     <enum>Qt::Horizontal</enum>
+                     <enum>Qt::Orientation::Horizontal</enum>
                     </property>
                     <property name="sizeType">
-                     <enum>QSizePolicy::Preferred</enum>
+                     <enum>QSizePolicy::Policy::Preferred</enum>
                     </property>
                     <property name="sizeHint" stdset="0">
                      <size>
@@ -559,7 +559,7 @@
                  <number>100</number>
                 </property>
                 <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
+                 <enum>Qt::Orientation::Horizontal</enum>
                 </property>
                </widget>
               </item>
@@ -606,10 +606,10 @@
                </size>
               </property>
               <property name="tabPosition">
-               <enum>QTabWidget::South</enum>
+               <enum>QTabWidget::TabPosition::South</enum>
               </property>
               <property name="currentIndex">
-               <number>2</number>
+               <number>3</number>
               </property>
               <widget class="QWidget" name="tab_mainRunFolder">
                <property name="toolTipDuration">
@@ -686,7 +686,7 @@
                       <string>frame delay (ms)</string>
                      </property>
                      <property name="alignment">
-                      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
                      </property>
                     </widget>
                    </item>
@@ -718,7 +718,7 @@
                       <string>scale</string>
                      </property>
                      <property name="alignment">
-                      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
                      </property>
                     </widget>
                    </item>
@@ -808,16 +808,16 @@
                         </font>
                        </property>
                        <property name="frameShape">
-                        <enum>QFrame::Panel</enum>
+                        <enum>QFrame::Shape::Panel</enum>
                        </property>
                        <property name="frameShadow">
-                        <enum>QFrame::Sunken</enum>
+                        <enum>QFrame::Shadow::Sunken</enum>
                        </property>
                        <property name="text">
                         <string>Whole image</string>
                        </property>
                        <property name="alignment">
-                        <set>Qt::AlignCenter</set>
+                        <set>Qt::AlignmentFlag::AlignCenter</set>
                        </property>
                       </widget>
                      </item>
@@ -921,10 +921,10 @@
                      <item>
                       <spacer name="horizontalSpacer_14">
                        <property name="orientation">
-                        <enum>Qt::Horizontal</enum>
+                        <enum>Qt::Orientation::Horizontal</enum>
                        </property>
                        <property name="sizeType">
-                        <enum>QSizePolicy::Preferred</enum>
+                        <enum>QSizePolicy::Policy::Preferred</enum>
                        </property>
                        <property name="sizeHint" stdset="0">
                         <size>
@@ -946,7 +946,7 @@
                         <string>Facet length</string>
                        </property>
                        <property name="alignment">
-                        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                        <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
                        </property>
                       </widget>
                      </item>
@@ -987,7 +987,7 @@
                      <item>
                       <spacer name="horizontalSpacer_15">
                        <property name="orientation">
-                        <enum>Qt::Horizontal</enum>
+                        <enum>Qt::Orientation::Horizontal</enum>
                        </property>
                        <property name="sizeHint" stdset="0">
                         <size>
@@ -1014,7 +1014,7 @@
                         <string>Waterline zero level to bottom-left octagon corner</string>
                        </property>
                        <property name="alignment">
-                        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                        <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
                        </property>
                       </widget>
                      </item>
@@ -1117,10 +1117,10 @@
                   <item>
                    <spacer name="horizontalSpacer_9">
                     <property name="orientation">
-                     <enum>Qt::Horizontal</enum>
+                     <enum>Qt::Orientation::Horizontal</enum>
                     </property>
                     <property name="sizeType">
-                     <enum>QSizePolicy::Preferred</enum>
+                     <enum>QSizePolicy::Policy::Preferred</enum>
                     </property>
                     <property name="sizeHint" stdset="0">
                      <size>
@@ -1143,10 +1143,10 @@
                   <item>
                    <spacer name="horizontalSpacer_17">
                     <property name="orientation">
-                     <enum>Qt::Horizontal</enum>
+                     <enum>Qt::Orientation::Horizontal</enum>
                     </property>
                     <property name="sizeType">
-                     <enum>QSizePolicy::Preferred</enum>
+                     <enum>QSizePolicy::Policy::Preferred</enum>
                     </property>
                     <property name="sizeHint" stdset="0">
                      <size>
@@ -1174,7 +1174,7 @@
                 <item>
                  <spacer name="verticalSpacer_4">
                   <property name="orientation">
-                   <enum>Qt::Vertical</enum>
+                   <enum>Qt::Orientation::Vertical</enum>
                   </property>
                   <property name="sizeHint" stdset="0">
                    <size>
@@ -1378,10 +1378,10 @@
                      <item>
                       <spacer name="horizontalSpacer_3">
                        <property name="orientation">
-                        <enum>Qt::Horizontal</enum>
+                        <enum>Qt::Orientation::Horizontal</enum>
                        </property>
                        <property name="sizeType">
-                        <enum>QSizePolicy::MinimumExpanding</enum>
+                        <enum>QSizePolicy::Policy::MinimumExpanding</enum>
                        </property>
                        <property name="sizeHint" stdset="0">
                         <size>
@@ -1403,7 +1403,7 @@
                         <string>Folder of</string>
                        </property>
                        <property name="alignment">
-                        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                        <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
                        </property>
                       </widget>
                      </item>
@@ -1556,10 +1556,10 @@
                      <item>
                       <spacer name="horizontalSpacer_5">
                        <property name="orientation">
-                        <enum>Qt::Horizontal</enum>
+                        <enum>Qt::Orientation::Horizontal</enum>
                        </property>
                        <property name="sizeType">
-                        <enum>QSizePolicy::MinimumExpanding</enum>
+                        <enum>QSizePolicy::Policy::MinimumExpanding</enum>
                        </property>
                        <property name="sizeHint" stdset="0">
                         <size>
@@ -1584,7 +1584,7 @@
                         <string>String start pos</string>
                        </property>
                        <property name="alignment">
-                        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                        <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
                        </property>
                       </widget>
                      </item>
@@ -1634,10 +1634,10 @@
                   <item>
                    <spacer name="horizontalSpacer_4">
                     <property name="orientation">
-                     <enum>Qt::Horizontal</enum>
+                     <enum>Qt::Orientation::Horizontal</enum>
                     </property>
                     <property name="sizeType">
-                     <enum>QSizePolicy::MinimumExpanding</enum>
+                     <enum>QSizePolicy::Policy::MinimumExpanding</enum>
                     </property>
                     <property name="sizeHint" stdset="0">
                      <size>
@@ -1684,7 +1684,7 @@
                    </size>
                   </property>
                   <property name="lineWrapMode">
-                   <enum>QTextEdit::WidgetWidth</enum>
+                   <enum>QTextEdit::LineWrapMode::WidgetWidth</enum>
                   </property>
                   <property name="html">
                    <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
@@ -1693,10 +1693,10 @@ p, li { white-space: pre-wrap; }
 hr { height: 1px; border-width: 0; }
 li.unchecked::marker { content: &quot;\2610&quot;; }
 li.checked::marker { content: &quot;\2612&quot;; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Noto Sans'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
 &lt;p align=&quot;center&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'MS Shell Dlg 2'; font-size:12pt; font-weight:600;&quot;&gt;GaugeCam&lt;/span&gt;&lt;/p&gt;
 &lt;p align=&quot;center&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'MS Shell Dlg 2'; font-size:16pt; font-weight:600;&quot;&gt;GRIME2&lt;/span&gt;&lt;/p&gt;
-&lt;p align=&quot;center&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'MS Shell Dlg 2'; font-size:10pt; font-weight:600;&quot;&gt;Version 0.5.0.0&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;p align=&quot;center&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'MS Shell Dlg 2'; font-size:10pt; font-weight:600;&quot;&gt;Version 0.5.0.1&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                   </property>
                  </widget>
                 </item>
@@ -1709,7 +1709,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
                    </sizepolicy>
                   </property>
                   <property name="tabPosition">
-                   <enum>QTabWidget::South</enum>
+                   <enum>QTabWidget::TabPosition::South</enum>
                   </property>
                   <property name="currentIndex">
                    <number>0</number>
@@ -1734,7 +1734,7 @@ p, li { white-space: pre-wrap; }
 hr { height: 1px; border-width: 0; }
 li.unchecked::marker { content: &quot;\2610&quot;; }
 li.checked::marker { content: &quot;\2612&quot;; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Noto Sans'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
 &lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-family:'MS Shell Dlg 2'; font-size:8.25pt;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                       </property>
                      </widget>
@@ -1749,7 +1749,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
                     <item>
                      <spacer name="verticalSpacer_9">
                       <property name="orientation">
-                       <enum>Qt::Vertical</enum>
+                       <enum>Qt::Orientation::Vertical</enum>
                       </property>
                       <property name="sizeHint" stdset="0">
                        <size>
@@ -1764,10 +1764,10 @@ li.checked::marker { content: &quot;\2612&quot;; }
                       <item>
                        <spacer name="horizontalSpacer_10">
                         <property name="orientation">
-                         <enum>Qt::Horizontal</enum>
+                         <enum>Qt::Orientation::Horizontal</enum>
                         </property>
                         <property name="sizeType">
-                         <enum>QSizePolicy::MinimumExpanding</enum>
+                         <enum>QSizePolicy::Policy::MinimumExpanding</enum>
                         </property>
                         <property name="sizeHint" stdset="0">
                          <size>
@@ -1802,7 +1802,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
                        </sizepolicy>
                       </property>
                       <property name="lineWrapMode">
-                       <enum>QTextEdit::NoWrap</enum>
+                       <enum>QTextEdit::LineWrapMode::NoWrap</enum>
                       </property>
                       <property name="html">
                        <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
@@ -1811,8 +1811,8 @@ p, li { white-space: pre-wrap; }
 hr { height: 1px; border-width: 0; }
 li.unchecked::marker { content: &quot;\2610&quot;; }
 li.checked::marker { content: &quot;\2612&quot;; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Noto Sans'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-family:'Noto Sans';&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                       </property>
                      </widget>
                     </item>
@@ -1826,7 +1826,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
                     <item>
                      <widget class="QTextBrowser" name="textBrowser_about">
                       <property name="lineWrapMode">
-                       <enum>QTextEdit::NoWrap</enum>
+                       <enum>QTextEdit::LineWrapMode::NoWrap</enum>
                       </property>
                       <property name="html">
                        <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
@@ -1835,8 +1835,8 @@ p, li { white-space: pre-wrap; }
 hr { height: 1px; border-width: 0; }
 li.unchecked::marker { content: &quot;\2610&quot;; }
 li.checked::marker { content: &quot;\2612&quot;; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Noto Sans'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Segoe UI'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-family:'Noto Sans';&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                       </property>
                      </widget>
                     </item>
