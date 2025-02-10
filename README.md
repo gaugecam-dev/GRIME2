@@ -50,6 +50,7 @@ analysis.
 
 <a name="usage"></a>
 ## 2. Usage
+For instructions and documentation, see our Wiki (https://github.com/gaugecam-dev/GRIME2/wiki).
 
 <a name="develop"></a>
 ## 3. Development
