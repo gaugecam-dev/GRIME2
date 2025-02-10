@@ -297,6 +297,14 @@ GC_STATUS CalibOctagon::Calibrate( const cv::Mat &img, const std::string &contro
                         circle( color, model.waterlineSearchCorners[ 3 ], 11, Scalar( 0, 255, 0 ), 3 );
                         imwrite( "/var/tmp/gaugecam/roi_pts.png", color );
 #endif
+                        // int x_offset = std::round( oldModel.center.x - model.center.x );
+                        // int y_offset = std::round( oldModel.center.y - model.center.y );
+                        // for ( size_t i = 0; i < model.waterlineSearchCorners.size(); ++i )
+                        // {
+                        //     model.waterlineSearchCorners[ i ].x += x_offset;
+                        //     model.waterlineSearchCorners[ i ].y += y_offset;
+                        // }
+
                         SearchLines searchLines;
                         retVal = searchLines.CalcSearchLines( model.waterlineSearchCorners, model.searchLineSet );
                         if ( GC_OK != retVal )
@@ -345,11 +353,11 @@ GC_STATUS CalibOctagon::Calibrate( const cv::Mat &img, const std::string &contro
             {
                 model.oldPixelPoints = model.pixelPoints;
             }
-            if ( ! noSave )
-            {
-                moveRefLftPt = model.pixelPoints[ 5 ];
-                moveRefRgtPt = model.pixelPoints[ 4 ];
-            }
+            // if ( !noSave )
+            // {
+            //     moveRefLftPt = model.pixelPoints[ 5 ];
+            //     moveRefRgtPt = model.pixelPoints[ 4 ];
+            // }
         }
         else
         {

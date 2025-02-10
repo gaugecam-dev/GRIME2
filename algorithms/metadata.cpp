@@ -306,7 +306,11 @@ GC_STATUS MetaData::GetImageData( const string filepath, ExifFeatures &exifFeat 
                         retVal = GetExifData( filepath, "Flash", exifFeat.illumination );
                         if ( GC_OK != retVal )
                         {
-                            exifFeat.illumination = "N/A";
+                            retVal = GetExifData( filepath, "Scene Capture Type", exifFeat.illumination );
+                            if ( GC_OK != retVal )
+                            {
+                                exifFeat.illumination = "N/A";
+                            }
                         }
                     }
                 }
