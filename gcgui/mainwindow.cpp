@@ -14,9 +14,7 @@
    limitations under the License.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#include <list>
 #include <string>
-#include <iostream>
 #include <QDir>
 #include <QSettings>
 #include <QMouseEvent>
@@ -234,20 +232,20 @@ void MainWindow::createActions()
 void MainWindow::createConnections()
 {
     connect( m_pComboBoxImageToView,  &QComboBox::currentTextChanged, this, &MainWindow::UpdatePixmapTarget );
-    connect( ui->checkBox_showCalib, &QCheckBox::stateChanged, this, &MainWindow::UpdatePixmapTarget );
+    connect( ui->checkBox_showCalib, &QCheckBox::checkStateChanged, this, &MainWindow::UpdatePixmapTarget );
     connect( ui->radioButton_calibDisplayScale, &QRadioButton::clicked, this, &MainWindow::UpdatePixmapTarget );
     connect( ui->radioButton_calibDisplayGrid, &QRadioButton::clicked, this, &MainWindow::UpdatePixmapTarget );
-    connect( ui->checkBox_showFindLine, &QCheckBox::stateChanged, this, &MainWindow::UpdatePixmapTarget );
-    connect( ui->checkBox_showRowSums, &QCheckBox::stateChanged, this, &MainWindow::UpdatePixmapTarget );
-    connect( ui->checkBox_showDerivOne, &QCheckBox::stateChanged, this, &MainWindow::UpdatePixmapTarget );
-    connect( ui->checkBox_showDerivTwo, &QCheckBox::stateChanged, this, &MainWindow::UpdatePixmapTarget );
-    connect( ui->checkBox_showRANSAC, &QCheckBox::stateChanged, this, &MainWindow::UpdatePixmapTarget );
-    connect( ui->checkBox_showMoveROIs, &QCheckBox::stateChanged, this, &MainWindow::UpdatePixmapTarget );
-    connect( ui->checkBox_showMoveFind, &QCheckBox::stateChanged, this, &MainWindow::UpdatePixmapTarget );
-    connect( ui->checkBox_showSearchROI, &QCheckBox::stateChanged, this, &MainWindow::UpdatePixmapTarget );
-    connect( ui->checkBox_showTargetROI, &QCheckBox::stateChanged, this, &MainWindow::UpdatePixmapTarget );
-    connect( ui->checkBox_createFindLine_csvResultsFile, &QCheckBox::stateChanged, this, &MainWindow::UpdateGUIEnables );
-    connect( ui->checkBox_createFindLine_annotatedResults, &QCheckBox::stateChanged, this, &MainWindow::UpdateGUIEnables );
+    connect( ui->checkBox_showFindLine, &QCheckBox::checkStateChanged, this, &MainWindow::UpdatePixmapTarget );
+    connect( ui->checkBox_showRowSums, &QCheckBox::checkStateChanged, this, &MainWindow::UpdatePixmapTarget );
+    connect( ui->checkBox_showDerivOne, &QCheckBox::checkStateChanged, this, &MainWindow::UpdatePixmapTarget );
+    connect( ui->checkBox_showDerivTwo, &QCheckBox::checkStateChanged, this, &MainWindow::UpdatePixmapTarget );
+    connect( ui->checkBox_showRANSAC, &QCheckBox::checkStateChanged, this, &MainWindow::UpdatePixmapTarget );
+    connect( ui->checkBox_showMoveROIs, &QCheckBox::checkStateChanged, this, &MainWindow::UpdatePixmapTarget );
+    connect( ui->checkBox_showMoveFind, &QCheckBox::checkStateChanged, this, &MainWindow::UpdatePixmapTarget );
+    connect( ui->checkBox_showSearchROI, &QCheckBox::checkStateChanged, this, &MainWindow::UpdatePixmapTarget );
+    connect( ui->checkBox_showTargetROI, &QCheckBox::checkStateChanged, this, &MainWindow::UpdatePixmapTarget );
+    connect( ui->checkBox_createFindLine_csvResultsFile, &QCheckBox::checkStateChanged, this, &MainWindow::UpdateGUIEnables );
+    connect( ui->checkBox_createFindLine_annotatedResults, &QCheckBox::checkStateChanged, this, &MainWindow::UpdateGUIEnables );
     connect( ui->checkBox_calibSearchROI, &QRadioButton::toggled, this, &MainWindow::UpdateCalibSearchRegion );
     connect( ui->actionToggleControls, &QAction::toggled, this, &MainWindow::UpdateGUIEnables );
 
@@ -1468,18 +1466,18 @@ void MainWindow::on_pushButton_findLine_processFolder_clicked()
     vector< string > headings = { "filename", "timestamp", "water level" };
     InitTable( headings );
 
-    int drawTypes = FINDLINE;
-    drawTypes += ui->checkBox_showRowSums->isChecked() ? DIAG_ROWSUMS : 0;
-    drawTypes += ui->checkBox_showDerivOne->isChecked() ? FINDLINE_1ST_DERIV : 0;
-    drawTypes += ui->checkBox_showDerivTwo->isChecked() ? FINDLINE_2ND_DERIV : 0;
-    drawTypes += ui->checkBox_showRANSAC->isChecked() ? RANSAC_POINTS : 0;
-    drawTypes += ui->checkBox_showMoveFind->isChecked() ? MOVE_FIND : 0;
-    drawTypes += ui->checkBox_showTargetROI->isChecked() ? TARGET_ROI : 0;
-    drawTypes += ui->checkBox_showSearchROI->isChecked() ? SEARCH_ROI : 0;
-    if ( ui->checkBox_showCalib->isChecked() )
-    {
-        drawTypes += ui->radioButton_calibDisplayGrid->isChecked() ? CALIB_GRID : CALIB_SCALE;
-    }
+    // int drawTypes = FINDLINE;
+    // drawTypes += ui->checkBox_showRowSums->isChecked() ? DIAG_ROWSUMS : 0;
+    // drawTypes += ui->checkBox_showDerivOne->isChecked() ? FINDLINE_1ST_DERIV : 0;
+    // drawTypes += ui->checkBox_showDerivTwo->isChecked() ? FINDLINE_2ND_DERIV : 0;
+    // drawTypes += ui->checkBox_showRANSAC->isChecked() ? RANSAC_POINTS : 0;
+    // drawTypes += ui->checkBox_showMoveFind->isChecked() ? MOVE_FIND : 0;
+    // drawTypes += ui->checkBox_showTargetROI->isChecked() ? TARGET_ROI : 0;
+    // drawTypes += ui->checkBox_showSearchROI->isChecked() ? SEARCH_ROI : 0;
+    // if ( ui->checkBox_showCalib->isChecked() )
+    // {
+    //     drawTypes += ui->radioButton_calibDisplayGrid->isChecked() ? CALIB_GRID : CALIB_SCALE;
+    // }
 
     GC_STATUS retVal = m_visApp.CalcLinesInFolder( folder, params, ui->radioButton_folderOfImages->isChecked() );
 
