@@ -150,7 +150,6 @@ Section "GaugeCam Files" grime2
   ; File "${INSTALLFILEPATH_BOOST}\boost_system-vc141-mt-x64-1_78.dll"
   ; File "${INSTALLFILEPATH_BOOST}\boost_chrono-vc141-mt-x64-1_78.dll"
   ; File "${INSTALLFILEPATH_BOOST}\boost_date_time-vc141-mt-x64-1_78.dll"
-  ; File "${INSTALLFILEPATH_BOOST}\boost_filesystem-vc141-mt-x64-1_78.dll"
   ; File "${INSTALLFILEPATH_FFMPEG}\ffmpeg.exe"
 
   ; add shortcuts

@@ -24,9 +24,9 @@
 
 #ifdef DEBUG_OCTAGON_TEMPL
 #undef DEBUG_OCTAGON_TEMPL
-#include <boost/filesystem.hpp>
-using namespace boost;
-namespace fs = filesystem;
+#include <filesystem>
+
+namespace fs = std::filesystem;
 #ifdef _WIN32
 static const char DEBUG_FOLDER[] = "c:/gaugecam/";
 #else

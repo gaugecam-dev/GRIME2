@@ -2,7 +2,7 @@ PROG = grime2cli
 CC = g++
 CPPFLAGS = -c -pipe -g -std=gnu++17 -Wall -Wextra -fPIC -DBOOST_ALL_NO_LIB -DBOOST_BIND_GLOBAL_PLACEHOLDERS -I../../GRIME2/grime2cli -I. -I/usr/local/include -I/usr/local/include/opencv4
 # CPPFLAGS = -c -pipe -O2 -std=gnu++17 -Wall -Wextra -fPIC -I. -I.. -I../../algorithms -I/usr/include/opencv4 -I/usr/include -I/usr/local/include
-LDFLAGS = -Wl,-O1 -L/usr/local/lib -lopencv_core -lopencv_imgproc -lopencv_imgcodecs -lopencv_calib3d -lopencv_videoio -lopencv_video -lboost_date_time -lboost_system -lboost_filesystem -lboost_chrono
+LDFLAGS = -Wl,-O1 -L/usr/local/lib -lopencv_core -lopencv_imgproc -lopencv_imgcodecs -lopencv_calib3d -lopencv_videoio -lopencv_video -lboost_date_time -lboost_system -lboost_chrono
 OBJS = animate.o calibbowtie.o calibexecutive.o caliboctagon.o findcalibgrid.o findline.o gifanim.o metadata.o searchlines.o octagonsearch.o visapp.o main.o
 
 $(PROG) : $(OBJS)

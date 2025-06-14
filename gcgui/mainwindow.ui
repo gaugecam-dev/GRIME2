@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1497</width>
-    <height>949</height>
+    <width>1498</width>
+    <height>979</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -223,6 +223,9 @@
            <property name="text">
             <string>Calibration</string>
            </property>
+           <property name="checked">
+            <bool>true</bool>
+           </property>
           </widget>
          </item>
          <item>
@@ -325,8 +328,8 @@
                 <rect>
                  <x>0</x>
                  <y>0</y>
-                 <width>942</width>
-                 <height>545</height>
+                 <width>929</width>
+                 <height>575</height>
                 </rect>
                </property>
               </widget>
@@ -337,7 +340,7 @@
               <item>
                <widget class="QTextEdit" name="textEdit_msgs">
                 <property name="sizePolicy">
-                 <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                 <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
                   <horstretch>1</horstretch>
                   <verstretch>0</verstretch>
                  </sizepolicy>
@@ -358,16 +361,41 @@
               </item>
               <item>
                <layout class="QVBoxLayout" name="verticalLayout_10">
+                <property name="spacing">
+                 <number>0</number>
+                </property>
                 <item>
-                 <widget class="QPushButton" name="pushButton_findLineCurrentImage">
+                 <widget class="QLabel" name="label_12">
                   <property name="sizePolicy">
-                   <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                   <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
                     <horstretch>0</horstretch>
                     <verstretch>0</verstretch>
                    </sizepolicy>
                   </property>
                   <property name="toolTip">
-                   <string>Find water level in current image</string>
+                   <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;When you click Find line here or in the main window, the calib file is updated with the current waterline search ROI positions. This “locks in” the relative locations of the waterline and calib ROI positions. Then, when images are processed, the waterline ROI is anchored to the calib ROI. The end result is a robust pair of ROIs that accommodate significant shifts in field of view. &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                  </property>
+                  <property name="text">
+                   <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Test calibration and line find setup on the current image.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                  </property>
+                  <property name="textFormat">
+                   <enum>Qt::TextFormat::MarkdownText</enum>
+                  </property>
+                  <property name="wordWrap">
+                   <bool>true</bool>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QPushButton" name="pushButton_findLineCurrentImage">
+                  <property name="sizePolicy">
+                   <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+                    <horstretch>0</horstretch>
+                    <verstretch>0</verstretch>
+                   </sizepolicy>
+                  </property>
+                  <property name="toolTip">
+                   <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;When you click Find line here or in the main window, the calib file is updated with the current waterline search ROI positions. This “locks in” the relative locations of the waterline and calib ROI positions. Then, when images are processed, the waterline ROI is anchored to the calib ROI. The end result is a robust pair of ROIs that accommodate significant shifts in field of view. &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                   </property>
                   <property name="text">
                    <string>Find line</string>
@@ -377,13 +405,13 @@
                 <item>
                  <widget class="QPushButton" name="pushButton_showImageMetadata">
                   <property name="sizePolicy">
-                   <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                   <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
                     <horstretch>0</horstretch>
                     <verstretch>0</verstretch>
                    </sizepolicy>
                   </property>
                   <property name="toolTip">
-                   <string>Get metadata for the current image</string>
+                   <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;When you click Find line here or in the main window, the calib file is updated with the current waterline search ROI positions. This “locks in” the relative locations of the waterline and calib ROI positions. Then, when images are processed, the waterline ROI is anchored to the calib ROI. The end result is a robust pair of ROIs that accommodate significant shifts in field of view. &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                   </property>
                   <property name="text">
                    <string>Show metadata</string>
@@ -393,13 +421,13 @@
                 <item>
                  <widget class="QPushButton" name="pushButton_showCalibration">
                   <property name="sizePolicy">
-                   <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                   <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
                     <horstretch>0</horstretch>
                     <verstretch>0</verstretch>
                    </sizepolicy>
                   </property>
                   <property name="toolTip">
-                   <string>Get metadata for the current image</string>
+                   <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;When you click Find line here or in the main window, the calib file is updated with the current waterline search ROI positions. This “locks in” the relative locations of the waterline and calib ROI positions. Then, when images are processed, the waterline ROI is anchored to the calib ROI. The end result is a robust pair of ROIs that accommodate significant shifts in field of view. &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                   </property>
                   <property name="text">
                    <string>Show calibration</string>
@@ -408,34 +436,21 @@
                 </item>
                 <item>
                  <layout class="QHBoxLayout" name="horizontalLayout_6">
-                  <item>
-                   <spacer name="horizontalSpacer_2">
-                    <property name="orientation">
-                     <enum>Qt::Orientation::Horizontal</enum>
-                    </property>
-                    <property name="sizeType">
-                     <enum>QSizePolicy::Policy::Preferred</enum>
-                    </property>
-                    <property name="sizeHint" stdset="0">
-                     <size>
-                      <width>0</width>
-                      <height>20</height>
-                     </size>
-                    </property>
-                   </spacer>
-                  </item>
+                  <property name="spacing">
+                   <number>3</number>
+                  </property>
                   <item>
                    <widget class="QToolButton" name="toolButton_clearMsgs">
                     <property name="minimumSize">
                      <size>
-                      <width>64</width>
-                      <height>64</height>
+                      <width>32</width>
+                      <height>32</height>
                      </size>
                     </property>
                     <property name="maximumSize">
                      <size>
-                      <width>64</width>
-                      <height>64</height>
+                      <width>32</width>
+                      <height>32</height>
                      </size>
                     </property>
                     <property name="toolTip">
@@ -450,8 +465,8 @@
                     </property>
                     <property name="iconSize">
                      <size>
-                      <width>48</width>
-                      <height>48</height>
+                      <width>36</width>
+                      <height>36</height>
                      </size>
                     </property>
                     <property name="toolButtonStyle">
@@ -465,7 +480,7 @@
                      <enum>Qt::Orientation::Horizontal</enum>
                     </property>
                     <property name="sizeType">
-                     <enum>QSizePolicy::Policy::Preferred</enum>
+                     <enum>QSizePolicy::Policy::MinimumExpanding</enum>
                     </property>
                     <property name="sizeHint" stdset="0">
                      <size>
@@ -493,14 +508,20 @@
                   <height>200</height>
                  </size>
                 </property>
+                <property name="toolTip">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;Shows the position of the cursor when the right mouse button is pressed and the mouse is moved.&lt;/body&gt;&lt;/html&gt;</string>
+                </property>
                 <property name="title">
                  <string>Measures</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignmentFlag::AlignCenter</set>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_9">
                  <item>
                   <widget class="QTextEdit" name="textEdit_measures">
                    <property name="sizePolicy">
-                    <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                    <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
                      <horstretch>0</horstretch>
                      <verstretch>0</verstretch>
                     </sizepolicy>
@@ -609,7 +630,7 @@
                <enum>QTabWidget::TabPosition::South</enum>
               </property>
               <property name="currentIndex">
-               <number>3</number>
+               <number>1</number>
               </property>
               <widget class="QWidget" name="tab_mainRunFolder">
                <property name="toolTipDuration">
@@ -786,6 +807,151 @@
                 <string>Calibrate</string>
                </attribute>
                <layout class="QVBoxLayout" name="verticalLayout_3">
+                <item>
+                 <widget class="QGroupBox" name="groupBox_4">
+                  <property name="toolTip">
+                   <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Exif timestamp can be viewed by clicking the &amp;quot;Show metadata&amp;quot; button on the main viewer screen. If extracting Timestamp from filenames, the String start position must be set to the location of the first digit of the timestamp relative to the left side of the filename.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                  </property>
+                  <property name="title">
+                   <string>Enter the format and source of Timestamp</string>
+                  </property>
+                  <layout class="QVBoxLayout" name="verticalLayout_15">
+                   <item>
+                    <layout class="QHBoxLayout" name="horizontalLayout_20">
+                     <item>
+                      <widget class="QLabel" name="label_6">
+                       <property name="sizePolicy">
+                        <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+                         <horstretch>0</horstretch>
+                         <verstretch>0</verstretch>
+                        </sizepolicy>
+                       </property>
+                       <property name="text">
+                        <string>Format</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QLineEdit" name="lineEdit_timestampFormat">
+                       <property name="sizePolicy">
+                        <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+                         <horstretch>0</horstretch>
+                         <verstretch>0</verstretch>
+                        </sizepolicy>
+                       </property>
+                       <property name="toolTip">
+                        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Time format placeholder characters:&lt;br/&gt;yyyy=year mm=month dd=day&lt;br/&gt;HH=hour MM=minute SS=second&lt;br/&gt;If a placeholder is missing it is assumed to be 0&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                       </property>
+                       <property name="text">
+                        <string>yy-mm-ddTHH-MM</string>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </item>
+                   <item>
+                    <layout class="QHBoxLayout" name="horizontalLayout_16">
+                     <item>
+                      <widget class="QLabel" name="label_8">
+                       <property name="sizePolicy">
+                        <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+                         <horstretch>0</horstretch>
+                         <verstretch>0</verstretch>
+                        </sizepolicy>
+                       </property>
+                       <property name="text">
+                        <string>Source</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QRadioButton" name="radioButton_dateTimeInEXIF">
+                       <property name="sizePolicy">
+                        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                         <horstretch>0</horstretch>
+                         <verstretch>0</verstretch>
+                        </sizepolicy>
+                       </property>
+                       <property name="text">
+                        <string>exif</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QRadioButton" name="radioButton_dateTimeInFilename">
+                       <property name="sizePolicy">
+                        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                         <horstretch>0</horstretch>
+                         <verstretch>0</verstretch>
+                        </sizepolicy>
+                       </property>
+                       <property name="text">
+                        <string>filename</string>
+                       </property>
+                       <property name="checked">
+                        <bool>true</bool>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <spacer name="horizontalSpacer_5">
+                       <property name="orientation">
+                        <enum>Qt::Orientation::Horizontal</enum>
+                       </property>
+                       <property name="sizeType">
+                        <enum>QSizePolicy::Policy::MinimumExpanding</enum>
+                       </property>
+                       <property name="sizeHint" stdset="0">
+                        <size>
+                         <width>40</width>
+                         <height>20</height>
+                        </size>
+                       </property>
+                      </spacer>
+                     </item>
+                     <item>
+                      <widget class="QLabel" name="label_7">
+                       <property name="sizePolicy">
+                        <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+                         <horstretch>0</horstretch>
+                         <verstretch>0</verstretch>
+                        </sizepolicy>
+                       </property>
+                       <property name="toolTip">
+                        <string>Filename time string start position</string>
+                       </property>
+                       <property name="text">
+                        <string>String start pos</string>
+                       </property>
+                       <property name="alignment">
+                        <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QSpinBox" name="spinBox_timeStringPosZero">
+                       <property name="sizePolicy">
+                        <sizepolicy hsizetype="Fixed" vsizetype="Minimum">
+                         <horstretch>0</horstretch>
+                         <verstretch>0</verstretch>
+                        </sizepolicy>
+                       </property>
+                       <property name="toolTip">
+                        <string>Filename time string start position</string>
+                       </property>
+                       <property name="maximum">
+                        <number>256</number>
+                       </property>
+                       <property name="value">
+                        <number>10</number>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
                 <item>
                  <widget class="QGroupBox" name="groupBox_calibOctagon">
                   <property name="font">
@@ -1054,9 +1220,9 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="QLabel" name="label_3">
+                 <widget class="QLabel" name="label_calibStatus">
                   <property name="text">
-                   <string>Calibration result JSON file (pixel/world associations)</string>
+                   <string>Calibration JSON file</string>
                   </property>
                  </widget>
                 </item>
@@ -1076,24 +1242,14 @@
                     <property name="text">
                      <string>./config/calib.json</string>
                     </property>
-                    <property name="readOnly">
+                    <property name="frame">
                      <bool>false</bool>
+                    </property>
+                    <property name="readOnly">
+                     <bool>true</bool>
                     </property>
                     <property name="clearButtonEnabled">
                      <bool>false</bool>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QToolButton" name="toolButton_calibVisionResult_json_browse">
-                    <property name="sizePolicy">
-                     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                      <horstretch>0</horstretch>
-                      <verstretch>0</verstretch>
-                     </sizepolicy>
-                    </property>
-                    <property name="text">
-                     <string>...</string>
                     </property>
                    </widget>
                   </item>
@@ -1110,7 +1266,49 @@
                      </sizepolicy>
                     </property>
                     <property name="text">
-                     <string>Load calibration</string>
+                     <string>Load...</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="pushButton_visionCalibrateSave">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="text">
+                     <string>Save...</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <spacer name="horizontalSpacer_11">
+                    <property name="orientation">
+                     <enum>Qt::Orientation::Horizontal</enum>
+                    </property>
+                    <property name="sizeType">
+                     <enum>QSizePolicy::Policy::Preferred</enum>
+                    </property>
+                    <property name="sizeHint" stdset="0">
+                     <size>
+                      <width>40</width>
+                      <height>20</height>
+                     </size>
+                    </property>
+                   </spacer>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="pushButton_visionCalibrate">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="text">
+                     <string>Calibrate</string>
                     </property>
                    </widget>
                   </item>
@@ -1137,35 +1335,6 @@
                     </property>
                     <property name="text">
                      <string>Create command line</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <spacer name="horizontalSpacer_17">
-                    <property name="orientation">
-                     <enum>Qt::Orientation::Horizontal</enum>
-                    </property>
-                    <property name="sizeType">
-                     <enum>QSizePolicy::Policy::Preferred</enum>
-                    </property>
-                    <property name="sizeHint" stdset="0">
-                     <size>
-                      <width>40</width>
-                      <height>20</height>
-                     </size>
-                    </property>
-                   </spacer>
-                  </item>
-                  <item>
-                   <widget class="QPushButton" name="pushButton_visionCalibrate">
-                    <property name="sizePolicy">
-                     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                      <horstretch>0</horstretch>
-                      <verstretch>0</verstretch>
-                     </sizepolicy>
-                    </property>
-                    <property name="text">
-                     <string>Calibrate</string>
                     </property>
                    </widget>
                   </item>
@@ -1200,7 +1369,7 @@
                    </sizepolicy>
                   </property>
                   <property name="title">
-                   <string>Process images in folder(s)</string>
+                   <string>Select a folder containing images you want to process</string>
                   </property>
                   <layout class="QVBoxLayout" name="verticalLayout_6">
                    <item>
@@ -1269,348 +1438,323 @@
                      </item>
                     </layout>
                    </item>
+                  </layout>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QGroupBox" name="groupBox_7">
+                  <property name="title">
+                   <string>Do you want to run images in the single folder above or include all subfolders?</string>
+                  </property>
+                  <layout class="QHBoxLayout" name="horizontalLayout_19">
                    <item>
-                    <layout class="QHBoxLayout" name="horizontalLayout_13">
-                     <item>
-                      <widget class="QCheckBox" name="checkBox_createFindLine_csvResultsFile">
-                       <property name="sizePolicy">
-                        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                         <horstretch>0</horstretch>
-                         <verstretch>0</verstretch>
-                        </sizepolicy>
-                       </property>
-                       <property name="text">
-                        <string>CSV result file</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <widget class="QLineEdit" name="lineEdit_findLine_resultCSVFile">
-                       <property name="sizePolicy">
-                        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                         <horstretch>0</horstretch>
-                         <verstretch>0</verstretch>
-                        </sizepolicy>
-                       </property>
-                       <property name="toolTip">
-                        <string>Current image folder</string>
-                       </property>
-                       <property name="text">
-                        <string>./config/out.csv</string>
-                       </property>
-                       <property name="readOnly">
-                        <bool>false</bool>
-                       </property>
-                       <property name="clearButtonEnabled">
-                        <bool>false</bool>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <widget class="QToolButton" name="toolButton_findLine_resultCSVFile_browse">
-                       <property name="sizePolicy">
-                        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                         <horstretch>0</horstretch>
-                         <verstretch>0</verstretch>
-                        </sizepolicy>
-                       </property>
-                       <property name="text">
-                        <string>...</string>
-                       </property>
-                      </widget>
-                     </item>
-                    </layout>
+                    <widget class="QRadioButton" name="radioButton_folderOfImages">
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
+                     <property name="text">
+                      <string>Images in specifed folder only</string>
+                     </property>
+                     <property name="checked">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
                    </item>
                    <item>
-                    <layout class="QHBoxLayout" name="horizontalLayout_14">
-                     <item>
-                      <widget class="QCheckBox" name="checkBox_createFindLine_annotatedResults">
-                       <property name="sizePolicy">
-                        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                         <horstretch>0</horstretch>
-                         <verstretch>0</verstretch>
-                        </sizepolicy>
-                       </property>
-                       <property name="text">
-                        <string>Result folder</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <widget class="QLineEdit" name="lineEdit_findLine_annotatedResultFolder">
-                       <property name="sizePolicy">
-                        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                         <horstretch>0</horstretch>
-                         <verstretch>0</verstretch>
-                        </sizepolicy>
-                       </property>
-                       <property name="toolTip">
-                        <string>Current image folder</string>
-                       </property>
-                       <property name="text">
-                        <string>./config</string>
-                       </property>
-                       <property name="readOnly">
-                        <bool>false</bool>
-                       </property>
-                       <property name="clearButtonEnabled">
-                        <bool>false</bool>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <widget class="QToolButton" name="toolButton_findLine_annotatedResultFolder_browse">
-                       <property name="sizePolicy">
-                        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                         <horstretch>0</horstretch>
-                         <verstretch>0</verstretch>
-                        </sizepolicy>
-                       </property>
-                       <property name="text">
-                        <string>...</string>
-                       </property>
-                      </widget>
-                     </item>
-                    </layout>
+                    <spacer name="horizontalSpacer_3">
+                     <property name="orientation">
+                      <enum>Qt::Orientation::Horizontal</enum>
+                     </property>
+                     <property name="sizeType">
+                      <enum>QSizePolicy::Policy::MinimumExpanding</enum>
+                     </property>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>40</width>
+                       <height>20</height>
+                      </size>
+                     </property>
+                    </spacer>
                    </item>
                    <item>
-                    <layout class="QHBoxLayout" name="horizontalLayout_7">
-                     <item>
-                      <spacer name="horizontalSpacer_3">
-                       <property name="orientation">
-                        <enum>Qt::Orientation::Horizontal</enum>
-                       </property>
-                       <property name="sizeType">
-                        <enum>QSizePolicy::Policy::MinimumExpanding</enum>
-                       </property>
-                       <property name="sizeHint" stdset="0">
-                        <size>
-                         <width>40</width>
-                         <height>20</height>
-                        </size>
-                       </property>
-                      </spacer>
-                     </item>
-                     <item>
-                      <widget class="QLabel" name="label_14">
-                       <property name="sizePolicy">
-                        <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-                         <horstretch>0</horstretch>
-                         <verstretch>0</verstretch>
-                        </sizepolicy>
-                       </property>
-                       <property name="text">
-                        <string>Folder of</string>
-                       </property>
-                       <property name="alignment">
-                        <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <widget class="QRadioButton" name="radioButton_folderOfImages">
-                       <property name="sizePolicy">
-                        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                         <horstretch>0</horstretch>
-                         <verstretch>0</verstretch>
-                        </sizepolicy>
-                       </property>
-                       <property name="text">
-                        <string>images</string>
-                       </property>
-                       <property name="checked">
-                        <bool>true</bool>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <widget class="QRadioButton" name="radioButton_folderOfFolders">
-                       <property name="sizePolicy">
-                        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                         <horstretch>0</horstretch>
-                         <verstretch>0</verstretch>
-                        </sizepolicy>
-                       </property>
-                       <property name="text">
-                        <string>folders</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <widget class="QPushButton" name="pushButton_findLine_processFolder">
-                       <property name="sizePolicy">
-                        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                         <horstretch>0</horstretch>
-                         <verstretch>0</verstretch>
-                        </sizepolicy>
-                       </property>
-                       <property name="text">
-                        <string>Run</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <widget class="QPushButton" name="pushButton_findLine_stopFolderProcess">
-                       <property name="enabled">
-                        <bool>false</bool>
-                       </property>
-                       <property name="sizePolicy">
-                        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                         <horstretch>0</horstretch>
-                         <verstretch>0</verstretch>
-                        </sizepolicy>
-                       </property>
-                       <property name="text">
-                        <string>Stop</string>
-                       </property>
-                      </widget>
-                     </item>
-                    </layout>
+                    <widget class="QRadioButton" name="radioButton_folderOfFolders">
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
+                     <property name="text">
+                      <string>Images in folder and subfolders</string>
+                     </property>
+                    </widget>
                    </item>
                   </layout>
                  </widget>
                 </item>
                 <item>
-                 <widget class="QGroupBox" name="groupBox_4">
+                 <widget class="QGroupBox" name="groupBox_enableResultCSV">
                   <property name="title">
-                   <string>Timestamp</string>
+                   <string>Enable saving of results to CSV file (set CSV filepath if enabled)</string>
                   </property>
-                  <layout class="QVBoxLayout" name="verticalLayout_15">
+                  <property name="checkable">
+                   <bool>false</bool>
+                  </property>
+                  <property name="checked">
+                   <bool>false</bool>
+                  </property>
+                  <layout class="QHBoxLayout" name="horizontalLayout_23">
                    <item>
-                    <layout class="QHBoxLayout" name="horizontalLayout_20">
-                     <item>
-                      <widget class="QLabel" name="label_6">
-                       <property name="sizePolicy">
-                        <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-                         <horstretch>0</horstretch>
-                         <verstretch>0</verstretch>
-                        </sizepolicy>
-                       </property>
-                       <property name="text">
-                        <string>Format</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <widget class="QLineEdit" name="lineEdit_timestampFormat">
-                       <property name="sizePolicy">
-                        <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-                         <horstretch>0</horstretch>
-                         <verstretch>0</verstretch>
-                        </sizepolicy>
-                       </property>
-                       <property name="toolTip">
-                        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Time format placeholder characters:&lt;br/&gt;yyyy=year mm=month dd=day&lt;br/&gt;HH=hour MM=minute SS=second&lt;br/&gt;If a placeholder is missing it is assumed to be 0&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                       </property>
-                       <property name="text">
-                        <string>yy-mm-ddTHH-MM</string>
-                       </property>
-                      </widget>
-                     </item>
-                    </layout>
+                    <widget class="QCheckBox" name="checkBox_createFindLine_csvResultsFile">
+                     <property name="text">
+                      <string/>
+                     </property>
+                    </widget>
                    </item>
                    <item>
-                    <layout class="QHBoxLayout" name="horizontalLayout_16">
-                     <item>
-                      <widget class="QLabel" name="label_8">
-                       <property name="sizePolicy">
-                        <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-                         <horstretch>0</horstretch>
-                         <verstretch>0</verstretch>
-                        </sizepolicy>
-                       </property>
-                       <property name="text">
-                        <string>Source</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <widget class="QRadioButton" name="radioButton_dateTimeInEXIF">
-                       <property name="sizePolicy">
-                        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                         <horstretch>0</horstretch>
-                         <verstretch>0</verstretch>
-                        </sizepolicy>
-                       </property>
-                       <property name="text">
-                        <string>exif</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <widget class="QRadioButton" name="radioButton_dateTimeInFilename">
-                       <property name="sizePolicy">
-                        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                         <horstretch>0</horstretch>
-                         <verstretch>0</verstretch>
-                        </sizepolicy>
-                       </property>
-                       <property name="text">
-                        <string>filename</string>
-                       </property>
-                       <property name="checked">
-                        <bool>true</bool>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <spacer name="horizontalSpacer_5">
-                       <property name="orientation">
-                        <enum>Qt::Orientation::Horizontal</enum>
-                       </property>
-                       <property name="sizeType">
-                        <enum>QSizePolicy::Policy::MinimumExpanding</enum>
-                       </property>
-                       <property name="sizeHint" stdset="0">
-                        <size>
-                         <width>40</width>
-                         <height>20</height>
-                        </size>
-                       </property>
-                      </spacer>
-                     </item>
-                     <item>
-                      <widget class="QLabel" name="label_7">
-                       <property name="sizePolicy">
-                        <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-                         <horstretch>0</horstretch>
-                         <verstretch>0</verstretch>
-                        </sizepolicy>
-                       </property>
-                       <property name="toolTip">
-                        <string>Filename time string start position</string>
-                       </property>
-                       <property name="text">
-                        <string>String start pos</string>
-                       </property>
-                       <property name="alignment">
-                        <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <widget class="QSpinBox" name="spinBox_timeStringPosZero">
-                       <property name="sizePolicy">
-                        <sizepolicy hsizetype="Fixed" vsizetype="Minimum">
-                         <horstretch>0</horstretch>
-                         <verstretch>0</verstretch>
-                        </sizepolicy>
-                       </property>
-                       <property name="toolTip">
-                        <string>Filename time string start position</string>
-                       </property>
-                       <property name="maximum">
-                        <number>256</number>
-                       </property>
-                       <property name="value">
-                        <number>10</number>
-                       </property>
-                      </widget>
-                     </item>
-                    </layout>
+                    <widget class="QLabel" name="label_2">
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
+                     <property name="text">
+                      <string>File path</string>
+                     </property>
+                     <property name="alignment">
+                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QLineEdit" name="lineEdit_findLine_resultCSVFile">
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
+                     <property name="toolTip">
+                      <string>Current image folder</string>
+                     </property>
+                     <property name="text">
+                      <string>./config/out.csv</string>
+                     </property>
+                     <property name="readOnly">
+                      <bool>false</bool>
+                     </property>
+                     <property name="clearButtonEnabled">
+                      <bool>false</bool>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QToolButton" name="toolButton_findLine_resultCSVFile_browse">
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
+                     <property name="text">
+                      <string>...</string>
+                     </property>
+                    </widget>
                    </item>
                   </layout>
                  </widget>
+                </item>
+                <item>
+                 <widget class="QGroupBox" name="groupBox_enableResultOverlayImages">
+                  <property name="title">
+                   <string>Enable saving of overlay images (set folder path if enabled)</string>
+                  </property>
+                  <property name="checkable">
+                   <bool>false</bool>
+                  </property>
+                  <property name="checked">
+                   <bool>false</bool>
+                  </property>
+                  <layout class="QHBoxLayout" name="horizontalLayout_24">
+                   <item>
+                    <widget class="QCheckBox" name="checkBox_createFindLine_annotatedResults">
+                     <property name="text">
+                      <string/>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QLabel" name="label_3">
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
+                     <property name="text">
+                      <string>Folder path</string>
+                     </property>
+                     <property name="alignment">
+                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QLineEdit" name="lineEdit_findLine_annotatedResultFolder">
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
+                     <property name="toolTip">
+                      <string>Current image folder</string>
+                     </property>
+                     <property name="text">
+                      <string>./config</string>
+                     </property>
+                     <property name="readOnly">
+                      <bool>false</bool>
+                     </property>
+                     <property name="clearButtonEnabled">
+                      <bool>false</bool>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QToolButton" name="toolButton_findLine_annotatedResultFolder_browse">
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
+                     <property name="text">
+                      <string>...</string>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QGroupBox" name="groupBox_enableSaveSearchROI">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="title">
+                   <string>Enable saving of water line search ROI's (set folder path if enabled)</string>
+                  </property>
+                  <property name="checkable">
+                   <bool>false</bool>
+                  </property>
+                  <property name="checked">
+                   <bool>false</bool>
+                  </property>
+                  <layout class="QHBoxLayout" name="horizontalLayout_21">
+                   <item>
+                    <widget class="QCheckBox" name="checkBox_saveSearchROI">
+                     <property name="text">
+                      <string/>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QLabel" name="label_9">
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
+                     <property name="text">
+                      <string>Folder path</string>
+                     </property>
+                     <property name="alignment">
+                      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QLineEdit" name="lineEdit_saveSearchROIFolder">
+                     <property name="enabled">
+                      <bool>false</bool>
+                     </property>
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
+                     <property name="toolTip">
+                      <string>Current image folder</string>
+                     </property>
+                     <property name="text">
+                      <string>./config</string>
+                     </property>
+                     <property name="readOnly">
+                      <bool>false</bool>
+                     </property>
+                     <property name="clearButtonEnabled">
+                      <bool>false</bool>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QToolButton" name="toolButton_saveSearchROIFolder_browse">
+                     <property name="enabled">
+                      <bool>false</bool>
+                     </property>
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
+                     <property name="text">
+                      <string>...</string>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+                <item>
+                 <layout class="QHBoxLayout" name="horizontalLayout_7">
+                  <item>
+                   <widget class="QPushButton" name="pushButton_findLine_processFolder">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="text">
+                     <string>Run</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="pushButton_findLine_stopFolderProcess">
+                    <property name="enabled">
+                     <bool>false</bool>
+                    </property>
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="text">
+                     <string>Stop</string>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
                 </item>
                 <item>
                  <widget class="QTableWidget" name="tableWidget">

@@ -69,6 +69,10 @@ public:
      */
     GC_STATUS GetImageData( const std::string filepath, std::string &data );
 
+    // TODO: Add doxygen comments
+    GC_STATUS ReadFromImageDescription( const std::string filepath, std::string &data );
+    GC_STATUS WriteToImageDescription( const std::string filepath, const std::string &data );
+
     /**
      * @brief Retrieve the metadata into an instance of the ExifFeatures data class
      * @param filepath The filepath of the image file from which to retrieve the metadata

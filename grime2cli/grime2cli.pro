@@ -60,7 +60,6 @@ unix:!macx {
             -lopencv_video \
             -lboost_date_time \
             -lboost_system \
-            -lboost_filesystem \
             -lboost_chrono
 }
 else {
@@ -83,7 +82,6 @@ else {
                 -lopencv_videoio4100d \
                 -lopencv_video4100d \
                 -lopencv_calib3d4100d \
-                -llibboost_filesystem-vc143-mt-gd-x32-1_86 \
                 -llibboost_date_time-vc143-mt-gd-x32-1_86 \
                 -llibboost_system-vc143-mt-gd-x32-1_86 \
                 -llibboost_chrono-vc143-mt-gd-x32-1_86 \
@@ -95,7 +93,6 @@ else {
                 -lopencv_videoio4100 \
                 -lopencv_video4100 \
                 -lopencv_calib3d4100 \
-                -llibboost_filesystem-vc143-mt-x64-1_86 \
                 -llibboost_date_time-vc143-mt-x64-1_86 \
                 -llibboost_system-vc143-mt-x64-1_86 \
                 -llibboost_chrono-vc143-mt-x64-1_86 \

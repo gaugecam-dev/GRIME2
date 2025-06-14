@@ -144,30 +144,46 @@ GC_STATUS Calibrate( const Grime2CLIParams cliParams )
     {
         VisApp vis;
         cv::Mat img = cv::Mat();
-        if ( !cliParams.src_imagePath.empty() )
+        img = cv::imread( cliParams.src_imagePath );
+        if ( img.empty() )
         {
-            img = cv::imread( cliParams.src_imagePath );
-            if ( img.empty() )
-            {
-                cout << "FAIL: Could not read calibration image " << cliParams.src_imagePath;
-                FILE_LOG( logERROR ) << "FAIL: Could not read calibration image " << cliParams.src_imagePath;
-                retVal = GC_ERR;
-            }
+            cout << "FAIL: Could not read calibration image " << cliParams.src_imagePath;
+            FILE_LOG( logERROR ) << "FAIL: Could not read calibration image " << cliParams.src_imagePath;
+            retVal = GC_ERR;
         }
-        // cout << fs::canonical( cliParams.calib_jsonPath ).string() << endl;
-        retVal = vis.CalibLoad( cliParams.calib_jsonPath, img );
-        if ( GC_OK == retVal && !cliParams.result_imagePath.empty() && !img.empty() )
+        else
         {
-            cv::Mat calibOverlay;
-            retVal = vis.DrawCalibOverlay( img, calibOverlay, false, true, true, true );
-            if ( GC_OK == retVal )
+            // cout << fs::canonical( cliParams.calib_jsonPath ).string() << endl;
+            retVal = vis.CalibLoad( cliParams.calib_jsonPath );
+            if ( GC_OK != retVal )
             {
-                bool bRet = imwrite( cliParams.result_imagePath, calibOverlay );
-                if ( !bRet )
+                cout << "FAIL: Could not load calibration file " << cliParams.calib_jsonPath;
+                FILE_LOG( logERROR ) << "FAIL: Could not load calibration file " << cliParams.calib_jsonPath;
+            }
+            else
+            {
+                string jsonControl;
+                retVal = vis.GetCalibControlJson( jsonControl );
+                if ( GC_OK == retVal )
                 {
-                    cout << "FAIL: Could not write calibration result image " << cliParams.result_imagePath;
-                    FILE_LOG( logERROR ) << "FAIL: Could not write calibration result image " << cliParams.src_imagePath;
-                    retVal = GC_ERR;
+                    string err_msgs;
+                    double rsmeDist, rsmeX, rsmeY;
+                    retVal = vis.Calibrate( img, jsonControl, rsmeDist, rsmeX, rsmeY, err_msgs );
+                    if ( !cliParams.result_imagePath.empty() )
+                    {
+                        cv::Mat calibOverlay;
+                        retVal = vis.DrawCalibOverlay( img, calibOverlay, false, true, true, true );
+                        if ( GC_OK == retVal )
+                        {
+                            bool bRet = imwrite( cliParams.result_imagePath, calibOverlay );
+                            if ( !bRet )
+                            {
+                                cout << "FAIL: Could not write calibration result image " << cliParams.result_imagePath;
+                                FILE_LOG( logERROR ) << "FAIL: Could not write calibration result image " << cliParams.src_imagePath;
+                                retVal = GC_ERR;
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -234,7 +250,7 @@ GC_STATUS CreateCalibrate( const Grime2CLIParams cliParams )
                 }
                 if ( GC_OK == retVal )
                 {
-                    retVal = calibExec.CalibSaveOctagon();
+                    retVal = calibExec.CalibSaveOctagon( cliParams.calib_jsonPath );
                     if ( GC_OK != retVal )
                     {
                         cout << "FAILURE: Calibration succeeded, but could not save result " << cliParams.calib_jsonPath << endl;

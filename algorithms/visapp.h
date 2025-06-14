@@ -85,6 +85,8 @@ public:
                          double &rmseDist, double &rmseX, double &rmseY, string &err_msg );
 
     // TODO: Add doxygen comments
+    GC_STATUS Calibrate( const cv::Mat &img, const string jsonControl,
+                         double &rmseDist, double &rmseX, double &rmseY, string &err_msg );
     GC_STATUS Calibrate( const string imgFilepath, const string jsonControl, const string resultImgPath,
                          double &rmseDist, double &rmseX, double &rmseY , string &err_msg );
 
@@ -98,8 +100,8 @@ public:
 
     // TODO: Add doxygen comments
     GC_STATUS GetTempCacheResults( const std::string jsonFilepath, FindLineResult &result );
-    GC_STATUS CalibLoad( const std::string calibJson, const cv::Mat &img );
-    GC_STATUS CalibSave();
+    GC_STATUS CalibLoad( const std::string calibJson  );
+    GC_STATUS CalibSave( const string jsonPath) ;
 
     /**
      * @brief Convert world coordinates to pixel coordinates using the currently set calibration
@@ -122,11 +124,13 @@ public:
     string GetCalibType() { return m_calibExec.GetCalibType(); }
     GC_STATUS GetTargetSearchROI( cv::Rect &rect );
     GC_STATUS GetCalibParams( std::string &calibParams );
+    GC_STATUS GetCalibControlJson( std::string &calibJson );
     GC_STATUS SetMinMaxFindLineAngles( const double minAngle, const double maxAngle );
     GC_STATUS DrawCalibOverlay( const cv::Mat matIn, cv::Mat &imgMatOut );
     GC_STATUS DrawCalibOverlay( const cv::Mat matIn, cv::Mat &imgMatOut, const bool drawCalibScale,
                                 const bool drawCalibGrid, const bool drawSearchROI, const bool drawTargetROI );
     GC_STATUS DrawAssocPts( const cv::Mat &img, cv::Mat &overlay, std::string &err_msg );
+    GC_STATUS ResultToJsonString( const FindLineResult result, const FindLineParams params, std::string &resultJson );
 
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // Findline methods
@@ -139,7 +143,7 @@ public:
      * @param result Holds the results of the line find calculation
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
-    GC_STATUS CalcLine (const FindLineParams params, FindLineResult &result );
+    GC_STATUS CalcLine( const FindLineParams params, FindLineResult &result );
 
     /**
      * @brief Find the water level in an image specified in the FindLineParams (results to member result object)

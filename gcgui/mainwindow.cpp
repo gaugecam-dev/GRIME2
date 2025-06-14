@@ -162,7 +162,7 @@ MainWindow::MainWindow(QWidget *parent) :
     on_actionZoom100_triggered();
     ui->widget_overlayCheckboxes->hide();
 
-    GC_STATUS retVal = m_visApp.LoadCalib( ui->lineEdit_calibVisionResult_json->text().toStdString(), false );
+    GC_STATUS retVal = m_visApp.LoadCalib( ui->lineEdit_calibVisionResult_json->text().toStdString() );
     if ( GC_OK == retVal )
     {
         m_rectRubberBand.setLeft( qRound( static_cast< double >( m_rectROI.left() ) * m_scaleFactor ) );
@@ -175,6 +175,11 @@ MainWindow::MainWindow(QWidget *parent) :
     {
         ui->textEdit_msgs->append( "Could not load calibration from " + ui->lineEdit_calibVisionResult_json->text() );
     }
+
+    ui->checkBox_showCalib->setChecked( true );
+    ui->checkBox_showSearchROI->setChecked( true );
+    ui->checkBox_calibSearchROI->setChecked( true );
+    m_pComboBoxImageToView->setCurrentText( "Overlay" );
 
     UpdateGUIEnables();
     UpdateCalibType();
@@ -1223,17 +1228,64 @@ void MainWindow::on_toolButton_imageFolder_browse_clicked()
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 void MainWindow::on_pushButton_visionCalibrateLoad_clicked()
 {
-    GC_STATUS retVal = m_visApp.LoadCalib( ui->lineEdit_calibVisionResult_json->text().toStdString(), false );
-    if ( GC_OK == retVal )
+    // QString strFullPath = QFileDialog::getSaveFileName( this, "Set calibration json filepath", ui->lineEdit_calibVisionResult_json->text() );
+    QString strFullPath = QFileDialog::getOpenFileName( this, "Set calibration json filepath", ui->lineEdit_calibVisionResult_json->text() );
+    if ( strFullPath.isNull() )
     {
-        UpdateTargetRect();
-        UpdateGUIEnables();
-        UpdateCalibType();
-        UpdateCalibSearchRegion();
+        ui->statusBar->showMessage( "Could not set calib result json file" );
+    }
+    else if (! strFullPath.contains( ".json" ) )
+    {
+        ui->statusBar->showMessage( "File must have \".json\" extension" );
     }
     else
     {
-        ui->textEdit_msgs->append( "Could not load calibration from " + ui->lineEdit_calibVisionResult_json->text() );
+        ui->lineEdit_calibVisionResult_json->setText( strFullPath );
+        GC_STATUS retVal = m_visApp.LoadCalib( ui->lineEdit_calibVisionResult_json->text().toStdString() );
+        if ( GC_OK == retVal )
+        {
+            m_bCalibDirty = false;
+            ui->checkBox_showCalib->setChecked( true );
+            ui->checkBox_showSearchROI->setChecked( true );
+            ui->checkBox_calibSearchROI->setChecked( true );
+            m_pComboBoxImageToView->setCurrentText( "Overlay" );
+            UpdateTargetRect();
+            UpdateGUIEnables();
+            UpdateCalibType();
+            UpdateCalibSearchRegion();
+        }
+        else
+        {
+            ui->textEdit_msgs->append( "Could not load calibration from " + ui->lineEdit_calibVisionResult_json->text() );
+        }
+    }
+}
+void MainWindow::on_pushButton_visionCalibrateSave_clicked()
+{
+    QString strFullPath = QFileDialog::getSaveFileName( this, "Get calibration json filepath", ui->lineEdit_calibVisionResult_json->text() );
+    if ( strFullPath.isNull() )
+    {
+        ui->statusBar->showMessage( "Could not get calib result json file" );
+    }
+    else if (! strFullPath.contains( ".json" ) )
+    {
+        ui->statusBar->showMessage( "File must have \".json\" extension" );
+    }
+    else
+    {
+        GC_STATUS retVal = m_visApp.SaveCalib( strFullPath.toStdString() );
+        if ( GC_OK == retVal )
+        {
+            m_bCalibDirty = false;
+            ui->lineEdit_calibVisionResult_json->setText( strFullPath );
+            ui->textEdit_msgs->setText( "Calibration save SUCCESS" );
+            ui->statusBar->showMessage( "Calibration save SUCCESS" );
+        }
+        else
+        {
+            ui->textEdit_msgs->setText( "Calibration save FAILURE" );
+            ui->statusBar->showMessage( "Calibration save FAILURE" );
+        }
     }
 }
 void MainWindow::on_pushButton_visionCalibrate_clicked()
@@ -1274,36 +1326,13 @@ void MainWindow::on_pushButton_visionCalibrate_clicked()
     }
     else
     {
-        retVal = m_visApp.SaveCalib();
-        if ( GC_OK != retVal )
-        {
-            ui->statusBar->showMessage( "Calibration success, save FAILURE" );
-        }
+        m_bCalibDirty = true;
         ui->checkBox_showCalib->setChecked( true );
-    }
-    m_pComboBoxImageToView->setCurrentText( "Overlay" );
-    UpdatePixmapTarget();
-
-    if ( GC_OK == retVal )
-    {
         ui->statusBar->showMessage( "Calibration: SUCCESS" );
     }
-}
-void MainWindow::on_toolButton_calibVisionResult_json_browse_clicked()
-{
-    QString strFullPath = QFileDialog::getSaveFileName( this, "Set calibration json filepath", ui->lineEdit_calibVisionResult_json->text() );
-    if ( strFullPath.isNull() )
-    {
-        ui->statusBar->showMessage( "Could not set calib result json file" );
-    }
-    else if (! strFullPath.contains( ".json" ) )
-    {
-        ui->statusBar->showMessage( "File must have \".json\" extension" );
-    }
-    else
-    {
-        ui->lineEdit_calibVisionResult_json->setText( strFullPath );
-    }
+    ui->label_calibStatus->setText( "Calibration JSON file" + QString( m_bCalibDirty ? " (dirty)" : "" ) );
+    m_pComboBoxImageToView->setCurrentText( "Overlay" );
+    UpdatePixmapTarget();
 }
 void MainWindow::on_pushButton_resetSearchRegion_clicked()
 {

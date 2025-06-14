@@ -59,6 +59,20 @@ GC_STATUS CalibExecutive::GetTargetSearchROI( cv::Rect &rect )
     rect = octagon.TargetRoi();
     return GC_OK;
 }
+GC_STATUS CalibExecutive::GetCalibControlJson( std::string &calibJson )
+{
+    GC_STATUS retVal = GC_OK;
+    if ( "Octagon" == GetCalibType() )
+    {
+        calibJson = octagon.ControlJson();
+    }
+    else
+    {
+        FILE_LOG( logERROR ) << "[CalibExecutive::GetCalibControlJson] No calibration defined" ;
+        retVal = GC_ERR;
+    }
+    return retVal;
+}
 GC_STATUS CalibExecutive::GetCalibParams( std::string &calibParams )
 {
     GC_STATUS retVal = GC_OK;
@@ -178,14 +192,14 @@ GC_STATUS CalibExecutive::SetCalibFromJson( const std::string &jsonParams )
         }
         else
         {
-            FILE_LOG( logERROR ) << "[CalibExecutive::Calibrate] Invalid calibration type=" <<
+            FILE_LOG( logERROR ) << "[CalibExecutive::SetCalibFromJson] Invalid calibration type=" <<
                                     ( paramsCurrent.calibType.empty() ? "empty()" : paramsCurrent.calibType );
             retVal = GC_ERR;
         }
     }
     catch( boost::exception &e )
     {
-        FILE_LOG( logERROR ) << "[CalibExecutive::Calibrate] " << diagnostic_information( e );
+        FILE_LOG( logERROR ) << "[CalibExecutive::SetCalibFromJson] " << diagnostic_information( e );
         retVal = GC_EXCEPT;
     }
     return retVal;
@@ -425,14 +439,11 @@ GC_STATUS CalibOctagon::GetSearchRegionBoundingRect( cv::Rect &rect )
     }
     return retVal;
 }
-GC_STATUS CalibExecutive::CalibSaveOctagon()
+GC_STATUS CalibExecutive::CalibSaveOctagon( const string jsonFilepath )
 {
-    GC_STATUS retVal = paramsCurrent.calibResultJsonFilepath.empty() ? GC_ERR : GC_OK;
-    if ( GC_OK == retVal )
-    {
-        octagon.Model().oldPixelPoints.clear();
-        retVal = octagon.Save( paramsCurrent.calibResultJsonFilepath );
-    }
+    paramsCurrent.calibResultJsonFilepath = jsonFilepath;
+    octagon.Model().oldPixelPoints.clear();
+    GC_STATUS retVal = octagon.Save( paramsCurrent.calibResultJsonFilepath );
     return retVal;
 }
 GC_STATUS CalibExecutive::CalibrateOctagon( const cv::Mat &img, const string &controlJson, string &err_msg )
@@ -463,8 +474,7 @@ GC_STATUS CalibExecutive::CalibrateOctagon( const cv::Mat &img, const string &co
 
     return retVal;
 }
-// if img != cv::Mat() then a recalibration is performed
-GC_STATUS CalibExecutive::Load( const string jsonFilepath, const Mat &img )
+GC_STATUS CalibExecutive::Load( const string jsonFilepath )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -510,15 +520,7 @@ GC_STATUS CalibExecutive::Load( const string jsonFilepath, const Mat &img )
                         retVal = SetCalibFromJson( controlJson );
                         if ( GC_OK == retVal )
                         {
-                            if (  img.empty() )
-                            {
-                                retVal = octagon.CalcHomographies();
-                            }
-                            else
-                            {
-                                string err_msg;
-                                retVal = CalibrateOctagon( img, controlJson, err_msg );
-                            }
+                            retVal = octagon.CalcHomographies();
                         }
                     }
                 }

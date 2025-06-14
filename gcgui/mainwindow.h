@@ -88,7 +88,6 @@ private slots:
     void on_pushButton_visionCalibrate_clicked();
     void on_pushButton_visionCalibrateLoad_clicked();
     void on_pushButton_resetSearchRegion_clicked();
-    void on_toolButton_calibVisionResult_json_browse_clicked();
     void on_toolButton_findLineTopFolder_browse_clicked();
     void on_toolButton_findLine_resultCSVFile_browse_clicked();
     void on_toolButton_findLine_annotatedResultFolder_browse_clicked();
@@ -103,6 +102,7 @@ private slots:
     void on_pushButton_createCalibCommandLine_clicked();
     void on_pushButton_createFindCommandLine_clicked();
     void on_pushButton_setFindLineFolderFromExploreFolder_clicked();
+    void on_pushButton_visionCalibrateSave_clicked();
 
 protected:
     // paint, mouse, and application event methods
@@ -130,6 +130,7 @@ private:
     bool m_bCaptured;
     bool m_bFinishingFolderThread;
     int m_nCapturePos;
+    bool m_bCalibDirty;
 
     // QT display stuff
     QComboBox *m_pComboBoxImageToView;

@@ -20,7 +20,6 @@
 #ifdef DEBUG_FIND_CALIB_SYMBOL
 #undef DEBUG_FIND_CALIB_SYMBOL
 #include <iostream>
-#include <boost/filesystem.hpp>
 #ifdef _WIN32
 static const char DEBUG_FOLDER[] = "c:/gaugecam/";
 #else
@@ -75,8 +74,8 @@ CalibOctagon::CalibOctagon()
 }
 void CalibOctagon::clear()
 {
-    // matHomogPixToWorld = Mat();
-    // matHomogWorldToPix = Mat();
+    matHomogPixToWorld = Mat();
+    matHomogWorldToPix = Mat();
     model.clear();
 }
 GC_STATUS CalibOctagon::GetCalibParams( std::string &calibParams )
@@ -297,6 +296,9 @@ GC_STATUS CalibOctagon::Calibrate( const cv::Mat &img, const std::string &contro
                         circle( color, model.waterlineSearchCorners[ 3 ], 11, Scalar( 0, 255, 0 ), 3 );
                         imwrite( "/var/tmp/gaugecam/roi_pts.png", color );
 #endif
+                        // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+                        // KWC ~~~ this is where to start the waterline roi offset problem search
+                        // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                         // int x_offset = std::round( oldModel.center.x - model.center.x );
                         // int y_offset = std::round( oldModel.center.y - model.center.y );
                         // for ( size_t i = 0; i < model.waterlineSearchCorners.size(); ++i )
@@ -581,7 +583,6 @@ GC_STATUS CalibOctagon::CreateCalibration( const std::vector< cv::Point2d > &pix
 
     return retVal;
 }
-// if img != cv::Mat() then a recalibration is performed
 GC_STATUS CalibOctagon::Load( const std::string jsonCalString )
 {
     GC_STATUS retVal = GC_OK;
@@ -727,6 +728,11 @@ GC_STATUS CalibOctagon::Save( const std::string jsonCalFilepath )
     else if ( jsonCalFilepath.empty() )
     {
         FILE_LOG( logERROR ) << "[CalibOctagon::Save] Calibration filepath is empty";
+        retVal = GC_ERR;
+    }
+    else if ( string::npos == jsonCalFilepath.find( ".json" ) )
+    {
+        FILE_LOG( logERROR ) << "[CalibOctagon::Save] Filename must have .json extension";
         retVal = GC_ERR;
     }
     else

@@ -45,40 +45,40 @@ win32 {
 # win32:RC_ICONS += ./icons/coffee_logo.png
 
 SOURCES += \
-        ../algorithms/animate.cpp \
-	../algorithms/calibexecutive.cpp \
+    ../algorithms/animate.cpp \
+    ../algorithms/calibexecutive.cpp \
     ../algorithms/caliboctagon.cpp \
-        ../algorithms/findline.cpp \
-	../algorithms/gifanim/gifanim.cpp \
-	../algorithms/metadata.cpp \
+    ../algorithms/findline.cpp \
+    ../algorithms/gifanim/gifanim.cpp \
+    ../algorithms/metadata.cpp \
     ../algorithms/octagonsearch.cpp \
-        ../algorithms/searchlines.cpp \
-        ../algorithms/visapp.cpp \
-        guivisapp.cpp \
-        main.cpp \
-        mainwindow.cpp \
-	roiadjust.cpp
+    ../algorithms/searchlines.cpp \
+    ../algorithms/visapp.cpp \
+    guivisapp.cpp \
+    main.cpp \
+    mainwindow.cpp \
+    roiadjust.cpp
 
 HEADERS += \
-        ../algorithms/animate.h \
-        ../algorithms/bresenham.h \
-	../algorithms/calibexecutive.h \
+    ../algorithms/animate.h \
+    ../algorithms/bresenham.h \
+    ../algorithms/calibexecutive.h \
     ../algorithms/caliboctagon.h \
-        ../algorithms/csvreader.h \
-        ../algorithms/findline.h \
-	../algorithms/gc_types.h \
-	../algorithms/gifanim/gifanim.h \
-        ../algorithms/labelroi.h \
-        ../algorithms/log.h \
-        ../algorithms/metadata.h \
+    ../algorithms/csvreader.h \
+    ../algorithms/findline.h \
+    ../algorithms/gc_types.h \
+    ../algorithms/gifanim/gifanim.h \
+    ../algorithms/labelroi.h \
+    ../algorithms/log.h \
+    ../algorithms/metadata.h \
     ../algorithms/octagonsearch.h \
-        ../algorithms/searchlines.h \
-        ../algorithms/timestampconvert.h \
-        ../algorithms/visapp.h \
-        ../algorithms/wincmd.h \
-        guivisapp.h \
-        mainwindow.h \
-	roiadjust.h
+    ../algorithms/searchlines.h \
+    ../algorithms/timestampconvert.h \
+    ../algorithms/visapp.h \
+    ../algorithms/wincmd.h \
+    guivisapp.h \
+    mainwindow.h \
+    roiadjust.h
 
 FORMS += \
         mainwindow.ui
@@ -96,7 +96,6 @@ unix:!macx {
             -lopencv_video \
             -lboost_date_time \
             -lboost_system \
-            -lboost_filesystem \
             -lboost_chrono
 }
 else {
@@ -119,7 +118,6 @@ else {
                 -lopencv_videoio4100d \
                 -lopencv_video4100d \
                 -lopencv_calib3d4100d \
-                -llibboost_filesystem-vc143-mt-gd-x64-1_86 \
                 -llibboost_date_time-vc143-mt-gd-x64-1_86 \
                 -llibboost_system-vc143-mt-gd-x64-1_86 \
                 -llibboost_chrono-vc143-mt-gd-x64-1_86
@@ -130,7 +128,6 @@ else {
                 -lopencv_videoio4100 \
                 -lopencv_video4100 \
                 -lopencv_calib3d4100 \
-                -llibboost_filesystem-vc143-mt-x64-1_86 \
                 -llibboost_date_time-vc143-mt-x64-1_86 \
                 -llibboost_system-vc143-mt-x64-1_86 \
                 -llibboost_chrono-vc143-mt-x64-1_86 \

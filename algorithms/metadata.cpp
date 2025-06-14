@@ -27,7 +27,9 @@
 #include <boost/exception/exception.hpp>
 #include <boost/exception/diagnostic_information.hpp>
 #include <boost/foreach.hpp>
+#ifdef WIN32
 #include "wincmd.h"
+#endif
 
 using namespace cv;
 using namespace std;
@@ -335,6 +337,82 @@ GC_STATUS MetaData::GetImageData( const string filepath, ExifFeatures &exifFeat 
 
     return retVal;
 }
+// exiftool -s -s -s -ImageDescription yourimage.jpg
+GC_STATUS MetaData::ReadFromImageDescription( const std::string filepath, std::string &data )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        if ( !fs::exists( filepath ) )
+        {
+            FILE_LOG( logERROR ) << "[ExifMetadata::ReadFromImageDescription] Image file does not exist: " << filepath;
+            retVal = GC_ERR;
+        }
+        else
+        {
+            retVal = GetExifData( filepath, "ImageDescription", data );
+        }
+    }
+    catch( std::exception &e )
+    {
+        FILE_LOG( logERROR ) << "[ExifMetadata::ReadFromImageDescription] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+    return retVal;
+
+}
+std::string escapeQuotes( const std::string &input )
+{
+    std::string escaped;
+    for ( char c : input )
+    {
+        if( c == '"' )
+        {
+            escaped += "\\\"";
+        }
+        else
+        {
+            escaped += c;
+        }
+    }
+    return escaped;
+}
+
+// exiftool -ImageDescription="Your custom description here" yourimage.jpg
+GC_STATUS MetaData::WriteToImageDescription( const std::string filepath, const std::string &data )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        if ( !fs::exists( filepath ) )
+        {
+            FILE_LOG( logERROR ) << "[ExifMetadata::WriteToImageDescription] Image file does not exist: " << filepath;
+            retVal = GC_ERR;
+        }
+        else
+        {
+            std::string escapedDescription = escapeQuotes( data );
+            std::ostringstream command;
+            command << "exiftool -overwrite_original "
+                    << "-ImageDescription=\"" << escapedDescription << "\" "
+                    << "\"" << filepath << "\"";
+            // std::cout << "Running command: " << command.str() << std::endl;
+            retVal = 0 == std::system(command.str().c_str()) ? GC_OK : GC_ERR;
+            if ( GC_OK != retVal )
+            {
+                FILE_LOG( logERROR ) << "[ExifMetadata::WriteToImageDescription] Could not write data to " << filepath;
+                FILE_LOG( logERROR ) << "[ExifMetadata::WriteToImageDescription] Failed write data " << data;
+            }
+        }
+    }
+    catch( std::exception &e )
+    {
+        FILE_LOG( logERROR ) << "[ExifMetadata::WriteToImageDescription] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+    return retVal;
+}
+
 
 } // namespace gc
 

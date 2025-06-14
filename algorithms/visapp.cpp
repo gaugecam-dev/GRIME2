@@ -113,14 +113,14 @@ GC_STATUS VisApp::GetTempCacheResults( const std::string jsonFilepath, FindLineR
     }
     return retVal;
 }
-GC_STATUS VisApp::CalibLoad( const std::string calibJson, const cv::Mat &img )
+GC_STATUS VisApp::CalibLoad( const std::string calibJson )
 {
-    GC_STATUS retVal = m_calibExec.Load( calibJson, img );
+    GC_STATUS retVal = m_calibExec.Load( calibJson );
     return retVal;
 }
-GC_STATUS VisApp::CalibSave( )
+GC_STATUS VisApp::CalibSave( const std::string jsonPath )
 {
-    GC_STATUS retVal = m_calibExec.CalibSaveOctagon();
+    GC_STATUS retVal = m_calibExec.CalibSaveOctagon( jsonPath );
     return retVal;
 }
 GC_STATUS VisApp::Calibrate( const string imgFilepath, const string jsonControl, const string resultImgPath,
@@ -176,8 +176,31 @@ GC_STATUS VisApp::Calibrate( const string imgFilepath, const string jsonControl,
         }
         else
         {
-            retVal = m_calibExec.Calibrate( img, jsonControl, rmseDist, rmseX, rmseY, err_msg );
+            retVal = Calibrate( img, jsonControl, rmseDist, rmseX, rmseY, err_msg );
         }
+    }
+    catch( Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[VisApp::Calibrate] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+    return retVal;
+}
+GC_STATUS VisApp::Calibrate( const Mat &img, const string jsonControl, double &rmseDist, double &rmseX, double &rmseY, string &err_msg )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        Mat scratch;
+        if ( 1 == img.channels() )
+        {
+            scratch = img;
+        }
+        else
+        {
+            cvtColor( img, scratch, COLOR_BGR2GRAY );
+        }
+        retVal = m_calibExec.Calibrate( scratch, jsonControl, rmseDist, rmseX, rmseY, err_msg );
     }
     catch( Exception &e )
     {
@@ -504,23 +527,14 @@ GC_STATUS VisApp::CalcLine( const Mat &img, const string timestamp, const bool i
 
     return retVal;
 }
-GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result, string &resultJson )
+GC_STATUS VisApp::ResultToJsonString( const FindLineResult result, const FindLineParams params, std::string &resultJson )
 {
-    GC_STATUS retVal = CalcLine( params, result );
+    GC_STATUS retVal = GC_OK;
     try
     {
         stringstream ss;
         resultJson.clear();
-        if ( GC_OK != retVal )
-        {
-            ss << "{";
-            ss << "\"STATUS\": \"FAILURE\",";
-        }
-        else
-        {
-            ss << "{";
-            ss << "\"STATUS\": \"SUCCESS\",";
-        }
+        ss << "{\"STATUS\": " << ( result.findSuccess ? "\"SUCCESS\"," : "\"FAILURE\"," );
         ss << "\"image_path\": \"" << params.imagePath << "\",";
         ss << "\"calib_path\": \"" << params.calibFilepath << "\",";
         ss << "\"result_path\": \"" << params.resultImagePath << "\",";
@@ -574,6 +588,21 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result,
         ss << "]";
         ss << "}";
         resultJson = ss.str();
+    }
+    catch( std::exception &e )
+    {
+        FILE_LOG( logERROR ) << "[VisApp::CalcLine] " << e.what();
+        FILE_LOG( logERROR ) << "Image=" << params.imagePath << " calib=" << params.calibFilepath;
+        retVal = GC_EXCEPT;
+    }
+    return retVal;
+}
+GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result, string &resultJson )
+{
+    GC_STATUS retVal = CalcLine( params, result );
+    try
+    {
+        retVal = ResultToJsonString( result, params, resultJson );
     }
     catch( std::exception &e )
     {
@@ -641,8 +670,7 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result 
                 {
                     if ( params.isOctagonCalib || ( params.calibFilepath != m_calibFilepath && !params.isOctagonCalib ) )
                     {
-                        Mat noImg = Mat();
-                        retVal = m_calibExec.Load( params.calibFilepath, params.isOctagonCalib ? img : noImg );
+                        retVal = m_calibExec.Load( params.calibFilepath );
                         if ( GC_OK != retVal )
                         {
                             result.calibSuccess = false;
@@ -677,7 +705,11 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result 
                     if ( GC_OK == retVal1 )
                     {
                         bool isOk = imwrite( params.resultImagePath, color );
-                        if ( !isOk)
+                        if ( isOk )
+                        {
+
+                        }
+                        else
                         {
                             FILE_LOG( logERROR ) << "[VisApp::CalcLine] Could not write result image to " << params.resultImagePath;
                             retVal1 = GC_ERR;
@@ -729,6 +761,11 @@ GC_STATUS VisApp::GetTargetSearchROI( cv::Rect &rect )
 GC_STATUS VisApp::GetCalibParams( std::string &calibParams )
 {
     GC_STATUS retVal = m_calibExec.GetCalibParams( calibParams );
+    return retVal;
+}
+GC_STATUS VisApp::GetCalibControlJson( std::string &calibJson )
+{
+    GC_STATUS retVal = m_calibExec.GetCalibControlJson( calibJson );
     return retVal;
 }
 GC_STATUS VisApp::DrawAssocPts( const cv::Mat &img, cv::Mat &overlay, std::string &err_msg )

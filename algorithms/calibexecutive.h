@@ -147,8 +147,8 @@ public:
 
     void clear();
     bool isCalibrated() { return octagon.isCalibrated(); }
-    GC_STATUS Load( const std::string jsonFilepath, const cv::Mat &img );
-    GC_STATUS CalibSaveOctagon();
+    GC_STATUS Load( const std::string jsonFilepath );
+    GC_STATUS CalibSaveOctagon( const std::string jsonFilepath );
     GC_STATUS Calibrate( const cv::Mat &img, const std::string jsonParams,
                          double &rmseDist, double &rmseX, double &rmseY, std::string &err_msg );
     GC_STATUS Calibrate( const cv::Mat &img, const std::string jsonParams, cv::Mat &imgResult,
@@ -171,6 +171,8 @@ public:
     cv::Rect &TargetRoi();
     std::string &GetCalibType() { return paramsCurrent.calibType; }
     GC_STATUS GetCalibParams( std::string &calibParams );
+    GC_STATUS GetCalibControlJson( std::string &calibJson );
+
     GC_STATUS GetTargetSearchROI( cv::Rect &rect );
     GC_STATUS SetAdjustedSearchROI( std::vector< LineEnds > &searchLinesAdj );
 

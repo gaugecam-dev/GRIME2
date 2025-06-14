@@ -639,16 +639,15 @@ GC_STATUS GuiVisApp::GetCalibParams( std::string &calibParams )
     return retVal;
 }
 bool GuiVisApp::IsBowtieCalib() { return m_visApp.GetCalibType() == "BowTie"; }
-GC_STATUS GuiVisApp::LoadCalib( const std::string calibJson, const bool reCalib )
+GC_STATUS GuiVisApp::LoadCalib( const std::string calibJson  )
 {
-    cv::Mat noImg = cv::Mat();
-    GC_STATUS retVal = m_visApp.CalibLoad( calibJson, reCalib ? m_matColor : noImg );
+    GC_STATUS retVal = m_visApp.CalibLoad( calibJson );
     sigMessage( string( "Load calibration: " ) + ( GC_OK == retVal ? "SUCCESS" : "FAILURE" ) );
     return retVal;
 }
-GC_STATUS GuiVisApp::SaveCalib()
+GC_STATUS GuiVisApp::SaveCalib( const std::string jsonPath )
 {
-    GC_STATUS retVal = m_visApp.CalibSave();
+    GC_STATUS retVal = m_visApp.CalibSave( jsonPath );
     return retVal;
 }
 GC_STATUS GuiVisApp::Calibrate( const std::string imgFilepath, const string jsonControl )
@@ -1067,7 +1066,7 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                 }
                 else
                 {
-                    retVal = m_visApp.CalibLoad( params.calibFilepath, img );
+                    retVal = m_visApp.CalibLoad( params.calibFilepath );
                     if ( GC_OK != retVal )
                     {
                         sigMessage( "Failed to load calib for find line folder run" );
@@ -1081,7 +1080,6 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                             sigMessage( "Could not accumulate command line prefix string" );
                         }
 
-                        string resultJson;
                         FindLineResult result;
                         FindLineParams paramsAdj = params;
                         for ( size_t i = 0; i < images.size(); ++i )
@@ -1105,7 +1103,7 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                                 }
                                 paramsAdj.imagePath = images[ i ];
                                 paramsAdj.resultImagePath = overlay_path;
-                                retVal = m_visApp.CalcLine( paramsAdj, result, resultJson );
+                                retVal = m_visApp.CalcLine( paramsAdj, result );
                                 if ( !overlay_path.empty() )
                                 {
                                     retVal = LoadImageToApp( overlay_path );
