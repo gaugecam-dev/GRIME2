@@ -362,12 +362,12 @@
               <item>
                <layout class="QVBoxLayout" name="verticalLayout_10">
                 <property name="spacing">
-                 <number>0</number>
+                 <number>3</number>
                 </property>
                 <item>
                  <widget class="QLabel" name="label_12">
                   <property name="sizePolicy">
-                   <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+                   <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
                     <horstretch>0</horstretch>
                     <verstretch>0</verstretch>
                    </sizepolicy>
@@ -376,7 +376,7 @@
                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;When you click Find line here or in the main window, the calib file is updated with the current waterline search ROI positions. This “locks in” the relative locations of the waterline and calib ROI positions. Then, when images are processed, the waterline ROI is anchored to the calib ROI. The end result is a robust pair of ROIs that accommodate significant shifts in field of view. &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                   </property>
                   <property name="text">
-                   <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Test calibration and line find setup on the current image.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                   <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Test calib &amp;amp; line find on current image.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                   </property>
                   <property name="textFormat">
                    <enum>Qt::TextFormat::MarkdownText</enum>
@@ -435,9 +435,25 @@
                  </widget>
                 </item>
                 <item>
+                 <spacer name="verticalSpacer">
+                  <property name="orientation">
+                   <enum>Qt::Orientation::Vertical</enum>
+                  </property>
+                  <property name="sizeType">
+                   <enum>QSizePolicy::Policy::Preferred</enum>
+                  </property>
+                  <property name="sizeHint" stdset="0">
+                   <size>
+                    <width>20</width>
+                    <height>40</height>
+                   </size>
+                  </property>
+                 </spacer>
+                </item>
+                <item>
                  <layout class="QHBoxLayout" name="horizontalLayout_6">
                   <property name="spacing">
-                   <number>3</number>
+                   <number>0</number>
                   </property>
                   <item>
                    <widget class="QToolButton" name="toolButton_clearMsgs">
@@ -630,7 +646,7 @@
                <enum>QTabWidget::TabPosition::South</enum>
               </property>
               <property name="currentIndex">
-               <number>1</number>
+               <number>2</number>
               </property>
               <widget class="QWidget" name="tab_mainRunFolder">
                <property name="toolTipDuration">
@@ -1726,12 +1742,25 @@
                 <item>
                  <layout class="QHBoxLayout" name="horizontalLayout_7">
                   <item>
+                   <widget class="QLabel" name="label_13">
+                    <property name="toolTip">
+                     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;This feature is great if you want to see the analyses and results in real time. However, using cli is much faster.&lt;/body&gt;&lt;/html&gt;</string>
+                    </property>
+                    <property name="text">
+                     <string>Process all images in folder(s)</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
                    <widget class="QPushButton" name="pushButton_findLine_processFolder">
                     <property name="sizePolicy">
                      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                       <horstretch>0</horstretch>
                       <verstretch>0</verstretch>
                      </sizepolicy>
+                    </property>
+                    <property name="toolTip">
+                     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;This feature is great if you want to see the analyses and results in real time. However, using cli is much faster.&lt;/body&gt;&lt;/html&gt;</string>
                     </property>
                     <property name="text">
                      <string>Run</string>
@@ -1749,34 +1778,16 @@
                       <verstretch>0</verstretch>
                      </sizepolicy>
                     </property>
+                    <property name="toolTip">
+                     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;This feature is great if you want to see the analyses and results in real time. However, using cli is much faster.&lt;/body&gt;&lt;/html&gt;</string>
+                    </property>
                     <property name="text">
                      <string>Stop</string>
                     </property>
                    </widget>
                   </item>
-                 </layout>
-                </item>
-                <item>
-                 <widget class="QTableWidget" name="tableWidget">
-                  <property name="sizePolicy">
-                   <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-                    <horstretch>0</horstretch>
-                    <verstretch>0</verstretch>
-                   </sizepolicy>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <layout class="QHBoxLayout" name="horizontalLayout_9">
                   <item>
-                   <widget class="QPushButton" name="pushButton_createFindCommandLine">
-                    <property name="text">
-                     <string>Create command line</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <spacer name="horizontalSpacer_4">
+                   <spacer name="horizontalSpacer">
                     <property name="orientation">
                      <enum>Qt::Orientation::Horizontal</enum>
                     </property>
@@ -1799,12 +1810,35 @@
                       <verstretch>0</verstretch>
                      </sizepolicy>
                     </property>
+                    <property name="toolTip">
+                     <string>Clear results list .</string>
+                    </property>
                     <property name="text">
                      <string>Clear</string>
                     </property>
                    </widget>
                   </item>
                  </layout>
+                </item>
+                <item>
+                 <widget class="QTableWidget" name="tableWidget">
+                  <property name="sizePolicy">
+                   <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+                    <horstretch>0</horstretch>
+                    <verstretch>0</verstretch>
+                   </sizepolicy>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QPushButton" name="pushButton_createFindCommandLine">
+                  <property name="toolTip">
+                   <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;To use the CLI, open Command Prompt and navigate to the grime2cli folder location (the default location is C:Program Files (x86)GaugeCamgrime2). Then type “grime2cli”, then a space, and then paste in the command line script that is generated by this button.&lt;/body&gt;&lt;/html&gt;</string>
+                  </property>
+                  <property name="text">
+                   <string>Generate command line string necessary to run images using grime2cli</string>
+                  </property>
+                 </widget>
                 </item>
                </layout>
               </widget>
