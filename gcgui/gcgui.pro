@@ -166,7 +166,7 @@ DISTFILES += \
     config/batch_test_win.bat \
     config/calib.json \
     config/calib_result.png \
-    config/calib_stopsign.json \
+    config/calib.json \
     config/calibration_target_world_coordinates.csv \
     config/settings.cfg \
     config/settingsWin.cfg \
