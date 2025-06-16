@@ -103,7 +103,6 @@ private slots:
     void on_pushButton_createFindCommandLine_clicked();
     void on_pushButton_setFindLineFolderFromExploreFolder_clicked();
     void on_pushButton_visionCalibrateSave_clicked();
-
     void on_pushButton_visionCalibrateSaveAs_clicked();
 
 protected:

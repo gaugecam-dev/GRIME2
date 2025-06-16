@@ -1761,4 +1761,3 @@ void MainWindow::on_pushButton_createFindCommandLine_clicked()
     }
 }
 
-
