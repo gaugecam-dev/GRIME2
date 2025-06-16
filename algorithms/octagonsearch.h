@@ -26,7 +26,6 @@
 #define OCTAGONSEARCH_H
 
 #include "gc_types.h"
-#include "opencv2/imgproc.hpp"
 
 namespace gc
 {

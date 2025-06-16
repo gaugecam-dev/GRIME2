@@ -19,8 +19,8 @@
 #include <iostream>
 #include <algorithm>
 #include <chrono>
+#include "opencv2/imgproc.hpp"
 #include "opencv2/imgcodecs.hpp"
-#include "bresenham.h"
 
 #ifdef DEBUG_OCTAGON_TEMPL
 #undef DEBUG_OCTAGON_TEMPL

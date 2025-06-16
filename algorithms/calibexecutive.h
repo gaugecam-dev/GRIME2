@@ -148,14 +148,14 @@ public:
     void clear();
     bool isCalibrated() { return octagon.isCalibrated(); }
     GC_STATUS Load( const std::string jsonFilepath );
+    GC_STATUS LoadFromJsonString( const std::string jsonString , const std::string jsonFilepath = "" );
+    GC_STATUS LoadFromJsonString();
     GC_STATUS CalibSaveOctagon( const std::string jsonFilepath );
     GC_STATUS Calibrate( const cv::Mat &img, const std::string jsonParams,
-                         double &rmseDist, double &rmseX, double &rmseY, std::string &err_msg );
+                        double &rmseDist, double &rmseX, double &rmseY, std::string &err_msg, const bool save = false );
     GC_STATUS Calibrate( const cv::Mat &img, const std::string jsonParams, cv::Mat &imgResult,
-                         double &rmseDist, double &rmseX, double &rmseY, std::string &err_msg,
+                         double &rmseDist, double &rmseX, double &rmseY, std::string &err_msg, const bool save = false,
                          const bool drawAll = false );
-    GC_STATUS Recalibrate( const cv::Mat &img, const std::string calibType,
-                           double &rmseDist, double &rmseX, double &rmseY, std::string &err_msg );
     GC_STATUS PixelToWorld( const cv::Point2d pixelPt, cv::Point2d &worldPt );
     GC_STATUS WorldToPixel( const cv::Point2d worldPt, cv::Point2d &pixelPt );
     GC_STATUS DrawOverlay( const cv::Mat matIn, cv::Mat &imgMatOut , const bool drawAll = false );
@@ -164,14 +164,17 @@ public:
     GC_STATUS DrawAssocPts( const cv::Mat &img, cv::Mat &overlay, std::string &err_msg );
     GC_STATUS FindMoveTargets( FindPointSet &ptsFound );
     GC_STATUS MoveRefPoint( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt );
+    GC_STATUS MoveFountPoint( FindPointSet &ptsFound );
     GC_STATUS AdjustOctagonForRotation( const cv::Size imgSize, const FindPointSet &calcLinePts, double &offsetAngle );
 
-    CalibModelOctagon &CalibSymbolModel() { return octagon.Model(); }
+    CalibModelOctagon &CalibModel() { return octagon.Model(); }
+    GC_STATUS SetCalibModel( CalibModelOctagon newModel );
     std::vector< LineEnds > &SearchLines();
     cv::Rect &TargetRoi();
     std::string &GetCalibType() { return paramsCurrent.calibType; }
     GC_STATUS GetCalibParams( std::string &calibParams );
     GC_STATUS GetCalibControlJson( std::string &calibJson );
+    GC_STATUS SetCalibFromJson( const std::string &jsonParams );
 
     GC_STATUS GetTargetSearchROI( cv::Rect &rect );
     GC_STATUS SetAdjustedSearchROI( std::vector< LineEnds > &searchLinesAdj );
@@ -191,16 +194,15 @@ private:
     CalibExecParams paramsCurrent;
     std::vector< LineEnds > nullSearchLines;    ///< Empty vector of search lines to be searched for the water line
     cv::Rect nullRect = cv::Rect( -1, -1, -1, -1 );
+    std::string calibFileJson;
 
     GC_STATUS CalibrateOctagon( const cv::Mat &img, const std::string &controlJson, std::string &err_msg );
 
-    GC_STATUS FindMoveTargetsOctagon( FindPointSet &ptsFound );
     GC_STATUS MoveRefPointOctagon( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt );
 
     GC_STATUS CalculateRMSE( const std::vector< cv::Point2d > &foundPts, std::vector< cv::Point2d > &reprojectedPts,
                              double &rmseEuclideanDist, double &rmseX, double &rmseY );
     GC_STATUS CalculateRMSE( const cv::Mat &img, double &rmseEuclideanDist, double &rmseX, double &rmseY );
-    GC_STATUS SetCalibFromJson( const std::string &jsonParams );
     GC_STATUS TestROIPositions( const int cols, const int rows );
 };
 

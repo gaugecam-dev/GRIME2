@@ -67,7 +67,6 @@ enum IMG_DISPLAY_OVERLAYS
     TARGET_ROI = 4,
     FINDLINE = 8,
     FEATROIS = 16,
-    MOVE_ROIS = 32,
     MOVE_FIND = 64,
     DIAG_ROWSUMS = 128,
     FINDLINE_1ST_DERIV = 256,
@@ -149,6 +148,8 @@ public:
                       const cv::Rect symbolSearchROI,
                       const double facetLen,
                       const double zeroOffsetVertical,
+                      const cv::Point2d leftRefPoint,
+                      const cv::Point2d rightRefPoint,
                       const cv::Point2d centerPoint,
                       const double symbolAngle ) :
         validCalib( isCalibValid ),
@@ -161,6 +162,8 @@ public:
         targetSearchRegion( symbolSearchROI ),
         facetLength( facetLen ),
         zeroOffset( zeroOffsetVertical ),
+        moveRefLft( leftRefPoint ),
+        moveRefRgt( rightRefPoint ),
         center( centerPoint ),
         angle( symbolAngle )
     {}
@@ -182,6 +185,8 @@ public:
         targetSearchRegion = cv::Rect( -1, -1, -1, -1 );
         facetLength = -1.0;
         zeroOffset = 2.0;
+        moveRefLft = cv::Point2d( -1.0, -1.0 );
+        moveRefRgt = cv::Point2d( -1.0, -1.0 );
         center = cv::Point2d( -1.0, -1.0 );
         angle = -9999999.0;
     }
@@ -198,6 +203,8 @@ public:
     cv::Rect targetSearchRegion;                     ///< Region within which to perform line and move search
     double facetLength;                              ///< Length of a stop sign facet in world units
     double zeroOffset;                               ///< Distance from bottom left stop sign corner to zero vertical position
+    cv::Point2d moveRefLft;                          ///< Original left reference point at time of calibration
+    cv::Point2d moveRefRgt;                          ///< Original left reference point at time of calibration
     cv::Point2d center;                              ///< Center of symbol
     double angle;                                    ///< Angle of symbol
 
@@ -476,6 +483,7 @@ public:
         calcLinePts.clear();
         refMovePts.clear();
         foundMovePts.clear();
+        foundCalPts.clear();
         foundPoints.clear();
         offsetMovePts.clear();
         calibOffsets.clear();
@@ -500,6 +508,7 @@ public:
     FindPointSet offsetMovePts;             ///< Offset between the moveRef and the moveFound lines
     CalibOffset calibOffsets;               ///< Calibration offset center and angle (along with original center and angle)
     double symbolToWaterLineAngle;          ///< Angle difference between the stop sign bottom and the waterline
+    std::vector< cv::Point2d > foundCalPts; ///< Octagon corner points for runtime found octagon
     std::vector< cv::Point2d > foundPoints; ///< Waterline points used to calculate the found water level line
     std::vector< std::vector< cv::Point > > diagRowSums;   ///< Row sums diagnostic lines
     std::vector< std::vector< cv::Point > > diag1stDeriv;  ///< 1st deriv diagnostic lines

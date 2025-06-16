@@ -82,13 +82,15 @@ public:
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
     GC_STATUS Calibrate( const string imgFilepath, const string jsonControl,
-                         double &rmseDist, double &rmseX, double &rmseY, string &err_msg );
+                         double &rmseDist, double &rmseX, double &rmseY,
+                        string &err_msg, const bool save = false );
 
     // TODO: Add doxygen comments
     GC_STATUS Calibrate( const cv::Mat &img, const string jsonControl,
-                         double &rmseDist, double &rmseX, double &rmseY, string &err_msg );
+                         double &rmseDist, double &rmseX, double &rmseY,
+                        string &err_msg, const bool save = false );
     GC_STATUS Calibrate( const string imgFilepath, const string jsonControl, const string resultImgPath,
-                         double &rmseDist, double &rmseX, double &rmseY , string &err_msg );
+                         double &rmseDist, double &rmseX, double &rmseY , string &err_msg, const bool save = false );
 
     // TODO: Adjust doxygen comments
     /**

@@ -53,6 +53,7 @@ CalibExecutive::CalibExecutive()
 void CalibExecutive::clear()
 {
     octagon.clear();
+    calibFileJson.clear();
 }
 GC_STATUS CalibExecutive::GetTargetSearchROI( cv::Rect &rect )
 {
@@ -87,34 +88,11 @@ GC_STATUS CalibExecutive::GetCalibParams( std::string &calibParams )
     }
     return retVal;
 }
-GC_STATUS CalibExecutive::Recalibrate( const Mat &img, const std::string calibType,
-                                       double &rmseDist, double &rmseX, double &rmseY, string &err_msg )
+GC_STATUS CalibExecutive::Calibrate(const Mat &img, const std::string jsonParams, cv::Mat &imgResult,
+                                    double &rmseDist, double &rmseX, double &rmseY,
+                                    string &err_msg, const bool save, const bool drawAll )
 {
-    GC_STATUS retVal = GC_OK;
-
-    string controlJson;
-    if ( "Octagon" == calibType )
-    {
-        controlJson = octagon.ControlJson();
-    }
-    else
-    {
-        FILE_LOG( logERROR ) << "[CalibExecutive::Recalibrate] Invalid calibration type" ;
-        retVal = GC_ERR;
-    }
-
-    if ( GC_OK == retVal )
-    {
-        retVal = Calibrate( img, controlJson, rmseDist, rmseX, rmseY, err_msg );
-    }
-
-    return retVal;
-}
-GC_STATUS CalibExecutive::Calibrate( const Mat &img, const std::string jsonParams, cv::Mat &imgResult,
-                                     double &rmseDist, double &rmseX, double &rmseY, string &err_msg,
-                                     const bool drawAll )
-{
-    GC_STATUS retVal = Calibrate( img, jsonParams, rmseDist, rmseX, rmseY, err_msg );
+    GC_STATUS retVal = Calibrate( img, jsonParams, rmseDist, rmseX, rmseY, err_msg, save );
     if ( GC_OK == retVal )
     {
         retVal = DrawOverlay( img, imgResult, drawAll );
@@ -229,8 +207,14 @@ GC_STATUS CalibExecutive::TestROIPositions( const int cols, const int rows )
     }
     return retVal;
 }
+GC_STATUS CalibExecutive::SetCalibModel( CalibModelOctagon newModel )
+{
+    GC_STATUS retVal = octagon.SetCalibModel( newModel );
+    return retVal;
+}
 GC_STATUS CalibExecutive::Calibrate( const cv::Mat &img, const std::string jsonParams,
-                                     double &rmseDist, double &rmseX, double &rmseY, string &err_msg )
+                                     double &rmseDist, double &rmseX, double &rmseY,
+                                     string &err_msg, const bool save )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -320,6 +304,14 @@ GC_STATUS CalibExecutive::Calibrate( const cv::Mat &img, const std::string jsonP
                         rmseDist = rmseX = rmseY = -9999999.0;
                         FILE_LOG( logWARNING ) << "[CalibExecutive::Calibrate] Could not calculate RMSE";
                         retVal = GC_OK;
+                    }
+                    else if ( save )
+                    {
+                        retVal = octagon.Save( paramsCurrent.calibResultJsonFilepath );
+                        if ( GC_OK != retVal )
+                        {
+                            FILE_LOG( logERROR ) << "[CalibExecutive::Calibrate] Could not calculate RMSE";
+                        }
                     }
                 }
             }
@@ -474,6 +466,65 @@ GC_STATUS CalibExecutive::CalibrateOctagon( const cv::Mat &img, const string &co
 
     return retVal;
 }
+GC_STATUS CalibExecutive::LoadFromJsonString()
+{
+    string jsonString = calibFileJson;
+    GC_STATUS retVal = LoadFromJsonString( jsonString );
+    return retVal;
+}
+
+GC_STATUS CalibExecutive::LoadFromJsonString( const std::string jsonString, const std::string jsonFilepath )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        clear();
+        stringstream ss;
+        ss << jsonString;
+        // cout << endl << jsonString << endl;
+
+        property_tree::ptree pt;
+        property_tree::read_json( ss, pt );
+
+        string calibTypeString = pt.get< string >( "calibType", "NotSet" );
+        if ( calibTypeString == "Octagon" )
+        {
+            paramsCurrent.calibType = "Octagon";
+            if ( !jsonFilepath.empty() )
+                paramsCurrent.calibResultJsonFilepath = jsonFilepath;
+
+            retVal = octagon.Load( ss.str() );
+            if ( GC_OK == retVal )
+            {
+                string controlJson = pt.get< string >( "control_json", "" );
+                if ( controlJson.empty() )
+                {
+                    FILE_LOG( logERROR ) << "[CalibExecutive::Load] Could not retrieve calib control string from " << jsonFilepath;
+                    retVal = GC_ERR;
+                }
+                else
+                {
+                    retVal = SetCalibFromJson( controlJson );
+                    if ( GC_OK == retVal )
+                    {
+                        retVal = octagon.CalcHomographies();
+                    }
+                }
+            }
+        }
+        else if ( "NotSet" == calibTypeString )
+        {
+            FILE_LOG( logERROR ) << "[CalibExecutive::LoadFromJsonString] No calibration type specified in calibration file";
+            retVal = GC_ERR;
+        }
+    }
+    catch( boost::exception &e )
+    {
+        FILE_LOG( logERROR ) << "[CalibExecutive::Load] " << diagnostic_information( e );
+        retVal = GC_EXCEPT;
+    }
+    return retVal;
+}
 GC_STATUS CalibExecutive::Load( const string jsonFilepath )
 {
     GC_STATUS retVal = GC_OK;
@@ -492,44 +543,9 @@ GC_STATUS CalibExecutive::Load( const string jsonFilepath )
             std::stringstream buffer;
             buffer << t.rdbuf();
             jsonString = buffer.str();
-            // fs::load_string_file( jsonFilepath, jsonString );
 
-            stringstream ss;
-            ss << jsonString;
-            // cout << endl << jsonString << endl;
-
-            property_tree::ptree pt;
-            property_tree::read_json( ss, pt );
-
-            string calibTypeString = pt.get< string >( "calibType", "NotSet" );
-            if ( calibTypeString == "Octagon" )
-            {
-                paramsCurrent.calibType = "Octagon";
-                paramsCurrent.calibResultJsonFilepath = jsonFilepath;
-                retVal = octagon.Load( ss.str() );
-                if ( GC_OK == retVal )
-                {
-                    string controlJson = pt.get< string >( "control_json", "" );
-                    if ( controlJson.empty() )
-                    {
-                        FILE_LOG( logERROR ) << "[CalibExecutive::Load] Could not retrieve calib control string from " << jsonFilepath;
-                        retVal = GC_ERR;
-                    }
-                    else
-                    {
-                        retVal = SetCalibFromJson( controlJson );
-                        if ( GC_OK == retVal )
-                        {
-                            retVal = octagon.CalcHomographies();
-                        }
-                    }
-                }
-            }
-            else if ( "NotSet" == calibTypeString )
-            {
-                FILE_LOG( logERROR ) << "[CalibExecutive::Load] No calibration type specified in calibration file";
-                retVal = GC_ERR;
-            }
+            retVal = LoadFromJsonString( jsonString, jsonFilepath );
+            calibFileJson = GC_OK == retVal ? jsonString : "";
         }
     }
     catch( boost::exception &e )
@@ -589,7 +605,7 @@ GC_STATUS CalibExecutive::FindMoveTargets( FindPointSet &ptsFound )
 
     if ( "Octagon" == paramsCurrent.calibType )
     {
-        retVal = FindMoveTargetsOctagon( ptsFound );
+        retVal = MoveFountPoint( ptsFound );
     }
     else
     {
@@ -599,22 +615,31 @@ GC_STATUS CalibExecutive::FindMoveTargets( FindPointSet &ptsFound )
 
     return retVal;
 }
-GC_STATUS CalibExecutive::FindMoveTargetsOctagon( FindPointSet &ptsFound )
+GC_STATUS CalibExecutive::MoveFountPoint( FindPointSet &ptsFound )
 {
     GC_STATUS retVal = GC_OK;
-    CalibModelOctagon model = octagon.Model();
-    if ( 8 == model.pixelPoints.size() )
+    try
     {
-        ptsFound.lftPixel = model.pixelPoints[ 5 ];
-        ptsFound.rgtPixel = model.pixelPoints[ 4 ];
-        ptsFound.ctrPixel.x = ( ptsFound.lftPixel.x + ptsFound.rgtPixel.x ) / 2.0;
-        ptsFound.ctrPixel.y = ( ptsFound.lftPixel.y + ptsFound.rgtPixel.y ) / 2.0;
+        if ( 8 == CalibModel().pixelPoints.size() )
+        {
+            std::vector< Point2d > foundCalPts = CalibModel().pixelPoints;
+            ptsFound.lftPixel = foundCalPts[ 5 ];
+            ptsFound.rgtPixel = foundCalPts[ 4 ];
+            ptsFound.ctrPixel.x = ( ptsFound.lftPixel.x + ptsFound.rgtPixel.x ) / 2.0;
+            ptsFound.ctrPixel.y = ( ptsFound.lftPixel.y + ptsFound.rgtPixel.y ) / 2.0;
+        }
+        else
+        {
+            FILE_LOG( logERROR ) << "[CalibExecutive::FindMoveTargetsOctagon] Valid calibration required";
+            retVal = GC_ERR;
+        }
     }
-    else
+    catch( Exception &e )
     {
-        FILE_LOG( logERROR ) << "[FindLine::FindMoveTargetsOctagon] Valid calibration required";
-        retVal = GC_ERR;
+        FILE_LOG( logERROR ) << "[CalibExecutive::FindMoveTargetsOctagon] " << e.what();
+        retVal = GC_EXCEPT;
     }
+
     return retVal;
 }
 GC_STATUS CalibExecutive::MoveRefPoint( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt )

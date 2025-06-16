@@ -163,7 +163,7 @@ GC_STATUS GuiVisApp::GetImageOverlay( const IMG_BUFFERS nImgColor, const IMG_DIS
             cv::Mat matTemp = m_matColor.clone();
             if ( ( overlays & CALIB_SCALE ) ||
                  ( overlays & CALIB_GRID ) ||
-                 ( overlays & MOVE_ROIS ) ||
+                 ( overlays & MOVE_FIND ) ||
                  ( overlays & SEARCH_ROI ) ||
                  ( overlays & TARGET_ROI ) )
             {
@@ -659,7 +659,7 @@ GC_STATUS GuiVisApp::Calibrate( const std::string imgFilepath, const string json
     retVal = LoadImageToApp( imgFilepath );
     if ( GC_OK == retVal )
     {
-        retVal = m_visApp.Calibrate( imgFilepath, jsonControl, rmseDist, rmseX, rmseY, err_msg );
+        retVal = m_visApp.Calibrate( imgFilepath, jsonControl, rmseDist, rmseX, rmseY, err_msg, true );
     }
     if ( GC_OK == retVal )
     {

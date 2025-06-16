@@ -600,12 +600,6 @@ GC_STATUS FindLine::DrawResult( const Mat &img, Mat &imgOut, const FindLineResul
                                           Point2d( result.calcLinePts.ctrPixel.x - circleSize - textStroke * 2,
                                                    result.calcLinePts.ctrPixel.y + circleSize + textStroke * 2 ), Scalar( 0, 0, 255 ), textStroke );
                         }
-
-                        if ( ( overlayTypes & MOVE_FIND ) )
-                        {
-                            line( imgOut, result.refMovePts.lftPixel, result.refMovePts.rgtPixel, Scalar( 0, 0, 255 ), circleSize );
-                            line( imgOut, result.foundMovePts.lftPixel, result.foundMovePts.rgtPixel, Scalar( 0, 255, 0 ), ( circleSize >> 1 ) - 1 );
-                        }
                     }
                     if ( 3 < result.foundPoints.size() && ( overlayTypes & RANSAC_POINTS ) )
                     {

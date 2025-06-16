@@ -179,6 +179,8 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->checkBox_showCalib->setChecked( true );
     ui->checkBox_showSearchROI->setChecked( true );
     ui->checkBox_calibSearchROI->setChecked( true );
+    ui->checkBox_showTargetROI->setChecked( true );
+    ui->checkBox_showMoveFind->setChecked( true );
     m_pComboBoxImageToView->setCurrentText( "Overlay" );
 
     UpdateGUIEnables();
@@ -245,7 +247,6 @@ void MainWindow::createConnections()
     connect( ui->checkBox_showDerivOne, &QCheckBox::checkStateChanged, this, &MainWindow::UpdatePixmapTarget );
     connect( ui->checkBox_showDerivTwo, &QCheckBox::checkStateChanged, this, &MainWindow::UpdatePixmapTarget );
     connect( ui->checkBox_showRANSAC, &QCheckBox::checkStateChanged, this, &MainWindow::UpdatePixmapTarget );
-    connect( ui->checkBox_showMoveROIs, &QCheckBox::checkStateChanged, this, &MainWindow::UpdatePixmapTarget );
     connect( ui->checkBox_showMoveFind, &QCheckBox::checkStateChanged, this, &MainWindow::UpdatePixmapTarget );
     connect( ui->checkBox_showSearchROI, &QCheckBox::checkStateChanged, this, &MainWindow::UpdatePixmapTarget );
     connect( ui->checkBox_showTargetROI, &QCheckBox::checkStateChanged, this, &MainWindow::UpdatePixmapTarget );
@@ -604,7 +605,6 @@ int MainWindow::UpdatePixmap()
             overlays += ui->checkBox_showDerivOne->isChecked() ? FINDLINE_1ST_DERIV : OVERLAYS_NONE;
             overlays += ui->checkBox_showDerivTwo->isChecked() ? FINDLINE_2ND_DERIV : OVERLAYS_NONE;
             overlays += ui->checkBox_showRANSAC->isChecked() ? RANSAC_POINTS : OVERLAYS_NONE;
-            overlays += ui->checkBox_showMoveROIs->isChecked() ? MOVE_ROIS : OVERLAYS_NONE;
             overlays += ui->checkBox_showMoveFind->isChecked() ? MOVE_FIND : OVERLAYS_NONE;
             overlays += ui->checkBox_showSearchROI->isChecked() ? SEARCH_ROI : OVERLAYS_NONE;
             overlays += ui->checkBox_showTargetROI->isChecked() ? TARGET_ROI : OVERLAYS_NONE;
@@ -1262,6 +1262,22 @@ void MainWindow::on_pushButton_visionCalibrateLoad_clicked()
 }
 void MainWindow::on_pushButton_visionCalibrateSave_clicked()
 {
+    string strFullPath = ui->lineEdit_calibVisionResult_json->text().toStdString();
+    GC_STATUS retVal = m_visApp.SaveCalib( strFullPath );
+    if ( GC_OK == retVal )
+    {
+        m_bCalibDirty = false;
+        ui->textEdit_msgs->setText( "Calibration save SUCCESS" );
+        ui->statusBar->showMessage( "Calibration save SUCCESS" );
+    }
+    else
+    {
+        ui->textEdit_msgs->setText( "Calibration save FAILURE" );
+        ui->statusBar->showMessage( "Calibration save FAILURE" );
+    }
+}
+void MainWindow::on_pushButton_visionCalibrateSaveAs_clicked()
+{
     QString strFullPath = QFileDialog::getSaveFileName( this, "Get calibration json filepath", ui->lineEdit_calibVisionResult_json->text() );
     if ( strFullPath.isNull() )
     {
@@ -1278,13 +1294,13 @@ void MainWindow::on_pushButton_visionCalibrateSave_clicked()
         {
             m_bCalibDirty = false;
             ui->lineEdit_calibVisionResult_json->setText( strFullPath );
-            ui->textEdit_msgs->setText( "Calibration save SUCCESS" );
-            ui->statusBar->showMessage( "Calibration save SUCCESS" );
+            ui->textEdit_msgs->setText( "Calibration save as SUCCESS" );
+            ui->statusBar->showMessage( "Calibration save as SUCCESS" );
         }
         else
         {
-            ui->textEdit_msgs->setText( "Calibration save FAILURE" );
-            ui->statusBar->showMessage( "Calibration save FAILURE" );
+            ui->textEdit_msgs->setText( "Calibration save as FAILURE" );
+            ui->statusBar->showMessage( "Calibration save as FAILURE" );
         }
     }
 }
@@ -1744,4 +1760,5 @@ void MainWindow::on_pushButton_createFindCommandLine_clicked()
         ui->textEdit_msgs->setText( "Nested folder command line option not available" );
     }
 }
+
 

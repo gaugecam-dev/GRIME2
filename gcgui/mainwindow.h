@@ -104,6 +104,8 @@ private slots:
     void on_pushButton_setFindLineFolderFromExploreFolder_clicked();
     void on_pushButton_visionCalibrateSave_clicked();
 
+    void on_pushButton_visionCalibrateSaveAs_clicked();
+
 protected:
     // paint, mouse, and application event methods
     void mouseReleaseEvent( QMouseEvent * ) override;

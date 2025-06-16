@@ -148,7 +148,7 @@ GC_STATUS CalibOctagon::DrawAssocPts( const cv::Mat &img, cv::Mat &overlay, stri
     return retVal;
 }
 // symbolPoints are clockwise ordered with 0 being the topmost left point
-GC_STATUS CalibOctagon::Calibrate( const cv::Mat &img, const std::string &controlJson, string &err_msg, const bool noSave )
+GC_STATUS CalibOctagon::Calibrate( const cv::Mat &img, const std::string &controlJson, string &err_msg )
 {
     GC_STATUS retVal = GC_OK;
 
@@ -168,52 +168,30 @@ GC_STATUS CalibOctagon::Calibrate( const cv::Mat &img, const std::string &contro
                 -1 != model.targetSearchRegion.width ||
                 -1 != model.targetSearchRegion.height;
 
+        Mat scratch = img;
         if ( useRoi )
         {
-            Point2d ptOffset( model.targetSearchRegion.x, model.targetSearchRegion.y );
-            vector< Point2d > pixPtsRoi;
-            for ( size_t i = 0; i < model.pixelPoints.size(); ++i )
-            {
-                pixPtsRoi.push_back( model.pixelPoints[ i ] + ptOffset );
-            }
-//            imwrite("/var/tmp/gaugecam/orig.png", img);
-//            imwrite("/var/tmp/gaugecam/orig_roi.png", img( model.targetSearchRegion ));
-            retVal = octagonSearch.Find( img( model.targetSearchRegion ), model.pixelPoints, true );
-            if ( GC_OK != retVal )
-            {
-                retVal = octagonSearch.Find( img( model.targetSearchRegion ), model.pixelPoints, false );
-            }
+            scratch = img( model.targetSearchRegion );
+        }
+        retVal = octagonSearch.Find( scratch, model.pixelPoints, true );
+        if ( GC_OK == retVal )
+        {
+            retVal = TestCalibration( model.validCalib );
+        }
+        if ( GC_OK != retVal )
+        {
+            retVal = octagonSearch.Find( scratch, model.pixelPoints, false );
             if ( GC_OK == retVal )
             {
                 retVal = TestCalibration( model.validCalib );
-            }
-            if ( GC_OK != retVal )
-            {
-                retVal = octagonSearch.FindScale( img( model.targetSearchRegion ), model.pixelPoints, 2.0 );
-                if ( GC_OK == retVal )
-                {
-                    retVal = TestCalibration( model.validCalib );
-                }
             }
         }
-        else
+        if ( GC_OK != retVal )
         {
-            retVal = octagonSearch.Find( img, model.pixelPoints, true );
-            if ( GC_OK != retVal )
-            {
-                retVal = octagonSearch.Find( img, model.pixelPoints, false );
-            }
+            retVal = octagonSearch.FindScale( scratch, model.pixelPoints, 2.0 );
             if ( GC_OK == retVal )
             {
                 retVal = TestCalibration( model.validCalib );
-            }
-            if ( GC_OK != retVal )
-            {
-                retVal = octagonSearch.FindScale( img, model.pixelPoints, 2.0, true );
-                if ( GC_OK == retVal )
-                {
-                    retVal = TestCalibration( model.validCalib );
-                }
             }
         }
         if ( GC_OK != retVal )
@@ -222,112 +200,104 @@ GC_STATUS CalibOctagon::Calibrate( const cv::Mat &img, const std::string &contro
         }
         else
         {
-            retVal = TestCalibration( model.validCalib );
-            if ( GC_OK != retVal )
+#ifdef DEBUG_FIND_CALIB_SYMBOL
+            Mat color;
+            if ( useRoi )
             {
-                err_msg = "CALIB FAIL [octagon] Calib validation test";
+                img( model.targetSearchRegion ).copyTo( color );
             }
             else
             {
-#ifdef DEBUG_FIND_CALIB_SYMBOL
-                Mat color;
-                if ( useRoi )
-                {
-                    img( model.targetSearchRegion ).copyTo( color );
-                }
-                else
-                {
-                    img.copyTo( color );
-                }
+                img.copyTo( color );
+            }
+            for ( size_t i = 0; i < model.pixelPoints.size(); ++i )
+            {
+                line( color, Point( model.pixelPoints[ i ].x - 10, model.pixelPoints[ i ].y ),
+                             Point( model.pixelPoints[ i ].x + 10, model.pixelPoints[ i ].y ),
+                      Scalar( 0, 255, 255 ), 1 );
+                line( color, Point( model.pixelPoints[ i ].x, model.pixelPoints[ i ].y - 10 ),
+                             Point( model.pixelPoints[ i ].x, model.pixelPoints[ i ].y + 10 ),
+                      Scalar( 0, 255, 255 ), 1 );
+            }
+            imwrite( DEBUG_FOLDER + "___FINAL.png", color );
+#endif
+            if ( useRoi )
+            {
+                Point2d offset = Point2d( model.targetSearchRegion.x, model.targetSearchRegion.y );
                 for ( size_t i = 0; i < model.pixelPoints.size(); ++i )
                 {
-                    line( color, Point( model.pixelPoints[ i ].x - 10, model.pixelPoints[ i ].y ),
-                                 Point( model.pixelPoints[ i ].x + 10, model.pixelPoints[ i ].y ),
-                          Scalar( 0, 255, 255 ), 1 );
-                    line( color, Point( model.pixelPoints[ i ].x, model.pixelPoints[ i ].y - 10 ),
-                                 Point( model.pixelPoints[ i ].x, model.pixelPoints[ i ].y + 10 ),
-                          Scalar( 0, 255, 255 ), 1 );
+                    model.pixelPoints[ i ] += offset;
                 }
-                imwrite( DEBUG_FOLDER + "___FINAL.png", color );
-#endif
-                if ( useRoi )
-                {
-                    Point2d offset = Point2d( model.targetSearchRegion.x, model.targetSearchRegion.y );
-                    for ( size_t i = 0; i < model.pixelPoints.size(); ++i )
-                    {
-                        model.pixelPoints[ i ] += offset;
-                    }
-                }
+            }
 
-                retVal = CalcOctoWorldPoints( model.facetLength, model.worldPoints );
+            retVal = CalcOctoWorldPoints( model.facetLength, model.worldPoints );
+            if ( GC_OK != retVal )
+            {
+                err_msg = "CALIB FAIL [octagon] Could not calculate octogan points";
+            }
+            else
+            {
+                vector< Point2d > pointsTemp;
+                Point2d ptTemp( 0.0, model.zeroOffset );
+                for ( size_t i = 0; i < model.worldPoints.size(); ++i )
+                {
+                    pointsTemp.push_back( model.worldPoints[ i ] + ptTemp );
+                }
+                retVal = CreateCalibration( model.pixelPoints, pointsTemp );
                 if ( GC_OK != retVal )
                 {
-                    err_msg = "CALIB FAIL [octagon] Could not calculate octogan points";
+                    err_msg = "CALIB FAIL [octagon] Could not create calibaration";
                 }
                 else
                 {
-                    vector< Point2d > pointsTemp;
-                    Point2d ptTemp( 0.0, model.zeroOffset );
-                    for ( size_t i = 0; i < model.worldPoints.size(); ++i )
-                    {
-                        pointsTemp.push_back( model.worldPoints[ i ] + ptTemp );
-                    }
-                    retVal = CreateCalibration( model.pixelPoints, pointsTemp );
+#ifdef DEBUG_FIND_CALIB_SYMBOL
+                    Mat temp_img;
+                    img.copyTo( temp_img );
+                    // cvtColor( img, temp_img, COLOR_GRAY2BGR );
+                    line( temp_img, model.waterlineSearchCorners[ 0 ], model.waterlineSearchCorners[ 1 ], Scalar( 0, 0, 255 ), 7 );
+                    line( temp_img, model.waterlineSearchCorners[ 0 ], model.waterlineSearchCorners[ 2 ], Scalar( 0, 255, 255 ), 7 );
+                    line( temp_img, model.waterlineSearchCorners[ 3 ], model.waterlineSearchCorners[ 1 ], Scalar( 0, 255, 0 ), 7 );
+                    line( temp_img, model.waterlineSearchCorners[ 3 ], model.waterlineSearchCorners[ 2 ], Scalar( 255, 0, 0 ), 7 );
+                    imwrite( "/var/tmp/gaugecam/test_search_roi_0.png", temp_img );
+                    Mat color;
+                    img.copyTo( color );
+                    circle( color, model.waterlineSearchCorners[ 0 ], 11, Scalar( 0, 0, 255 ), 3 );
+                    circle( color, model.waterlineSearchCorners[ 1 ], 11, Scalar( 0, 255, 255 ), 3 );
+                    circle( color, model.waterlineSearchCorners[ 2 ], 11, Scalar( 255, 0, 0 ), 3 );
+                    circle( color, model.waterlineSearchCorners[ 3 ], 11, Scalar( 0, 255, 0 ), 3 );
+                    imwrite( "/var/tmp/gaugecam/roi_pts.png", color );
+#endif
+                    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+                    // KWC ~~~ this is where to start the waterline roi offset problem search
+                    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+                    // int x_offset = std::round( oldModel.center.x - model.center.x );
+                    // int y_offset = std::round( oldModel.center.y - model.center.y );
+                    // for ( size_t i = 0; i < model.waterlineSearchCorners.size(); ++i )
+                    // {
+                    //     model.waterlineSearchCorners[ i ].x += x_offset;
+                    //     model.waterlineSearchCorners[ i ].y += y_offset;
+                    // }
+
+                    SearchLines searchLines;
+                    retVal = searchLines.CalcSearchLines( model.waterlineSearchCorners, model.searchLineSet );
                     if ( GC_OK != retVal )
                     {
-                        err_msg = "CALIB FAIL [octagon] Could not create calibaration";
+                        err_msg = "CALIB FAIL [octagon] Invalid search lines (is 4-pt bounding poly correct?)";
+                        FILE_LOG( logERROR ) << "[CalibOctagon::Calibrate] Invalid search lines (is 4-pt bounding poly correct?)";
+                        retVal = GC_OK;
                     }
                     else
                     {
-#ifdef DEBUG_FIND_CALIB_SYMBOL
-                        Mat temp_img;
-                        img.copyTo( temp_img );
-                        // cvtColor( img, temp_img, COLOR_GRAY2BGR );
-                        line( temp_img, model.waterlineSearchCorners[ 0 ], model.waterlineSearchCorners[ 1 ], Scalar( 0, 0, 255 ), 7 );
-                        line( temp_img, model.waterlineSearchCorners[ 0 ], model.waterlineSearchCorners[ 2 ], Scalar( 0, 255, 255 ), 7 );
-                        line( temp_img, model.waterlineSearchCorners[ 3 ], model.waterlineSearchCorners[ 1 ], Scalar( 0, 255, 0 ), 7 );
-                        line( temp_img, model.waterlineSearchCorners[ 3 ], model.waterlineSearchCorners[ 2 ], Scalar( 255, 0, 0 ), 7 );
-                        imwrite( "/var/tmp/gaugecam/test_search_roi_0.png", temp_img );
-                        Mat color;
-                        img.copyTo( color );
-                        circle( color, model.waterlineSearchCorners[ 0 ], 11, Scalar( 0, 0, 255 ), 3 );
-                        circle( color, model.waterlineSearchCorners[ 1 ], 11, Scalar( 0, 255, 255 ), 3 );
-                        circle( color, model.waterlineSearchCorners[ 2 ], 11, Scalar( 255, 0, 0 ), 3 );
-                        circle( color, model.waterlineSearchCorners[ 3 ], 11, Scalar( 0, 255, 0 ), 3 );
-                        imwrite( "/var/tmp/gaugecam/roi_pts.png", color );
-#endif
-                        // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-                        // KWC ~~~ this is where to start the waterline roi offset problem search
-                        // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-                        // int x_offset = std::round( oldModel.center.x - model.center.x );
-                        // int y_offset = std::round( oldModel.center.y - model.center.y );
-                        // for ( size_t i = 0; i < model.waterlineSearchCorners.size(); ++i )
-                        // {
-                        //     model.waterlineSearchCorners[ i ].x += x_offset;
-                        //     model.waterlineSearchCorners[ i ].y += y_offset;
-                        // }
-
-                        SearchLines searchLines;
-                        retVal = searchLines.CalcSearchLines( model.waterlineSearchCorners, model.searchLineSet );
+                        // offset_x = model.oldPixelPoints[ 4 ].x - model.pixelPoints[ 4 ].x;
+                        // offset_y = model.oldPixelPoints[ 4 ].y - model.pixelPoints[ 4 ].y;
+                        retVal = CalcCenterAngle( model.worldPoints, model.center, model.angle );
                         if ( GC_OK != retVal )
                         {
-                            err_msg = "CALIB FAIL [octagon] Invalid search lines (is 4-pt bounding poly correct?)";
-                            FILE_LOG( logERROR ) << "[CalibOctagon::Calibrate] Invalid search lines (is 4-pt bounding poly correct?)";
-                            retVal = GC_OK;
+                            err_msg = "CALIB FAIL [octagon] Could not octagon angle";
                         }
                         else
                         {
-                            // offset_x = model.oldPixelPoints[ 4 ].x - model.pixelPoints[ 4 ].x;
-                            // offset_y = model.oldPixelPoints[ 4 ].y - model.pixelPoints[ 4 ].y;
-                            retVal = CalcCenterAngle( model.worldPoints, model.center, model.angle );
-                            if ( GC_OK != retVal )
-                            {
-                                err_msg = "CALIB FAIL [octagon] Could not octagon angle";
-                            }
-                            else
-                            {
-                                model.imgSize = img.size();
-                            }
+                            model.imgSize = img.size();
                         }
                     }
                 }
@@ -388,7 +358,7 @@ GC_STATUS CalibOctagon::MoveRefPoint(  cv::Point2d &lftRefPt, cv::Point2d &rgtRe
     if ( force || ( 0.0 >= moveRefLftPt.x ||  0.0 >= moveRefLftPt.y ||
                   ( 0.0 >= moveRefRgtPt.x ||  0.0 >= moveRefRgtPt.y ) ) )
     {
-        if ( 8 != model.pixelPoints.size() )
+        if ( 8 != model.oldPixelPoints.size() )
         {
             FILE_LOG( logERROR ) << "[CalibBowtie::MoveRefPoint] Cannot retrieve move reference point from an uncalibrated system";
             retVal = GC_ERR;
@@ -578,6 +548,22 @@ GC_STATUS CalibOctagon::CreateCalibration( const std::vector< cv::Point2d > &pix
     catch( Exception &e )
     {
         FILE_LOG( logERROR ) << "[CalibOctagon::Calibrate] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+
+    return retVal;
+}
+GC_STATUS CalibOctagon::SetCalibModel( CalibModelOctagon newModel )
+{
+    GC_STATUS retVal = GC_OK;
+
+    try
+    {
+        model = newModel;
+    }
+    catch( Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[CalibOctagon::SetCalibModel] " << e.what();
         retVal = GC_EXCEPT;
     }
 
@@ -1448,6 +1434,25 @@ GC_STATUS CalibOctagon::DrawOverlay( const cv::Mat &img, cv::Mat &result, const 
                         }
                         line( result, model.pixelPoints[ 0 ], model.pixelPoints[ model.pixelPoints.size() - 1 ], Scalar( 255, 0, 0 ), lineWidth );
 
+                        if ( true )
+                        {
+                            line( result, Point2d( model.oldPixelPoints[ 0 ].x - targetRadius, model.oldPixelPoints[ 0 ].y ),
+                                 Point2d( model.oldPixelPoints[ 0 ].x + targetRadius, model.oldPixelPoints[ 0 ].y ), Scalar( 255, 255, 0 ), lineWidth );
+                            line( result, Point2d( model.oldPixelPoints[ 0 ].x, model.oldPixelPoints[ 0 ].y - targetRadius ),
+                                 Point2d( model.oldPixelPoints[ 0 ].x, model.oldPixelPoints[ 0 ].y + targetRadius ), Scalar( 255, 255, 0 ), lineWidth );
+                            circle( result, model.oldPixelPoints[ 0 ], targetRadius, Scalar( 0, 255, 0 ), lineWidth );
+                            for ( size_t i = 1; i < model.oldPixelPoints.size(); ++i )
+                            {
+                                line( result, model.oldPixelPoints[ i - 1 ], model.oldPixelPoints[ i ], Scalar( 255, 255, 0 ), lineWidth );
+                                line( result, Point2d( model.oldPixelPoints[ i ].x - targetRadius, model.oldPixelPoints[ i ].y ),
+                                     Point2d( model.oldPixelPoints[ i ].x + targetRadius, model.oldPixelPoints[ i ].y ), Scalar( 255, 255, 0 ), lineWidth );
+                                line( result, Point2d( model.oldPixelPoints[ i ].x, model.oldPixelPoints[ i ].y - targetRadius ),
+                                     Point2d( model.oldPixelPoints[ i ].x, model.oldPixelPoints[ i ].y + targetRadius ), Scalar( 255, 255, 0 ), lineWidth );
+                                circle( result, model.oldPixelPoints[ i ], targetRadius, Scalar( 0, 255, 0 ), lineWidth );
+                            }
+                            line( result, model.oldPixelPoints[ 0 ], model.oldPixelPoints[ model.oldPixelPoints.size() - 1 ], Scalar( 255, 255, 0 ), lineWidth );
+                        }
+
                         if ( drawCalibScale )
                         {
                             double lftX = ( model.searchLineSet[ 0 ].top.x + model.searchLineSet[ 0 ].bot.x ) / 2.0;
@@ -1530,17 +1535,7 @@ GC_STATUS CalibOctagon::DrawOverlay( const cv::Mat &img, cv::Mat &result, const 
                 }
                 if ( drawTargetSearchROI )
                 {
-                    if ( model.waterlineSearchCorners.empty() )
-                    {
-                        rectangle( result, model.targetSearchRegion, Scalar( 255, 0, 0 ), textStroke );
-                    }
-                    else
-                    {
-                        line( result, model.waterlineSearchCorners[ 0 ], model.waterlineSearchCorners[ 1 ], Scalar( 255, 0, 0 ), textStroke );
-                        line( result, model.waterlineSearchCorners[ 1 ], model.waterlineSearchCorners[ 2 ], Scalar( 255, 0, 0 ), textStroke );
-                        line( result, model.waterlineSearchCorners[ 2 ], model.waterlineSearchCorners[ 3 ], Scalar( 255, 0, 0 ), textStroke );
-                        line( result, model.waterlineSearchCorners[ 3 ], model.waterlineSearchCorners[ 0 ], Scalar( 255, 0, 0 ), textStroke );
-                    }
+                    rectangle( result, model.targetSearchRegion, Scalar( 255, 0, 0 ), textStroke );
                 }
                 if ( drawSearchROI )
                 {
