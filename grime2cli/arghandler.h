@@ -54,6 +54,7 @@ public:
         opToPerform = SHOW_HELP;
         src_imagePath.clear();
         csvPath.clear();
+        line_roi_folder.clear();
         calib_jsonPath.clear();
         calib_type.clear();
         result_imagePath.clear();
@@ -74,6 +75,7 @@ public:
     GRIME2_CLI_OP opToPerform;
     string src_imagePath;
     string csvPath;
+    string line_roi_folder;
     string calib_jsonPath;
     string calib_type;
     string result_imagePath;
@@ -279,6 +281,29 @@ int GetArgs( int argc, char *argv[], Grime2CLIParams &params )
                     else
                     {
                         FILE_LOG( logERROR ) << "[ArgHandler] No value supplied on --csv_file request";
+                        retVal = -1;
+                        break;
+                    }
+                }
+                else if ( "line_roi_folder" == string( argv[ i ] ).substr( 2 ) )
+                {
+                    if ( i + 1 < argc )
+                    {
+                        params.line_roi_folder = string( argv[ ++i ] );
+                        if ( !fs::exists( fs::path( params.line_roi_folder ).parent_path() ) )
+                        {
+                            bool isOk = fs::create_directories( params.line_roi_folder );
+                            if ( !isOk )
+                            {
+                                FILE_LOG( logERROR ) << "[ArgHandler] Could not create line roi folder: " << params.line_roi_folder;
+                                retVal = -1;
+                                break;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        FILE_LOG( logERROR ) << "[ArgHandler] No value supplied on --line_roi_folder request";
                         retVal = -1;
                         break;
                     }

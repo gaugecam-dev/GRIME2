@@ -721,6 +721,15 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result 
                         }
                     }
                 }
+                if ( !params.lineSearchROIFolder.empty() )
+                {
+                    string resultJson;
+                    retVal = SaveLineFindSearchRoi( img, params, result );
+                    if ( GC_OK == retVal )
+                    {
+                        retVal = m_metaData.WriteToImageDescription( params.resultImagePath, resultJson );
+                    }
+                }
             }
         }
     }
@@ -728,6 +737,72 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result 
     {
         FILE_LOG( logERROR ) << "[VisApp::CalcLine] " << e.what();
         FILE_LOG( logERROR ) << "Image=" << params.imagePath << " calib=" << params.calibFilepath;
+        retVal = GC_EXCEPT;
+    }
+
+    return retVal;
+}
+GC_STATUS VisApp::LineIntersection( const LineEnds line1, const LineEnds line2, cv::Point2d &r )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        Point2d x = Point2d( line2.top ) - Point2d( line1.top );
+        Point2d d1 = Point2d( line1.bot ) - Point2d( line1.top );
+        Point2d d2 = Point2d( line2.bot ) - Point2d( line2.top );
+
+        double cross = d1.x * d2.y - d1.y * d2.x;
+        if (abs(cross) < numeric_limits< double >::epsilon() )
+        {
+            FILE_LOG( logERROR ) << "[OctagonSearch::LineIntersection] Lines are parallel";
+            return GC_ERR;
+        }
+
+        double t1 = ( x.x * d2.y - x.y * d2.x ) / cross;
+        r = Point2d( line1.top ) + d1 * t1;
+    }
+    catch( std::exception &e )
+    {
+        FILE_LOG( logERROR ) << "[VisApp::LineIntersection] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+    return retVal;
+}
+GC_STATUS VisApp::SaveLineFindSearchRoi( const cv::Mat &img, const FindLineParams &params, const FindLineResult &result )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        vector< Point > searchRoiPoly = m_calibExec.CalibModel().waterlineSearchCorners;
+        Rect roi( Point( std::min( searchRoiPoly[ 0 ].x, searchRoiPoly[ 3 ].x ),
+                         std::min( searchRoiPoly[ 0 ].y, searchRoiPoly[ 1 ].y ) ),
+                  Point( std::min( searchRoiPoly[ 1 ].x, searchRoiPoly[ 2 ].x ),
+                         std::min( searchRoiPoly[ 2 ].y, searchRoiPoly[ 3 ].y ) ) );
+
+        Point2d lftWtrPt, rgtWtrPt;
+        retVal = LineIntersection( LineEnds( searchRoiPoly[ 0 ], searchRoiPoly[ 2 ] ),
+                                   LineEnds( result.calcLinePts.lftPixel, result.calcLinePts.rgtPixel ), lftWtrPt );
+        if ( GC_OK == retVal )
+        {
+            retVal = LineIntersection( LineEnds( searchRoiPoly[ 1 ], searchRoiPoly[ 3 ] ),
+                                       LineEnds( result.calcLinePts.lftPixel, result.calcLinePts.rgtPixel ), rgtWtrPt );
+            if ( GC_OK == retVal )
+            {
+                vector< Point > maskPoly;
+                maskPoly.push_back( lftWtrPt );
+                maskPoly.push_back( rgtWtrPt );
+                maskPoly.push_back( searchRoiPoly[ 3 ] );
+                maskPoly.push_back( searchRoiPoly[ 2 ] );
+                Mat scratch = Mat::zeros( img.size(), CV_8UC1 );
+                cv::fillPoly( scratch, maskPoly, Scalar( 255 ), FILLED );
+                imwrite( "/var/tmp/gaugecam/line_roi.png", img( roi ) );
+                imwrite( "/var/tmp/gaugecam/line_roi_mask.png", scratch( roi ) );
+            }
+        }
+    }
+    catch( Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[VisApp::SaveLineFindSearchRoi] " << e.what();
         retVal = GC_EXCEPT;
     }
 

@@ -252,6 +252,7 @@ void MainWindow::createConnections()
     connect( ui->checkBox_showTargetROI, &QCheckBox::checkStateChanged, this, &MainWindow::UpdatePixmapTarget );
     connect( ui->checkBox_createFindLine_csvResultsFile, &QCheckBox::checkStateChanged, this, &MainWindow::UpdateGUIEnables );
     connect( ui->checkBox_createFindLine_annotatedResults, &QCheckBox::checkStateChanged, this, &MainWindow::UpdateGUIEnables );
+    connect( ui->checkBox_saveSearchROI, &QCheckBox::checkStateChanged, this, &MainWindow::UpdateGUIEnables );
     connect( ui->checkBox_calibSearchROI, &QRadioButton::toggled, this, &MainWindow::UpdateCalibSearchRegion );
     connect( ui->actionToggleControls, &QAction::toggled, this, &MainWindow::UpdateGUIEnables );
 
@@ -396,9 +397,11 @@ int MainWindow::ReadSettings( const QString filepath )
 
         bool createCSV = pSettings->value( "createCSVCheckbox", true ).toBool();
         ui->checkBox_createFindLine_csvResultsFile->setChecked( createCSV );
-
         ui->lineEdit_findLine_annotatedResultFolder->setText( pSettings->value( "findLineAnnotatedOutFolder", QString( __CONFIGURATION_FOLDER ) ).toString() );
         ui->checkBox_createFindLine_annotatedResults->setChecked( pSettings->value( "createAnnotationCheckbox", false ).toBool() );
+        ui->lineEdit_saveSearchROIFolder->setText( pSettings->value( "saveSearchROIFolder", QString( __CONFIGURATION_FOLDER ) ).toString() );
+        ui->checkBox_saveSearchROI->setChecked( pSettings->value( "saveSearchROICheckbox", false ).toBool() );
+
         ui->spinBox_timeStringPosZero->setValue( pSettings->value( "timestampStringStartPos", 10 ).toInt() );
         ui->radioButton_dateTimeInFilename->setChecked( pSettings->value( "timestampFromFilename", true ).toBool() );
         ui->radioButton_dateTimeInEXIF->setChecked( pSettings->value( "timestampFromEXIF", false ).toBool() );
@@ -483,6 +486,9 @@ int MainWindow::WriteSettings( const QString filepath )
         pSettings->setValue( "createCSVCheckbox", ui->checkBox_createFindLine_csvResultsFile->isChecked() );
         pSettings->setValue( "findLineAnnotatedOutFolder", ui->lineEdit_findLine_annotatedResultFolder->text() );
         pSettings->setValue( "createAnnotationCheckbox", ui->checkBox_createFindLine_annotatedResults->isChecked() );
+        pSettings->setValue( "saveSearchROIFolder", ui->lineEdit_saveSearchROIFolder->text() );
+        pSettings->setValue( "saveSearchROICheckbox", ui->checkBox_saveSearchROI->isChecked() );
+
         pSettings->setValue( "timestampStringStartPos", ui->spinBox_timeStringPosZero->value() );
         pSettings->setValue( "timestampFromEXIF", ui->radioButton_dateTimeInEXIF->isChecked() );
         pSettings->setValue( "timestampFormat", ui->lineEdit_timestampFormat->text() );
@@ -559,6 +565,8 @@ void MainWindow::UpdateGUIEnables()
     ui->toolButton_findLine_resultCSVFile_browse->setEnabled( ui->checkBox_createFindLine_csvResultsFile->isChecked() );
     ui->lineEdit_findLine_annotatedResultFolder->setEnabled( ui->checkBox_createFindLine_annotatedResults->isChecked() );
     ui->toolButton_findLine_annotatedResultFolder_browse->setEnabled( ui->checkBox_createFindLine_annotatedResults->isChecked() );
+    ui->lineEdit_saveSearchROIFolder->setEnabled( ui->checkBox_saveSearchROI->isChecked() );
+    ui->toolButton_saveSearchROIFolder_browse->setEnabled( ui->checkBox_saveSearchROI->isChecked() );
     ui->widget_overlayCheckboxes->setHidden( !ui->actionToggleControls->isChecked() );
 }
 void MainWindow::UpdatePixmapTarget()
@@ -1446,7 +1454,9 @@ void MainWindow::on_pushButton_findLineCurrentImage_clicked()
         if ( '/' != folder[ folder.size() - 1 ] )
             folder += '/';
         params.imagePath = folder + ui->listWidget_imageFolder->currentItem()->text().toStdString();
-        params.resultCSVPath = ui->checkBox_createFindLine_csvResultsFile->isChecked() ? ui->lineEdit_findLine_resultCSVFile->text().toStdString() : "";
+        params.resultCSVPath.clear();
+        params.resultImagePath.clear();
+        params.lineSearchROIFolder.clear();
         params.calibFilepath = ui->lineEdit_calibVisionResult_json->text().toStdString();
         params.timeStampFormat = ui->lineEdit_timestampFormat->text().toStdString();
         params.timeStampType = ui->radioButton_dateTimeInFilename->isChecked() ? FROM_FILENAME : FROM_EXIF;
@@ -1489,6 +1499,7 @@ void MainWindow::on_pushButton_findLineCurrentImage_clicked()
         {
             ui->textEdit_msgs->append( QString::fromStdString( result.msgs[ i ] ) );
         }
+        ui->textEdit_msgs->append( ui->lineEdit_saveSearchROIFolder->text() + ( ui->checkBox_saveSearchROI->isChecked() ? "true" : "false " ) );
     }
 }
 void MainWindow::on_pushButton_findLine_processFolder_clicked()
@@ -1504,6 +1515,7 @@ void MainWindow::on_pushButton_findLine_processFolder_clicked()
     params.timeStampStartPos = ui->spinBox_timeStringPosZero->value();
     params.resultImagePath = ui->checkBox_createFindLine_annotatedResults->isChecked() ? ui->lineEdit_findLine_annotatedResultFolder->text().toStdString() : "";
     params.resultCSVPath = ui->checkBox_createFindLine_csvResultsFile->isChecked() ? ui->lineEdit_findLine_resultCSVFile->text().toStdString() : "";
+    params.lineSearchROIFolder = ui->checkBox_saveSearchROI->isChecked() ? ui->lineEdit_saveSearchROIFolder->text().toStdString() : "";
 
     ui->pushButton_findLine_processFolder->setEnabled( false );
     ui->pushButton_findLine_stopFolderProcess->setEnabled( true );

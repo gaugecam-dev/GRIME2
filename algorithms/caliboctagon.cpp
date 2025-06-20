@@ -14,7 +14,6 @@
 #include <iomanip>
 #include <iostream>
 #include <algorithm>
-#include <iterator>
 #include "searchlines.h"
 
 #ifdef DEBUG_FIND_CALIB_SYMBOL

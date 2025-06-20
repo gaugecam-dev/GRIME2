@@ -243,13 +243,15 @@ public:
                     const int tmStampStartPos,
                     const std::string tmStampFormat,
                     const std::string resultImageFilepath = "",
-                    const std::string resultCSVFilepath = "" ) :
+                    const std::string resultCSVFilepath = "",
+                    const std::string lineSrchRoiFolder = "" ) :
         datetimeOriginal( timeStampOriginal ),
         datetimeProcessing( timeStampProcessing ),
         imagePath( imageFilepath ),
         calibFilepath( calibConfigFile ),
         resultImagePath( resultImageFilepath ),
         resultCSVPath( resultCSVFilepath ),
+        lineSearchROIFolder( lineSrchRoiFolder ),
         timeStampType( tmStampType ),
         timeStampStartPos( tmStampStartPos ),
         timeStampFormat( tmStampFormat ),
@@ -264,6 +266,7 @@ public:
         imagePath.clear();
         resultImagePath.clear();
         resultCSVPath.clear();
+        lineSearchROIFolder.clear();
         timeStampType = FROM_EXIF;
         timeStampStartPos = -1;
         timeStampFormat.clear();
@@ -281,6 +284,7 @@ public:
     std::string calibFilepath;          ///< Input pixel to world coordinate calibration model filepath
     std::string resultImagePath;        ///< Optional result image created from input image with found line and move detection overlays
     std::string resultCSVPath;          ///< Optional result csv file path to hold timestamps and stage measurements
+    std::string lineSearchROIFolder;    ///< Folder to save the find line search roi raw and label images
     GC_TIMESTAMP_TYPE timeStampType;    ///< Specifies where to get timestamp (filename, exif, or dateTimeOriginal)
     int timeStampStartPos;              ///< start position of timestamp string in filename (not whole path)
     std::string timeStampFormat;        ///< Format of the timestamp string, e.g. YYYY-MM-DDThh:mm::ss

@@ -38,7 +38,7 @@ namespace fs = std::filesystem;
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~ STOP SIGN ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // --calibrate --source "./config/2022_demo/20220715_KOLA_GaugeCam_001.JPG" --calib_json "./config/calib_stopsign.json" --result_image "/var/tmp/gaugecam/calib_result_stopsign.png"
 // --find_line --timestamp_from_exif --timestamp_start_pos 0 --timestamp_format "yyyy-mm-dd-HH-MM" --source "./config/2022_demo/20220715_KOLA_GaugeCam_001.JPG" --calib_json "./config/calib.json" --csv_file "/var/tmp/gaugecam/folder_result.csv" --result_image "/var/tmp/gaugecam/find_line_result.png"
-// --run_folder --timestamp_from_exif --timestamp_start_pos 0 --timestamp_format "yyyy-mm-dd-HH-MM" --source "./config/2022_demo/" --calib_json "./config/calib.json" --csv_file "/var/tmp/gaugecam/folder_result.csv" --result_folder "/var/tmp/gaugecam/"
+// --run_folder --timestamp_from_exif --timestamp_start_pos 0 --timestamp_format "yyyy-mm-dd-HH-MM" --source "./config/2022_demo/" --calib_json "./config/calib.json" --csv_file "/var/tmp/gaugecam/folder_result.csv" --result_folder "/var/tmp/gaugecam/" --line_roi_folder "/var/tmp/gaugecam/line_roi/"
 
 // forward declarations
 void ShowVersion();
@@ -299,6 +299,8 @@ GC_STATUS RunFolder( const Grime2CLIParams cliParams )
                         result_folder += '/';
                 }
 
+                string lineRoiFolder = cliParams.line_roi_folder;
+
                 Grime2CLIParams cliParamsAdj = cliParams;
                 for ( size_t i = 0; i < images.size(); ++i )
                 {
@@ -333,6 +335,7 @@ GC_STATUS FindWaterLevel(const Grime2CLIParams cliParams )
     params.timeStampFormat = cliParams.timestamp_format;
     params.timeStampType = cliParams.timestamp_type == "from_filename" ? FROM_FILENAME : FROM_EXIF;
     params.timeStampStartPos = cliParams.timestamp_startPos;
+    params.lineSearchROIFolder = cliParams.line_roi_folder;
 
     VisApp visApp;
     string resultJson;
