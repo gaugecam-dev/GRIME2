@@ -29,6 +29,7 @@
 #include <boost/foreach.hpp>
 #ifdef WIN32
 #include "wincmd.h"
+#include <windows.h>
 #endif
 
 using namespace cv;
@@ -377,6 +378,49 @@ std::string escapeQuotes( const std::string &input )
     }
     return escaped;
 }
+#ifdef _WIN32
+bool run_hidden(std::wstring cmd)
+{
+    STARTUPINFOW        si{ sizeof(si) };          // zero‑initialised
+    si.dwFlags     = STARTF_USESHOWWINDOW;
+    si.wShowWindow = SW_HIDE;                      // hide *if* a window is shown
+
+    PROCESS_INFORMATION pi{};
+    BOOL ok = CreateProcessW(
+        /*lpApplicationName*/ nullptr,   // let CreateProcess find cmd.exe
+        cmd.data(),                      // *mutable* buffer
+        nullptr, nullptr,                // security
+        FALSE,                           // inherit handles
+        CREATE_NO_WINDOW,                // *** no console window ***
+        nullptr, nullptr,                // environment, current dir
+        &si, &pi);
+
+    if (!ok) return false;
+
+    CloseHandle(pi.hThread);
+    WaitForSingleObject(pi.hProcess, INFINITE);    // wait or return immediately
+    CloseHandle(pi.hProcess);
+    return true;
+}
+#else
+int run_hidden(const std::string& cmd)
+{
+    // Send stdin from /dev/null and redirect both outputs to /dev/null
+    // Remove '&' if you want to wait for completion.
+    std::string full = cmd + " </dev/null >/dev/null 2>&1";
+    return std::system(full.c_str());
+}
+#endif
+
+int run_silently(const std::string& command)
+{
+#ifdef _WIN32
+    std::wstring w(command.begin(), command.end());
+    return run_hidden(w) ? 0 : -1;
+#else
+    return run_hidden(command);
+#endif
+}
 
 // exiftool -ImageDescription="Your custom description here" yourimage.jpg
 GC_STATUS MetaData::WriteToImageDescription( const std::string filepath, const std::string &data )
@@ -397,7 +441,8 @@ GC_STATUS MetaData::WriteToImageDescription( const std::string filepath, const s
                     << "-ImageDescription=\"" << escapedDescription << "\" "
                     << "\"" << filepath << "\"";
             // std::cout << "Running command: " << command.str() << std::endl;
-            retVal = 0 == std::system(command.str().c_str()) ? GC_OK : GC_ERR;
+            // retVal = 0 == std::system( command.str().c_str() ) ? GC_OK : GC_ERR;
+            retVal = 0 == run_silently( command.str().c_str() ) ? GC_OK : GC_ERR;
             if ( GC_OK != retVal )
             {
                 FILE_LOG( logERROR ) << "[ExifMetadata::WriteToImageDescription] Could not write data to " << filepath;
