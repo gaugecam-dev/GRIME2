@@ -581,6 +581,7 @@ void PrintHelp()
         "                  <Image path to be analyzed> --calib_json <Calibration json file path>" << endl <<
         "                  [--csv_file <Path of csv file to create or append with find line result> OPTIONAL]" << endl <<
         "                  [--result_image <Path of result overlay image> OPTIONAL]" << endl <<
+        "                  [--line_roi_folder <Path of line roi image folder> OPTIONAL]" << endl <<
         "        Loads the specified image and calibration file, extracts the image using the specified" << endl <<
         "        timestamp parameters, calculates the line position, returns a json string with the find line" << endl <<
         "        results to stdout, and creates the optional overlay result image if specified" << endl;
@@ -590,6 +591,7 @@ void PrintHelp()
         "                   <Folder path of images to be analyzed> --calib_json <Calibration json file path>" << endl <<
         "                   [--csv_file <Path of csv file to create or append with find line results> OPTIONAL]" << endl <<
         "                   [--result_folder <Path of folder to hold result overlay images> OPTIONAL]" << endl <<
+        "                   [--line_roi_folder <Path of line roi image folder> OPTIONAL]" << endl <<
         "        Loads the specified images and calibration file, extracts the timestamps using the specified" << endl <<
         "        timestamp parameters, calculates the line positions,  and creates the optional overlay result" << endl <<
         "        image if specified" << endl;

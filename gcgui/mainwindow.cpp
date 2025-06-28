@@ -1427,12 +1427,24 @@ void MainWindow::on_toolButton_findLine_resultCSVFile_browse_clicked()
         ui->lineEdit_findLine_resultCSVFile->setText( strFullPath );
     }
 }
+void MainWindow::on_toolButton_saveSearchROIFolder_browse_clicked()
+{
+    QString strFullPath = QFileDialog::getExistingDirectory( this, "Set waterline search roi folder", ui->lineEdit_saveSearchROIFolder->text() );
+    if ( strFullPath.isNull() )
+    {
+        ui->statusBar->showMessage( "Could not set waterline search roi folder path" );
+    }
+    else
+    {
+        ui->lineEdit_saveSearchROIFolder->setText( strFullPath );
+    }
+}
 void MainWindow::on_toolButton_findLine_annotatedResultFolder_browse_clicked()
 {
     QString strFullPath = QFileDialog::getExistingDirectory( this, "Set annotated result image folder", ui->lineEdit_findLine_annotatedResultFolder->text() );
     if ( strFullPath.isNull() )
     {
-        ui->statusBar->showMessage( "Could not get annotated result image folder path" );
+        ui->statusBar->showMessage( "Could not set annotated result image folder path" );
     }
     else
     {
@@ -1522,19 +1534,6 @@ void MainWindow::on_pushButton_findLine_processFolder_clicked()
 
     vector< string > headings = { "filename", "timestamp", "water level" };
     InitTable( headings );
-
-    // int drawTypes = FINDLINE;
-    // drawTypes += ui->checkBox_showRowSums->isChecked() ? DIAG_ROWSUMS : 0;
-    // drawTypes += ui->checkBox_showDerivOne->isChecked() ? FINDLINE_1ST_DERIV : 0;
-    // drawTypes += ui->checkBox_showDerivTwo->isChecked() ? FINDLINE_2ND_DERIV : 0;
-    // drawTypes += ui->checkBox_showRANSAC->isChecked() ? RANSAC_POINTS : 0;
-    // drawTypes += ui->checkBox_showMoveFind->isChecked() ? MOVE_FIND : 0;
-    // drawTypes += ui->checkBox_showTargetROI->isChecked() ? TARGET_ROI : 0;
-    // drawTypes += ui->checkBox_showSearchROI->isChecked() ? SEARCH_ROI : 0;
-    // if ( ui->checkBox_showCalib->isChecked() )
-    // {
-    //     drawTypes += ui->radioButton_calibDisplayGrid->isChecked() ? CALIB_GRID : CALIB_SCALE;
-    // }
 
     GC_STATUS retVal = m_visApp.CalcLinesInFolder( folder, params, ui->radioButton_folderOfImages->isChecked() );
 
@@ -1772,4 +1771,3 @@ void MainWindow::on_pushButton_createFindCommandLine_clicked()
         ui->textEdit_msgs->setText( "Nested folder command line option not available" );
     }
 }
-

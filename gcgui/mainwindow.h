@@ -91,6 +91,7 @@ private slots:
     void on_toolButton_findLineTopFolder_browse_clicked();
     void on_toolButton_findLine_resultCSVFile_browse_clicked();
     void on_toolButton_findLine_annotatedResultFolder_browse_clicked();
+    void on_toolButton_saveSearchROIFolder_browse_clicked();
     void on_pushButton_findLineCurrentImage_clicked();
     void on_pushButton_findLine_processFolder_clicked();
     void on_pushButton_findLine_stopFolderProcess_clicked();

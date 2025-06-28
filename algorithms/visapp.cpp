@@ -698,6 +698,17 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result 
                 {
                     WriteFindlineResultToCSV( params.resultCSVPath, params.imagePath, result );
                 }
+
+                string resultJson;
+                if ( !params.resultImagePath.empty() || !params.lineSearchROIFolder.empty() )
+                {
+                    retVal = ResultToJsonString( result, params, resultJson );
+                    if ( GC_OK != retVal )
+                    {
+                        resultJson = "{\"STATUS\": \"FAILURE -- Could not retrive result json string\"}";
+                    }
+                }
+
                 if ( !params.resultImagePath.empty() )
                 {
                     Mat color;
@@ -707,12 +718,7 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result 
                         bool isOk = imwrite( params.resultImagePath, color );
                         if ( isOk )
                         {
-                            string resultJson;
-                            retVal = ResultToJsonString( result, params, resultJson );
-                            if ( GC_OK == retVal )
-                            {
-                                retVal = m_metaData.WriteToImageDescription( params.resultImagePath, resultJson );
-                            }
+                            retVal = m_metaData.WriteToImageDescription( params.resultImagePath, resultJson );
                         }
                         else
                         {
@@ -723,11 +729,17 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result 
                 }
                 if ( !params.lineSearchROIFolder.empty() )
                 {
-                    string resultJson;
-                    retVal = SaveLineFindSearchRoi( img, params, result );
+                    string searchROIPath = params.lineSearchROIFolder;
+                    if ( '/' != searchROIPath[ searchROIPath.size() - 1 ] )
+                    {
+                        searchROIPath += '/';
+                    }
+
+                    string outputROIPath = searchROIPath + fs::path( params.imagePath ).stem().string() + "_search_line_roi_and_mask.png";
+                    retVal = SaveLineFindSearchRoi( img, outputROIPath, result );
                     if ( GC_OK == retVal )
                     {
-                        retVal = m_metaData.WriteToImageDescription( params.resultImagePath, resultJson );
+                        retVal = m_metaData.WriteToImageDescription( outputROIPath, resultJson );
                     }
                 }
             }
@@ -768,16 +780,16 @@ GC_STATUS VisApp::LineIntersection( const LineEnds line1, const LineEnds line2, 
     }
     return retVal;
 }
-GC_STATUS VisApp::SaveLineFindSearchRoi( const cv::Mat &img, const FindLineParams &params, const FindLineResult &result )
+GC_STATUS VisApp::SaveLineFindSearchRoi( const cv::Mat &img, const std::string resultImgPath, const FindLineResult &result )
 {
     GC_STATUS retVal = GC_OK;
     try
     {
         vector< Point > searchRoiPoly = m_calibExec.CalibModel().waterlineSearchCorners;
-        Rect roi( Point( std::min( searchRoiPoly[ 0 ].x, searchRoiPoly[ 3 ].x ),
+        Rect roi( Point( std::min( searchRoiPoly[ 0 ].x, searchRoiPoly[ 2 ].x ),
                          std::min( searchRoiPoly[ 0 ].y, searchRoiPoly[ 1 ].y ) ),
-                  Point( std::min( searchRoiPoly[ 1 ].x, searchRoiPoly[ 2 ].x ),
-                         std::min( searchRoiPoly[ 2 ].y, searchRoiPoly[ 3 ].y ) ) );
+                  Point( std::max( searchRoiPoly[ 1 ].x, searchRoiPoly[ 3 ].x ),
+                         std::max( searchRoiPoly[ 2 ].y, searchRoiPoly[ 3 ].y ) ) );
 
         Point2d lftWtrPt, rgtWtrPt;
         retVal = LineIntersection( LineEnds( searchRoiPoly[ 0 ], searchRoiPoly[ 2 ] ),
@@ -788,15 +800,40 @@ GC_STATUS VisApp::SaveLineFindSearchRoi( const cv::Mat &img, const FindLineParam
                                        LineEnds( result.calcLinePts.lftPixel, result.calcLinePts.rgtPixel ), rgtWtrPt );
             if ( GC_OK == retVal )
             {
+                Mat scratch1 = Mat::zeros( img.size(), CV_8UC1 );
+
                 vector< Point > maskPoly;
-                maskPoly.push_back( lftWtrPt );
-                maskPoly.push_back( rgtWtrPt );
+                maskPoly.push_back( searchRoiPoly[ 0 ] );
+                maskPoly.push_back( searchRoiPoly[ 1 ] );
                 maskPoly.push_back( searchRoiPoly[ 3 ] );
                 maskPoly.push_back( searchRoiPoly[ 2 ] );
-                Mat scratch = Mat::zeros( img.size(), CV_8UC1 );
-                cv::fillPoly( scratch, maskPoly, Scalar( 255 ), FILLED );
-                imwrite( "/var/tmp/gaugecam/line_roi.png", img( roi ) );
-                imwrite( "/var/tmp/gaugecam/line_roi_mask.png", scratch( roi ) );
+                vector< vector< Point > > wholePoly{ maskPoly };
+                cv::fillPoly( scratch1, wholePoly, Scalar( 128 ) );
+
+                maskPoly[ 0 ] = lftWtrPt;
+                maskPoly[ 1 ] = rgtWtrPt;
+                vector< vector< Point > > waterPoly{ maskPoly };
+                Mat scratch2 = Mat::zeros( img.size(), CV_8UC1 );
+                cv::fillPoly( scratch2, waterPoly, Scalar( 64 ) );
+                scratch1 += scratch2;
+
+                Mat outputImg = Mat::zeros( Size( roi.width << 1, roi.height ), CV_8UC3 );
+                if ( CV_8UC3 == img.type() )
+                {
+                    img( roi ).copyTo( outputImg( Rect( 0, 0, roi.width, roi.height ) ) );
+                }
+                else
+                {
+                    cvtColor( img( roi ), outputImg( Rect( 0, 0, roi.width, roi.height ) ), COLOR_GRAY2BGR );
+                }
+                cvtColor( scratch1( roi ), outputImg( Rect( roi.width, 0, roi.width, roi.height ) ), COLOR_GRAY2BGR );
+
+                bool bRet = imwrite( resultImgPath, outputImg );
+                if ( !bRet )
+                {
+                    FILE_LOG( logERROR ) << "[VisApp::SaveLineFindSearchRoi] Could not write image to " << resultImgPath;
+                    retVal = GC_ERR;
+                }
             }
         }
     }
