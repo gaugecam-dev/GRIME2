@@ -133,6 +133,8 @@ public:
                                 const bool drawCalibGrid, const bool drawSearchROI, const bool drawTargetROI );
     GC_STATUS DrawAssocPts( const cv::Mat &img, cv::Mat &overlay, std::string &err_msg );
     GC_STATUS ResultToJsonString( const FindLineResult result, const FindLineParams params, std::string &resultJson );
+    GC_STATUS ResultToLabelJsonString( const FindLineResult result, const cv::Rect roi, const std::vector<cv::Point> maskPoly,
+                                       const std::vector<cv::Point> waterPoly, std::string &resultJson );
 
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // Findline methods
@@ -279,7 +281,7 @@ private:
                                            std::vector< LineEnds > &searchLinesAdj, const cv::Point2d offsets );
     GC_STATUS PixelToWorld( FindPointSet &ptSet );
     GC_STATUS FindPtSet2JsonString( const FindPointSet set, const string set_type, string &json );
-    GC_STATUS SaveLineFindSearchRoi( const cv::Mat &img, const string resultImgPath, const FindLineResult &result );
+    GC_STATUS SaveLineFindSearchRoi(const cv::Mat &img, const string resultImgPath, const FindLineResult result );
     GC_STATUS LineIntersection( const LineEnds line1, const LineEnds line2, cv::Point2d &r );
 };
 

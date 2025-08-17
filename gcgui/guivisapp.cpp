@@ -1049,6 +1049,23 @@ GC_STATUS GuiVisApp::CalcLinesThreadFunc( const std::vector< std::string > &imag
                 retVal = GC_ERR;
             }
         }
+        if ( !params.lineSearchROIFolder.empty() )
+        {
+            if ( !fs::exists( params.lineSearchROIFolder ) )
+            {
+                bool bRet = fs::create_directories( params.lineSearchROIFolder );
+                if ( !bRet )
+                {
+                    FILE_LOG( logERROR ) << "[GuiVisApp::CalcLinesThreadFunc] Could not create line search roi folder " << params.lineSearchROIFolder;
+                    retVal = GC_ERR;
+                }
+            }
+            else if ( !fs::is_directory( params.lineSearchROIFolder ) )
+            {
+                FILE_LOG( logERROR ) << "[GuiVisApp::CalcLinesThreadFunc] Specified line search roi path is not a folder " << params.lineSearchROIFolder;
+                retVal = GC_ERR;
+            }
+        }
 
         if ( GC_OK == retVal )
         {

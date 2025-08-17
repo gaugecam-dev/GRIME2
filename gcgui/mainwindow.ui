@@ -633,7 +633,7 @@
                <enum>QTabWidget::TabPosition::South</enum>
               </property>
               <property name="currentIndex">
-               <number>3</number>
+               <number>0</number>
               </property>
               <widget class="QWidget" name="tab_mainRunFolder">
                <property name="toolTipDuration">

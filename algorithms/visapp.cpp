@@ -327,62 +327,59 @@ GC_STATUS VisApp::CalcFindLine( const Mat &img, FindLineResult &result )
             }
             if ( GC_OK == retVal )
             {
-                if ( GC_OK == retVal )
+                string err_msg;
+                double rmseDist, rmseX, rmseY;
+                retVal = m_calibExec.Calibrate( img, m_calibExec.CalibModel().controlJson, rmseDist, rmseX, rmseY, err_msg );
+                if ( GC_OK != retVal )
                 {
-                    string err_msg;
-                    double rmseDist, rmseX, rmseY;
-                    retVal = m_calibExec.Calibrate( img, m_calibExec.CalibModel().controlJson, rmseDist, rmseX, rmseY, err_msg );
-                    if ( GC_OK != retVal )
+                    result.msgs.push_back( "Could not calculate move offsets" );
+                }
+                else
+                {
+                    retVal = m_calibExec.MoveFountPoint( result.foundMovePts );
+                    if ( GC_OK == retVal )
                     {
-                        result.msgs.push_back( "Could not calculate move offsets" );
-                    }
-                    else
-                    {
-                        retVal = m_calibExec.MoveFountPoint( result.foundMovePts );
-                        if ( GC_OK == retVal )
+                        retVal = PixelToWorld( result.foundMovePts );
+                        if ( GC_OK != retVal )
                         {
-                            retVal = PixelToWorld( result.foundMovePts );
-                            if ( GC_OK != retVal )
+                            result.msgs.push_back( "Could not calculate world coordinates for found move points" );
+                        }
+                        else
+                        {
+                            if ( 0.0 < result.refMovePts.lftPixel.x ||  0.0 < result.refMovePts.rgtPixel.y ||
+                                 0.0 < result.refMovePts.lftPixel.x ||  0.0 < result.refMovePts.rgtPixel.y )
                             {
-                                result.msgs.push_back( "Could not calculate world coordinates for found move points" );
+                                result.offsetMovePts.lftPixel.x = result.foundMovePts.lftPixel.x - result.refMovePts.lftPixel.x;
+                                result.offsetMovePts.lftPixel.y = result.foundMovePts.lftPixel.y - result.refMovePts.lftPixel.y;
+                                result.offsetMovePts.ctrPixel.x = result.foundMovePts.ctrPixel.x - result.refMovePts.ctrPixel.x;
+                                result.offsetMovePts.ctrPixel.y = result.foundMovePts.ctrPixel.y - result.refMovePts.ctrPixel.y;
+                                result.offsetMovePts.rgtPixel.x = result.foundMovePts.rgtPixel.x - result.refMovePts.rgtPixel.x;
+                                result.offsetMovePts.rgtPixel.y = result.foundMovePts.rgtPixel.y - result.refMovePts.rgtPixel.y;
+
+                                result.offsetMovePts.lftWorld.x = result.foundMovePts.lftWorld.x - result.refMovePts.lftWorld.x;
+                                result.offsetMovePts.lftWorld.y = result.foundMovePts.lftWorld.y - result.refMovePts.lftWorld.y;
+                                result.offsetMovePts.ctrWorld.x = result.foundMovePts.ctrWorld.x - result.refMovePts.ctrWorld.x;
+                                result.offsetMovePts.ctrWorld.y = result.foundMovePts.ctrWorld.y - result.refMovePts.ctrWorld.y;
+                                result.offsetMovePts.rgtWorld.x = result.foundMovePts.rgtWorld.x - result.refMovePts.rgtWorld.x;
+                                result.offsetMovePts.rgtWorld.y = result.foundMovePts.rgtWorld.y - result.refMovePts.rgtWorld.y;
+
+                                result.calibOffsets.calibAngle = atan2( result.refMovePts.rgtWorld.y - result.refMovePts.lftWorld.y,
+                                                                        result.refMovePts.rgtWorld.x - result.refMovePts.lftWorld.x ) * ( 180.0 / CV_PI );
+                                result.calibOffsets.calibCenterPt = ( result.refMovePts.lftWorld + result.refMovePts.rgtWorld ) / 2.0;
+                                result.calibOffsets.offsetAngle = atan2( result.foundMovePts.rgtWorld.y - result.foundMovePts.lftWorld.y,
+                                                                         result.foundMovePts.rgtWorld.x - result.foundMovePts.lftWorld.x ) * ( 180.0 / CV_PI );
+                                result.calibOffsets.offsetCenterPt = ( result.foundMovePts.lftWorld + result.foundMovePts.rgtWorld ) / 2.0;
                             }
                             else
                             {
-                                if ( 0.0 < result.refMovePts.lftPixel.x ||  0.0 < result.refMovePts.rgtPixel.y ||
-                                     0.0 < result.refMovePts.lftPixel.x ||  0.0 < result.refMovePts.rgtPixel.y )
-                                {
-                                    result.offsetMovePts.lftPixel.x = result.foundMovePts.lftPixel.x - result.refMovePts.lftPixel.x;
-                                    result.offsetMovePts.lftPixel.y = result.foundMovePts.lftPixel.y - result.refMovePts.lftPixel.y;
-                                    result.offsetMovePts.ctrPixel.x = result.foundMovePts.ctrPixel.x - result.refMovePts.ctrPixel.x;
-                                    result.offsetMovePts.ctrPixel.y = result.foundMovePts.ctrPixel.y - result.refMovePts.ctrPixel.y;
-                                    result.offsetMovePts.rgtPixel.x = result.foundMovePts.rgtPixel.x - result.refMovePts.rgtPixel.x;
-                                    result.offsetMovePts.rgtPixel.y = result.foundMovePts.rgtPixel.y - result.refMovePts.rgtPixel.y;
+                                result.offsetMovePts.setZero();
+                                result.calibOffsets.clear();
+                            }
 
-                                    result.offsetMovePts.lftWorld.x = result.foundMovePts.lftWorld.x - result.refMovePts.lftWorld.x;
-                                    result.offsetMovePts.lftWorld.y = result.foundMovePts.lftWorld.y - result.refMovePts.lftWorld.y;
-                                    result.offsetMovePts.ctrWorld.x = result.foundMovePts.ctrWorld.x - result.refMovePts.ctrWorld.x;
-                                    result.offsetMovePts.ctrWorld.y = result.foundMovePts.ctrWorld.y - result.refMovePts.ctrWorld.y;
-                                    result.offsetMovePts.rgtWorld.x = result.foundMovePts.rgtWorld.x - result.refMovePts.rgtWorld.x;
-                                    result.offsetMovePts.rgtWorld.y = result.foundMovePts.rgtWorld.y - result.refMovePts.rgtWorld.y;
-
-                                    result.calibOffsets.calibAngle = atan2( result.refMovePts.rgtWorld.y - result.refMovePts.lftWorld.y,
-                                                                            result.refMovePts.rgtWorld.x - result.refMovePts.lftWorld.x ) * ( 180.0 / CV_PI );
-                                    result.calibOffsets.calibCenterPt = ( result.refMovePts.lftWorld + result.refMovePts.rgtWorld ) / 2.0;
-                                    result.calibOffsets.offsetAngle = atan2( result.foundMovePts.rgtWorld.y - result.foundMovePts.lftWorld.y,
-                                                                             result.foundMovePts.rgtWorld.x - result.foundMovePts.lftWorld.x ) * ( 180.0 / CV_PI );
-                                    result.calibOffsets.offsetCenterPt = ( result.foundMovePts.lftWorld + result.foundMovePts.rgtWorld ) / 2.0;
-                                }
-                                else
-                                {
-                                    result.offsetMovePts.setZero();
-                                    result.calibOffsets.clear();
-                                }
-
-                                retVal = AdjustSearchAreaForMovement( m_calibExec.SearchLines(), searchLinesAdj, result.offsetMovePts.ctrPixel );
-                                if ( GC_OK == retVal )
-                                {
-                                    retVal = m_calibExec.SetAdjustedSearchROI( searchLinesAdj );
-                                }
+                            retVal = AdjustSearchAreaForMovement( m_calibExec.SearchLines(), searchLinesAdj, result.offsetMovePts.ctrPixel );
+                            if ( GC_OK == retVal )
+                            {
+                                retVal = m_calibExec.SetAdjustedSearchROI( searchLinesAdj );
                             }
                         }
                     }
@@ -457,14 +454,6 @@ GC_STATUS VisApp::CalcFindLine( const Mat &img, FindLineResult &result )
                                 result.calibReprojectOffset_y = -9999999.0;
                                 result.calibReprojectOffset_dist = -9999999.0;;
                             }
-    //                        snprintf( buffer, 256, "Reproject error:" );
-    //                        result.msgs.push_back( buffer );
-    //                        snprintf( buffer, 256, "   x=%0.3e", result.calibReprojectOffset_x );
-    //                        result.msgs.push_back( buffer );
-    //                        snprintf( buffer, 256, "   y=%0.3e", result.calibReprojectOffset_y );
-    //                        result.msgs.push_back( buffer );
-    //                        snprintf( buffer, 256, "   Euclid. dist=%0.3e", result.calibReprojectOffset_dist );
-    //                        result.msgs.push_back( buffer );
                         }
                     }
                 }
@@ -686,7 +675,11 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result 
                     m_calibFilepath = params.calibFilepath;
 
                     retVal = CalcFindLine( img, result );
-                    if ( GC_OK != retVal )
+                    if ( GC_OK == retVal )
+                    {
+
+                    }
+                    else
                     {
                         result.findSuccess = false;
                         FILE_LOG( logERROR ) << "[VisApp::CalcLine] Could not calc line in image";
@@ -699,34 +692,34 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result 
                     WriteFindlineResultToCSV( params.resultCSVPath, params.imagePath, result );
                 }
 
-                string resultJson;
-                if ( !params.resultImagePath.empty() || !params.lineSearchROIFolder.empty() )
+                if ( !params.resultImagePath.empty() )
                 {
+                    string resultJson;
                     retVal = ResultToJsonString( result, params, resultJson );
-                    if ( GC_OK != retVal )
+                    if ( GC_OK == retVal )
                     {
                         resultJson = "{\"STATUS\": \"FAILURE -- Could not retrive result json string\"}";
                     }
-                }
-
-                if ( !params.resultImagePath.empty() )
-                {
-                    Mat color;
-                    GC_STATUS retVal1 = DrawLineFindOverlay( img, color, result );
-                    if ( GC_OK == retVal1 )
+                    else
                     {
-                        bool isOk = imwrite( params.resultImagePath, color );
-                        if ( isOk )
+                        Mat color;
+                        GC_STATUS retVal1 = DrawLineFindOverlay( img, color, result );
+                        if ( GC_OK == retVal1 )
                         {
-                            retVal = m_metaData.WriteToImageDescription( params.resultImagePath, resultJson );
-                        }
-                        else
-                        {
-                            FILE_LOG( logERROR ) << "[VisApp::CalcLine] Could not write result image to " << params.resultImagePath;
-                            retVal1 = GC_ERR;
+                            bool isOk = imwrite( params.resultImagePath, color );
+                            if ( isOk )
+                            {
+                                retVal = m_metaData.WriteToImageDescription( params.resultImagePath, resultJson );
+                            }
+                            else
+                            {
+                                FILE_LOG( logERROR ) << "[VisApp::CalcLine] Could not write result image to " << params.resultImagePath;
+                                retVal1 = GC_ERR;
+                            }
                         }
                     }
                 }
+
                 if ( !params.lineSearchROIFolder.empty() )
                 {
                     string searchROIPath = params.lineSearchROIFolder;
@@ -737,10 +730,6 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result 
 
                     string outputROIPath = searchROIPath + fs::path( params.imagePath ).stem().string() + "_search_line_roi_and_mask.png";
                     retVal = SaveLineFindSearchRoi( img, outputROIPath, result );
-                    if ( GC_OK == retVal )
-                    {
-                        retVal = m_metaData.WriteToImageDescription( outputROIPath, resultJson );
-                    }
                 }
             }
         }
@@ -780,7 +769,7 @@ GC_STATUS VisApp::LineIntersection( const LineEnds line1, const LineEnds line2, 
     }
     return retVal;
 }
-GC_STATUS VisApp::SaveLineFindSearchRoi( const cv::Mat &img, const std::string resultImgPath, const FindLineResult &result )
+GC_STATUS VisApp::SaveLineFindSearchRoi( const cv::Mat &img, const std::string resultImgPath, const FindLineResult result )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -829,7 +818,20 @@ GC_STATUS VisApp::SaveLineFindSearchRoi( const cv::Mat &img, const std::string r
                 cvtColor( scratch1( roi ), outputImg( Rect( roi.width, 0, roi.width, roi.height ) ), COLOR_GRAY2BGR );
 
                 bool bRet = imwrite( resultImgPath, outputImg );
-                if ( !bRet )
+                if ( bRet )
+                {
+                    string resultJson = "{\"STATUS\": \"SUCCESS\"}";
+                    // retVal = ResultToLabelJsonString( result, roi, maskPoly, waterPoly[ 0 ], resultJson );
+                    // if ( GC_OK == retVal )
+                    // {
+                    //     resultJson = "{\"STATUS\": \"FAILURE -- Could not retrive result json string\"}";
+                    // }
+                    // else
+                    {
+                        retVal = m_metaData.WriteToImageDescription( resultImgPath, resultJson );
+                    }
+                }
+                else
                 {
                     FILE_LOG( logERROR ) << "[VisApp::SaveLineFindSearchRoi] Could not write image to " << resultImgPath;
                     retVal = GC_ERR;

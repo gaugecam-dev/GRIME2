@@ -398,6 +398,9 @@ int MainWindow::ReadSettings( const QString filepath )
         bool createCSV = pSettings->value( "createCSVCheckbox", true ).toBool();
         ui->checkBox_createFindLine_csvResultsFile->setChecked( createCSV );
         ui->lineEdit_findLine_annotatedResultFolder->setText( pSettings->value( "findLineAnnotatedOutFolder", QString( __CONFIGURATION_FOLDER ) ).toString() );
+        bool enableSaveSearchROI = pSettings->value( "enableSaveSearchROI", true ).toBool();
+        ui->groupBox_enableSaveSearchROI->setChecked( enableSaveSearchROI );
+        ui->lineEdit_saveSearchROIFolder->setText( pSettings->value( "saveSearchROIFolder", QString( __CONFIGURATION_FOLDER ) ).toString() );
         ui->checkBox_createFindLine_annotatedResults->setChecked( pSettings->value( "createAnnotationCheckbox", false ).toBool() );
         ui->lineEdit_saveSearchROIFolder->setText( pSettings->value( "saveSearchROIFolder", QString( __CONFIGURATION_FOLDER ) ).toString() );
         ui->checkBox_saveSearchROI->setChecked( pSettings->value( "saveSearchROICheckbox", false ).toBool() );
@@ -485,6 +488,8 @@ int MainWindow::WriteSettings( const QString filepath )
         pSettings->setValue( "folderOfImages", ui->radioButton_folderOfImages->isChecked() );
         pSettings->setValue( "createCSVCheckbox", ui->checkBox_createFindLine_csvResultsFile->isChecked() );
         pSettings->setValue( "findLineAnnotatedOutFolder", ui->lineEdit_findLine_annotatedResultFolder->text() );
+        pSettings->setValue( "enableSaveSearchROI", ui->groupBox_enableSaveSearchROI->isChecked() );
+        pSettings->setValue( "saveSearchROIFolder", ui->lineEdit_saveSearchROIFolder->text() );
         pSettings->setValue( "createAnnotationCheckbox", ui->checkBox_createFindLine_annotatedResults->isChecked() );
         pSettings->setValue( "saveSearchROIFolder", ui->lineEdit_saveSearchROIFolder->text() );
         pSettings->setValue( "saveSearchROICheckbox", ui->checkBox_saveSearchROI->isChecked() );
@@ -1475,6 +1480,7 @@ void MainWindow::on_pushButton_findLineCurrentImage_clicked()
         params.timeStampStartPos = ui->spinBox_timeStringPosZero->value();
         params.octagonZeroOffset = ui->doubleSpinBox_octagonZeroOffset->value();
         params.calibControlString.clear();
+        params.lineSearchROIFolder = ui->groupBox_enableSaveSearchROI->isChecked() ? ui->lineEdit_saveSearchROIFolder->text().toStdString() : "";
         if ( params.isOctagonCalib )
         {
             CalibJsonItems calibItems( ui->lineEdit_calibVisionResult_json->text().toStdString(), ui->checkBox_calibSearchROI->isChecked(),
