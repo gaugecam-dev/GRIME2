@@ -525,6 +525,48 @@ GC_STATUS VisApp::CalcLine( const Mat &img, const string timestamp, const bool i
 
     return retVal;
 }
+GC_STATUS VisApp::SearchLineRoiResultToJsonString( const bool findSuccess, const cv::Rect roi, const std::vector< cv::Point > maskPoly,
+                                                   const std::vector< cv::Point > waterPoly, std::string &resultJson )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        stringstream ss;
+        if ( 4 != maskPoly.size() )
+        {
+            ss << "{\"STATUS\":\"FAILURE -- Invalid mask polyline point count\"}";
+        }
+        else if ( 4 != waterPoly.size() )
+        {
+            ss << "{\"STATUS\":\"FAILURE -- Invalid water polyline point count\"}";
+        }
+        else
+        {
+            resultJson.clear();
+            ss << "{\"STATUS\": " << ( findSuccess ? "\"SUCCESS\"," : "\"FAILURE\"," );
+            ss << "\"ROI\":{";
+            ss << "\"left\":" << roi.x << ", \"top\":" << roi.y << ",";
+            ss << "\"width\":" << roi.width << ", \"height\":" << roi.height << "},";
+            ss << "\"mask_poly_points\":[";
+            ss << "{\"x\":" << maskPoly[0].x << ",\"y\":" << maskPoly[0].y << "},";
+            ss << "{\"x\":" << maskPoly[1].x << ",\"y\":" << maskPoly[1].y << "},";
+            ss << "{\"x\":" << maskPoly[2].x << ",\"y\":" << maskPoly[2].y << "},";
+            ss << "{\"x\":" << maskPoly[3].x << ",\"y\":" << maskPoly[3].y << "}],";
+            ss << "\"water_poly_points\":[";
+            ss << "{\"x\":" << waterPoly[0].x << ",\"y\":" << waterPoly[0].y << "},";
+            ss << "{\"x\":" << waterPoly[1].x << ",\"y\":" << waterPoly[1].y << "},";
+            ss << "{\"x\":" << waterPoly[2].x << ",\"y\":" << waterPoly[2].y << "},";
+            ss << "{\"x\":" << waterPoly[3].x << ",\"y\":" << waterPoly[3].y << "}]}";
+        }
+        resultJson = ss.str();
+    }
+    catch( std::exception &e )
+    {
+        FILE_LOG( logERROR ) << "[VisApp::SearchLineRoiResultToJsonString] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+    return retVal;
+}
 GC_STATUS VisApp::ResultToJsonString( const FindLineResult result, const FindLineParams params, std::string &resultJson )
 {
     GC_STATUS retVal = GC_OK;
@@ -589,7 +631,7 @@ GC_STATUS VisApp::ResultToJsonString( const FindLineResult result, const FindLin
     }
     catch( std::exception &e )
     {
-        FILE_LOG( logERROR ) << "[VisApp::CalcLine] " << e.what();
+        FILE_LOG( logERROR ) << "[VisApp::ResultToJsonString] " << e.what();
         FILE_LOG( logERROR ) << "Image=" << params.imagePath << " calib=" << params.calibFilepath;
         retVal = GC_EXCEPT;
     }
@@ -696,7 +738,7 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result 
                 {
                     string resultJson;
                     retVal = ResultToJsonString( result, params, resultJson );
-                    if ( GC_OK == retVal )
+                    if ( GC_OK != retVal )
                     {
                         resultJson = "{\"STATUS\": \"FAILURE -- Could not retrive result json string\"}";
                     }
@@ -821,14 +863,14 @@ GC_STATUS VisApp::SaveLineFindSearchRoi( const cv::Mat &img, const std::string r
                 if ( bRet )
                 {
                     string resultJson = "{\"STATUS\": \"SUCCESS\"}";
-                    // retVal = ResultToLabelJsonString( result, roi, maskPoly, waterPoly[ 0 ], resultJson );
-                    // if ( GC_OK == retVal )
-                    // {
-                    //     resultJson = "{\"STATUS\": \"FAILURE -- Could not retrive result json string\"}";
-                    // }
-                    // else
+                    retVal = SearchLineRoiResultToJsonString( result.findSuccess, roi, maskPoly, waterPoly[ 0 ], resultJson );
+                    if ( GC_OK == retVal )
                     {
                         retVal = m_metaData.WriteToImageDescription( resultImgPath, resultJson );
+                    }
+                    else
+                    {
+                        resultJson = "{\"STATUS\": \"FAILURE -- Could not retrive result json string\"}";
                     }
                 }
                 else

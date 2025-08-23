@@ -133,8 +133,8 @@ public:
                                 const bool drawCalibGrid, const bool drawSearchROI, const bool drawTargetROI );
     GC_STATUS DrawAssocPts( const cv::Mat &img, cv::Mat &overlay, std::string &err_msg );
     GC_STATUS ResultToJsonString( const FindLineResult result, const FindLineParams params, std::string &resultJson );
-    GC_STATUS ResultToLabelJsonString( const FindLineResult result, const cv::Rect roi, const std::vector<cv::Point> maskPoly,
-                                       const std::vector<cv::Point> waterPoly, std::string &resultJson );
+    GC_STATUS SearchLineRoiResultToJsonString( const bool findSuccess, const cv::Rect roi, const std::vector<cv::Point> maskPoly,
+                                               const std::vector<cv::Point> waterPoly, std::string &resultJson );
 
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // Findline methods

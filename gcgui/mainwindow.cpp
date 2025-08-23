@@ -1770,6 +1770,10 @@ void MainWindow::on_pushButton_createFindCommandLine_clicked()
             msg += "--csv_file " + ui->lineEdit_findLine_resultCSVFile->text().toStdString() + " ";
         if ( ui->checkBox_createFindLine_annotatedResults->isChecked() )
             msg += "--result_folder " + ui->lineEdit_findLine_annotatedResultFolder->text().toStdString() + " ";
+        if ( ui->checkBox_saveSearchROI->isChecked() )
+        {
+            msg += "--line_roi_folder " + ui->lineEdit_saveSearchROIFolder->text().toStdString() + " ";
+        }
         ui->textEdit_msgs->setText( QString( msg.c_str() ) );
     }
     else
