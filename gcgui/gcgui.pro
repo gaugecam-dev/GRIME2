@@ -52,6 +52,7 @@ SOURCES += \
     ../algorithms/gifanim/gifanim.cpp \
     ../algorithms/metadata.cpp \
     ../algorithms/octagonsearch.cpp \
+    ../algorithms/octorefine.cpp \
     ../algorithms/searchlines.cpp \
     ../algorithms/visapp.cpp \
     guivisapp.cpp \
@@ -72,6 +73,7 @@ HEADERS += \
     ../algorithms/log.h \
     ../algorithms/metadata.h \
     ../algorithms/octagonsearch.h \
+    ../algorithms/octorefine.h \
     ../algorithms/searchlines.h \
     ../algorithms/timestampconvert.h \
     ../algorithms/visapp.h \

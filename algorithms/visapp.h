@@ -81,16 +81,16 @@ public:
      * @param jsonControl Json string that controls the calibration
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
-    GC_STATUS Calibrate( const string imgFilepath, const string jsonControl,
+    GC_STATUS Calibrate( const std::string imgFilepath, const std::string jsonControl,
                          double &rmseDist, double &rmseX, double &rmseY,
-                        string &err_msg, const bool save = false );
+                        std::string &err_msg, const bool save = false );
 
     // TODO: Add doxygen comments
-    GC_STATUS Calibrate( const cv::Mat &img, const string jsonControl,
+    GC_STATUS Calibrate( const cv::Mat &img, const std::string jsonControl,
                          double &rmseDist, double &rmseX, double &rmseY,
-                        string &err_msg, const bool save = false );
-    GC_STATUS Calibrate( const string imgFilepath, const string jsonControl, const string resultImgPath,
-                         double &rmseDist, double &rmseX, double &rmseY , string &err_msg, const bool save = false );
+                        std::string &err_msg, const bool save = false );
+    GC_STATUS Calibrate( const std::string imgFilepath, const std::string jsonControl, const std::string resultImgPath,
+                         double &rmseDist, double &rmseX, double &rmseY , std::string &err_msg, const bool save = false );
 
     // TODO: Adjust doxygen comments
     /**
@@ -103,7 +103,7 @@ public:
     // TODO: Add doxygen comments
     GC_STATUS GetTempCacheResults( const std::string jsonFilepath, FindLineResult &result );
     GC_STATUS CalibLoad( const std::string calibJson  );
-    GC_STATUS CalibSave( const string jsonPath) ;
+    GC_STATUS CalibSave( const std::string jsonPath) ;
 
     /**
      * @brief Convert world coordinates to pixel coordinates using the currently set calibration
@@ -123,7 +123,7 @@ public:
      */
 
     // TODO: Fix doxygen
-    string GetCalibType() { return m_calibExec.GetCalibType(); }
+    std::string GetCalibType() { return m_calibExec.GetCalibType(); }
     GC_STATUS GetTargetSearchROI( cv::Rect &rect );
     GC_STATUS GetCalibParams( std::string &calibParams );
     GC_STATUS GetCalibControlJson( std::string &calibJson );
@@ -164,7 +164,7 @@ public:
      * @param timestamp Image capture time
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
-    GC_STATUS CalcLine( const cv::Mat &img, const string timestamp, const bool isOctagon );
+    GC_STATUS CalcLine( const cv::Mat &img, const std::string timestamp, const bool isOctagon );
 
     /**
      * @brief Find the water level in the specified image
@@ -172,15 +172,15 @@ public:
      * @param resultJson Result of the water level find in json format
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
-    GC_STATUS CalcLine( const FindLineParams params, FindLineResult &result, string &resultJson );
+    GC_STATUS CalcLine( const FindLineParams params, FindLineResult &result, std::string &resultJson );
 
     /**
-     * @brief Get image exif data used by GaugeCam as a human readable string
+     * @brief Get image exif data used by GaugeCam as a human readable std::string
      * @param filepath Filepath of the image from which to retrieve the exif dat
      * @param data Human readable data from the image exif data
      * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
      */
-    GC_STATUS GetImageData( const std::string filepath, string &data );
+    GC_STATUS GetImageData( const std::string filepath, std::string &data );
 
     /**
      * @brief Get image exif data used by GaugeCam into a data object
@@ -280,8 +280,8 @@ private:
     GC_STATUS AdjustSearchAreaForMovement( const std::vector< LineEnds > &searchLines,
                                            std::vector< LineEnds > &searchLinesAdj, const cv::Point2d offsets );
     GC_STATUS PixelToWorld( FindPointSet &ptSet );
-    GC_STATUS FindPtSet2JsonString( const FindPointSet set, const string set_type, string &json );
-    GC_STATUS SaveLineFindSearchRoi(const cv::Mat &img, const string resultImgPath, const FindLineResult result );
+    GC_STATUS FindPtSet2JsonString( const FindPointSet set, const std::string set_type, std::string &json );
+    GC_STATUS SaveLineFindSearchRoi(const cv::Mat &img, const std::string resultImgPath, const FindLineResult result );
     GC_STATUS LineIntersection( const LineEnds line1, const LineEnds line2, cv::Point2d &r );
 };
 

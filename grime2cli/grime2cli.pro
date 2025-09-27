@@ -22,6 +22,7 @@ SOURCES += \
     ../algorithms/findline.cpp \
     ../algorithms/gifanim/gifanim.cpp \
     ../algorithms/metadata.cpp \
+    ../algorithms/octorefine.cpp \
     ../algorithms/searchlines.cpp \
     ../algorithms/octagonsearch.cpp \
     ../algorithms/visapp.cpp \
@@ -39,6 +40,7 @@ HEADERS += \
     ../algorithms/labelroi.h \
     ../algorithms/log.h \
     ../algorithms/metadata.h \
+    ../algorithms/octorefine.h \
     ../algorithms/timestampconvert.h \
     ../algorithms/searchlines.h \
     ../algorithms/octagonsearch.h \

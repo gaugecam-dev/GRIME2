@@ -35,6 +35,7 @@
 // Tutorial: https://www.youtube.com/watch?v=-3WVSxNLk_k
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+using namespace std;
 using namespace boost;
 namespace fs = std::filesystem;
 

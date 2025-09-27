@@ -21,6 +21,7 @@
 #include <chrono>
 #include "opencv2/imgproc.hpp"
 #include "opencv2/imgcodecs.hpp"
+#include "bresenham.h"
 
 #ifdef DEBUG_OCTAGON_TEMPL
 #undef DEBUG_OCTAGON_TEMPL
@@ -77,67 +78,6 @@ GC_STATUS OctagonSearch::FindScale( const cv::Mat &img, std::vector< cv::Point2d
     }
     return retVal;
 }
-//GC_STATUS OctagonSearch::AdjustSearchImage( const Mat &img, Mat &adjusted )
-//{
-//    GC_STATUS retVal = GC_OK;
-//    try
-//    {
-//        if ( img.empty() )
-//        {
-//            FILE_LOG( logERROR ) << "[OctagonSearch::AdjustRawImage] Empty raw image";
-//            retVal = GC_ERR;
-//        }
-//        else
-//        {
-//#ifdef DEBUG_OCTAGON_TEMPL
-//            imwrite( "/var/tmp/gaugecam/raw_image.png", img );
-//#endif
-//            Mat mask;
-//            double thr = threshold( img, mask, 1, 255, THRESH_OTSU );
-//            threshold( img, mask, std::max( 0.0, thr * 1.1 ), 255, THRESH_BINARY );
-//            Mat kern = getStructuringElement( MORPH_ELLIPSE, Size( 5, 5 ) );
-//            erode( mask, mask, kern );
-//#ifdef DEBUG_OCTAGON_TEMPL
-//            imwrite( "/var/tmp/gaugecam/raw_threshed.png", mask );
-//#endif
-//            int idx = -1;
-//            double area, area_max =  -999999999;
-//            vector< vector< Point > > contours;
-//            findContours( mask, contours, RETR_LIST, CHAIN_APPROX_SIMPLE );
-//            for ( size_t i = 0; i < contours.size(); ++i )
-//            {
-//                area = contourArea( contours[ i ] );
-//                if ( area_max < area )
-//                {
-//                    area_max = area;
-//                    idx = static_cast< int >( i );
-//                }
-//            }
-//            if ( 0 > idx )
-//            {
-//                mask.setTo( 255 );
-//            }
-//            else
-//            {
-//                Mat scratch;
-//                img.copyTo( scratch );
-//                mask.setTo( 255 );
-//                drawContours( mask, vector< vector< Point > >( 1, contours[ idx ] ), -1, Scalar( 0 ), FILLED );
-//                adjusted = mask | img;
-//            }
-//#ifdef DEBUG_OCTAGON_TEMPL
-//            imwrite( "/var/tmp/gaugecam/raw_mask.png", mask );
-//            imwrite( "/var/tmp/gaugecam/raw_adjusted.png", adjusted );
-//#endif
-//        }
-//    }
-//    catch( const cv::Exception &e )
-//    {
-//        FILE_LOG( logERROR ) << "[AdjustRawImage::FindScale] " << e.what();
-//        retVal = GC_EXCEPT;
-//    }
-//    return retVal;
-//}
 GC_STATUS OctagonSearch::CoarseOctoMask( const Mat &img, Mat &mask )
 {
     GC_STATUS retVal = GC_OK;
@@ -605,6 +545,118 @@ GC_STATUS OctagonSearch::AdjustLineLength( const LineEnds &a, const double newLe
     }
     return retVal;
 }
+#include <opencv2/core.hpp>
+#include <cmath>
+
+// Function to lengthen a line defined by two points in a specific direction.
+GC_STATUS LengthenLine( const cv::Point2d& pStart, const cv::Point2d &pEnd, const double length_to_add, Point2d &ptEndNew )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        // Calculate the vector from p1 to p2.
+        cv::Point2d direction_vector = pEnd - pStart;
+
+        // Calculate the length (magnitude) of the vector.
+        float current_length = std::sqrt( direction_vector.x * direction_vector.x + direction_vector.y * direction_vector.y );
+
+        // Handle the case where the input points are the same.
+        if ( current_length == 0.0f )
+        {
+            ptEndNew = pEnd;
+        }
+        else
+        {
+            cv::Point2d unit_vector = direction_vector / current_length;
+
+            // The new length to add, multiplied by the unit vector.
+            cv::Point2d extension_vector = unit_vector * length_to_add;
+
+            ptEndNew = pStart - extension_vector;
+        }
+    }
+    catch( const cv::Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[OctagonSearch::LengthenLine] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+    return retVal;
+}
+GC_STATUS OctagonSearch::GetLineEdges( const cv::Mat &img, const cv::Point pt1, const cv::Point pt2,
+                                       const cv::Point ptCenter, std::vector< cv::Point2d > &foundPts, const int edgeThreshold )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        if ( img.empty() )
+        {
+            FILE_LOG( logERROR ) << "[OctagonSearch::GetLineEdges] Reference image empty";
+            retVal = GC_ERR;
+        }
+        else
+        {
+            Point2d ptEndNew;
+            vector< Point > linePts;
+            vector< LineEnds > lines;
+            retVal = bresenham( pt1, pt2, linePts );
+            if ( GC_OK == retVal )
+            {
+                Point2d ptCtr_2d( static_cast< double >( ptCenter.x ), static_cast< double >( ptCenter.y ) );
+                for ( size_t i = 0; i < linePts.size(); ++i )
+                {
+                    retVal = LengthenLine( ptCtr_2d, Point2d( static_cast< double >( linePts[ i ].x ),
+                                                             static_cast< double >( linePts[ i ].y ) ),
+                                          15.0, ptEndNew );
+                    if ( GC_OK == retVal )
+                    {
+                        lines.push_back( LineEnds( ptCenter, Point( std::round( ptEndNew.x ), std::round( ptEndNew.y ) ) ) );
+                    }
+                }
+            }
+        }
+    }
+    catch( const cv::Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[OctagonSearch::GetLineEdges] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+    return retVal;
+}
+GC_STATUS OctagonSearch::RefineFindEx( const Mat &img, std::vector< Point2d > &pts )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        if ( img.empty() )
+        {
+            FILE_LOG( logERROR ) << "[OctagonSearch::RefineFindEx] Reference image empty";
+            retVal = GC_ERR;
+        }
+        else if ( 8 != pts.size() && 2 != pts.size() )
+        {
+            FILE_LOG( logERROR ) << "[OctagonSearch::RefineFindEx] Need 8 points, but got only " << pts.size();
+            retVal = GC_ERR;
+        }
+        else
+        {
+            Mat img8u;
+            if ( img.type() == CV_8UC1 )
+            {
+                img.copyTo( img8u );
+            }
+            else
+            {
+                cvtColor( img, img8u, COLOR_BGR2GRAY );
+            }
+        }
+    }
+    catch( const cv::Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[OctagonSearch::RefineFindEx] " << e.what();
+        retVal = GC_EXCEPT;
+    }
+    return retVal;
+}
 GC_STATUS OctagonSearch::RefineFind( const Mat &img, vector< Point2d > &pts )
 {
     GC_STATUS retVal = GC_OK;
@@ -622,6 +674,10 @@ GC_STATUS OctagonSearch::RefineFind( const Mat &img, vector< Point2d > &pts )
         }
         else
         {
+            for ( size_t i = 0; i < pts.size(); ++i )
+            {
+                cout << pts[ i ] << endl;
+            }
             Mat img8u;
             if ( img.type() == CV_8UC1 )
             {
@@ -634,7 +690,7 @@ GC_STATUS OctagonSearch::RefineFind( const Mat &img, vector< Point2d > &pts )
 
             Mat edges;
             medianBlur( img8u, edges, 7 );
-            Canny( edges, edges, 35, 70 );
+            Canny( edges, edges, 25, 40 );
 
             LineEnds lineEnds;
             vector< LineEnds > lineEndSet;
@@ -655,13 +711,13 @@ GC_STATUS OctagonSearch::RefineFind( const Mat &img, vector< Point2d > &pts )
 
             LineEnds lineA;
             vector< LineEnds > lineSet;
-            retVal = ShortenLine( LineEnds( pts[ 0 ], pts[ pts.size() - 1 ] ), 0.9, lineA );
+            retVal = ShortenLine( LineEnds( pts[ 0 ], pts[ pts.size() - 1 ] ), 0.7, lineA );
             if ( GC_OK == retVal )
             {
                 lineSet.push_back( lineA );
                 for ( size_t i = 1; i < pts.size(); ++i )
                 {
-                    retVal = ShortenLine( LineEnds( pts[ i ], pts[ i - 1 ] ), 0.9, lineA );
+                    retVal = ShortenLine( LineEnds( pts[ i ], pts[ i - 1 ] ), 0.7, lineA );
                     if ( GC_OK == retVal )
                     {
                         lineSet.push_back( lineA );
@@ -675,15 +731,15 @@ GC_STATUS OctagonSearch::RefineFind( const Mat &img, vector< Point2d > &pts )
                 {
                     for ( size_t i = 0; i < lineSet.size(); ++i )
                     {
-#ifdef DEBUG_OCTAGON_TEMPL
-                        line( color, lineSet[ i ].bot, lineSet[ i ].top, Scalar( 0, 0, 255 ), 1 );
-#endif
                         mask = 0;
                         line( mask, lineSet[ i ].top, lineSet[ i ].bot, Scalar( 255 ), 15 );
                         mask &= edges;
-                        // imwrite( "/var/tmp/gaugecam/line_edges.png", mask );
 
                         findNonZero( mask, lineEdges );
+#ifdef DEBUG_OCTAGON_TEMPL
+                        line( mask, lineSet[ i ].bot, lineSet[ i ].top, Scalar( 0, 0, 128 ), 1 );
+
+#endif
 
 #ifdef DEBUG_OCTAGON_TEMPL
                         for ( size_t j = 0; j < lineEdges.size(); ++j )
@@ -698,6 +754,14 @@ GC_STATUS OctagonSearch::RefineFind( const Mat &img, vector< Point2d > &pts )
                         if ( GC_OK == retVal )
                         {
                             lineEndSet.push_back( lineEnds );
+#ifdef DEBUG_OCTAGON_TEMPL
+                            line( mask, lineEnds.top, lineEnds.bot, Scalar( 0, 0, 128 ), 1 );
+                            imwrite( "/var/tmp/gaugecam/line_edges.png", mask );
+
+                            line( color, lineEnds.top, lineEnds.bot, Scalar( 0, 255, 255 ), 1 );
+                            imwrite( "/var/tmp/gaugecam/line_edges_fit.png", color );
+                            cout << "hello" << endl;
+#endif
                         }
                         else
                         {

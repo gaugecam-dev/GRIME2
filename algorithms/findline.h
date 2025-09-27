@@ -40,7 +40,6 @@
 #define FINDLINE_H
 
 #include "gc_types.h"
-#include "findcalibgrid.h"
 #include <vector>
 #include <random>
 #include <opencv2/core.hpp>
@@ -149,7 +148,7 @@ private:
     GC_STATUS TriagePoints( std::vector< cv::Point2d > &pts );
     GC_STATUS RemoveOutliers( std::vector< cv::Point2d > &pts, const size_t numToKeep );
     GC_STATUS GetRandomNumbers( const int low_bound, const int high_bound, const int cnt_to_generate,
-                                vector< int > &numbers, const bool isFirst );
+                                std::vector< int > &numbers, const bool isFirst );
     GC_STATUS CalcRowSums( const cv::Mat &img, const std::vector< LineEnds > &lines, std::vector< uint > &rowSums );
     GC_STATUS EvaluateSwath( const cv::Mat &img, const std::vector< LineEnds > &lines, const size_t startIndex,
                              const size_t endIndex, cv::Point2d &resultPt, FindLineResult &result );
@@ -157,8 +156,8 @@ private:
     GC_STATUS MedianFilter( const size_t kernSize, const std::vector< uint > values, std::vector< uint > &valuesOut );
 
     GC_STATUS GetSlopeIntercept( const cv::Point2d one, const cv::Point2d two, double &slope, double &intercept );
-    GC_STATUS CalculateRowSumsLines( const vector< uint > rowSums, const vector< LineEnds > lines, vector< vector< cv::Point > > &rowSumsLines,
-                                     vector< vector< cv::Point > > &deriveOneLines,  vector< vector< cv::Point > > &deriveTwoLines );
+    GC_STATUS CalculateRowSumsLines( const std::vector< uint > rowSums, const std::vector< LineEnds > lines, std::vector< std::vector< cv::Point > > &rowSumsLines,
+                                     std::vector< std::vector< cv::Point > > &deriveOneLines,  std::vector< std::vector< cv::Point > > &deriveTwoLines );
 };
 
 } // namespace gc
