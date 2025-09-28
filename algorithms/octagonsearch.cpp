@@ -358,11 +358,11 @@ GC_STATUS OctagonSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &p
                     }
                 }
 
-                std::vector< cv::Point2d > pts_temp = pts;
-                retVal = RefineFind( img, pts );
-                if ( GC_OK != retVal )
+                std::vector< cv::Point2d > ptsTemp;
+                retVal = octoRefine.RefinePoints( img, pts, ptsTemp );
+                if ( GC_OK == retVal )
                 {
-                    pts = pts_temp;
+                    pts = ptsTemp;
                     retVal = GC_OK;
                 }
 
@@ -618,41 +618,6 @@ GC_STATUS OctagonSearch::GetLineEdges( const cv::Mat &img, const cv::Point pt1, 
     catch( const cv::Exception &e )
     {
         FILE_LOG( logERROR ) << "[OctagonSearch::GetLineEdges] " << e.what();
-        retVal = GC_EXCEPT;
-    }
-    return retVal;
-}
-GC_STATUS OctagonSearch::RefineFindEx( const Mat &img, std::vector< Point2d > &pts )
-{
-    GC_STATUS retVal = GC_OK;
-    try
-    {
-        if ( img.empty() )
-        {
-            FILE_LOG( logERROR ) << "[OctagonSearch::RefineFindEx] Reference image empty";
-            retVal = GC_ERR;
-        }
-        else if ( 8 != pts.size() && 2 != pts.size() )
-        {
-            FILE_LOG( logERROR ) << "[OctagonSearch::RefineFindEx] Need 8 points, but got only " << pts.size();
-            retVal = GC_ERR;
-        }
-        else
-        {
-            Mat img8u;
-            if ( img.type() == CV_8UC1 )
-            {
-                img.copyTo( img8u );
-            }
-            else
-            {
-                cvtColor( img, img8u, COLOR_BGR2GRAY );
-            }
-        }
-    }
-    catch( const cv::Exception &e )
-    {
-        FILE_LOG( logERROR ) << "[OctagonSearch::RefineFindEx] " << e.what();
         retVal = GC_EXCEPT;
     }
     return retVal;

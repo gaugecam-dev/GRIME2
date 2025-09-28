@@ -1,44 +1,45 @@
 #pragma once
+#include "gc_types.h"
 #include <opencv2/opencv.hpp>
 #include <vector>
 #include <utility>
 
 struct LineEquation {
     cv::Vec2f direction; // (vx, vy)
-    cv::Point2f point;   // (x0, y0)
+    cv::Point2d point;   // (x0, y0)
 };
+
+namespace gc
+{
 
 class OctoRefine {
 public:
     OctoRefine();
 
+    // Main method
+    GC_STATUS RefinePoints( const cv::Mat &img, const std::vector< cv::Point2d > &pts,
+                            std::vector< cv::Point2d > &vertices, int minFacetPts = 8, double sigma = 2.0 );
     // Utility methods
-    static cv::Point2f getPointProjection(const cv::Point2f& P, const cv::Point2f& A, const cv::Point2f& B);
-    static std::vector<cv::Point> getLinePixels(const cv::Point2f& p1, const cv::Point2f& p2);
-    static std::vector<std::vector<std::pair<cv::Point, cv::Point>>> calculateFacetLinesN(
-        const cv::Point2f& center_point,
-        const std::vector<cv::Point2f>& octagon_points,
-        int n
-    );
-    static std::vector<cv::Point> getLineCoords(const cv::Point& pt1, const cv::Point& pt2);
-    static cv::Point2f findSubpixelFallingEdge(
-        const cv::Mat& image,
-        const cv::Point& pt1,
-        const cv::Point& pt2,
-        double sigma = 2.0
-    );
-    static std::vector<std::vector<std::pair<cv::Point, cv::Point>>> refineFindEx(
-        const std::vector<cv::Point2f>& pts,
-        int extension = 20
-    );
-    static cv::Point2f findLineIntersection(const LineEquation& lineA, const LineEquation& lineB, bool& valid);
-    static std::vector<cv::Point2f> sortOctagonPoints(const std::vector<cv::Point2f>& points);
-    static std::vector<cv::Point2f> getOctagonVertices(const std::vector<LineEquation>& lineEquations);
+    GC_STATUS GetPointProjection(const cv::Point2d& P, const cv::Point2d& A, const cv::Point2d& B, cv::Point2d &C );
+    GC_STATUS GetLinePixels(const cv::Point2d& p1, const cv::Point2d& p2, std::vector< cv::Point > &pts );
+    GC_STATUS CalculateFacetLinesN( const cv::Point2d &center_point, const std::vector< cv::Point2d > &octagon_points,
+                                    std::vector< std::vector< std::pair< cv::Point, cv::Point> > > &facetLineSets, int extension );
+    GC_STATUS GetLineCoords(const cv::Point& pt1, const cv::Point& pt2, std::vector<cv::Point> &coords );
+    GC_STATUS FindSubpixelFallingEdge( const cv::Mat& image, const cv::Point& pt1, const cv::Point& pt2,
+                                       cv::Point2d &sub_pixel, double sigma = 2.0 );
+    GC_STATUS RefineFindExtend( const std::vector<cv::Point2d>& pts,
+                                std::vector <std::vector< std::pair< cv::Point, cv::Point > > > &extendedLines,
+                                 const int extension = 20 );
+    GC_STATUS FindLineIntersection( const LineEquation& lineA, const LineEquation& lineB, bool& valid, cv::Point2d &pt );
+    GC_STATUS SortOctagonPoints( const std::vector< cv::Point2d > &points, std::vector< cv::Point2d > &ptsSorted );
+    GC_STATUS GetOctagonVertices(const std::vector<LineEquation>& lineEquations, std::vector<cv::Point2d> &vertsSorted );
 
     // Example usage (not implemented here)
-    // void processImage(const cv::Mat& image, const std::vector<cv::Point2f>& pts);
+    // void processImage(const cv::Mat& image, const std::vector<cv::Point2d>& pts);
 
 private:
     // Helper for Gaussian smoothing and gradient
     static std::vector<float> gaussianSmooth1D(const std::vector<float>& intensities, double sigma);
 };
+
+} // namespace gc

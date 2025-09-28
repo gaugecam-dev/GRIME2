@@ -26,6 +26,7 @@
 #define OCTAGONSEARCH_H
 
 #include "gc_types.h"
+#include "octorefine.h"
 
 namespace gc
 {
@@ -96,6 +97,7 @@ public:
     GC_STATUS FindMoveTargets( const cv::Mat &img, const cv::Rect targetRoi, cv::Point2d &ptLeft, cv::Point2d &ptRight );
 
 private:
+    OctoRefine octoRefine;
     std::vector< OctagonTemplateSet > templates;
     OctoTemplateSet octoTemplates;
 
@@ -110,7 +112,6 @@ private:
     GC_STATUS GetLineEdges( const cv::Mat &img, const cv::Point pt1, const cv::Point pt2, const cv::Point ptCenter,
                             std::vector< cv:: Point2d > &foundPts, const int edgeThreshold = 27 );
     GC_STATUS RefineFind( const cv::Mat &img, std::vector< cv::Point2d > &pts );
-    GC_STATUS RefineFindEx( const cv::Mat &img, std::vector< cv::Point2d > &pts );
     GC_STATUS AdjustLineLength( const LineEnds &a, const double newLength, LineEnds &newLine );
     GC_STATUS ShortenLine( const LineEnds &a, const double newLengthPercent, LineEnds &newLine );
     GC_STATUS FitLine( const std::vector< cv::Point > &pts, LineEnds &lineEnds, const cv::Mat &img );
