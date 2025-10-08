@@ -4,6 +4,8 @@
 #include <opencv2/core.hpp>
 #include <cmath>
 #include <algorithm>
+#include <cmath>
+#include <limits>
 
 #ifndef OCTOREFINE_DEBUG
 #define OCTOREFINE_DEBUG
@@ -12,6 +14,9 @@ char DEBUG_FOLDER[] = "/var/tmp/gaugecam/";
 
 using namespace cv;
 using namespace std;
+
+double DISTANCE( const Point a, const Point b ) { return sqrt(static_cast<double>((a.x-b.x)*(a.x-b.x) + (a.y-b.y)*(a.y-b.y))); }
+double DISTANCE( const Point2d a, const Point2d b ) { return sqrt(static_cast<double>((a.x-b.x)*(a.x-b.x) + (a.y-b.y)*(a.y-b.y))); }
 
 namespace gc
 {
@@ -24,80 +29,147 @@ gc::GC_STATUS OctoRefine::RefinePoints( const cv::Mat &img, const std::vector< c
     gc::GC_STATUS retVal = gc::GC_OK;
     try
     {
-#ifdef OCTOREFINE_DEBUG
-        cv::Mat color;
-        cvtColor( img, color, COLOR_GRAY2BGR );
-#endif
-        // Compute center
-        cv::Point2d center( 0.0, 0.0 ) ;
-        for (const auto& p : pts)
-        {
-#ifdef OCTOREFINE_DEBUG
-            circle( color, p, 5, Scalar( 0, 0, 255 ), 1 );
-#endif
-            center.x += p.x;
-            center.y += p.y;
-        }
-        center.x /= pts.size();
-        center.y /= pts.size();
-#ifdef OCTOREFINE_DEBUG
-        circle( color, center, 7, Scalar( 0, 255, 255 ), 2 );
-        imwrite( string( DEBUG_FOLDER ) + string( "000_input_image.png" ), color );
-#endif
-
-
-
-        // Get facet lines
-        std::vector <std::vector< std::pair< cv::Point, cv::Point > > > extendedLines;
-        retVal = RefineFindExtend( pts, extendedLines );
+        std::vector< cv::Point2d > ptsSorted;
+        retVal = SortOctagonPoints( pts, ptsSorted );
+        cout << pts << endl;
+        cout << ptsSorted << endl;
         if ( GC_OK == retVal )
         {
-            std::vector< LineEquation> lineEquations;
-            for ( const auto& facetSet : extendedLines )
-            {
-                std::vector<cv::Point2d> facetPts;
-                for (const auto& endpoints : facetSet)
-                {
-                    cv::Point p1 = endpoints.first;
-                    cv::Point p2 = endpoints.second;
+            Mat blur;
+            medianBlur( img, blur, 7 );
 #ifdef OCTOREFINE_DEBUG
-                    line( color, p1, p2, Scalar( 0, 255, 0 ), 1 );
-                    imwrite( string( DEBUG_FOLDER ) + string( "010_lines.png" ), color );
+            cv::Mat color;
+            cvtColor( img, color, COLOR_GRAY2BGR );
 #endif
-                    // Ensure p1 is closer to center than p2
-                    if (cv::norm(cv::Point2d(p1) - center) > cv::norm(cv::Point2d(p2) - center))
-                    {
-                        std::swap(p1, p2);
-                    }
-                    cv::Point2d edgePt;
-                    retVal = FindSubpixelFallingEdge( img, p1, p2, edgePt, sigma );
-                    if (edgePt.x != edgePt.x || edgePt.y != edgePt.y || GC_OK != retVal ) // NaN check
-                    {
-                        retVal = GC_OK;
-                    }
-                    else
-                    {
-                        facetPts.push_back(edgePt);
-                    }
-                }
-                if (facetPts.size() >= static_cast<size_t>(minFacetPts))
-                {
-                    cv::Vec4f line;
-                    cv::fitLine(facetPts, line, cv::DIST_L2, 0, 0.01, 0.01);
-                    LineEquation eq;
-                    eq.direction = cv::Vec2f(line[0], line[1]);
-                    eq.point = cv::Point2d(line[2], line[3]);
-                    lineEquations.push_back(eq);
-                }
+            // Compute center
+            cv::Point2d center( 0.0, 0.0 ) ;
+            for (const auto& p : ptsSorted)
+            {
+#ifdef OCTOREFINE_DEBUG
+                circle( color, p, 5, Scalar( 0, 0, 255 ), 1 );
+#endif
+                center.x += p.x;
+                center.y += p.y;
             }
+            center.x /= ptsSorted.size();
+            center.y /= ptsSorted.size();
+            Point center_int( std::round( center.x ), std::round( center.y ) );
+#ifdef OCTOREFINE_DEBUG
+            circle( color, center, 7, Scalar( 0, 255, 255 ), 2 );
+            imwrite( string( DEBUG_FOLDER ) + string( "000_input_image.png" ), color );
+            imwrite( string( DEBUG_FOLDER ) + string( "005_input_blur.png" ), blur );
+#endif
 
-            // Compute vertices from line equations
-            retVal = GetOctagonVertices( lineEquations, vertices );
+            // Get facet lines
+            std::vector <std::vector< std::pair< cv::Point, cv::Point > > > extendedLines;
+            retVal = RefineFindExtend( ptsSorted, extendedLines );
+            if ( GC_OK == retVal )
+            {
+                int item = 0;
+                std::vector< LineEquation> lineEquations;
+                for ( const auto& facetSet : extendedLines )
+                {
+                    cv::Point pt1 = facetSet[ facetSet.size() >> 1 ].second;
+                    cv::Point pt2 = facetSet[ facetSet.size() >> 1 ].first;
+                    cout << item << " inner=" << pt1 << " outer=" << pt2 << endl;
+                    putText( color, to_string( item ), pt1, FONT_HERSHEY_PLAIN, 1.0, Scalar( 255, 0, 0 ), 2 );
+
+                    std::vector< cv::Point2d > facetPts;
+                    for (const auto& endpoints : facetSet)
+                    {
+                        cv::Point p1 = endpoints.first;
+                        cv::Point p2 = endpoints.second;
+#ifdef OCTOREFINE_DEBUG
+                        color.at< cv::Vec3b >( p1 ) = cv::Vec3b( 0, 255, 0 );
+                        color.at< cv::Vec3b >( p2 ) = cv::Vec3b( 0, 0, 255 );
+#endif
+                        cv::Point2d edgePt;
+                        retVal = FindSubpixelFallingEdge( blur, p1, p2, edgePt, sigma );
+                        if ( edgePt.x != edgePt.x || edgePt.y != edgePt.y || GC_OK != retVal ) // NaN check
+                        {
+                            retVal = GC_OK;
+                        }
+                        else
+                        {
+                            std::swap( edgePt.x, edgePt.y );
+                            facetPts.push_back( edgePt );
+                        }
+                    }
+                    if ( facetPts.size() >= static_cast<size_t>( minFacetPts ) )
+                    {
+                        cv::Vec4f line;
+                        cv::fitLine( facetPts, line, cv::DIST_L2, 0, 0.01, 0.01 );
+#ifdef OCTOREFINE_DEBUG
+                        DrawExtendedLine( color, line, Scalar( 0, 255, 255 ), 1 );
+#endif
+
+                        LineEquation eq;
+                        eq.direction = cv::Vec2d( line[ 0 ], line[ 1 ]);
+                        eq.point = cv::Point2d( line[ 2 ], line[ 3 ] );
+                        lineEquations.push_back( eq );
+                    }
+
+#ifdef OCTOREFINE_DEBUG
+                    for ( size_t i = 0; i < facetPts.size(); ++i )
+                    {
+                        // circle( color, Point2d( facetPts[ i ].x, facetPts[ i ].y ), 3, Scalar( 0, 255, 255 ), 1 );
+                        color.at< cv::Vec3b >( facetPts[ i ].x, facetPts[ i ].y ) = cv::Vec3b( 255, 0, 0 );
+                    }
+#endif
+                    item++;
+                }
+
+                // Compute vertices from line equations
+                retVal = GetOctagonVertices( lineEquations, vertices );
+#ifdef OCTOREFINE_DEBUG
+                for ( const auto& vertex : vertices )
+                {
+                    circle( color, vertex, 2, Scalar( 0, 0, 255 ), FILLED );
+                }
+                imwrite( string( DEBUG_FOLDER ) + string( "030_refined_vertices.png" ), color );
+#endif
+            }
         }
     }
     catch( const cv::Exception &e )
     {
         FILE_LOG( logERROR ) << "[OctoRefine::RefinePoints] " << e.what();
+        retVal = gc::GC_EXCEPT;
+    }
+    return retVal;
+}
+GC_STATUS OctoRefine::DrawExtendedLine( cv::Mat& image, const cv::Vec4f& line_params,
+                                        const cv::Scalar& color, int thickness )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        float vx = line_params[ 0 ];
+        float vy = line_params[ 1 ];
+        float x0 = line_params[ 2 ];
+        float y0 = line_params[ 3 ];
+
+        double scale = 1000.0;
+
+        if ( image.cols > image.rows )
+        {
+            scale = static_cast< double >( image.cols );
+        }
+        else
+        {
+            scale = static_cast< double >( image.rows );
+        }
+
+        double t_large = scale * 2.0;
+
+        cv::Point P1( cvRound(x0 - t_large * vx), cvRound(y0 - t_large * vy) );
+        cv::Point P2( cvRound(x0 + t_large * vx), cvRound(y0 + t_large * vy) );
+
+        cv::line( image, P1, P2, color, thickness, cv::LINE_AA );
+    }
+    catch( const cv::Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[OctoRefine::DrawExtendedLine] " << e.what();
         retVal = gc::GC_EXCEPT;
     }
     return retVal;
@@ -122,7 +194,7 @@ GC_STATUS OctoRefine::GetPointProjection(const cv::Point2d& P, const cv::Point2d
     return retVal;
 }
 
-GC_STATUS OctoRefine::GetLinePixels(const cv::Point2d& p1, const cv::Point2d& p2, std::vector<cv::Point> &pts )
+GC_STATUS OctoRefine::GetLinePixels( const cv::Point2d& p1, const cv::Point2d& p2, const cv::Point2d center, std::vector< cv::Point > &pts )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -130,23 +202,29 @@ GC_STATUS OctoRefine::GetLinePixels(const cv::Point2d& p1, const cv::Point2d& p2
         pts.clear();
         float dx = p2.x - p1.x;
         float dy = p2.y - p1.y;
-        int steps = static_cast<int>(std::max(std::abs(dx), std::abs(dy)));
+        int steps = static_cast< int >( std::max( std::abs( dx ), std::abs( dy ) ) );
         if ( steps == 0 )
         {
-            pts.push_back(cv::Point(cvRound(p1.x), cvRound(p1.y)));
+            pts.push_back( cv::Point( cvRound( p1.x ), cvRound( p1.y ) ) );
         }
         else
         {
             float x_inc = dx / steps;
             float y_inc = dy / steps;
             float x = p1.x, y = p1.y;
-            for (int i = 0; i <= steps; ++i) {
-                pts.emplace_back(cvRound(x), cvRound(y));
+            for ( int i = 0; i <= steps; ++i )
+            {
+                pts.emplace_back( cvRound( x ), cvRound( y ) );
                 x += x_inc;
                 y += y_inc;
             }
-            std::sort(pts.begin(), pts.end(), [](const cv::Point& a, const cv::Point& b) {
-                return (a.x == b.x) ? (a.y < b.y) : (a.x < b.x);
+
+            // std::sort( pts.begin(), pts.end(), []( const cv::Point& a, const cv::Point& b ) {
+            //     return ( a.x == b.x ) ? ( a.y < b.y ) : ( a.x < b.x );
+            // });
+
+            std::sort( pts.begin(), pts.end(), [ center ]( const cv::Point2d& a, const cv::Point2d& b ) {
+                return DISTANCE( a, center ) < DISTANCE( b, center );
             });
         }
     }
@@ -157,8 +235,15 @@ GC_STATUS OctoRefine::GetLinePixels(const cv::Point2d& p1, const cv::Point2d& p2
     }
     return retVal;
 }
-
-GC_STATUS OctoRefine::CalculateFacetLinesN( const cv::Point2d& center_point, const std::vector<cv::Point2d>& octagon_points,
+bool comparePoints(const cv::Point& a, const cv::Point& b)
+{
+    if ( a.x != b.x )
+    {
+        return a.x < b.x;
+    }
+    return a.y < b.y;
+}
+GC_STATUS OctoRefine::CalculateFacetLinesN( const cv::Point2d& center, const std::vector< cv::Point2d > &octagon_points,
                                             std::vector< std::vector< std::pair< cv::Point, cv::Point > > > &facetLineSets, int extension )
 {
     GC_STATUS retVal = GC_OK;
@@ -172,18 +257,22 @@ GC_STATUS OctoRefine::CalculateFacetLinesN( const cv::Point2d& center_point, con
             cv::Point2d P_ip1 = octagon_points[(i + 1) % num_points];
             cv::Point2d v_edge = P_ip1 - P_i;
             cv::Point2d normal_vector(-v_edge.y, v_edge.x);
-            cv::Point2d v_i_to_C = center_point - P_i;
+            cv::Point2d v_i_to_C = center - P_i;
             if ( normal_vector.dot(v_i_to_C) < 0 )
             {
                 normal_vector = -normal_vector;
             }
             cv::Point2d U_normal = normal_vector * (1.0f / cv::norm(normal_vector));
             std::vector<cv::Point> facet_pixels;
-            retVal = GetLinePixels(P_i, P_ip1, facet_pixels );
+            retVal = GetLinePixels( P_i, P_ip1, center, facet_pixels );
             if ( GC_OK != retVal )
             {
                 break;
             }
+            std::sort( facet_pixels.begin(), facet_pixels.end(), comparePoints );
+            auto last_unique = std::unique(facet_pixels.begin(), facet_pixels.end(), [](const cv::Point& a, const cv::Point& b) {
+                                               return (a.x == b.x) && (a.y == b.y); });
+            facet_pixels.erase(last_unique, facet_pixels.end());
             std::vector<std::pair<cv::Point, cv::Point>> current_facet_lines;
             for (const auto& P_facet_pixel : facet_pixels) {
                 cv::Point2d P_facet_np(P_facet_pixel.x, P_facet_pixel.y);
@@ -194,9 +283,10 @@ GC_STATUS OctoRefine::CalculateFacetLinesN( const cv::Point2d& center_point, con
                     cv::Point(cvRound(P_outer_np.x), cvRound(P_outer_np.y))
                 );
             }
+
             int start = static_cast<int>(current_facet_lines.size() / 8);
             if (start < static_cast<int>(current_facet_lines.size()))
-                current_facet_lines = std::vector<std::pair<cv::Point, cv::Point>>(
+                current_facet_lines = std::vector< std::pair< cv::Point, cv::Point > >(
                     current_facet_lines.begin() + start,
                     current_facet_lines.end() - start
                 );
@@ -235,9 +325,6 @@ GC_STATUS OctoRefine::GetLineCoords(const cv::Point& pt1, const cv::Point& pt2, 
                 x += x_inc;
                 y += y_inc;
             }
-            std::sort(coords.begin(), coords.end(), [](const cv::Point& a, const cv::Point& b) {
-                return (a.x == b.x) ? (a.y < b.y) : (a.x < b.x);
-            });
             coords.erase(std::unique(coords.begin(), coords.end()), coords.end());
         }
     }
@@ -259,7 +346,87 @@ std::vector<float> OctoRefine::gaussianSmooth1D(const std::vector<float>& intens
         result[i] = dst.at<float>(i, 0);
     return result;
 }
+#if 1
+GC_STATUS OctoRefine::FindSubpixelFallingEdge( const cv::Mat &image, const cv::Point &pt1, const cv::Point &pt2,
+                                               Point2d &subpixel_pos, double sigma )
+{
+    GC_STATUS retVal = GC_OK;
+    try
+    {
+        std::vector< cv::Point > coords;
+        retVal = GetLineCoords( pt1, pt2, coords );
+        if ( GC_OK == retVal )
+        {
+            if ( coords.size() < 3 )
+            {
+                subpixel_pos = cv::Point2d( static_cast< double >( pt1.x ), static_cast< double >( pt1.y ) );
+            }
+            else
+            {
+#ifdef OCTOREFINE_DEBUG
+                Mat color;
+                cvtColor( image, color, COLOR_GRAY2BGR );
+                for ( size_t i = 0; i < coords.size(); ++i )
+                {
+                    color.at< cv::Vec3b >( coords[ i ].x, coords[ i ].y ) = cv::Vec3b( 255, 0, 0 );
+                }
+                imwrite( string( DEBUG_FOLDER ) + string( "050_search_line.png" ), color );
+#endif
+                std::vector<double> intensities;
+                for (const auto& p : coords)
+                {
+                    if (p.x >= 0 && p.x < image.cols && p.y >= 0 && p.y < image.rows)
+                    {
+                        intensities.push_back( static_cast< double >( image.at< uchar >( p ) ) );
+                    }
+                    else
+                    {
+                        intensities.push_back( 0.0 );
+                    }
+                }
+                cv::Mat src(intensities.size(), 1, CV_64F, intensities.data());
+                cv::Mat smoothed;
+                int ksize = std::max(3, int(6 * sigma + 1) | 1);
+                cv::GaussianBlur(src, smoothed, cv::Size(ksize, 1), sigma, 0, cv::BORDER_REPLICATE);
 
+                // 4. Compute gradient (centered difference, like np.gradient)
+                std::vector< double > grad(intensities.size());
+                for (int i = 1; i < smoothed.rows - 1; ++i)
+                {
+                    grad[i] = 0.5 * (smoothed.at< double >(i + 1, 0) - smoothed.at< double >(i - 1, 0));
+                }
+                grad[ 0 ] = smoothed.at<double>(1, 0) - smoothed.at<double>(0, 0);
+                grad[grad.size() - 1] = smoothed.at< double >(smoothed.rows - 1, 0) - smoothed.at< double >(smoothed.rows - 2, 0);
+
+                // 5. Find the strongest positive gradient (rising edge)
+                size_t idx = 0;
+                double min_val = grad[ 0 ];
+                for ( size_t i = 0; i < grad.size(); ++i )
+                {
+                    if ( grad[ i ] > min_val )
+                    {
+                        idx = i;
+                        min_val = grad[ i ];
+                    }
+                }
+                subpixel_pos = cv::Point2f( static_cast< double >( coords[ idx ].x ), static_cast< double >( coords[ idx ].y ) );
+#ifdef OCTOREFINE_DEBUG
+                color.at< cv::Vec3b >( subpixel_pos ) = cv::Vec3b( 0, 255, 255 );
+                color.at< cv::Vec3b >( pt1 ) = cv::Vec3b( 0, 255, 0 );
+                color.at< cv::Vec3b >( pt2 ) = cv::Vec3b( 0, 0, 255 );
+                imwrite( string( DEBUG_FOLDER ) + string( "020_edge_point.png" ), color );
+#endif
+            }
+        }
+    }
+    catch( const cv::Exception &e )
+    {
+        FILE_LOG( logERROR ) << "[OctoRefine::findSubpixelFallingEdge] " << e.what();
+        retVal = gc::GC_EXCEPT;
+    }
+    return retVal;
+}
+#else
 GC_STATUS OctoRefine::FindSubpixelFallingEdge( const cv::Mat& image, const cv::Point& pt1,
                                                const cv::Point& pt2, Point2d &subpixel_pos, double sigma )
 {
@@ -270,12 +437,16 @@ GC_STATUS OctoRefine::FindSubpixelFallingEdge( const cv::Mat& image, const cv::P
         retVal = GetLineCoords( pt1, pt2, coords );
         if ( GC_OK == retVal )
         {
-            if (coords.size() < 3)
+            if ( coords.size() < 3 )
             {
                 subpixel_pos = cv::Point2d(static_cast<float>(pt1.x), static_cast<float>(pt1.y));
             }
             else
             {
+#ifdef OCTOREFINE_DEBUG
+                Mat color;
+                cvtColor( image, color, COLOR_GRAY2BGR );
+#endif
                 std::vector<float> intensities;
                 for (const auto& p : coords)
                 {
@@ -288,34 +459,52 @@ GC_STATUS OctoRefine::FindSubpixelFallingEdge( const cv::Mat& image, const cv::P
                         intensities.push_back(0.0f);
                     }
                 }
-                std::vector<float> smoothed = gaussianSmooth1D(intensities, sigma);
-                std::vector<float> gradient(smoothed.size());
-                for (size_t i = 1; i < smoothed.size() - 1; ++i)
+                cv::Mat src(intensities.size(), 1, CV_32F, intensities.data());
+                cv::Mat smoothed;
+                int ksize = std::max(3, int(6 * sigma + 1) | 1);
+                cv::GaussianBlur(src, smoothed, cv::Size(ksize, 1), sigma, 0, cv::BORDER_REPLICATE);
+
+                // 4. Compute gradient (centered difference, like np.gradient)
+                std::vector<float> grad(intensities.size());
+                for (int i = 1; i < smoothed.rows - 1; ++i)
                 {
-                    gradient[i] = (smoothed[i + 1] - smoothed[i - 1]) / 2.0;
+                    grad[i] = 0.5f * (smoothed.at<float>(i + 1, 0) - smoothed.at<float>(i - 1, 0));
                 }
-                gradient[0] = smoothed[1] - smoothed[0];
-                gradient[gradient.size() - 1] = smoothed[gradient.size() - 1] - smoothed[gradient.size() - 2];
-                auto min_it = std::min_element(gradient.begin(), gradient.end());
-                int k = static_cast<int>(std::distance(gradient.begin(), min_it));
-                if (k <= 0 || k >= static_cast<int>(gradient.size()) - 1)
+                grad[0] = smoothed.at<float>(1, 0) - smoothed.at<float>(0, 0);
+                grad[grad.size() - 1] = smoothed.at<float>(smoothed.rows - 1, 0) - smoothed.at<float>(smoothed.rows - 2, 0);
+
+                // 5. Find the strongest negative gradient (falling edge)
+                auto min_it = std::min_element(grad.begin(), grad.end());
+                int k = static_cast<int>(std::distance(grad.begin(), min_it));
+                if (k <= 0 || k >= static_cast<int>(grad.size()) - 1)
                 {
-                    subpixel_pos = cv::Point2d(static_cast<float>(coords[k].x), static_cast<float>(coords[k].y));
+                    subpixel_pos = cv::Point2f(static_cast<float>(coords[k].x), static_cast<float>(coords[k].y));
                 }
                 else
                 {
-                    float y0 = gradient[k - 1], y1 = gradient[k], y2 = gradient[k + 1];
+                    // 6. Parabolic subpixel interpolation
+                    float y0 = grad[k - 1], y1 = grad[k], y2 = grad[k + 1];
                     float denom = 2.0f * (y0 - 2.0f * y1 + y2);
                     float subpixel_idx = static_cast<float>(k);
                     if (std::abs(denom) > 1e-6f)
                     {
                         subpixel_idx = k + (y0 - y2) / denom;
                     }
+
+                    // 7. Map subpixel index to (x, y) along the line
                     float frac = subpixel_idx / (coords.size() - 1);
-                    cv::Point2d pt1f(static_cast<float>(pt1.x), static_cast<float>(pt1.y));
-                    cv::Point2d pt2f(static_cast<float>(pt2.x), static_cast<float>(pt2.y));
+                    cv::Point2f pt1f(static_cast<float>(pt1.x), static_cast<float>(pt1.y));
+                    cv::Point2f pt2f(static_cast<float>(pt2.x), static_cast<float>(pt2.y));
                     subpixel_pos = pt1f + (pt2f - pt1f) * frac;
+#ifdef OCTOREFINE_DEBUG
+                    color.at< cv::Vec3b >( subpixel_pos.x, subpixel_pos.y ) = cv::Vec3b( 0, 255, 255 );
+                    color.at< cv::Vec3b >( pt1.x, pt1.y ) = cv::Vec3b( 0, 255, 0 );
+                    color.at< cv::Vec3b >( pt2.x, pt2.y ) = cv::Vec3b( 0, 0, 255 );
+#endif
                 }
+#ifdef OCTOREFINE_DEBUG
+                imwrite( string( DEBUG_FOLDER ) + string( "020_edge_point.png" ), color );
+#endif
             }
         }
     }
@@ -326,9 +515,9 @@ GC_STATUS OctoRefine::FindSubpixelFallingEdge( const cv::Mat& image, const cv::P
     }
     return retVal;
 }
-
-gc::GC_STATUS OctoRefine::RefineFindExtend( const std::vector<cv::Point2d>& pts,
-                                            std::vector <std::vector< std::pair< cv::Point, cv::Point > > > &extendedLines,
+#endif
+gc::GC_STATUS OctoRefine::RefineFindExtend( const std::vector< cv::Point2d >& pts,
+                                            std::vector < std::vector< std::pair< cv::Point, cv::Point > > > &extendedLines,
                                             const int extension )
 {
     GC_STATUS retVal = GC_OK;
@@ -357,13 +546,13 @@ GC_STATUS OctoRefine::FindLineIntersection( const LineEquation& lineA, const Lin
     GC_STATUS retVal = GC_OK;
     try
     {
-        float vxA = lineA.direction[0], vyA = lineA.direction[1];
-        float x0A = lineA.point.x, y0A = lineA.point.y;
-        float vxB = lineB.direction[0], vyB = lineB.direction[1];
-        float x0B = lineB.point.x, y0B = lineB.point.y;
+        double vxA = lineA.direction[0], vyA = lineA.direction[1];
+        double x0A = lineA.point.x, y0A = lineA.point.y;
+        double vxB = lineB.direction[0], vyB = lineB.direction[1];
+        double x0B = lineB.point.x, y0B = lineB.point.y;
         cv::Point2d p0A(x0A, y0A), p0B(x0B, y0B);
         cv::Point2d b = p0B - p0A;
-        cv::Matx22f M(vxA, -vxB, vyA, -vyB);
+        cv::Matx22d M(vxA, -vxB, vyA, -vyB);
         float det = M(0, 0) * M(1, 1) - M(0, 1) * M(1, 0);
         if ( std::abs(det) < 1e-6f )
         {
@@ -373,8 +562,8 @@ GC_STATUS OctoRefine::FindLineIntersection( const LineEquation& lineA, const Lin
         }
         else
         {
-            cv::Vec2f rhs(b.x, b.y);
-            cv::Vec2f sol = M.inv() * rhs;
+            cv::Vec2d rhs(b.x, b.y);
+            cv::Vec2d sol = M.inv() * rhs;
             float tA = sol[0];
             cv::Point2d vA(vxA, vyA);
             valid = true;
@@ -388,50 +577,50 @@ GC_STATUS OctoRefine::FindLineIntersection( const LineEquation& lineA, const Lin
     }
     return retVal;
 }
-
 GC_STATUS OctoRefine::SortOctagonPoints( const std::vector< cv::Point2d > &points, std::vector< cv::Point2d > &ptsSorted )
 {
     GC_STATUS retVal = GC_OK;
     try
     {
-        ptsSorted.clear();
-        cv::Point2d center(0.0f, 0.0f);
-        for (const auto& p : points)
+        if ( 8 != points.size() )
         {
-            center.x += p.x;
-            center.y += p.y;
+            FILE_LOG( logERROR ) << "[OctoRefine::SortOctagonPoints] Invalid input point count. Must be 8.";
+            retVal = gc::GC_ERR;
         }
-        center.x /= points.size();
-        center.y /= points.size();
-        auto min_y = std::min_element(points.begin(), points.end(),
-            [](const cv::Point2d& a, const cv::Point2d& b) {
-                return (a.y < b.y) || (a.y == b.y && a.x < b.x);
-            });
-        std::vector<std::pair<float, cv::Point2d>> angles;
-        for (const auto& p : points)
+        else
         {
-            float angle = std::atan2(p.y - center.y, p.x - center.x);
-            angles.emplace_back(angle, p);
-        }
-        std::sort(angles.begin(), angles.end(),
-            [](const std::pair<float, cv::Point2d>& a, const std::pair<float, cv::Point2d>& b) {
-                return a.first < b.first;
-            });
-        int start_idx = 0;
-        for (size_t i = 0; i < angles.size(); ++i)
-        {
-            if (angles[i].second == *min_y)
-            {
-                start_idx = static_cast<int>(i);
-                break;
-            }
-        }
+            ptsSorted = points;
 
-        for (size_t i = 0; i < angles.size(); ++i)
-        {
-            ptsSorted.push_back(angles[(start_idx + i) % angles.size()].second);
+            auto it_start = std::min_element(ptsSorted.begin(), ptsSorted.end(),
+                                             [](const cv::Point2f& a, const cv::Point2f& b) {
+                                                 // Prioritize minimum Y (Top-most)
+                                                 if (std::abs(a.y - b.y) > 0.5) { // Use a small threshold for float comparison
+                                                     return a.y < b.y;
+                                                 }
+                                                 // Secondary: minimum X (Left-most)
+                                                 return a.x < b.x;
+                                             }
+                                             );
+
+            // --- 3. Rotate the Vector to make the Start Point the First Element ---
+            std::rotate(ptsSorted.begin(), it_start, ptsSorted.end());
+
+            const cv::Point2f& P_start = ptsSorted[0];
+
+            // --- 4. Sort the *Remaining* Points by Angle relative to P_start (Clockwise Fix) ---
+            // Clockwise direction in an image (Y-down) coordinate system is achieved
+            // by comparing angles such that 'a' comes before 'b' if angle_a is SMALLER than angle_b.
+            std::sort(ptsSorted.begin() + 1, ptsSorted.end(),
+                      [&](const cv::Point2f& a, const cv::Point2f& b) {
+                          // Calculate angle relative to P_start.
+                          double angle_a = std::atan2(a.y - P_start.y, a.x - P_start.x);
+                          double angle_b = std::atan2(b.y - P_start.y, b.x - P_start.x);
+
+                          // FIX: For Clockwise order in Y-DOWN system: angle_a < angle_b
+                          return angle_a < angle_b;
+                      }
+                      );
         }
-        std::reverse(ptsSorted.begin(), ptsSorted.end());
     }
     catch( const cv::Exception &e )
     {
@@ -440,7 +629,6 @@ GC_STATUS OctoRefine::SortOctagonPoints( const std::vector< cv::Point2d > &point
     }
     return retVal;
 }
-
 GC_STATUS OctoRefine::GetOctagonVertices(const std::vector<LineEquation>& lineEquations, std::vector<cv::Point2d> &vertsSorted )
 {
     GC_STATUS retVal = GC_OK;

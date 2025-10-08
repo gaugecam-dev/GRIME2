@@ -172,27 +172,27 @@ GC_STATUS CalibOctagon::Calibrate( const cv::Mat &img, const std::string &contro
         {
             scratch = img( model.targetSearchRegion );
         }
-        retVal = octagonSearch.Find( scratch, model.pixelPoints, true );
-        if ( GC_OK == retVal )
-        {
-            retVal = TestCalibration( model.validCalib );
-        }
-        if ( GC_OK != retVal )
-        {
+        // retVal = octagonSearch.Find( scratch, model.pixelPoints, true );
+        // if ( GC_OK == retVal )
+        // {
+        //     retVal = TestCalibration( model.validCalib );
+        // }
+        // if ( GC_OK != retVal )
+        // {
             retVal = octagonSearch.Find( scratch, model.pixelPoints, false );
             if ( GC_OK == retVal )
             {
                 retVal = TestCalibration( model.validCalib );
             }
-        }
-        if ( GC_OK != retVal )
-        {
-            retVal = octagonSearch.FindScale( scratch, model.pixelPoints, 2.0 );
-            if ( GC_OK == retVal )
-            {
-                retVal = TestCalibration( model.validCalib );
-            }
-        }
+        // }
+        // if ( GC_OK != retVal )
+        // {
+        //     retVal = octagonSearch.FindScale( scratch, model.pixelPoints, 2.0 );
+        //     if ( GC_OK == retVal )
+        //     {
+        //         retVal = TestCalibration( model.validCalib );
+        //     }
+        // }
         if ( GC_OK != retVal )
         {
             err_msg = "CALIB FAIL [octagon] Could not find octagon in image";
