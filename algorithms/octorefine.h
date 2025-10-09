@@ -39,8 +39,9 @@ public:
 
 private:
     // Helper for Gaussian smoothing and gradient
-    static std::vector<float> gaussianSmooth1D(const std::vector<float>& intensities, double sigma);
+    GC_STATUS GaussianSmooth1D( const std::vector<float>& intensities, double sigma, std::vector< float > &result );
     GC_STATUS DrawExtendedLine( cv::Mat& image, const cv::Vec4f& line_params, const cv::Scalar& color, int thickness );
+    GC_STATUS CalcSubPixel( const cv::Vec3d &p1, const cv::Vec3d &p2, const cv::Vec3d &p3, cv::Point2d &subpixel_pos );
 };
 
 } // namespace gc

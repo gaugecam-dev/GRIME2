@@ -363,7 +363,6 @@ GC_STATUS OctagonSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &p
                 if ( GC_OK == retVal )
                 {
                     pts = ptsTemp;
-                    retVal = GC_OK;
                 }
 
 #ifdef DEBUG_OCTAGON_TEMPL

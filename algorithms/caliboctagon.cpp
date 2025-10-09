@@ -242,6 +242,7 @@ GC_STATUS CalibOctagon::Calibrate( const cv::Mat &img, const std::string &contro
                 {
                     pointsTemp.push_back( model.worldPoints[ i ] + ptTemp );
                 }
+                // cout << model.pixelPoints << endl;
                 retVal = CreateCalibration( model.pixelPoints, pointsTemp );
                 if ( GC_OK != retVal )
                 {
@@ -1433,24 +1434,24 @@ GC_STATUS CalibOctagon::DrawOverlay( const cv::Mat &img, cv::Mat &result, const 
                         }
                         line( result, model.pixelPoints[ 0 ], model.pixelPoints[ model.pixelPoints.size() - 1 ], Scalar( 255, 0, 0 ), lineWidth );
 
-                        if ( true )
-                        {
-                            line( result, Point2d( model.oldPixelPoints[ 0 ].x - targetRadius, model.oldPixelPoints[ 0 ].y ),
-                                 Point2d( model.oldPixelPoints[ 0 ].x + targetRadius, model.oldPixelPoints[ 0 ].y ), Scalar( 255, 255, 0 ), lineWidth );
-                            line( result, Point2d( model.oldPixelPoints[ 0 ].x, model.oldPixelPoints[ 0 ].y - targetRadius ),
-                                 Point2d( model.oldPixelPoints[ 0 ].x, model.oldPixelPoints[ 0 ].y + targetRadius ), Scalar( 255, 255, 0 ), lineWidth );
-                            circle( result, model.oldPixelPoints[ 0 ], targetRadius, Scalar( 0, 255, 0 ), lineWidth );
-                            for ( size_t i = 1; i < model.oldPixelPoints.size(); ++i )
-                            {
-                                line( result, model.oldPixelPoints[ i - 1 ], model.oldPixelPoints[ i ], Scalar( 255, 255, 0 ), lineWidth );
-                                line( result, Point2d( model.oldPixelPoints[ i ].x - targetRadius, model.oldPixelPoints[ i ].y ),
-                                     Point2d( model.oldPixelPoints[ i ].x + targetRadius, model.oldPixelPoints[ i ].y ), Scalar( 255, 255, 0 ), lineWidth );
-                                line( result, Point2d( model.oldPixelPoints[ i ].x, model.oldPixelPoints[ i ].y - targetRadius ),
-                                     Point2d( model.oldPixelPoints[ i ].x, model.oldPixelPoints[ i ].y + targetRadius ), Scalar( 255, 255, 0 ), lineWidth );
-                                circle( result, model.oldPixelPoints[ i ], targetRadius, Scalar( 0, 255, 0 ), lineWidth );
-                            }
-                            line( result, model.oldPixelPoints[ 0 ], model.oldPixelPoints[ model.oldPixelPoints.size() - 1 ], Scalar( 255, 255, 0 ), lineWidth );
-                        }
+                        // if ( false )
+                        // {
+                        //     line( result, Point2d( model.oldPixelPoints[ 0 ].x - targetRadius, model.oldPixelPoints[ 0 ].y ),
+                        //          Point2d( model.oldPixelPoints[ 0 ].x + targetRadius, model.oldPixelPoints[ 0 ].y ), Scalar( 255, 255, 0 ), lineWidth );
+                        //     line( result, Point2d( model.oldPixelPoints[ 0 ].x, model.oldPixelPoints[ 0 ].y - targetRadius ),
+                        //          Point2d( model.oldPixelPoints[ 0 ].x, model.oldPixelPoints[ 0 ].y + targetRadius ), Scalar( 255, 255, 0 ), lineWidth );
+                        //     circle( result, model.oldPixelPoints[ 0 ], targetRadius, Scalar( 0, 255, 0 ), lineWidth );
+                        //     for ( size_t i = 1; i < model.oldPixelPoints.size(); ++i )
+                        //     {
+                        //         line( result, model.oldPixelPoints[ i - 1 ], model.oldPixelPoints[ i ], Scalar( 255, 255, 0 ), lineWidth );
+                        //         line( result, Point2d( model.oldPixelPoints[ i ].x - targetRadius, model.oldPixelPoints[ i ].y ),
+                        //              Point2d( model.oldPixelPoints[ i ].x + targetRadius, model.oldPixelPoints[ i ].y ), Scalar( 255, 255, 0 ), lineWidth );
+                        //         line( result, Point2d( model.oldPixelPoints[ i ].x, model.oldPixelPoints[ i ].y - targetRadius ),
+                        //              Point2d( model.oldPixelPoints[ i ].x, model.oldPixelPoints[ i ].y + targetRadius ), Scalar( 255, 255, 0 ), lineWidth );
+                        //         circle( result, model.oldPixelPoints[ i ], targetRadius, Scalar( 0, 255, 0 ), lineWidth );
+                        //     }
+                        //     line( result, model.oldPixelPoints[ 0 ], model.oldPixelPoints[ model.oldPixelPoints.size() - 1 ], Scalar( 255, 255, 0 ), lineWidth );
+                        // }
 
                         if ( drawCalibScale )
                         {
