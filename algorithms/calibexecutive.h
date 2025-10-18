@@ -162,9 +162,6 @@ public:
     GC_STATUS DrawOverlay( const cv::Mat matIn, cv::Mat &imgMatOut, const bool drawCalibScale,
                            const bool drawCalibGrid, const bool drawSearchROI, const bool drawTargetROI );
     GC_STATUS DrawAssocPts( const cv::Mat &img, cv::Mat &overlay, std::string &err_msg );
-    GC_STATUS FindMoveTargets( FindPointSet &ptsFound );
-    GC_STATUS MoveRefPoint( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt );
-    GC_STATUS MoveFountPoint( FindPointSet &ptsFound );
     GC_STATUS AdjustOctagonForRotation( const cv::Size imgSize, const FindPointSet &calcLinePts, double &offsetAngle );
 
     CalibModelOctagon &CalibModel() { return octagon.Model(); }
@@ -197,9 +194,6 @@ private:
     std::string calibFileJson;
 
     GC_STATUS CalibrateOctagon( const cv::Mat &img, const std::string &controlJson, std::string &err_msg );
-
-    GC_STATUS MoveRefPointOctagon( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt );
-
     GC_STATUS CalculateRMSE( const std::vector< cv::Point2d > &foundPts, std::vector< cv::Point2d > &reprojectedPts,
                              double &rmseEuclideanDist, double &rmseX, double &rmseY );
     GC_STATUS CalculateRMSE( const cv::Mat &img, double &rmseEuclideanDist, double &rmseX, double &rmseY );

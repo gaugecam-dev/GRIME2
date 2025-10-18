@@ -259,12 +259,13 @@ GC_STATUS VisApp::GetImageData( const std::string filepath, ExifFeatures &exifFe
     }
     return retVal;
 }
-GC_STATUS VisApp::AdjustSearchAreaForMovement( const std::vector< LineEnds > &searchLines,
-                                               std::vector< LineEnds > &searchLinesAdj, const cv::Point2d offsets )
+GC_STATUS VisApp::AdjustSearchAreaForMovement( const std::vector< LineEnds > &searchLines, std::vector< LineEnds > &searchLinesAdj,
+                                               const cv::Point2d searchROIcenter, const cv::Point2d octoCenter )
 {
     GC_STATUS retVal = GC_OK;
     try
     {
+        cv::Point2d offsets = searchROIcenter - octoCenter;
         if ( searchLines.empty() )
         {
             FILE_LOG( logERROR ) << "[VisApp::AdjustSearchAreaForMovement] No lines in search line vector";
@@ -309,22 +310,6 @@ GC_STATUS VisApp::CalcFindLine( const Mat &img, FindLineResult &result )
             result.msgs.push_back( buffer );
 
             vector< LineEnds > searchLinesAdj;
-            retVal = m_calibExec.MoveRefPoint( result.refMovePts.lftPixel, result.refMovePts.rgtPixel );
-            if ( GC_OK == retVal )
-            {
-                result.refMovePts.ctrPixel = Point2d( ( result.refMovePts.lftPixel.x + result.refMovePts.rgtPixel.x ) / 2.0,
-                                                      ( result.refMovePts.lftPixel.y + result.refMovePts.rgtPixel.y ) / 2.0 );
-                retVal = PixelToWorld( result.refMovePts );
-                if ( GC_OK != retVal )
-                {
-                    result.msgs.push_back( "Could not calculate world coordinates for move reference points" );
-                }
-            }
-            else
-            {
-                result.refMovePts.setZero();
-                retVal = GC_OK;
-            }
             if ( GC_OK == retVal )
             {
                 string err_msg;
@@ -332,56 +317,14 @@ GC_STATUS VisApp::CalcFindLine( const Mat &img, FindLineResult &result )
                 retVal = m_calibExec.Calibrate( img, m_calibExec.CalibModel().controlJson, rmseDist, rmseX, rmseY, err_msg );
                 if ( GC_OK != retVal )
                 {
-                    result.msgs.push_back( "Could not calculate move offsets" );
+                    result.msgs.push_back( "Octagon calibration failed" );
                 }
                 else
                 {
-                    retVal = m_calibExec.MoveFountPoint( result.foundMovePts );
+                    retVal = AdjustSearchAreaForMovement( m_calibExec.SearchLines(), searchLinesAdj, result.searchROICenter, result.octoCenter );
                     if ( GC_OK == retVal )
                     {
-                        retVal = PixelToWorld( result.foundMovePts );
-                        if ( GC_OK != retVal )
-                        {
-                            result.msgs.push_back( "Could not calculate world coordinates for found move points" );
-                        }
-                        else
-                        {
-                            if ( 0.0 < result.refMovePts.lftPixel.x ||  0.0 < result.refMovePts.rgtPixel.y ||
-                                 0.0 < result.refMovePts.lftPixel.x ||  0.0 < result.refMovePts.rgtPixel.y )
-                            {
-                                result.offsetMovePts.lftPixel.x = result.foundMovePts.lftPixel.x - result.refMovePts.lftPixel.x;
-                                result.offsetMovePts.lftPixel.y = result.foundMovePts.lftPixel.y - result.refMovePts.lftPixel.y;
-                                result.offsetMovePts.ctrPixel.x = result.foundMovePts.ctrPixel.x - result.refMovePts.ctrPixel.x;
-                                result.offsetMovePts.ctrPixel.y = result.foundMovePts.ctrPixel.y - result.refMovePts.ctrPixel.y;
-                                result.offsetMovePts.rgtPixel.x = result.foundMovePts.rgtPixel.x - result.refMovePts.rgtPixel.x;
-                                result.offsetMovePts.rgtPixel.y = result.foundMovePts.rgtPixel.y - result.refMovePts.rgtPixel.y;
-
-                                result.offsetMovePts.lftWorld.x = result.foundMovePts.lftWorld.x - result.refMovePts.lftWorld.x;
-                                result.offsetMovePts.lftWorld.y = result.foundMovePts.lftWorld.y - result.refMovePts.lftWorld.y;
-                                result.offsetMovePts.ctrWorld.x = result.foundMovePts.ctrWorld.x - result.refMovePts.ctrWorld.x;
-                                result.offsetMovePts.ctrWorld.y = result.foundMovePts.ctrWorld.y - result.refMovePts.ctrWorld.y;
-                                result.offsetMovePts.rgtWorld.x = result.foundMovePts.rgtWorld.x - result.refMovePts.rgtWorld.x;
-                                result.offsetMovePts.rgtWorld.y = result.foundMovePts.rgtWorld.y - result.refMovePts.rgtWorld.y;
-
-                                result.calibOffsets.calibAngle = atan2( result.refMovePts.rgtWorld.y - result.refMovePts.lftWorld.y,
-                                                                        result.refMovePts.rgtWorld.x - result.refMovePts.lftWorld.x ) * ( 180.0 / CV_PI );
-                                result.calibOffsets.calibCenterPt = ( result.refMovePts.lftWorld + result.refMovePts.rgtWorld ) / 2.0;
-                                result.calibOffsets.offsetAngle = atan2( result.foundMovePts.rgtWorld.y - result.foundMovePts.lftWorld.y,
-                                                                         result.foundMovePts.rgtWorld.x - result.foundMovePts.lftWorld.x ) * ( 180.0 / CV_PI );
-                                result.calibOffsets.offsetCenterPt = ( result.foundMovePts.lftWorld + result.foundMovePts.rgtWorld ) / 2.0;
-                            }
-                            else
-                            {
-                                result.offsetMovePts.setZero();
-                                result.calibOffsets.clear();
-                            }
-
-                            retVal = AdjustSearchAreaForMovement( m_calibExec.SearchLines(), searchLinesAdj, result.offsetMovePts.ctrPixel );
-                            if ( GC_OK == retVal )
-                            {
-                                retVal = m_calibExec.SetAdjustedSearchROI( searchLinesAdj );
-                            }
-                        }
+                        retVal = m_calibExec.SetAdjustedSearchROI( searchLinesAdj );
                     }
                 }
             }
@@ -431,12 +374,6 @@ GC_STATUS VisApp::CalcFindLine( const Mat &img, FindLineResult &result )
 
                             snprintf( buffer, 256, "Level: %.3f", result.calcLinePts.ctrWorld.y );
                             result.msgs.push_back( buffer );
-
-                            sprintf( buffer, "Adjust: %.3f", result.offsetMovePts.ctrWorld.y );
-                            result.msgs.push_back( buffer );
-
-                            result.waterLevelAdjusted.x = result.calcLinePts.ctrWorld.x + result.offsetMovePts.ctrWorld.x;
-                            result.waterLevelAdjusted.y = result.calcLinePts.ctrWorld.y + result.offsetMovePts.ctrWorld.y;
 
                             Point2d reprojectPt;
                             retVal = WorldToPixel( result.calcLinePts.ctrWorld, reprojectPt );
@@ -494,11 +431,6 @@ GC_STATUS VisApp::CalcLine( const Mat &img, const string timestamp, const bool i
                 string err_msg;
                 double rmseDist, rmseX, rmseY;
                 retVal = m_calibExec.Calibrate( img, "", rmseDist, rmseX, rmseY, err_msg );
-                if ( GC_OK != retVal )
-                {
-                    FindPointSet findPtSet;
-                    retVal = m_calibExec.FindMoveTargets( findPtSet );
-                }
             }
             if ( GC_OK == retVal )
             {
@@ -585,12 +517,10 @@ GC_STATUS VisApp::ResultToJsonString( const FindLineResult result, const FindLin
         ss << "\"timestamp\": \"" << result.timestamp << "\",";
         if ( GC_OK == retVal )
         {
-            ss << "\"origCalCenter_x\": " << result.calibOffsets.calibCenterPt.x << ",";
-            ss << "\"origCalCenter_y\": " << result.calibOffsets.calibCenterPt.y << ",";
-            ss << "\"origCalCenter_angle\": " << result.calibOffsets.calibAngle << ",";
-            ss << "\"foundCalCenter_x\": " << result.calibOffsets.offsetCenterPt.x << ",";
-            ss << "\"foundCalCenter_y\": " << result.calibOffsets.offsetCenterPt.y << ",";
-            ss << "\"foundCalCenter_angle\": " << result.calibOffsets.offsetAngle << ",";
+            ss << "\"searchROICenter_x\": " << result.searchROICenter.x << ",";
+            ss << "\"searchROICenter_y\": " << result.searchROICenter.y << ",";
+            ss << "\"octagonCenter_x\": " << result.octoCenter.x << ",";
+            ss << "\"octagonCenter_y\": " << result.octoCenter.y << ",";
 
             ss << "\"pixel_line_left_x\": " << result.calcLinePts.lftPixel.x << ",";
             ss << "\"pixel_line_left_y\": " << result.calcLinePts.lftPixel.y << ",";
@@ -1029,29 +959,9 @@ GC_STATUS VisApp::WriteFindlineResultToCSV( const std::string resultCSV, const s
                 csvFile << "calcLinePts-ctrWorld-x,"; csvFile << "calcLinePts-ctrWorld-y,";
                 csvFile << "calcLinePts-rgtWorld-x,"; csvFile << "calcLinePts-rgtWorld-y,";
 
-                csvFile << "refMovePts-angle,";
-                csvFile << "refMovePts-lftPixel-x,"; csvFile << "refMovePts-lftPixel-y,";
-                csvFile << "refMovePts-ctrPixel-x,"; csvFile << "refMovePts-ctrPixel-y,";
-                csvFile << "refMovePts-rgtPixel-x,"; csvFile << "refMovePts-rgtPixel-y,";
-                csvFile << "refMovePts-lftWorld-x,"; csvFile << "refMovePts-lftWorld-y,";
-                csvFile << "refMovePts-ctrWorld-x,"; csvFile << "refMovePts-ctrWorld-y,";
-                csvFile << "refMovePts-rgtWorld-x,"; csvFile << "refMovePts-rgtWorld-y,";
-
-                csvFile << "foundMovePts-angle,";
-                csvFile << "foundMovePts-lftPixel-x,"; csvFile << "foundMovePts-lftPixel-y,";
-                csvFile << "foundMovePts-ctrPixel-x,"; csvFile << "foundMovePts-ctrPixel-y,";
-                csvFile << "foundMovePts-rgtPixel-x,"; csvFile << "foundMovePts-rgtPixel-y,";
-                csvFile << "foundMovePts-lftWorld-x,"; csvFile << "foundMovePts-lftWorld-y,";
-                csvFile << "foundMovePts-ctrWorld-x,"; csvFile << "foundMovePts-ctrWorld-y,";
-                csvFile << "foundMovePts-rgtWorld-x,"; csvFile << "foundMovePts-rgtWorld-y,";
-
-                csvFile << "offsetMovePts-angle,";
-                csvFile << "offsetMovePts-lftPixel-x,"; csvFile << "offsetMovePts-lftPixel-y,";
-                csvFile << "offsetMovePts-ctrPixel-x,"; csvFile << "offsetMovePts-ctrPixel-y,";
-                csvFile << "offsetMovePts-rgtPixel-x,"; csvFile << "offsetMovePts-rgtPixel-y,";
-                csvFile << "offsetMovePts-lftWorld-x,"; csvFile << "offsetMovePts-lftWorld-y,";
-                csvFile << "offsetMovePts-ctrWorld-x,"; csvFile << "offsetMovePts-ctrWorld-y,";
-                csvFile << "offsetMovePts-rgtWorld-x,"; csvFile << "offsetMovePts-rgtWorld-y,";
+                csvFile << "octoToSearchROIOffsetDist," << "octoToSearchROIOffsetAngle,";
+                csvFile << "searchROICenter-x,"; csvFile << "searchROICenter-y,";
+                csvFile << "octoCenter-x,"; csvFile << "octoCenter-y,";
 
                 csvFile << "foundPts[0]-x,"; csvFile << "foundPts[0]-y,"; csvFile << "foundPts[1]-x,"; csvFile << "foundPts[1]-y,";
                 csvFile << "foundPts[2]-x,"; csvFile << "foundPts[2]-y,"; csvFile << "foundPts[3]-x,"; csvFile << "foundPts[3]-y,";
@@ -1084,29 +994,10 @@ GC_STATUS VisApp::WriteFindlineResultToCSV( const std::string resultCSV, const s
             csvFile << result.calcLinePts.ctrWorld.x << ","; csvFile << result.calcLinePts.ctrWorld.y << ",";
             csvFile << result.calcLinePts.rgtWorld.x << ","; csvFile << result.calcLinePts.rgtWorld.y << ",";
 
-            csvFile << result.refMovePts.angleWorld << ",";
-            csvFile << result.refMovePts.lftPixel.x << ","; csvFile << result.refMovePts.lftPixel.y << ",";
-            csvFile << result.refMovePts.ctrPixel.x << ","; csvFile << result.refMovePts.ctrPixel.y << ",";
-            csvFile << result.refMovePts.rgtPixel.x << ","; csvFile << result.refMovePts.rgtPixel.y << ",";
-            csvFile << result.refMovePts.lftWorld.x << ","; csvFile << result.refMovePts.lftWorld.y << ",";
-            csvFile << result.refMovePts.ctrWorld.x << ","; csvFile << result.refMovePts.ctrWorld.y << ",";
-            csvFile << result.refMovePts.rgtWorld.x << ","; csvFile << result.refMovePts.rgtWorld.y << ",";
-
-            csvFile << result.foundMovePts.angleWorld << ",";
-            csvFile << result.foundMovePts.lftPixel.x << ","; csvFile << result.foundMovePts.lftPixel.y << ",";
-            csvFile << result.foundMovePts.ctrPixel.x << ","; csvFile << result.foundMovePts.ctrPixel.y << ",";
-            csvFile << result.foundMovePts.rgtPixel.x << ","; csvFile << result.foundMovePts.rgtPixel.y << ",";
-            csvFile << result.foundMovePts.lftWorld.x << ","; csvFile << result.foundMovePts.lftWorld.y << ",";
-            csvFile << result.foundMovePts.ctrWorld.x << ","; csvFile << result.foundMovePts.ctrWorld.y << ",";
-            csvFile << result.foundMovePts.rgtWorld.x << ","; csvFile << result.foundMovePts.rgtWorld.y << ",";
-
-            csvFile << result.offsetMovePts.angleWorld << ",";
-            csvFile << result.offsetMovePts.lftPixel.x << ","; csvFile << result.offsetMovePts.lftPixel.y << ",";
-            csvFile << result.offsetMovePts.ctrPixel.x << ","; csvFile << result.offsetMovePts.ctrPixel.y << ",";
-            csvFile << result.offsetMovePts.rgtPixel.x << ","; csvFile << result.offsetMovePts.rgtPixel.y << ",";
-            csvFile << result.offsetMovePts.lftWorld.x << ","; csvFile << result.offsetMovePts.lftWorld.y << ",";
-            csvFile << result.offsetMovePts.ctrWorld.x << ","; csvFile << result.offsetMovePts.ctrWorld.y << ",";
-            csvFile << result.offsetMovePts.rgtWorld.x << ","; csvFile << result.offsetMovePts.rgtWorld.y << ",";
+            csvFile << result.octoToSearchROIOffsetAngle << ",";
+            csvFile << result.octoToSearchROIOffsetDistPix << ","; csvFile << result.octoToSearchROIOffsetDistWorld << ",";
+            csvFile << result.octoCenter.x << ","; csvFile << result.octoCenter.y << ",";
+            csvFile << result.searchROICenter.x << ","; csvFile << result.searchROICenter.y << ",";
 
             for ( size_t i = 0; i < result.foundPoints.size(); ++i )
             {

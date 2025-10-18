@@ -42,8 +42,6 @@ CalibOctagon::CalibOctagon()
 {
     try
     {
-        moveRefLftPt = cv::Point2d( -1.0, -1.0 );
-        moveRefRgtPt = cv::Point2d( -1.0, -1.0 );
 #ifdef _WIN32
         if ( !fs::exists( CACHE_FOLDER ) )
         {
@@ -172,27 +170,11 @@ GC_STATUS CalibOctagon::Calibrate( const cv::Mat &img, const std::string &contro
         {
             scratch = img( model.targetSearchRegion );
         }
-        // retVal = octagonSearch.Find( scratch, model.pixelPoints, true );
-        // if ( GC_OK == retVal )
-        // {
-        //     retVal = TestCalibration( model.validCalib );
-        // }
-        // if ( GC_OK != retVal )
-        // {
-            retVal = octagonSearch.Find( scratch, model.pixelPoints, false );
-            if ( GC_OK == retVal )
-            {
-                retVal = TestCalibration( model.validCalib );
-            }
-        // }
-        // if ( GC_OK != retVal )
-        // {
-        //     retVal = octagonSearch.FindScale( scratch, model.pixelPoints, 2.0 );
-        //     if ( GC_OK == retVal )
-        //     {
-        //         retVal = TestCalibration( model.validCalib );
-        //     }
-        // }
+        retVal = octagonSearch.Find( scratch, model.pixelPoints, false );
+        if ( GC_OK == retVal )
+        {
+            retVal = TestCalibration( model.validCalib );
+        }
         if ( GC_OK != retVal )
         {
             err_msg = "CALIB FAIL [octagon] Could not find octagon in image";
@@ -352,27 +334,6 @@ GC_STATUS CalibOctagon::Calibrate( const cv::Mat &img, const std::string &contro
 
     return retVal;
 }
-GC_STATUS CalibOctagon::MoveRefPoint(  cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt, const bool force )
-{
-    GC_STATUS retVal = GC_OK;
-    if ( force || ( 0.0 >= moveRefLftPt.x ||  0.0 >= moveRefLftPt.y ||
-                  ( 0.0 >= moveRefRgtPt.x ||  0.0 >= moveRefRgtPt.y ) ) )
-    {
-        if ( 8 != model.oldPixelPoints.size() )
-        {
-            FILE_LOG( logERROR ) << "[CalibBowtie::MoveRefPoint] Cannot retrieve move reference point from an uncalibrated system";
-            retVal = GC_ERR;
-        }
-        else
-        {
-            moveRefLftPt = model.oldPixelPoints[ 5 ];
-            moveRefRgtPt = model.oldPixelPoints[ 4 ];
-        }
-    }
-    lftRefPt = moveRefLftPt;
-    rgtRefPt = moveRefRgtPt;
-    return retVal;
-}
 GC_STATUS CalibOctagon::AdjustOctagonForRotation( const Size imgSize, const FindPointSet &calcLinePts, double &offsetAngle )
 {
     GC_STATUS retVal = GC_OK;
@@ -414,14 +375,13 @@ GC_STATUS CalibOctagon::AdjustOctagonForRotation( const Size imgSize, const Find
 
         // line( mask, calcLinePts.lftPixel, calcLinePts.rgtPixel, Scalar( 0 ), 7 );
 
-//        imwrite( "/var/tmp/gaugecam/octagon_angle_pre_adjusted.png", mask );
+        // imwrite( "/var/tmp/gaugecam/octagon_angle_pre_adjusted.png", mask );
         Mat rotMatrix = cv::getRotationMatrix2D( model.pixelPoints[ 5 ], offsetAngle, 1.0 );
         warpAffine( mask, mask, rotMatrix, mask.size() );
 
-//        line( mask, calcLinePts.lftPixel, calcLinePts.rgtPixel, Scalar( 255 ), 5 );
-//        putText( mask, "ADJUSTED", Point( model.pixelPoints[ 7 ].x, model.pixelPoints[ 0 ].y - 70 ), FONT_HERSHEY_PLAIN, 3.0, Scalar( 255 ), 3 );
-
-//        imwrite( "/var/tmp/gaugecam/octagon_angle_adjusted.png", mask );
+        // line( mask, calcLinePts.lftPixel, calcLinePts.rgtPixel, Scalar( 255 ), 5 );
+        // putText( mask, "ADJUSTED", Point( model.pixelPoints[ 7 ].x, model.pixelPoints[ 0 ].y - 70 ), FONT_HERSHEY_PLAIN, 3.0, Scalar( 255 ), 3 );
+        // imwrite( "/var/tmp/gaugecam/octagon_angle_adjusted.png", mask );
 
         vector< vector< Point > > contours;
         findContours( mask, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE );

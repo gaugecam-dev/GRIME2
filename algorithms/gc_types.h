@@ -135,8 +135,6 @@ public:
      * @param pixelPts Vector of pixel points ordered to match the world point vector
      * @param worldPts Vector of world points ordered to match the pixel point vector
      * @param lineEndPts Vector of search lines to be searched for the water line
-     * @param mvSrchROILft Left move search region (to search for top-left octagon)
-     * @param mvSrchROIRgt Right move search region (to search for top-right octagon)
      */
     CalibModelOctagon( const bool isCalibValid,
                       const cv::Size imageSize,
@@ -148,8 +146,6 @@ public:
                       const cv::Rect symbolSearchROI,
                       const double facetLen,
                       const double zeroOffsetVertical,
-                      const cv::Point2d leftRefPoint,
-                      const cv::Point2d rightRefPoint,
                       const cv::Point2d centerPoint,
                       const double symbolAngle ) :
         validCalib( isCalibValid ),
@@ -162,8 +158,6 @@ public:
         targetSearchRegion( symbolSearchROI ),
         facetLength( facetLen ),
         zeroOffset( zeroOffsetVertical ),
-        moveRefLft( leftRefPoint ),
-        moveRefRgt( rightRefPoint ),
         center( centerPoint ),
         angle( symbolAngle )
     {}
@@ -185,8 +179,6 @@ public:
         targetSearchRegion = cv::Rect( -1, -1, -1, -1 );
         facetLength = -1.0;
         zeroOffset = 2.0;
-        moveRefLft = cv::Point2d( -1.0, -1.0 );
-        moveRefRgt = cv::Point2d( -1.0, -1.0 );
         center = cv::Point2d( -1.0, -1.0 );
         angle = -9999999.0;
     }
@@ -203,8 +195,6 @@ public:
     cv::Rect targetSearchRegion;                     ///< Region within which to perform line and move search
     double facetLength;                              ///< Length of a stop sign facet in world units
     double zeroOffset;                               ///< Distance from bottom left stop sign corner to zero vertical position
-    cv::Point2d moveRefLft;                          ///< Original left reference point at time of calibration
-    cv::Point2d moveRefRgt;                          ///< Original left reference point at time of calibration
     cv::Point2d center;                              ///< Center of symbol
     double angle;                                    ///< Angle of symbol
 
@@ -372,41 +362,6 @@ public:
     cv::Point2d rgtWorld;   ///< Right most world coordinate position of the found line
 };
 
-// TODO:  Add doxygen comments
-/**
- * @brief Data class to hold the offsets from the original calibration
- */
-class CalibOffset
-{
-public:
-    CalibOffset() :
-        calibAngle( -9999999.0 ),
-        calibCenterPt( cv::Point2d( -1.0, -1.0 ) ),
-        offsetAngle( -9999999.0 ),
-        offsetCenterPt( cv::Point2d( 0, 0 ) )
-    {}
-
-    CalibOffset( const double calAngle, const cv::Point2d calCenter,
-                 const double offAngle, const cv::Point2d offCenter ) :
-        calibAngle( calAngle ),
-        calibCenterPt( calCenter ),
-        offsetAngle( offAngle ),
-        offsetCenterPt( offCenter )
-    {}
-
-    void clear()
-    {
-        calibAngle = -9999999.0;
-        calibCenterPt = cv::Point2d( -1.0, -1.0 );
-        offsetAngle = -9999999.0;
-        offsetCenterPt = cv::Point2d( -1.0, -1.0 );
-    }
-
-    double calibAngle;                      ///< Calibration angle
-    cv::Point2d calibCenterPt;              ///< Calibration center point
-    double offsetAngle;                     ///< Calibration offset angle
-    cv::Point2d offsetCenterPt;             ///< Calibration offset center point
-};
 
 /**
  * @brief Data class to hold the results of a search calculation for both water level and move detection
@@ -428,9 +383,6 @@ public:
      * @param calibOk               true=Successful good calib, false=Failed find
      * @param adjustedWaterLevel    World coordinate water level adjust for any detected motion of the calibration target
      * @param lineEndPoints         Found water level line
-     * @param moveRefPoints         Line between the move targets at the time of calibration
-     * @param moveFoundPoints       Line between the move targets at the time of the current line find
-     * @param moveOffsetPoints      Offset between the moveRef and the moveFound lines
      * @param calibOffsets          Calibration offset center and angle (along with original center and angle)
      * @param lineFoundPts          Water line points used to calculate the found water level line
      * @param rowSumDiag            Find line row sums vector of vectors of points
@@ -444,14 +396,15 @@ public:
                     const std::string illumination_state,
                     const cv::Point2d adjustedWaterLevel,
                     const FindPointSet lineEndPoints,
-                    const FindPointSet moveRefPoints,
-                    const FindPointSet moveFoundPoints,
-                    const FindPointSet moveOffsetPoints,
-                    const CalibOffset calOffsets,
                     const std::vector< cv::Point2d > lineFoundPts,
                     const std::vector< std::vector< cv::Point > > rowSumDiag,
                     const std::vector< std::vector< cv::Point > > oneDerivDiag,
                     const std::vector< std::vector< cv::Point > > twoDerivDiag,
+                    const double octoToROIOffsetAngle,
+                    const double octoToSearchROIOffsetPix,
+                    const double octoToSearchROIOffsetWorld,
+                    const cv::Point2d searchROICtr,
+                    const cv::Point2d octoCtr,
                     const std::vector< std::string > messages ) :
         findSuccess( findOk ),
         calibSuccess( calibOk ),
@@ -459,14 +412,15 @@ public:
         illum_state( illumination_state ),
         waterLevelAdjusted( adjustedWaterLevel ),
         calcLinePts( lineEndPoints ),
-        refMovePts( moveRefPoints ),
-        foundMovePts( moveFoundPoints ),
-        offsetMovePts( moveOffsetPoints ),
-        calibOffsets( calOffsets ),
         foundPoints( lineFoundPts ),
         diagRowSums( rowSumDiag ),
         diag1stDeriv( oneDerivDiag ),
         diag2ndDeriv( twoDerivDiag ),
+        octoToSearchROIOffsetAngle( octoToROIOffsetAngle ),
+        octoToSearchROIOffsetDistPix( octoToSearchROIOffsetPix ),
+        octoToSearchROIOffsetDistWorld( octoToSearchROIOffsetWorld ),
+        searchROICenter( searchROICtr ),
+        octoCenter( octoCtr ),
         calibReprojectOffset_x( -9999999.0 ),
         calibReprojectOffset_y( -9999999.0 ),
         calibReprojectOffset_dist( -9999999.0 ),
@@ -485,15 +439,16 @@ public:
         illum_state = "N/A";
         waterLevelAdjusted = cv::Point2d( -9999999.9, -9999999.9 );
         calcLinePts.clear();
-        refMovePts.clear();
-        foundMovePts.clear();
         foundCalPts.clear();
         foundPoints.clear();
-        offsetMovePts.clear();
-        calibOffsets.clear();
         diagRowSums.clear();
         diag1stDeriv.clear();
         diag2ndDeriv.clear();
+        octoToSearchROIOffsetAngle = -9999999.9;
+        octoToSearchROIOffsetDistPix = -9999999.9;
+        octoToSearchROIOffsetDistWorld = -9999999.9;
+        searchROICenter = cv::Point2d( -9999999.9, -9999999.9 );
+        octoCenter = cv::Point2d( -9999999.9, -9999999.9 );
         calibReprojectOffset_x = -9999999.0;
         calibReprojectOffset_y = -9999999.0;
         calibReprojectOffset_dist = -9999999.0;
@@ -507,16 +462,17 @@ public:
     std::string illum_state;                ///< illum_state of image capture
     cv::Point2d waterLevelAdjusted;         ///< World coordinate water level adjust for any detected motion of the calibration target
     FindPointSet calcLinePts;               ///< Found water level line
-    FindPointSet refMovePts;                ///< Line between the move targets at the time of calibration
-    FindPointSet foundMovePts;              ///< Line between the move targets at the time of the current line find
-    FindPointSet offsetMovePts;             ///< Offset between the moveRef and the moveFound lines
-    CalibOffset calibOffsets;               ///< Calibration offset center and angle (along with original center and angle)
     double symbolToWaterLineAngle;          ///< Angle difference between the stop sign bottom and the waterline
     std::vector< cv::Point2d > foundCalPts; ///< Octagon corner points for runtime found octagon
     std::vector< cv::Point2d > foundPoints; ///< Waterline points used to calculate the found water level line
     std::vector< std::vector< cv::Point > > diagRowSums;   ///< Row sums diagnostic lines
     std::vector< std::vector< cv::Point > > diag1stDeriv;  ///< 1st deriv diagnostic lines
     std::vector< std::vector< cv::Point > > diag2ndDeriv;  ///< 2nd deriv diagnostic lines
+    double octoToSearchROIOffsetAngle;
+    double octoToSearchROIOffsetDistPix;
+    double octoToSearchROIOffsetDistWorld;
+    cv::Point2d searchROICenter;
+    cv::Point2d octoCenter;
     double calibReprojectOffset_x;          ///< Reprojection offset x
     double calibReprojectOffset_y;          ///< Reprojection offset y
     double calibReprojectOffset_dist;       ///< Reprojection offset Euclidean distance
