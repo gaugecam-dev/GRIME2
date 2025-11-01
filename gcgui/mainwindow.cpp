@@ -386,7 +386,6 @@ int MainWindow::ReadSettings( const QString filepath )
         ui->checkBox_calibSearchROI->setChecked( !pSettings->value( "useWholeImage", true ).toBool() );
         ui->doubleSpinBox_octagonFacetLength->setValue( pSettings->value( "octagonFacetLength", 0.599 ).toDouble() ); // 7.1875 inches
         ui->doubleSpinBox_octagonZeroOffset->setValue( pSettings->value( "octagonZeroOffset", 2.0 ).toDouble() );
-        ui->spinBox_moveSearchROIGrowPercent->setValue( pSettings->value( "moveSearchROIGrowPercent", 0 ).toInt() );
 
         ui->lineEdit_findLineTopFolder->setText( pSettings->value( "findLineFolder", QString( __CONFIGURATION_FOLDER ) ).toString() );
         ui->lineEdit_findLine_resultCSVFile->setText( pSettings->value( "findLineCSVOutPath", QString( __CONFIGURATION_FOLDER ) + "waterlevel.csv" ).toString() );
@@ -481,7 +480,6 @@ int MainWindow::WriteSettings( const QString filepath )
         pSettings->setValue( "useWholeImage", !ui->checkBox_calibSearchROI->isChecked() );
         pSettings->setValue( "octagonFacetLength", ui->doubleSpinBox_octagonFacetLength->value() );
         pSettings->setValue( "octagonZeroOffset", ui->doubleSpinBox_octagonZeroOffset->value() );
-        pSettings->setValue( "moveSearchROIGrowPercent", ui->spinBox_moveSearchROIGrowPercent->value() );
 
         pSettings->setValue( "findLineFolder", ui->lineEdit_findLineTopFolder->text() );
         pSettings->setValue( "findLineCSVOutPath", ui->lineEdit_findLine_resultCSVFile->text() );
@@ -561,8 +559,6 @@ void MainWindow::UpdateCalibType()
 {
     ui->groupBox_calibOctagon->setEnabled( true );
     ui->doubleSpinBox_octagonFacetLength->setEnabled( true );
-    ui->label_moveSearchROI->setEnabled( false );
-    ui->spinBox_moveSearchROIGrowPercent->setEnabled( false );
 }
 void MainWindow::UpdateGUIEnables()
 {
