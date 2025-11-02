@@ -648,49 +648,116 @@ GC_STATUS OctoRefine::FindLineIntersection( const LineEquation& lineA, const Lin
 GC_STATUS OctoRefine::SortOctagonPoints( const std::vector< cv::Point2d > &points, std::vector< cv::Point2d > &ptsSorted )
 {
     GC_STATUS retVal = GC_OK;
+
     try
     {
         ptsSorted.clear();
-        if ( 8 != points.size() )
-        {
-            FILE_LOG( logERROR ) << "[OctoRefine::SortOctagonPoints] Invalid input point count. Must be 8.";
+
+        // Check if the input size is exactly 8 (for an octagon)
+        if (points.size() != 8) {
+            FILE_LOG( logERROR ) << "[OctoRefine::SortOctagonPoints] Invalid input point count (" << points.size() << "). Must be 8.";
             retVal = gc::GC_ERR;
         }
         else
         {
-            vector< Point2d > pts_sorted_x = points;
-            std::sort( pts_sorted_x.begin(), pts_sorted_x.end(),  [](const cv::Point& p1, const cv::Point& p2) { return p1.y < p2.y; } );
-            int i0 = pts_sorted_x[ 0 ].x < pts_sorted_x[ 1 ].x ? 0 : 1;
-            int i1 = 0 == i0 ? 1 : 0;
-            int i4 = pts_sorted_x[ 6 ].x > pts_sorted_x[ 7 ].x ? 6 : 7;
-            int i5 = 6 == i4 ? 7 : 6;
+            // --- 1. Calculate Centroid (Geometric Center) ---
+            double sumX = 0.0;
+            double sumY = 0.0;
+            for (const auto& p : points) {
+                sumX += p.x;
+                sumY += p.y;
+            }
+            const double centerX = sumX / points.size();
+            const double centerY = sumY / points.size();
 
-            vector< Point2d > pts_sorted_y = points;
-            std::sort( pts_sorted_y.begin(), pts_sorted_y.end(),  [](const cv::Point& p1, const cv::Point& p2) { return p1.x < p2.x; } );
-            int i2 = pts_sorted_y[ 6 ].y < pts_sorted_y[ 7 ].y ? 6 : 7;
-            int i3 = 6 == i4 ? 7 : 6;
-            int i6 = pts_sorted_y[ 0 ].y > pts_sorted_y[ 1 ].y ? 0 : 1;
-            int i7 = 0 == i6 ? 1 : 0;
+            // --- 2. Prepare for Angular Sort (Counter-Clockwise) ---
+            // Store points along with their angle relative to the centroid.
+            std::vector<std::pair<double, cv::Point2d>> pointsWithAngles;
+            for (const auto& p : points) {
+                // std::atan2(y, x) returns angle in radians [-pi, pi] starting from the positive X-axis.
+                double angle = std::atan2(p.y - centerY, p.x - centerX);
+                pointsWithAngles.push_back({angle, p});
+            }
 
-            ptsSorted.push_back( pts_sorted_x[ i0 ] );
-            ptsSorted.push_back( pts_sorted_x[ i1 ] );
-            ptsSorted.push_back( pts_sorted_y[ i2 ] );
-            ptsSorted.push_back( pts_sorted_y[ i3 ] );
-            ptsSorted.push_back( pts_sorted_x[ i4 ] );
-            ptsSorted.push_back( pts_sorted_x[ i5 ] );
-            ptsSorted.push_back( pts_sorted_y[ i6 ] );
-            ptsSorted.push_back( pts_sorted_y[ i7 ] );
-            // cout << ptsSorted << endl;
+            // Sort by angle in ascending order (Counter-Clockwise, CCW).
+            std::sort(pointsWithAngles.begin(), pointsWithAngles.end(),
+                      [](const auto& a, const auto& b) {
+                          return a.first < b.first;
+                      });
+
+            // --- 3. Transfer to Output Vector and Reverse for Clockwise (CW) Order ---
+            for (const auto& p : pointsWithAngles) {
+                ptsSorted.push_back(p.second);
+            }
+            // Reverse the CCW order to get CW order.
+            std::reverse(ptsSorted.begin(), ptsSorted.end());
+
+
+            // --- 4. Identify the Required Starting Point (Topmost Facet's Left Point) ---
+            // "Topmost" means minimum Y-coordinate (in OpenCV's +Y-down system).
+            double minY = std::numeric_limits<double>::max();
+            for (const auto& p : points) {
+                minY = std::min(minY, p.y);
+            }
+
+            // Find all points belonging to the topmost facet.
+            const double Y_TOLERANCE = 0.01;
+            std::vector<cv::Point2d> topPoints;
+            for (const auto& p : points) {
+                if (std::abs(p.y - minY) < Y_TOLERANCE) {
+                    topPoints.push_back(p);
+                }
+            }
+
+            // The "left point" is the one with the smallest X-coordinate among the top points.
+            cv::Point2d pStart = topPoints[0];
+            for (size_t i = 1; i < topPoints.size(); ++i) {
+                if (topPoints[i].x < pStart.x) {
+                    pStart = topPoints[i];
+                }
+            }
+
+
+            // --- 5. Rotate the Clockwise Vector to Start at pStart ---
+            // Find the iterator pointing to the starting point in the CW vector.
+            auto itStart = std::find_if(ptsSorted.begin(), ptsSorted.end(),
+                                        [&pStart](const cv::Point2d& p) {
+                                            // Use a small tolerance for robust floating point comparison
+                                            const double XY_TOLERANCE = 1e-6;
+                                            return (std::abs(p.x - pStart.x) < XY_TOLERANCE) && (std::abs(p.y - pStart.y) < XY_TOLERANCE);
+                                        });
+
+            if (itStart == ptsSorted.end()) {
+                FILE_LOG( logERROR ) << "[OctoRefine::SortOctagonPoints] Could not locate the determined starting point in the sorted set. Internal error.";
+                retVal = gc::GC_ERR;
+            }
+            else
+            {
+                // Rotate the vector: the element pointed to by itStart moves to the front.
+                std::rotate(ptsSorted.begin(), itStart, ptsSorted.end());
+                // retVal remains GC_OK
+            }
         }
     }
     catch( const cv::Exception &e )
     {
-        FILE_LOG( logERROR ) << "[OctoRefine::SortOctagonPoints] " << e.what();
+        FILE_LOG( logERROR ) << "[OctoRefine::SortOctagonPoints] OpenCV Exception: " << e.what();
         retVal = gc::GC_EXCEPT;
     }
+    catch( const std::exception &e )
+    {
+        FILE_LOG( logERROR ) << "[OctoRefine::SortOctagonPoints] Standard Exception: " << e.what();
+        retVal = gc::GC_EXCEPT;
+    }
+    catch( ... )
+    {
+        FILE_LOG( logERROR ) << "[OctoRefine::SortOctagonPoints] Unknown Exception caught.";
+        retVal = gc::GC_EXCEPT;
+    }
+
     return retVal;
 }
-GC_STATUS OctoRefine::GetOctagonVertices(const std::vector<LineEquation>& lineEquations, std::vector<cv::Point2d> &vertsSorted )
+GC_STATUS OctoRefine::GetOctagonVertices( const std::vector< LineEquation >& lineEquations, std::vector< cv::Point2d > &vertsSorted )
 {
     GC_STATUS retVal = GC_OK;
     try
@@ -707,7 +774,9 @@ GC_STATUS OctoRefine::GetOctagonVertices(const std::vector<LineEquation>& lineEq
             {
                 bool valid = false;
                 cv::Point2d pt;
-                retVal = FindLineIntersection( lineEquations[i], lineEquations[(i + 1) % 8], valid, pt );
+                int one = i;
+                int two = (i + 1) % 8;
+                retVal = FindLineIntersection( lineEquations[i], lineEquations[ ( i + 1 ) % 8 ], valid, pt );
                 if ( GC_OK != retVal )
                 {
                     break;
