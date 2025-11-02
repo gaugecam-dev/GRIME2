@@ -124,7 +124,7 @@ public:
         targetSearchRegion( cv::Rect( -1, -1, -1, -1 ) ),
         facetLength( -1.0 ),
         zeroOffset( 2.0 ),
-        center( cv::Point2d( -1.0, -1.0 ) ),
+        OctoCenterWorld( cv::Point2d( -1.0, -1.0 ) ),
         angle( -9999999.0 )
     {}
 
@@ -146,7 +146,8 @@ public:
                       const cv::Rect symbolSearchROI,
                       const double facetLen,
                       const double zeroOffsetVertical,
-                      const cv::Point2d centerPoint,
+                      const cv::Point2d centerPointPixel,
+                      const cv::Point2d centerPointWorld,
                       const double symbolAngle ) :
         validCalib( isCalibValid ),
         imgSize( imageSize ),
@@ -158,7 +159,8 @@ public:
         targetSearchRegion( symbolSearchROI ),
         facetLength( facetLen ),
         zeroOffset( zeroOffsetVertical ),
-        center( centerPoint ),
+        OctoCenterPixel( centerPointPixel ),
+        OctoCenterWorld( centerPointWorld ),
         angle( symbolAngle )
     {}
 
@@ -179,7 +181,8 @@ public:
         targetSearchRegion = cv::Rect( -1, -1, -1, -1 );
         facetLength = -1.0;
         zeroOffset = 2.0;
-        center = cv::Point2d( -1.0, -1.0 );
+        OctoCenterPixel = cv::Point2d( -1.0, -1.0 );
+        OctoCenterWorld = cv::Point2d( -1.0, -1.0 );
         angle = -9999999.0;
     }
 
@@ -195,7 +198,8 @@ public:
     cv::Rect targetSearchRegion;                     ///< Region within which to perform line and move search
     double facetLength;                              ///< Length of a stop sign facet in world units
     double zeroOffset;                               ///< Distance from bottom left stop sign corner to zero vertical position
-    cv::Point2d center;                              ///< Center of symbol
+    cv::Point2d OctoCenterPixel;                     ///< Center of symbol
+    cv::Point2d OctoCenterWorld;                     ///< Center of symbol
     double angle;                                    ///< Angle of symbol
 
 };
@@ -400,11 +404,9 @@ public:
                     const std::vector< std::vector< cv::Point > > rowSumDiag,
                     const std::vector< std::vector< cv::Point > > oneDerivDiag,
                     const std::vector< std::vector< cv::Point > > twoDerivDiag,
-                    const double octoToROIOffsetAngle,
-                    const double octoToSearchROIOffsetPix,
-                    const double octoToSearchROIOffsetWorld,
-                    const cv::Point2d searchROICtr,
                     const cv::Point2d octoCtr,
+                    const double octo2searchRoiOffsetPixel,
+                    const double octo2searchRoiOffsetWorld,
                     const std::vector< std::string > messages ) :
         findSuccess( findOk ),
         calibSuccess( calibOk ),
@@ -416,11 +418,9 @@ public:
         diagRowSums( rowSumDiag ),
         diag1stDeriv( oneDerivDiag ),
         diag2ndDeriv( twoDerivDiag ),
-        octoToSearchROIOffsetAngle( octoToROIOffsetAngle ),
-        octoToSearchROIOffsetDistPix( octoToSearchROIOffsetPix ),
-        octoToSearchROIOffsetDistWorld( octoToSearchROIOffsetWorld ),
-        searchROICenter( searchROICtr ),
         octoCenter( octoCtr ),
+        octoToSearchROIOffsetPixel( octo2searchRoiOffsetPixel ),
+        octoToSearchROIOffsetWorld( octo2searchRoiOffsetWorld ),
         calibReprojectOffset_x( -9999999.0 ),
         calibReprojectOffset_y( -9999999.0 ),
         calibReprojectOffset_dist( -9999999.0 ),
@@ -444,11 +444,9 @@ public:
         diagRowSums.clear();
         diag1stDeriv.clear();
         diag2ndDeriv.clear();
-        octoToSearchROIOffsetAngle = -9999999.9;
-        octoToSearchROIOffsetDistPix = -9999999.9;
-        octoToSearchROIOffsetDistWorld = -9999999.9;
-        searchROICenter = cv::Point2d( -9999999.9, -9999999.9 );
         octoCenter = cv::Point2d( -9999999.9, -9999999.9 );
+        octoToSearchROIOffsetPixel = -9999999.0;
+        octoToSearchROIOffsetWorld = -9999999.0;
         calibReprojectOffset_x = -9999999.0;
         calibReprojectOffset_y = -9999999.0;
         calibReprojectOffset_dist = -9999999.0;
@@ -468,11 +466,9 @@ public:
     std::vector< std::vector< cv::Point > > diagRowSums;   ///< Row sums diagnostic lines
     std::vector< std::vector< cv::Point > > diag1stDeriv;  ///< 1st deriv diagnostic lines
     std::vector< std::vector< cv::Point > > diag2ndDeriv;  ///< 2nd deriv diagnostic lines
-    double octoToSearchROIOffsetAngle;
-    double octoToSearchROIOffsetDistPix;
-    double octoToSearchROIOffsetDistWorld;
-    cv::Point2d searchROICenter;
     cv::Point2d octoCenter;
+    double octoToSearchROIOffsetPixel;
+    double octoToSearchROIOffsetWorld;
     double calibReprojectOffset_x;          ///< Reprojection offset x
     double calibReprojectOffset_y;          ///< Reprojection offset y
     double calibReprojectOffset_dist;       ///< Reprojection offset Euclidean distance

@@ -272,14 +272,22 @@ GC_STATUS CalibOctagon::Calibrate( const cv::Mat &img, const std::string &contro
                     {
                         // offset_x = model.oldPixelPoints[ 4 ].x - model.pixelPoints[ 4 ].x;
                         // offset_y = model.oldPixelPoints[ 4 ].y - model.pixelPoints[ 4 ].y;
-                        retVal = CalcCenterAngle( model.worldPoints, model.center, model.angle );
+                        retVal = CalcCenterAngle( model.worldPoints, model.OctoCenterWorld, model.angle );
                         if ( GC_OK != retVal )
                         {
-                            err_msg = "CALIB FAIL [octagon] Could not octagon angle";
+                            err_msg = "CALIB FAIL [octagon] Could not octagon angle and world center";
                         }
                         else
                         {
-                            model.imgSize = img.size();
+                            retVal = CalcCenterAngle( model.pixelPoints, model.OctoCenterPixel, model.angle );
+                            if ( GC_OK != retVal )
+                            {
+                                err_msg = "CALIB FAIL [octagon] Could not octagon angle and pixel center";
+                            }
+                            else
+                            {
+                                model.imgSize = img.size();
+                            }
                         }
                     }
                 }
@@ -512,6 +520,16 @@ GC_STATUS CalibOctagon::CreateCalibration( const std::vector< cv::Point2d > &pix
     }
 
     return retVal;
+}
+GC_STATUS CalibOctagon::SetOctoCtrToTargetROICtrOffset()
+{
+    if ( 0 > model.targetSearchRegion.x || 0 > model.targetSearchRegion.y ||
+         0 > model.targetSearchRegion.width || 0 > model.targetSearchRegion.height )
+    {
+    }
+    else
+    {
+    }
 }
 GC_STATUS CalibOctagon::SetCalibModel( CalibModelOctagon newModel )
 {

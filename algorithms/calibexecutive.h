@@ -151,8 +151,8 @@ public:
     GC_STATUS LoadFromJsonString( const std::string jsonString , const std::string jsonFilepath = "" );
     GC_STATUS LoadFromJsonString();
     GC_STATUS CalibSaveOctagon( const std::string jsonFilepath );
-    GC_STATUS Calibrate( const cv::Mat &img, const std::string jsonParams,
-                        double &rmseDist, double &rmseX, double &rmseY, std::string &err_msg, const bool save = false );
+    GC_STATUS Calibrate( const cv::Mat &img, const std::string jsonParams, double &rmseDist,
+                         double &rmseX, double &rmseY, std::string &err_msg, const bool save = false );
     GC_STATUS Calibrate( const cv::Mat &img, const std::string jsonParams, cv::Mat &imgResult,
                          double &rmseDist, double &rmseX, double &rmseY, std::string &err_msg, const bool save = false,
                          const bool drawAll = false );

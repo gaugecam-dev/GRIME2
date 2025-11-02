@@ -321,7 +321,9 @@ GC_STATUS VisApp::CalcFindLine( const Mat &img, FindLineResult &result )
                 }
                 else
                 {
-                    retVal = AdjustSearchAreaForMovement( m_calibExec.SearchLines(), searchLinesAdj, result.searchROICenter, result.octoCenter );
+                    Rect roi = m_calibExec.TargetRoi();
+                    Point2d searchROICenter( ( roi.x + roi.width ) / 2.0, ( roi.y + roi.height ) /2 );
+                    retVal = AdjustSearchAreaForMovement( m_calibExec.SearchLines(), searchLinesAdj, searchROICenter, result.octoCenter );
                     if ( GC_OK == retVal )
                     {
                         retVal = m_calibExec.SetAdjustedSearchROI( searchLinesAdj );
@@ -517,8 +519,8 @@ GC_STATUS VisApp::ResultToJsonString( const FindLineResult result, const FindLin
         ss << "\"timestamp\": \"" << result.timestamp << "\",";
         if ( GC_OK == retVal )
         {
-            ss << "\"searchROICenter_x\": " << result.searchROICenter.x << ",";
-            ss << "\"searchROICenter_y\": " << result.searchROICenter.y << ",";
+            ss << "\"searchROICenter_x\": " << result.octoToSearchROIOffsetPixel << ",";
+            ss << "\"searchROICenter_y\": " << result.octoToSearchROIOffsetWorld << ",";
             ss << "\"octagonCenter_x\": " << result.octoCenter.x << ",";
             ss << "\"octagonCenter_y\": " << result.octoCenter.y << ",";
 
@@ -629,9 +631,7 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result 
                 {
                     if ( params.isOctagonCalib || ( params.calibFilepath != m_calibFilepath && !params.isOctagonCalib ) )
                     {
-                        if ( m_calibExec.isCalibrated() )
-                            retVal = m_calibExec.LoadFromJsonString();
-                        retVal = m_calibExec.Load( params.calibFilepath );
+                        retVal = m_calibExec.isCalibrated() ? m_calibExec.LoadFromJsonString() : m_calibExec.Load( params.calibFilepath );
                         if ( GC_OK != retVal )
                         {
                             result.calibSuccess = false;
@@ -959,9 +959,8 @@ GC_STATUS VisApp::WriteFindlineResultToCSV( const std::string resultCSV, const s
                 csvFile << "calcLinePts-ctrWorld-x,"; csvFile << "calcLinePts-ctrWorld-y,";
                 csvFile << "calcLinePts-rgtWorld-x,"; csvFile << "calcLinePts-rgtWorld-y,";
 
-                csvFile << "octoToSearchROIOffsetDist," << "octoToSearchROIOffsetAngle,";
-                csvFile << "searchROICenter-x,"; csvFile << "searchROICenter-y,";
                 csvFile << "octoCenter-x,"; csvFile << "octoCenter-y,";
+                csvFile << "octoToSearchROIOffset-pixel," << "octoToSearchROIOffset-world,";
 
                 csvFile << "foundPts[0]-x,"; csvFile << "foundPts[0]-y,"; csvFile << "foundPts[1]-x,"; csvFile << "foundPts[1]-y,";
                 csvFile << "foundPts[2]-x,"; csvFile << "foundPts[2]-y,"; csvFile << "foundPts[3]-x,"; csvFile << "foundPts[3]-y,";
@@ -994,10 +993,8 @@ GC_STATUS VisApp::WriteFindlineResultToCSV( const std::string resultCSV, const s
             csvFile << result.calcLinePts.ctrWorld.x << ","; csvFile << result.calcLinePts.ctrWorld.y << ",";
             csvFile << result.calcLinePts.rgtWorld.x << ","; csvFile << result.calcLinePts.rgtWorld.y << ",";
 
-            csvFile << result.octoToSearchROIOffsetAngle << ",";
-            csvFile << result.octoToSearchROIOffsetDistPix << ","; csvFile << result.octoToSearchROIOffsetDistWorld << ",";
             csvFile << result.octoCenter.x << ","; csvFile << result.octoCenter.y << ",";
-            csvFile << result.searchROICenter.x << ","; csvFile << result.searchROICenter.y << ",";
+            csvFile << result.octoToSearchROIOffsetPixel << ","; csvFile << result.octoToSearchROIOffsetWorld << ",";
 
             for ( size_t i = 0; i < result.foundPoints.size(); ++i )
             {

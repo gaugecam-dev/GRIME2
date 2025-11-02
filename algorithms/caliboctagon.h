@@ -116,6 +116,7 @@ private:
                              const double botLftPtToRgt, const double botLftPtToBot, cv::Point2d &lftTop,
                              cv::Point2d &rgtTop, cv::Point2d &lftBot, cv::Point2d &rgtBot );
     GC_STATUS TestCalibration( bool &isValid );
+    GC_STATUS SetOctoCtrToTargetROICtrOffset();
 };
 
 } // namespace gc

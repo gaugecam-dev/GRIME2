@@ -228,7 +228,7 @@ GC_STATUS OctagonSearch::AdjustResponseSpace( Mat &response, const size_t j )
                     break;
             }
             drawContours( mask, vector< vector< Point > >( 1, contour ), -1, Scalar( 255 ), FILLED );
-            drawContours( mask, vector< vector< Point > >( 1, contour ), -1, Scalar( 0 ), 7 );
+            drawContours( mask, vector< vector< Point > >( 1, contour ), -1, Scalar( 0 ), 11 );
             response.setTo( 0, mask == 255 );
 #ifdef DEBUG_OCTAGON_TEMPL
             normalize( response, scratch, 0, 1, NORM_MINMAX );
@@ -327,7 +327,10 @@ GC_STATUS OctagonSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &p
                         int r = ( mask.rows - response.rows ) >> 1;
                         response.setTo( 0.0, mask( Rect( l, r, response.cols, response.rows ) ) == 0 );
 #ifdef DEBUG_OCTAGON_TEMPL
-                        imwrite("/var/tmp/gaugecam/response_mask.tiff", response);
+                        cv::Mat float_image_normalized, img8u;
+                        cv::normalize(response, float_image_normalized, 0.0, 1.0, cv::NORM_MINMAX, CV_32F);
+                        float_image_normalized.convertTo(img8u, CV_8U, 255.0);
+                        imwrite("/var/tmp/gaugecam/response_mask.png", img8u);
 #endif
                         retVal = AdjustResponseSpace( response, j );
 
@@ -577,46 +580,6 @@ GC_STATUS LengthenLine( const cv::Point2d& pStart, const cv::Point2d &pEnd, cons
     catch( const cv::Exception &e )
     {
         FILE_LOG( logERROR ) << "[OctagonSearch::LengthenLine] " << e.what();
-        retVal = GC_EXCEPT;
-    }
-    return retVal;
-}
-GC_STATUS OctagonSearch::GetLineEdges( const cv::Mat &img, const cv::Point pt1, const cv::Point pt2,
-                                       const cv::Point ptCenter, std::vector< cv::Point2d > &foundPts, const int edgeThreshold )
-{
-    GC_STATUS retVal = GC_OK;
-    try
-    {
-        if ( img.empty() )
-        {
-            FILE_LOG( logERROR ) << "[OctagonSearch::GetLineEdges] Reference image empty";
-            retVal = GC_ERR;
-        }
-        else
-        {
-            Point2d ptEndNew;
-            vector< Point > linePts;
-            vector< LineEnds > lines;
-            retVal = bresenham( pt1, pt2, linePts );
-            if ( GC_OK == retVal )
-            {
-                Point2d ptCtr_2d( static_cast< double >( ptCenter.x ), static_cast< double >( ptCenter.y ) );
-                for ( size_t i = 0; i < linePts.size(); ++i )
-                {
-                    retVal = LengthenLine( ptCtr_2d, Point2d( static_cast< double >( linePts[ i ].x ),
-                                                             static_cast< double >( linePts[ i ].y ) ),
-                                          15.0, ptEndNew );
-                    if ( GC_OK == retVal )
-                    {
-                        lines.push_back( LineEnds( ptCenter, Point( std::round( ptEndNew.x ), std::round( ptEndNew.y ) ) ) );
-                    }
-                }
-            }
-        }
-    }
-    catch( const cv::Exception &e )
-    {
-        FILE_LOG( logERROR ) << "[OctagonSearch::GetLineEdges] " << e.what();
         retVal = GC_EXCEPT;
     }
     return retVal;

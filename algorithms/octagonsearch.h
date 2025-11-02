@@ -109,8 +109,6 @@ private:
     GC_STATUS CreateOctoTemplates( const int radBeg, const int radEnd, const int radInc,
                                    const int beg_thickness, std::vector< OctoTemplate > &ptTemplates );
     GC_STATUS CreateTemplateOverlay( const std::string debugFolder );
-    GC_STATUS GetLineEdges( const cv::Mat &img, const cv::Point pt1, const cv::Point pt2, const cv::Point ptCenter,
-                            std::vector< cv:: Point2d > &foundPts, const int edgeThreshold = 27 );
     GC_STATUS RefineFind( const cv::Mat &img, std::vector< cv::Point2d > &pts );
     GC_STATUS AdjustLineLength( const LineEnds &a, const double newLength, LineEnds &newLine );
     GC_STATUS ShortenLine( const LineEnds &a, const double newLengthPercent, LineEnds &newLine );
