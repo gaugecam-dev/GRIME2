@@ -321,8 +321,9 @@ GC_STATUS VisApp::CalcFindLine( const Mat &img, FindLineResult &result )
                 }
                 else
                 {
+                    result.octoCenter = m_calibExec.CalibModel().OctoCenterPixel;
                     Rect roi = m_calibExec.TargetRoi();
-                    Point2d searchROICenter( ( roi.x + roi.width ) / 2.0, ( roi.y + roi.height ) /2 );
+                    Point2d searchROICenter( ( roi.x + roi.width / 2.0 ), ( roi.y + roi.height / 2.0 ) );
                     retVal = AdjustSearchAreaForMovement( m_calibExec.SearchLines(), searchLinesAdj, searchROICenter, result.octoCenter );
                     if ( GC_OK == retVal )
                     {
