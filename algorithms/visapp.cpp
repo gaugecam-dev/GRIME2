@@ -280,8 +280,8 @@ GC_STATUS VisApp::AdjustSearchAreaForMovement( const std::vector< LineEnds > &se
             searchLinesAdj.clear();
             for ( size_t i = 0; i < searchLines.size(); ++i )
             {
-                searchLinesAdj.push_back( LineEnds( searchLines[ i ].top + Point( cvRound( offsets.x ), cvRound( offsets.y ) ),
-                                                    searchLines[ i ].bot + Point( cvRound( offsets.x ), cvRound( offsets.y ) ) ) );
+                searchLinesAdj.push_back( LineEnds( searchLines[ i ].top - Point( cvRound( offsets.x ), cvRound( offsets.y ) ),
+                                                    searchLines[ i ].bot - Point( cvRound( offsets.x ), cvRound( offsets.y ) ) ) );
             }
         }
     }

@@ -521,16 +521,6 @@ GC_STATUS CalibOctagon::CreateCalibration( const std::vector< cv::Point2d > &pix
 
     return retVal;
 }
-GC_STATUS CalibOctagon::SetOctoCtrToTargetROICtrOffset()
-{
-    if ( 0 > model.targetSearchRegion.x || 0 > model.targetSearchRegion.y ||
-         0 > model.targetSearchRegion.width || 0 > model.targetSearchRegion.height )
-    {
-    }
-    else
-    {
-    }
-}
 GC_STATUS CalibOctagon::SetCalibModel( CalibModelOctagon newModel )
 {
     GC_STATUS retVal = GC_OK;

@@ -179,6 +179,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->checkBox_showCalib->setChecked( true );
     ui->checkBox_showSearchROI->setChecked( true );
     ui->checkBox_calibSearchROI->setChecked( true );
+    ui->checkBox_calibSearchROI->setVisible( false );
     ui->checkBox_showTargetROI->setChecked( true );
     ui->checkBox_showMoveFind->setChecked( true );
     m_pComboBoxImageToView->setCurrentText( "Overlay" );
@@ -383,7 +384,7 @@ int MainWindow::ReadSettings( const QString filepath )
         // vision stuff
         pSettings->beginGroup( "Vision" );
         ui->lineEdit_calibVisionResult_json->setText( pSettings->value( "calibJsonFileOut", QString( __CONFIGURATION_FOLDER ) + "calib.json" ).toString() );
-        ui->checkBox_calibSearchROI->setChecked( !pSettings->value( "useWholeImage", true ).toBool() );
+        ui->checkBox_calibSearchROI->setChecked( !pSettings->value( "useWholeImage", false ).toBool() );
         ui->doubleSpinBox_octagonFacetLength->setValue( pSettings->value( "octagonFacetLength", 0.599 ).toDouble() ); // 7.1875 inches
         ui->doubleSpinBox_octagonZeroOffset->setValue( pSettings->value( "octagonZeroOffset", 2.0 ).toDouble() );
 
@@ -477,7 +478,8 @@ int MainWindow::WriteSettings( const QString filepath )
         // vision stuff
         pSettings->beginGroup( "Vision" );
         pSettings->setValue( "calibJsonFileOut", ui->lineEdit_calibVisionResult_json->text() );
-        pSettings->setValue( "useWholeImage", !ui->checkBox_calibSearchROI->isChecked() );
+        // pSettings->setValue( "useWholeImage", !ui->checkBox_calibSearchROI->isChecked() );
+        pSettings->setValue( "useWholeImage", false );
         pSettings->setValue( "octagonFacetLength", ui->doubleSpinBox_octagonFacetLength->value() );
         pSettings->setValue( "octagonZeroOffset", ui->doubleSpinBox_octagonZeroOffset->value() );
 
@@ -543,7 +545,8 @@ void MainWindow::UpdateTargetRect()
 }
 void MainWindow::UpdateCalibSearchRegion()
 {
-    if ( ui->checkBox_calibSearchROI->isChecked() )
+    // if ( ui->checkBox_calibSearchROI->isChecked() )
+    if ( true )
     {
         QString msg;
         ui->label_calibCurrentROI->setText( msg.asprintf( "x=%d  y=%d  w=%d  h=%d",
@@ -1329,7 +1332,7 @@ void MainWindow::on_pushButton_visionCalibrate_clicked()
     UpdateCalibSearchRegion();
 
     CalibJsonItems calibItems( ui->lineEdit_calibVisionResult_json->text().toStdString(),
-                               ui->checkBox_calibSearchROI->isChecked(),
+                               true, // ui->checkBox_calibSearchROI->isChecked(),
                                cv::Rect( m_rectROI.x(), m_rectROI.y(), m_rectROI.width(), m_rectROI.height() ),
                                ui->doubleSpinBox_octagonFacetLength->value(), ui->doubleSpinBox_octagonZeroOffset->value(),
                                LineSearchRoi( cv::Point( m_lineSearchPoly.lftTop.x(), m_lineSearchPoly.lftTop.y() ),
@@ -1479,7 +1482,7 @@ void MainWindow::on_pushButton_findLineCurrentImage_clicked()
         params.lineSearchROIFolder = ui->groupBox_enableSaveSearchROI->isChecked() ? ui->lineEdit_saveSearchROIFolder->text().toStdString() : "";
         if ( params.isOctagonCalib )
         {
-            CalibJsonItems calibItems( ui->lineEdit_calibVisionResult_json->text().toStdString(), ui->checkBox_calibSearchROI->isChecked(),
+            CalibJsonItems calibItems( ui->lineEdit_calibVisionResult_json->text().toStdString(), true, // ui->checkBox_calibSearchROI->isChecked(),
                                        cv::Rect( m_rectROI.x(), m_rectROI.y(), m_rectROI.width(), m_rectROI.height() ),
                                        ui->doubleSpinBox_octagonFacetLength->value(), ui->doubleSpinBox_octagonZeroOffset->value(),
                                        LineSearchRoi( cv::Point( m_lineSearchPoly.lftTop.x(), m_lineSearchPoly.lftTop.y() ),
