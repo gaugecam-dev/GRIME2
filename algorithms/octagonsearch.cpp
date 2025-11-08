@@ -310,7 +310,6 @@ GC_STATUS OctagonSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &p
                     img.copyTo( color );
                 imwrite("/var/tmp/gaugecam/img_in_find.png", matIn);
 #endif
-
                 pts.clear();
                 Mat response;
                 for ( size_t j = 0; j < templates.size(); ++j )

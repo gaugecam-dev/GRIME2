@@ -6,8 +6,8 @@
 #include <algorithm>
 #include <cmath>
 
-#ifndef OCTOREFINE_DEBUG
-#define OCTOREFINE_DEBUG
+#ifdef OCTOREFINE_DEBUG
+#undef OCTOREFINE_DEBUG
 char DEBUG_FOLDER[] = "/var/tmp/gaugecam/";
 #endif
 

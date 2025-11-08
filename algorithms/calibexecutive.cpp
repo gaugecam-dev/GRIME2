@@ -286,6 +286,10 @@ GC_STATUS CalibExecutive::Calibrate( const cv::Mat &img, const std::string jsonP
                         err_msg = "CALIB_FAIL: Octagon calibration failed";
                         retVal = GC_ERR;
                     }
+                    else
+                    {
+                        calibFileJson = jsonParamsWhich;
+                    }
                 }
                 else
                 {
@@ -469,6 +473,7 @@ GC_STATUS CalibExecutive::CalibrateOctagon( const cv::Mat &img, const string &co
 GC_STATUS CalibExecutive::LoadFromJsonString()
 {
     string jsonString = calibFileJson;
+    jsonString = octagon.Model().controlJson;
     GC_STATUS retVal = LoadFromJsonString( jsonString );
     return retVal;
 }

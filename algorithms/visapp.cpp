@@ -632,7 +632,8 @@ GC_STATUS VisApp::CalcLine( const FindLineParams params, FindLineResult &result 
                 {
                     if ( params.isOctagonCalib || ( params.calibFilepath != m_calibFilepath && !params.isOctagonCalib ) )
                     {
-                        retVal = m_calibExec.isCalibrated() ? m_calibExec.LoadFromJsonString() : m_calibExec.Load( params.calibFilepath );
+                        // retVal = m_calibExec.isCalibrated() ? m_calibExec.LoadFromJsonString() : m_calibExec.Load( params.calibFilepath );
+                        retVal = m_calibExec.Load( params.calibFilepath );
                         if ( GC_OK != retVal )
                         {
                             result.calibSuccess = false;
