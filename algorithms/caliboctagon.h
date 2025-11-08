@@ -76,7 +76,6 @@ public:
                            const bool drawCalibGrid, const bool drawSearchROI , const bool drawTargetSearchROI );
     GC_STATUS DrawAssocPts( const cv::Mat &img, cv::Mat &overlay, std::string &err_msg );
     GC_STATUS GetCalibParams( std::string &calibParams );
-    GC_STATUS MoveRefPoint( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt, const bool force = false );
     GC_STATUS SetCalibModel( CalibModelOctagon newModel );
 
     void clear();
@@ -98,9 +97,6 @@ private:
     cv::Mat matHomogWorldToPix;
     CalibModelOctagon model;
     OctagonSearch octagonSearch;
-    cv::Point2d moveRefLftPt;
-    cv::Point2d moveRefRgtPt;
-
 
     GC_STATUS RotateImage( const cv::Mat &src, cv::Mat &dst, const double angle );
     GC_STATUS GetNonZeroPoints( cv::Mat &img, std::vector< cv::Point > &pts );
@@ -120,6 +116,7 @@ private:
                              const double botLftPtToRgt, const double botLftPtToBot, cv::Point2d &lftTop,
                              cv::Point2d &rgtTop, cv::Point2d &lftBot, cv::Point2d &rgtBot );
     GC_STATUS TestCalibration( bool &isValid );
+    GC_STATUS SetOctoCtrToTargetROICtrOffset();
 };
 
 } // namespace gc

@@ -277,8 +277,8 @@ private:
     Animate m_animate;
 
     GC_STATUS CalcFindLine( const cv::Mat &img, FindLineResult &result );
-    GC_STATUS AdjustSearchAreaForMovement( const std::vector< LineEnds > &searchLines,
-                                           std::vector< LineEnds > &searchLinesAdj, const cv::Point2d offsets );
+    GC_STATUS AdjustSearchAreaForMovement( const std::vector< LineEnds > &searchLines, std::vector< LineEnds > &searchLinesAdj,
+                                           const cv::Point2d searchROIcenter , const cv::Point2d octoCenter);
     GC_STATUS PixelToWorld( FindPointSet &ptSet );
     GC_STATUS FindPtSet2JsonString( const FindPointSet set, const std::string set_type, std::string &json );
     GC_STATUS SaveLineFindSearchRoi(const cv::Mat &img, const std::string resultImgPath, const FindLineResult result );

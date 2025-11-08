@@ -286,6 +286,10 @@ GC_STATUS CalibExecutive::Calibrate( const cv::Mat &img, const std::string jsonP
                         err_msg = "CALIB_FAIL: Octagon calibration failed";
                         retVal = GC_ERR;
                     }
+                    else
+                    {
+                        calibFileJson = jsonParamsWhich;
+                    }
                 }
                 else
                 {
@@ -469,6 +473,7 @@ GC_STATUS CalibExecutive::CalibrateOctagon( const cv::Mat &img, const string &co
 GC_STATUS CalibExecutive::LoadFromJsonString()
 {
     string jsonString = calibFileJson;
+    jsonString = octagon.Model().controlJson;
     GC_STATUS retVal = LoadFromJsonString( jsonString );
     return retVal;
 }
@@ -598,65 +603,6 @@ std::vector< LineEnds > &CalibExecutive::SearchLines()
     }
     FILE_LOG( logERROR ) << "[CalibExecutive::SearchLines] No calibration type currently set";
     return nullSearchLines;
-}
-GC_STATUS CalibExecutive::FindMoveTargets( FindPointSet &ptsFound )
-{
-    GC_STATUS retVal = GC_OK;
-
-    if ( "Octagon" == paramsCurrent.calibType )
-    {
-        retVal = MoveFountPoint( ptsFound );
-    }
-    else
-    {
-        FILE_LOG( logERROR ) << "[FindLine::FindMoveTargets] No valid calibration type currently set";
-        retVal = GC_ERR;
-    }
-
-    return retVal;
-}
-GC_STATUS CalibExecutive::MoveFountPoint( FindPointSet &ptsFound )
-{
-    GC_STATUS retVal = GC_OK;
-    try
-    {
-        if ( 8 == CalibModel().pixelPoints.size() )
-        {
-            std::vector< Point2d > foundCalPts = CalibModel().pixelPoints;
-            ptsFound.lftPixel = foundCalPts[ 5 ];
-            ptsFound.rgtPixel = foundCalPts[ 4 ];
-            ptsFound.ctrPixel.x = ( ptsFound.lftPixel.x + ptsFound.rgtPixel.x ) / 2.0;
-            ptsFound.ctrPixel.y = ( ptsFound.lftPixel.y + ptsFound.rgtPixel.y ) / 2.0;
-        }
-        else
-        {
-            FILE_LOG( logERROR ) << "[CalibExecutive::FindMoveTargetsOctagon] Valid calibration required";
-            retVal = GC_ERR;
-        }
-    }
-    catch( Exception &e )
-    {
-        FILE_LOG( logERROR ) << "[CalibExecutive::FindMoveTargetsOctagon] " << e.what();
-        retVal = GC_EXCEPT;
-    }
-
-    return retVal;
-}
-GC_STATUS CalibExecutive::MoveRefPoint( cv::Point2d &lftRefPt, cv::Point2d &rgtRefPt )
-{
-    GC_STATUS retVal = GC_OK;
-
-    if ( "Octagon" == paramsCurrent.calibType )
-    {
-        retVal = octagon.MoveRefPoint( lftRefPt, rgtRefPt );
-    }
-    else
-    {
-        FILE_LOG( logERROR ) << "[FindLine::FindMoveTargets] No valid calibration type currently set";
-        retVal = GC_ERR;
-    }
-
-    return retVal;
 }
 GC_STATUS CalibExecutive::CalculateRMSE( const cv::Mat &img, double &rmseEuclideanDist, double &rmseX, double &rmseY )
 {
