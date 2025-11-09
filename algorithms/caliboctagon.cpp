@@ -16,13 +16,13 @@
 #include <algorithm>
 #include "searchlines.h"
 
-#ifdef DEBUG_FIND_CALIB_SYMBOL
-#undef DEBUG_FIND_CALIB_SYMBOL
+#ifndef DEBUG_FIND_CALIB_SYMBOL
+#define DEBUG_FIND_CALIB_SYMBOL
 #include <iostream>
 #ifdef _WIN32
 static const char DEBUG_FOLDER[] = "c:/gaugecam/";
 #else
-static const string DEBUG_FOLDER = string( "/var/tmp/gaugecam/" );
+static const std::string DEBUG_FOLDER = std::string( "/var/tmp/gaugecam/" );
 #endif
 #endif
 
@@ -191,6 +191,10 @@ GC_STATUS CalibOctagon::Calibrate( const cv::Mat &img, const std::string &contro
             {
                 img.copyTo( color );
             }
+            if ( 1 == color.channels() )
+            {
+                cvtColor( color, color, COLOR_GRAY2BGR );
+            }
             for ( size_t i = 0; i < model.pixelPoints.size(); ++i )
             {
                 line( color, Point( model.pixelPoints[ i ].x - 10, model.pixelPoints[ i ].y ),
@@ -235,7 +239,7 @@ GC_STATUS CalibOctagon::Calibrate( const cv::Mat &img, const std::string &contro
 #ifdef DEBUG_FIND_CALIB_SYMBOL
                     Mat temp_img;
                     img.copyTo( temp_img );
-                    // cvtColor( img, temp_img, COLOR_GRAY2BGR );
+                    cvtColor( img, temp_img, COLOR_GRAY2BGR );
                     line( temp_img, model.waterlineSearchCorners[ 0 ], model.waterlineSearchCorners[ 1 ], Scalar( 0, 0, 255 ), 7 );
                     line( temp_img, model.waterlineSearchCorners[ 0 ], model.waterlineSearchCorners[ 2 ], Scalar( 0, 255, 255 ), 7 );
                     line( temp_img, model.waterlineSearchCorners[ 3 ], model.waterlineSearchCorners[ 1 ], Scalar( 0, 255, 0 ), 7 );
@@ -243,6 +247,7 @@ GC_STATUS CalibOctagon::Calibrate( const cv::Mat &img, const std::string &contro
                     imwrite( "/var/tmp/gaugecam/test_search_roi_0.png", temp_img );
                     Mat color;
                     img.copyTo( color );
+                    cvtColor( img, temp_img, COLOR_GRAY2BGR );
                     circle( color, model.waterlineSearchCorners[ 0 ], 11, Scalar( 0, 0, 255 ), 3 );
                     circle( color, model.waterlineSearchCorners[ 1 ], 11, Scalar( 0, 255, 255 ), 3 );
                     circle( color, model.waterlineSearchCorners[ 2 ], 11, Scalar( 255, 0, 0 ), 3 );

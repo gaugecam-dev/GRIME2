@@ -563,8 +563,7 @@ GC_STATUS OctoRefine::SortOctagonPoints( const std::vector< cv::Point2d > &point
         ptsSorted.clear();
 
         // Check if the input size is exactly 8 (for an octagon)
-        if (points.size() != 8)
-        {
+        if (points.size() != 8) {
             FILE_LOG( logERROR ) << "[OctoRefine::SortOctagonPoints] Invalid input point count (" << points.size() << "). Must be 8.";
             retVal = gc::GC_ERR;
         }
@@ -580,80 +579,74 @@ GC_STATUS OctoRefine::SortOctagonPoints( const std::vector< cv::Point2d > &point
             const double centerX = sumX / points.size();
             const double centerY = sumY / points.size();
 
-            // --- 2. Prepare for Angular Sort (Counter-Clockwise) ---
+            // --- 2. Prepare for Angular Sort (Clockwise in Y-down system) ---
             // Store points along with their angle relative to the centroid.
             std::vector<std::pair<double, cv::Point2d>> pointsWithAngles;
-            for (const auto& p : points)
-            {
+            for (const auto& p : points) {
                 // std::atan2(y, x) returns angle in radians [-pi, pi] starting from the positive X-axis.
                 double angle = std::atan2(p.y - centerY, p.x - centerX);
                 pointsWithAngles.push_back({angle, p});
             }
 
-            // Sort by angle in ascending order (Counter-Clockwise, CCW).
+            // --- CRITICAL FIX: Sort by angle in ASCENDING order for CW rotation in Y-down systems ---
             std::sort(pointsWithAngles.begin(), pointsWithAngles.end(),
                       [](const auto& a, const auto& b) {
-                          return a.first < b.first;
+                          return a.first < b.first; // Sorting ascending angle yields CW order in OpenCV (+Y down)
                       });
 
-            // --- 3. Transfer to Output Vector and Reverse for Clockwise (CW) Order ---
-            for (const auto& p : pointsWithAngles)
-            {
+            // --- 3. Transfer to Output Vector (Already Clockwise) ---
+            for (const auto& p : pointsWithAngles) {
                 ptsSorted.push_back(p.second);
             }
-            // Reverse the CCW order to get CW order.
-            std::reverse(ptsSorted.begin(), ptsSorted.end());
 
 
             // --- 4. Identify the Required Starting Point (Topmost Facet's Left Point) ---
             // "Topmost" means minimum Y-coordinate (in OpenCV's +Y-down system).
             double minY = std::numeric_limits<double>::max();
-            for (const auto& p : points)
-            {
+            for (const auto& p : points) {
                 minY = std::min(minY, p.y);
             }
 
             // Find all points belonging to the topmost facet.
             const double Y_TOLERANCE = 0.01;
             std::vector<cv::Point2d> topPoints;
-            for (const auto& p : points)
-            {
-                if (std::abs(p.y - minY) < Y_TOLERANCE)
-                {
+            for (const auto& p : points) {
+                if (std::abs(p.y - minY) < Y_TOLERANCE) {
                     topPoints.push_back(p);
                 }
             }
 
-            // The "left point" is the one with the smallest X-coordinate among the top points.
-            cv::Point2d pStart = topPoints[0];
-            for (size_t i = 1; i < topPoints.size(); ++i)
-            {
-                if (topPoints[i].x < pStart.x)
-                {
-                    pStart = topPoints[i];
-                }
-            }
-
-
-            // --- 5. Rotate the Clockwise Vector to Start at pStart ---
-            // Find the iterator pointing to the starting point in the CW vector.
-            auto itStart = std::find_if(ptsSorted.begin(), ptsSorted.end(),
-                                        [&pStart](const cv::Point2d& p) {
-                                            // Use a small tolerance for robust floating point comparison
-                                            const double XY_TOLERANCE = 1e-6;
-                                            return (std::abs(p.x - pStart.x) < XY_TOLERANCE) && (std::abs(p.y - pStart.y) < XY_TOLERANCE);
-                                        });
-
-            if (itStart == ptsSorted.end())
-            {
-                FILE_LOG( logERROR ) << "[OctoRefine::SortOctagonPoints] Could not locate the determined starting point in the sorted set. Internal error.";
+            // If topmost points are found, determine the leftmost among them.
+            if (topPoints.empty()) {
+                FILE_LOG( logERROR ) << "[OctoRefine::SortOctagonPoints] Failed to identify topmost points.";
                 retVal = gc::GC_ERR;
-            }
-            else
-            {
-                // Rotate the vector: the element pointed to by itStart moves to the front.
-                std::rotate(ptsSorted.begin(), itStart, ptsSorted.end());
-                // retVal remains GC_OK
+            } else {
+                cv::Point2d pStart = topPoints[0];
+                for (size_t i = 1; i < topPoints.size(); ++i) {
+                    if (topPoints[i].x < pStart.x) {
+                        pStart = topPoints[i];
+                    }
+                }
+
+                // --- 5. Rotate the Clockwise Vector to Start at pStart ---
+                // Find the iterator pointing to the starting point in the CW vector.
+                auto itStart = std::find_if(ptsSorted.begin(), ptsSorted.end(),
+                                            [&pStart](const cv::Point2d& p) {
+                                                // Use a small tolerance for robust floating point comparison
+                                                const double XY_TOLERANCE = 1e-6;
+                                                return (std::abs(p.x - pStart.x) < XY_TOLERANCE) && (std::abs(p.y - pStart.y) < XY_TOLERANCE);
+                                            });
+
+                if (itStart == ptsSorted.end()) {
+                    FILE_LOG( logERROR ) << "[OctoRefine::SortOctagonPoints] Could not locate the determined starting point in the sorted set. Internal error in rotation logic.";
+                    retVal = gc::GC_ERR;
+                }
+                else
+                {
+                    // Rotate the vector: the element pointed to by itStart moves to the front.
+                    std::rotate(ptsSorted.begin(), itStart, ptsSorted.end());
+                    // retVal remains GC_OK
+                }
             }
         }
     }
