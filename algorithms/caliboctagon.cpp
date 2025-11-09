@@ -16,8 +16,8 @@
 #include <algorithm>
 #include "searchlines.h"
 
-#ifndef DEBUG_FIND_CALIB_SYMBOL
-#define DEBUG_FIND_CALIB_SYMBOL
+#ifdef DEBUG_FIND_CALIB_SYMBOL
+#undef DEBUG_FIND_CALIB_SYMBOL
 #include <iostream>
 #ifdef _WIN32
 static const char DEBUG_FOLDER[] = "c:/gaugecam/";
