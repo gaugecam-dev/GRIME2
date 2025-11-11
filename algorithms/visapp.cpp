@@ -366,6 +366,8 @@ GC_STATUS VisApp::CalcFindLine( const Mat &img, FindLineResult &result )
                         }
                         else
                         {
+                            result.waterLevelAdjusted = result.calcLinePts.ctrWorld;
+
                             // snprintf( buffer, 256, "%s/waterline angle diff: %.3f", m_calibExec.GetCalibType().c_str(), result.symbolToWaterLineAngle );
                             snprintf( buffer, 256, "CalibType: %s", m_calibExec.GetCalibType().c_str() );
                             result.msgs.push_back( buffer );

@@ -7,7 +7,6 @@
 #include <boost/exception/diagnostic_information.hpp>
 #include <string>
 #include <iostream>
-#include <algorithm>
 
 using namespace std;
 using namespace boost;
@@ -612,33 +611,3 @@ void PrintHelp()
     cout << "     Shows the grime2cli version" << endl;
 }
 #endif // ARGHANDLER_H
-/*
-{
-  "calibType": "StopSign",
-  "calibWorldPt_csv": "./config/calibration_target_world_coordinates.csv",
-  "facetLength": 0.599,
-  "zeroOffset": 2.36,
-  "moveSearchROIGrowPercent": 100,
-  "drawCalib": 0,
-  "drawMoveSearchROIs": 0,
-  "drawWaterLineSearchROI": 0,
-  "targetRoi_x": 950,
-  "targetRoi_y": 358,
-  "targetRoi_width": 401,
-  "targetRoi_height": 517,
-  "searchPoly_lftTop_x": 1108,
-  "searchPoly_lftTop_y": 758,
-  "searchPoly_rgtTop_x": 1258,
-  "searchPoly_rgtTop_y": 761,
-  "searchPoly_lftBot_x": 1263,
-  "searchPoly_lftBot_y": 1095,
-  "searchPoly_rgtBot_x": 1079,
-  "searchPoly_rgtBot_y": 1084,
-  "symbolColor_blue": 195,
-  "symbolColor_green": 127,
-  "symbolColor_red": 10,
-  "colorRangeMin": 20,
-  "colorRangeMax": 20,
-  "calibResult_json": "./config/calib_stopsign.json"
-}
-*/

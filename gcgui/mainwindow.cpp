@@ -178,11 +178,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
     ui->checkBox_showCalib->setChecked( true );
     ui->checkBox_showSearchROI->setChecked( true );
-    ui->checkBox_calibSearchROI->setChecked( true );
-    ui->checkBox_calibSearchROI->setVisible( false );
     ui->checkBox_showTargetROI->setChecked( true );
-    ui->checkBox_showMoveFind->setChecked( true );
-    m_pComboBoxImageToView->setCurrentText( "Overlay" );
+    m_pComboBoxImageToView->setCurrentText( "Color" );
 
     UpdateGUIEnables();
     UpdateCalibType();
@@ -248,13 +245,11 @@ void MainWindow::createConnections()
     connect( ui->checkBox_showDerivOne, &QCheckBox::checkStateChanged, this, &MainWindow::UpdatePixmapTarget );
     connect( ui->checkBox_showDerivTwo, &QCheckBox::checkStateChanged, this, &MainWindow::UpdatePixmapTarget );
     connect( ui->checkBox_showRANSAC, &QCheckBox::checkStateChanged, this, &MainWindow::UpdatePixmapTarget );
-    connect( ui->checkBox_showMoveFind, &QCheckBox::checkStateChanged, this, &MainWindow::UpdatePixmapTarget );
     connect( ui->checkBox_showSearchROI, &QCheckBox::checkStateChanged, this, &MainWindow::UpdatePixmapTarget );
     connect( ui->checkBox_showTargetROI, &QCheckBox::checkStateChanged, this, &MainWindow::UpdatePixmapTarget );
     connect( ui->checkBox_createFindLine_csvResultsFile, &QCheckBox::checkStateChanged, this, &MainWindow::UpdateGUIEnables );
     connect( ui->checkBox_createFindLine_annotatedResults, &QCheckBox::checkStateChanged, this, &MainWindow::UpdateGUIEnables );
     connect( ui->checkBox_saveSearchROI, &QCheckBox::checkStateChanged, this, &MainWindow::UpdateGUIEnables );
-    connect( ui->checkBox_calibSearchROI, &QRadioButton::toggled, this, &MainWindow::UpdateCalibSearchRegion );
     connect( ui->actionToggleControls, &QAction::toggled, this, &MainWindow::UpdateGUIEnables );
 
     connect( this, SIGNAL( sig_visAppMessage(QString) ), this, SLOT( do_visAppMessage(QString) ) );
@@ -384,7 +379,6 @@ int MainWindow::ReadSettings( const QString filepath )
         // vision stuff
         pSettings->beginGroup( "Vision" );
         ui->lineEdit_calibVisionResult_json->setText( pSettings->value( "calibJsonFileOut", QString( __CONFIGURATION_FOLDER ) + "calib.json" ).toString() );
-        ui->checkBox_calibSearchROI->setChecked( !pSettings->value( "useWholeImage", false ).toBool() );
         ui->doubleSpinBox_octagonFacetLength->setValue( pSettings->value( "octagonFacetLength", 0.599 ).toDouble() ); // 7.1875 inches
         ui->doubleSpinBox_octagonZeroOffset->setValue( pSettings->value( "octagonZeroOffset", 2.0 ).toDouble() );
 
@@ -478,8 +472,6 @@ int MainWindow::WriteSettings( const QString filepath )
         // vision stuff
         pSettings->beginGroup( "Vision" );
         pSettings->setValue( "calibJsonFileOut", ui->lineEdit_calibVisionResult_json->text() );
-        // pSettings->setValue( "useWholeImage", !ui->checkBox_calibSearchROI->isChecked() );
-        pSettings->setValue( "useWholeImage", false );
         pSettings->setValue( "octagonFacetLength", ui->doubleSpinBox_octagonFacetLength->value() );
         pSettings->setValue( "octagonZeroOffset", ui->doubleSpinBox_octagonZeroOffset->value() );
 
@@ -545,18 +537,10 @@ void MainWindow::UpdateTargetRect()
 }
 void MainWindow::UpdateCalibSearchRegion()
 {
-    // if ( ui->checkBox_calibSearchROI->isChecked() )
-    if ( true )
-    {
-        QString msg;
-        ui->label_calibCurrentROI->setText( msg.asprintf( "x=%d  y=%d  w=%d  h=%d",
-                                                          m_rectROI.x(), m_rectROI.y(),
-                                                          m_rectROI.width(), m_rectROI.height() ) );
-    }
-    else
-    {
-        ui->label_calibCurrentROI->setText( "Whole image" );
-    }
+    QString msg;
+    ui->label_calibCurrentROI->setText( msg.asprintf( "x=%d  y=%d  w=%d  h=%d",
+                                                      m_rectROI.x(), m_rectROI.y(),
+                                                      m_rectROI.width(), m_rectROI.height() ) );
 }
 void MainWindow::UpdateCalibType()
 {
@@ -617,7 +601,6 @@ int MainWindow::UpdatePixmap()
             overlays += ui->checkBox_showDerivOne->isChecked() ? FINDLINE_1ST_DERIV : OVERLAYS_NONE;
             overlays += ui->checkBox_showDerivTwo->isChecked() ? FINDLINE_2ND_DERIV : OVERLAYS_NONE;
             overlays += ui->checkBox_showRANSAC->isChecked() ? RANSAC_POINTS : OVERLAYS_NONE;
-            overlays += ui->checkBox_showMoveFind->isChecked() ? MOVE_FIND : OVERLAYS_NONE;
             overlays += ui->checkBox_showSearchROI->isChecked() ? SEARCH_ROI : OVERLAYS_NONE;
             overlays += ui->checkBox_showTargetROI->isChecked() ? TARGET_ROI : OVERLAYS_NONE;
 
@@ -1259,7 +1242,6 @@ void MainWindow::on_pushButton_visionCalibrateLoad_clicked()
             m_bCalibDirty = false;
             ui->checkBox_showCalib->setChecked( true );
             ui->checkBox_showSearchROI->setChecked( true );
-            ui->checkBox_calibSearchROI->setChecked( true );
             m_pComboBoxImageToView->setCurrentText( "Overlay" );
             UpdateTargetRect();
             UpdateGUIEnables();
@@ -1331,8 +1313,7 @@ void MainWindow::on_pushButton_visionCalibrate_clicked()
 
     UpdateCalibSearchRegion();
 
-    CalibJsonItems calibItems( ui->lineEdit_calibVisionResult_json->text().toStdString(),
-                               true, // ui->checkBox_calibSearchROI->isChecked(),
+    CalibJsonItems calibItems( ui->lineEdit_calibVisionResult_json->text().toStdString(), true,
                                cv::Rect( m_rectROI.x(), m_rectROI.y(), m_rectROI.width(), m_rectROI.height() ),
                                ui->doubleSpinBox_octagonFacetLength->value(), ui->doubleSpinBox_octagonZeroOffset->value(),
                                LineSearchRoi( cv::Point( m_lineSearchPoly.lftTop.x(), m_lineSearchPoly.lftTop.y() ),
@@ -1482,7 +1463,7 @@ void MainWindow::on_pushButton_findLineCurrentImage_clicked()
         params.lineSearchROIFolder = ui->groupBox_enableSaveSearchROI->isChecked() ? ui->lineEdit_saveSearchROIFolder->text().toStdString() : "";
         if ( params.isOctagonCalib )
         {
-            CalibJsonItems calibItems( ui->lineEdit_calibVisionResult_json->text().toStdString(), true, // ui->checkBox_calibSearchROI->isChecked(),
+            CalibJsonItems calibItems( ui->lineEdit_calibVisionResult_json->text().toStdString(), true,
                                        cv::Rect( m_rectROI.x(), m_rectROI.y(), m_rectROI.width(), m_rectROI.height() ),
                                        ui->doubleSpinBox_octagonFacetLength->value(), ui->doubleSpinBox_octagonZeroOffset->value(),
                                        LineSearchRoi( cv::Point( m_lineSearchPoly.lftTop.x(), m_lineSearchPoly.lftTop.y() ),
@@ -1546,7 +1527,7 @@ void MainWindow::on_pushButton_findLine_processFolder_clicked()
     ui->textEdit_msgs->append( GC_OK == retVal ? "Folder run started" : "Folder run failed to start" );
 
     on_actionZoomToFit_triggered();
-    m_pComboBoxImageToView->setCurrentText( "Color" );
+    m_pComboBoxImageToView->setCurrentText( "Overlay" );
     ui->checkBox_showFindLine->setChecked( true );
 }
 

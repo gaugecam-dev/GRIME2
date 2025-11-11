@@ -59,7 +59,7 @@ protected:
 signals:
     void sig_visAppMessage( QString imgPath );
     void sig_updateProgess( int );
-    void sig_visAppLineFound( const QString imgPath );
+    // void sig_visAppLineFound( const QString imgPath );
     void sig_updateImage();
 
 private slots:

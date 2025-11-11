@@ -458,6 +458,7 @@ GC_STATUS CalibExecutive::CalibrateOctagon( const cv::Mat &img, const string &co
 
             Mat kern = getStructuringElement( MORPH_ELLIPSE, Size( 5, 5 ) );
             erode( matIn, matIn, kern, Point( -1, -1 ), 1 );
+            dilate( matIn, matIn, kern, Point( -1, -1 ), 1 );
             retVal = octagon.Calibrate( matIn, controlJson, err_msg );
         }
     }

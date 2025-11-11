@@ -272,7 +272,7 @@ GC_STATUS OctagonSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &p
             }
             if ( templates.empty() || GC_OK != retVal )
             {
-                FILE_LOG( logERROR ) << "[OctagonSearch::FindMoveTargets] Cannot find move stop sign in an uninitialized object";
+                FILE_LOG( logERROR ) << "[OctagonSearch::Find] Cannot find move stop sign in an uninitialized object";
                 retVal = GC_ERR;
             }
             else
@@ -366,6 +366,10 @@ GC_STATUS OctagonSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &p
                 {
                     pts = ptsTemp;
                 }
+                else
+                {
+                    retVal = GC_OK;
+                }
 
 #ifdef DEBUG_OCTAGON_TEMPL
                 imwrite( string(DEBUG_FOLDER) + "octagon_find_template.png", color );
@@ -391,113 +395,6 @@ GC_STATUS OctagonSearch::Find( const cv::Mat &img, std::vector< cv::Point2d > &p
         FILE_LOG( logERROR ) << "[OctagonSearch::Find] " << e.what();
         retVal = GC_EXCEPT;
     }
-    return retVal;
-}
-GC_STATUS OctagonSearch::FindMoveTargets( const Mat &img, const Rect targetRoi, Point2d &ptLeft, Point2d &ptRight )
-{
-    GC_STATUS retVal = GC_OK;
-    try
-    {
-        if ( img.empty() )
-        {
-            FILE_LOG( logERROR ) << "[OctagonSearch::FindMoveTargets] Cannot find move targets in an empty image";
-            retVal = GC_ERR;
-        }
-        else
-        {
-            if ( templates.empty() )
-            {
-                retVal = Init( GC_OCTAGON_TEMPLATE_DIM, 7 );
-            }
-            if ( GC_OK != retVal || templates.empty() )
-            {
-                FILE_LOG( logERROR ) << "[OctagonSearch::FindMoveTargets] Cannot find move targets in an uninitialized object";
-                retVal = GC_ERR;
-            }
-            else
-            {
-                Mat matIn = img( targetRoi );
-                if ( img.type() == CV_8UC3 )
-                    cvtColor( matIn, matIn, COLOR_BGR2GRAY );
-
-                cv::Ptr< CLAHE > clahe = createCLAHE( 1.0 );
-                clahe->apply( matIn, matIn );
-#ifdef DEBUG_OCTAGON_TEMPL
-                imwrite( string(DEBUG_FOLDER) + "template_OCTAGON_clahe.png", matIn );
-#endif
-
-                // GaussianBlur( matIn, matIn, Size( 5, 5 ), 1.0 );
-                medianBlur( matIn, matIn, 7 );
-#ifdef DEBUG_OCTAGON_TEMPL
-                imwrite( string(DEBUG_FOLDER) + "template_OCTAGON_median.png", matIn );
-#endif
-
-#ifdef DEBUG_OCTAGON_TEMPL
-                Mat color;
-                if ( img.type() == CV_8UC1 )
-                    cvtColor( matIn, color, COLOR_BGR2GRAY );
-                else
-                    img.copyTo( color );
-#endif
-
-                ptLeft = Point2d( -1.0, -1.0 );
-                ptRight = Point2d( -1.0, -1.0 );
-
-                Point maxPt;
-                Mat response;
-                Point2d maxMaxPt;
-                double maxVal, maxMaxVal;
-                vector< int > templIdx = { 0, 7 }; // 0 = top left corner, 7 = top right corner
-
-                for ( size_t j = 0; j < templIdx.size(); ++j )
-                {
-                    maxMaxVal = -9999999;
-                    // imwrite( string(DEBUG_FOLDER) + "octagon_move_target" + to_string(j) + ".png", templates[ j ].ptTemplates[ 5 ].templ );
-                    for ( size_t i = 0; i < templates[ j ].ptTemplates.size(); ++i )
-                    {
-                        matchTemplate( matIn, templates[ j ].ptTemplates[ i ].templ, response, TM_CCORR_NORMED, templates[ j ].ptTemplates[ i ].mask );
-
-                        minMaxLoc( response, nullptr, &maxVal, nullptr, &maxPt );
-                        if ( maxVal > maxMaxVal )
-                        {
-                            maxMaxVal = maxVal;
-                            maxMaxPt = Point2d( maxPt ) + templates[ j ].ptTemplates[ i ].offset;
-                            if ( 0 == j )
-                            {
-                                ptLeft = maxMaxPt;
-                            }
-                            else
-                            {
-                                ptRight = maxMaxPt;
-                            }
-                        }
-                    }
-                    if ( 0.0 < maxMaxVal )
-                    {
-#ifdef DEBUG_OCTAGON_TEMPL
-                        line( color( targetRoi ), Point( cvRound( maxMaxPt.x - 10 ), cvRound( maxMaxPt.y ) ),
-                              Point( cvRound( maxMaxPt.x + 10 ), cvRound( maxMaxPt.y ) ), Scalar( 0, 255, 0 ), 1 );
-                        line( color( targetRoi ), Point( cvRound( maxMaxPt.x ), cvRound( maxMaxPt.y - 10 ) ),
-                              Point( cvRound( maxMaxPt.x ), cvRound( maxMaxPt.y + 10 ) ), Scalar( 0, 255, 0 ), 1 );
-                        imwrite( string(DEBUG_FOLDER) + "octagon_move_target_found.png", color );
-#endif
-                    }
-                    else
-                    {
-                        FILE_LOG( logERROR ) << "[OctagonSearch::FindMoveTargets] Could not find move target";
-                        retVal = GC_ERR;
-                        break;
-                    }
-                }
-            }
-        }
-    }
-    catch( Exception &e )
-    {
-        FILE_LOG( logERROR ) << "[OctagonSearch::FindMoveTargets] " << e.what();
-        retVal = GC_EXCEPT;
-    }
-
     return retVal;
 }
 GC_STATUS OctagonSearch::ShortenLine( const LineEnds &a, const double newLengthPercent, LineEnds &newLine )

@@ -47,19 +47,6 @@
 namespace gc
 {
 
-/// enum for findline overlay types
-//typedef enum GC_FINDLINE_OVERLAY_TYPE
-//{
-//    NO_OVERLAY = 0,
-//    FOUND_LINE = 1,
-//    ROW_SUMS = 2,
-//    FIRST_DERIVE = 4,
-//    SECOND_DERIVE = 8,
-//    RANSAC_POINTS = 16,
-//    MOVE_FIND_RESULT = 32,
-//    SEARCH_SWATHS = 64
-//} LineDrawType;
-
 /**
  * @brief Finds water level and detects calibration target movement (using a FindCalibGrid object)
  */
@@ -122,15 +109,6 @@ public:
      */
     GC_STATUS DrawResult( const cv::Mat &img, cv::Mat &imgOut, const FindLineResult &result,
                           const IMG_DISPLAY_OVERLAYS overlayTypes );
-
-    /**
-     * @brief Method to set the move target search regions
-     * @param img Image within which to search for the targets to assure regions are valid
-     * @param rectLeft cv::Rect that holds the left search region
-     * @param rectRight cv::Rect that holds the right search region
-     * @return GC_OK=Success, GC_FAIL=Failure, GC_EXCEPT=Exception thrown
-     */
-    GC_STATUS SetMoveTargetROI( const cv::Mat &img, const cv::Rect rectLeft, const cv::Rect rectRight );
 
     /**
      * @brief Preprocessing of image to remove biofouling and other noise, and stabilize the water line

@@ -163,7 +163,6 @@ GC_STATUS GuiVisApp::GetImageOverlay( const IMG_BUFFERS nImgColor, const IMG_DIS
             cv::Mat matTemp = m_matColor.clone();
             if ( ( overlays & CALIB_SCALE ) ||
                  ( overlays & CALIB_GRID ) ||
-                 ( overlays & MOVE_FIND ) ||
                  ( overlays & SEARCH_ROI ) ||
                  ( overlays & TARGET_ROI ) )
             {
@@ -196,8 +195,6 @@ GC_STATUS GuiVisApp::GetImageOverlay( const IMG_BUFFERS nImgColor, const IMG_DIS
                 overlayType += FINDLINE_2ND_DERIV;
             if( overlays & RANSAC_POINTS )
                 overlayType += RANSAC_POINTS;
-            if( overlays & MOVE_FIND )
-                overlayType += MOVE_FIND;
             if ( ( OVERLAYS_NONE != overlayType ) )
             {
                 retVal = m_visApp.DrawLineFindOverlay( matTemp, m_matDisplay, static_cast< IMG_DISPLAY_OVERLAYS >( overlayType ) );
